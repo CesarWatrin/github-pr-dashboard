@@ -79,103 +79,53 @@ const TOTAL_TILES = [
   { key: 'opened', label: 'PR ouvertes' },
   { key: 'merged', label: 'PR de code mergées' },
   { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
-  { key: 'contributors', label: 'Contributeurs' },
-  { key: 'bots', label: 'PR de bots (exclues)' },
-]
-
-const REVIEW_TILES = [
-  { key: 'reviewed', label: 'PR relues', sub: () => 'au moins une review ou un commentaire' },
-  { key: 'reviewers', label: 'Relecteurs actifs', sub: () => 'personnes ayant relu au moins une PR' },
-  { key: 'comments', label: 'Commentaires', sub: () => 'dans le code et sur la PR' },
-  {
-    key: 'approvals',
-    label: 'Approbations',
-    sub: (totals) => `${formatNumber(totals.changesRequested)} demandes de changements`,
-  },
-  {
-    key: 'silentApprovalRate',
-    label: 'Approbations sans commentaire',
-    format: formatShare,
-    sub: () => 'des PR approuvées, sans aucun commentaire du relecteur',
-  },
+  { key: 'reviewed', label: 'PR relues' },
+  { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal },
+  { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare },
 ]
 
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'opened', label: 'PR ouvertes' },
   { key: 'code', label: 'PR de code', kind: 'bar' },
   {
     key: 'process',
     label: 'Release / intég.',
-    hint: 'PR de release et de synchronisation de branches',
     value: (row) => row.release + row.integration,
     format: (row) => `${row.release} / ${row.integration}`,
   },
-  { key: 'merged', label: 'Mergées' },
-  {
-    key: 'mergeRate',
-    label: 'Taux de merge',
-    hint: 'mergées / (mergées + fermées sans merge)',
-    format: (row) => formatPercent(row.mergeRate),
-  },
+  { key: 'mergeRate', label: 'Taux de merge', format: (row) => formatPercent(row.mergeRate) },
   { key: 'open', label: 'Encore ouvertes' },
-  {
-    key: 'medianTimeToMergeHours',
-    label: 'Délai médian',
-    hint: 'de la création au merge',
-    format: (row) => formatDuration(row.medianTimeToMergeHours),
-  },
-  { key: 'medianSize', label: 'Taille médiane', hint: 'lignes ajoutées + supprimées' },
-  { key: 'repos', label: 'Repos' },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian', format: (row) => formatDuration(row.medianTimeToMergeHours) },
+  { key: 'medianSize', label: 'Taille médiane' },
 ]
 
 const REVIEWER_COLUMNS = [
   { key: 'login', label: 'Relecteur', kind: 'person', value: (row) => displayName(row.login) },
   { key: 'prs', label: 'PR relues', kind: 'bar' },
-  { key: 'comments', label: 'Commentaires' },
-  { key: 'approvals', label: 'Approbations' },
+  { key: 'commentsPerPr', label: 'Comment. / PR', format: (row) => formatDecimal(row.commentsPerPr) },
+  { key: 'silentApprovalRate', label: 'Approb. sans comment.', format: (row) => formatShare(row.silentApprovalRate) },
   { key: 'changesRequested', label: 'Changements demandés' },
-  {
-    key: 'commentsPerPr',
-    label: 'Comment. / PR',
-    hint: 'commentaires divisés par PR relues',
-    format: (row) => formatDecimal(row.commentsPerPr),
-  },
-  {
-    key: 'silentApprovalRate',
-    label: 'Approb. sans comment.',
-    hint: 'part des PR approuvées sans aucun commentaire de la personne',
-    format: (row) => formatShare(row.silentApprovalRate),
-  },
-  { key: 'repos', label: 'Dépôts' },
-  { key: 'avgFiles', label: 'Fichiers moy.', hint: 'fichiers modifiés par PR relue', format: (row) => formatDecimal(row.avgFiles) },
-  { key: 'medianFiles', label: 'Fichiers méd.', format: (row) => formatDecimal(row.medianFiles) },
-  { key: 'avgLines', label: 'Lignes moy.', hint: 'lignes ajoutées + supprimées par PR relue' },
-  { key: 'medianLines', label: 'Lignes méd.' },
+  { key: 'medianSize', label: 'Taille médiane' },
   { key: 'merges', label: 'Merges effectués' },
   {
     key: 'topRepos',
-    label: 'Principaux dépôts (PR relues)',
+    label: 'Principaux dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
     format: (row) => row.topRepos.map(([repo, count]) => `${repo} (${count})`).join(', ') || '–',
   },
 ]
 
+const ACTIVITY_SERIES = [
+  { label: 'PR ouvertes', color: 'var(--series-1)', value: (point) => point.opened },
+  { label: 'commentaires de review', color: 'var(--series-2)', value: (point) => point.comments },
+]
+
 const MINI_CHARTS = [
-  { key: 'prs', title: 'PR relues', color: 'var(--series-1)', value: (point) => point.prs },
-  { key: 'comments', title: 'Commentaires', color: 'var(--series-1)', value: (point) => point.comments },
-  {
-    key: 'approvals',
-    title: 'Approbations',
-    color: 'var(--series-2)',
-    value: (point) => point.approvals,
-    extraRows: (point) => [{ label: 'changements demandés', value: formatNumber(point.changes) }],
-  },
+  { key: 'prs', title: 'PR relues', value: (point) => point.prs },
   {
     key: 'ratio',
     title: 'Commentaires par PR relue',
-    color: 'var(--series-1)',
     decimals: true,
     value: (point) => (point.prs ? point.comments / point.prs : null),
     extraRows: (point) => [
@@ -275,9 +225,6 @@ function ensureTiles(container, definitions) {
         el('span', { className: 'tile-label', textContent: definition.label }),
         el('span', { className: 'tile-value-row' }, el('span', { className: 'tile-value' }), el('span', { className: 'tile-bump' })),
       )
-      if (definition.sub) {
-        tile.append(el('span', { className: 'tile-sub' }))
-      }
       tile.dataset.key = definition.key
       container.append(tile)
     }
@@ -302,9 +249,6 @@ function renderTiles(container, definitions, values, animate) {
       showBump(tile.querySelector('.tile-bump'), value - previous)
     } else {
       valueNode.textContent = format(value)
-    }
-    if (definition.sub) {
-      tile.querySelector('.tile-sub').textContent = definition.sub(values)
     }
   }
 }
@@ -630,41 +574,24 @@ function dataTable(container, headers, rows) {
   )
 }
 
-function renderOpenedChart() {
+function renderActivityChart() {
   const { series, bucket } = currentPeriod()
-  $('[data-chart-title]').textContent = `PR ouvertes ${BUCKET_TITLES[bucket]}`
+  $('[data-chart-title]').textContent = `Activité ${BUCKET_TITLES[bucket]}`
   columnChart($('[data-chart]'), {
     points: series,
     bucket,
-    series: [{ label: 'PR ouvertes', color: 'var(--series-1)', value: (point) => point.opened }],
-    ariaLabel: `PR ouvertes ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
+    series: ACTIVITY_SERIES,
+    ariaLabel: `PR ouvertes et commentaires de review ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
     extraRows: (point) => [
       { label: 'PR de code mergées', value: formatNumber(point.merged) },
-      { label: 'reviews soumises', value: formatNumber(point.reviews) },
+      { label: 'approbations', value: formatNumber(point.approvals) },
     ],
-  })
-}
-
-const REVIEW_ACTIVITY_SERIES = [
-  { label: 'commentaires', legend: 'Commentaires', color: 'var(--series-1)', value: (point) => point.comments },
-  { label: 'approbations', legend: 'Approbations', color: 'var(--series-2)', value: (point) => point.approvals },
-]
-
-function renderReviewActivityChart() {
-  const { series, bucket } = currentPeriod()
-  $('[data-review-activity-title]').textContent = `Activité de review ${BUCKET_TITLES[bucket]}`
-  columnChart($('[data-review-activity-chart]'), {
-    points: series,
-    bucket,
-    series: REVIEW_ACTIVITY_SERIES,
-    ariaLabel: `Commentaires et approbations ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
-    extraRows: (point) => [{ label: 'reviews soumises', value: formatNumber(point.reviews) }],
   })
 }
 
 function renderRepositoriesChart() {
   const repositories = currentPeriod().repositories
-  $('[data-repos-sub]').textContent = `Nombre de PR relues par dépôt, ${Math.min(TOP_REPOSITORIES, repositories.length)} premiers sur ${formatNumber(repositories.length)} dépôts avec au moins une review.`
+  $('[data-repos-sub]').textContent = `${Math.min(TOP_REPOSITORIES, repositories.length)} premiers sur ${formatNumber(repositories.length)}`
   barChart($('[data-repos-chart]'), {
     rows: repositories.slice(0, TOP_REPOSITORIES),
     label: (row) => row.repo,
@@ -677,30 +604,6 @@ function renderRepositoriesChart() {
       rows: [
         { label: 'PR relues', value: formatNumber(row.prs) },
         { label: 'commentaires', value: formatNumber(row.comments) },
-        { label: 'approbations', value: formatNumber(row.approvals) },
-      ],
-    }),
-  })
-}
-
-function renderSilentApprovalsChart() {
-  const { reviewers, minApprovedPrs } = currentPeriod()
-  $('[data-silent-sub]').textContent = `Pour chaque relecteur ayant approuvé au moins ${minApprovedPrs} PR sur la période : part des PR approuvées sur lesquelles la personne n’a laissé aucun commentaire. Une part élevée peut signaler des validations rapides.`
-  barChart($('[data-silent-chart]'), {
-    rows: reviewers
-      .filter((row) => row.approvedPrs >= minApprovedPrs && row.silentApprovalRate !== null)
-      .sort((a, b) => b.silentApprovalRate - a.silentApprovalRate),
-    label: (row) => displayName(row.login),
-    value: (row) => row.silentApprovalRate,
-    format: formatShare,
-    max: 1,
-    color: 'var(--series-1)',
-    ariaLabel: 'Part des approbations sans commentaire par relecteur',
-    tooltip: (row) => ({
-      title: displayName(row.login),
-      rows: [
-        { label: `PR approuvées sans commentaire sur ${formatNumber(row.approvedPrs)}`, value: formatNumber(row.silentApprovedPrs) },
-        { label: 'commentaires par PR relue', value: formatDecimal(row.commentsPerPr) },
       ],
     }),
   })
@@ -711,9 +614,9 @@ function personPoints(login) {
   const values = reviewerSeries[login] ?? []
 
   return series.map((point, index) => {
-    const [prs, comments, approvals, changes] = values[index] ?? [0, 0, 0, 0]
+    const [prs, comments] = values[index] ?? [0, 0]
 
-    return { key: point.key, partial: point.partial, prs, comments, approvals, changes }
+    return { key: point.key, partial: point.partial, prs, comments }
   })
 }
 
@@ -725,7 +628,7 @@ function renderMiniCharts() {
       points,
       bucket,
       decimals: mini.decimals,
-      series: [{ label: mini.title.toLowerCase(), color: mini.color, value: mini.value }],
+      series: [{ label: mini.title.toLowerCase(), color: 'var(--series-1)', value: mini.value }],
       ariaLabel: `${mini.title} ${BUCKET_TITLES[bucket]}, ${displayName(state.person)}`,
       extraRows: mini.extraRows,
     })
@@ -736,64 +639,42 @@ function renderCharts() {
   if (!state.stats) {
     return
   }
-  renderOpenedChart()
-  renderReviewActivityChart()
+  renderActivityChart()
   renderRepositoriesChart()
-  renderSilentApprovalsChart()
   if (state.person) {
     renderMiniCharts()
   }
 }
 
-function renderChartTables() {
+function renderChartTable() {
   const { series, bucket } = currentPeriod()
-  const newestFirst = series.toReversed()
-  const period = (point) => bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : '')
   dataTable(
     $('[data-chart-table]'),
-    ['Période', 'PR ouvertes', 'PR de code mergées', 'Reviews'],
-    newestFirst.map((point) => [period(point), formatNumber(point.opened), formatNumber(point.merged), formatNumber(point.reviews)]),
-  )
-  dataTable(
-    $('[data-review-activity-table]'),
-    ['Période', 'Commentaires', 'Approbations', 'Reviews'],
-    newestFirst.map((point) => [period(point), formatNumber(point.comments), formatNumber(point.approvals), formatNumber(point.reviews)]),
+    ['Période', 'PR ouvertes', 'Commentaires', 'PR de code mergées', 'Approbations'],
+    series
+      .toReversed()
+      .map((point) => [
+        bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : ''),
+        formatNumber(point.opened),
+        formatNumber(point.comments),
+        formatNumber(point.merged),
+        formatNumber(point.approvals),
+      ]),
   )
 }
 
 function renderLegend() {
-  $('[data-review-activity-legend]').replaceChildren(
-    ...REVIEW_ACTIVITY_SERIES.map((item) => {
+  $('[data-chart-legend]').replaceChildren(
+    ...ACTIVITY_SERIES.map((item) => {
       const swatch = el('span', { className: 'swatch' })
       swatch.style.background = item.color
 
-      return el('span', {}, swatch, document.createTextNode(item.legend))
+      return el('span', {}, swatch, document.createTextNode(capitalize(item.label)))
     }),
   )
 }
 
-// Review summary
-
-function renderReviewSummary(animate) {
-  const { totals, reviewers } = currentPeriod()
-  const top = reviewers.filter((row) => row.prs > 0).sort((a, b) => b.prs - a.prs)[0]
-  const takeaway = $('[data-takeaway]')
-  if (top) {
-    takeaway.replaceChildren(
-      el('strong', { textContent: displayName(top.login) }),
-      document.createTextNode(` est la personne qui a relu le plus de PR (${formatNumber(top.prs)}). Sur l’ensemble de l’équipe, `),
-      el('strong', { textContent: formatShare(totals.silentApprovalRate) }),
-      document.createTextNode(' des PR approuvées l’ont été sans aucun commentaire du relecteur.'),
-    )
-  } else {
-    takeaway.textContent = 'Aucune review sur la période.'
-  }
-  $('[data-scope]').textContent =
-    `${formatNumber(totals.opened)} PR ouvertes par des personnes sur la période, dont ${formatNumber(totals.code)} PR de code. ` +
-    `Les ${formatNumber(totals.release)} PR de release et ${formatNumber(totals.integration)} PR de synchronisation de branches ` +
-    `sont exclues des stats de review, comme les ${formatNumber(totals.bots)} PR de bots.`
-  renderTiles($('[data-review-tiles]'), REVIEW_TILES, totals, animate)
-}
+// Per-person evolution
 
 function renderPersonPicker() {
   const reviewers = currentPeriod()
@@ -805,11 +686,6 @@ function renderPersonPicker() {
   const picker = $('[data-person]')
   picker.replaceChildren(...reviewers.map((row) => new Option(displayName(row.login), row.login)))
   picker.value = state.person ?? ''
-
-  const row = reviewers.find((reviewer) => reviewer.login === state.person)
-  $('[data-person-summary]').textContent = row
-    ? `Sur la période : ${formatNumber(row.prs)} PR relues, ${formatNumber(row.comments)} commentaires, ${formatNumber(row.approvals)} approbations, ${formatNumber(row.changesRequested)} demandes de changements.`
-    : 'Aucun relecteur sur la période.'
 }
 
 // Tables
@@ -877,7 +753,7 @@ function renderTable(name, columns, rows, searchTexts, highlight) {
     const active = column.key === sort.key
     const button = el(
       'button',
-      { type: 'button', title: column.hint ?? '' },
+      { type: 'button' },
       document.createTextNode(column.label),
       el('span', { className: 'sort-icon', textContent: active ? (sort.direction < 0 ? '↓' : '↑') : '' }),
     )
@@ -1016,10 +892,9 @@ function render(animate) {
   renderPeriodSelector()
   renderToday(animate)
   renderTotals(animate)
-  renderReviewSummary(animate)
   renderPersonPicker()
   renderCharts()
-  renderChartTables()
+  renderChartTable()
   renderTables(animate)
   renderFeed(animate)
 }
@@ -1073,7 +948,6 @@ $('[data-search]').addEventListener('input', (event) => {
 
 $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
-  renderPersonPicker()
   renderMiniCharts()
 })
 

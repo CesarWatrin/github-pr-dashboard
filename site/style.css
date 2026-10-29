@@ -111,32 +111,8 @@ h3 {
   font-weight: 600;
 }
 
-h4 {
-  margin: 0;
+.mini h3 {
   font-size: 13px;
-  font-weight: 600;
-}
-
-.section {
-  display: grid;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.section-head {
-  display: grid;
-  gap: 6px;
-}
-
-.section-title {
-  font-size: 20px;
-  letter-spacing: -0.01em;
-}
-
-.takeaway {
-  max-width: 75ch;
-  margin: 0;
-  font-size: 16px;
 }
 
 .card-toolbar {
@@ -343,10 +319,6 @@ main.is-loading {
   margin-top: 14px;
 }
 
-.tiles-flush {
-  margin-top: 0;
-}
-
 .tile {
   display: grid;
   align-content: start;
@@ -380,11 +352,6 @@ main.is-loading {
   transition:
     opacity 0.3s,
     transform 0.3s;
-}
-
-.tile-sub {
-  color: var(--text-secondary);
-  font-size: 12px;
 }
 
 .tile-bump.is-visible {
