@@ -1,0 +1,15 @@
+{
+  "name": "github-pr-dashboard",
+  "private": true,
+  "type": "module",
+  "description": "Live dashboard of pull request and review stats per contributor of a GitHub organization",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "sync": "node scripts/sync.mjs",
+    "sync:full": "node scripts/sync.mjs --full",
+    "serve": "node scripts/serve.mjs",
+    "dev": "node scripts/sync.mjs --watch & node scripts/serve.mjs"
+  }
+}

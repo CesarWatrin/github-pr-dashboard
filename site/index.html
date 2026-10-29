@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stats PR</title>
+    <meta name="description" content="Pull requests et reviews par contributeur, mises à jour depuis GitHub." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='8' width='3' height='6' rx='1' fill='%232a78d6'/%3E%3Crect x='6.5' y='4' width='3' height='10' rx='1' fill='%232a78d6'/%3E%3Crect x='11' y='2' width='3' height='12' rx='1' fill='%232a78d6'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="page-header">
+        <div>
+          <h1>Pull requests <span class="org" data-org></span></h1>
+          <p class="subtitle">Activité par contributeur, hors bots, sur une période glissante</p>
+        </div>
+        <p class="sync" data-sync>
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span data-sync-label>Chargement…</span>
+        </p>
+      </header>
+
+      <div class="filters" role="toolbar" aria-label="Filtres">
+        <div class="segmented" role="radiogroup" aria-label="Période" data-periods>
+          <button type="button" role="radio" data-period="30d">30 jours</button>
+          <button type="button" role="radio" data-period="90d">90 jours</button>
+          <button type="button" role="radio" data-period="365d">12 mois</button>
+        </div>
+        <input
+          class="search"
+          type="search"
+          name="contributor"
+          placeholder="Filtrer un contributeur"
+          aria-label="Filtrer un contributeur"
+          data-search
+        />
+      </div>
+
+      <p class="empty" data-empty hidden>
+        Aucune donnée pour l’instant. En local, lance <code>npm run sync</code> puis recharge la page.
+      </p>
+
+      <main class="is-loading" data-main>
+        <section class="card" aria-labelledby="today-title">
+          <h2 id="today-title" data-today-title>Aujourd’hui</h2>
+          <div class="tiles" data-today></div>
+        </section>
+
+        <section class="card" aria-labelledby="totals-title">
+          <h2 id="totals-title" data-totals-title>Sur la période</h2>
+          <div class="tiles" data-totals></div>
+        </section>
+
+        <div class="grid-2">
+          <section class="card" aria-labelledby="chart-title">
+            <h2 id="chart-title" data-chart-title>PR ouvertes</h2>
+            <p class="card-sub">Survole une colonne pour voir les merges et les reviews de la même période.</p>
+            <div class="chart" data-chart></div>
+            <details class="chart-data">
+              <summary>Voir les données du graphique</summary>
+              <div class="table-wrap" data-chart-table></div>
+            </details>
+          </section>
+
+          <section class="card" aria-labelledby="feed-title">
+            <h2 id="feed-title">Activité récente</h2>
+            <p class="card-sub">7 derniers jours</p>
+            <ol class="feed" data-feed></ol>
+          </section>
+        </div>
+
+        <section class="card" aria-labelledby="authors-title">
+          <h2 id="authors-title">Auteurs</h2>
+          <p class="card-sub">
+            PR créées sur la période. Merges, taux et délais portent sur les PR de code (hors release et
+            synchronisation de branches).
+          </p>
+          <div class="table-wrap" data-authors></div>
+        </section>
+
+        <section class="card" aria-labelledby="reviewers-title">
+          <h2 id="reviewers-title">Reviewers</h2>
+          <p class="card-sub">Reviews soumises sur la période, sur les PR des autres. Merges effectués sur la période.</p>
+          <div class="table-wrap" data-reviewers></div>
+        </section>
+      </main>
+
+      <footer class="page-footer">
+        <p>
+          Source : API GitHub, PR créées au cours des 12 derniers mois. La page vérifie s’il y a de nouvelles données
+          chaque minute.
+        </p>
+      </footer>
+    </div>
+
+    <div class="tooltip" role="tooltip" hidden data-tooltip></div>
+  </body>
+</html>

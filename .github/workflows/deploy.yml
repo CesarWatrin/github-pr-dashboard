@@ -1,0 +1,67 @@
+name: Sync and deploy
+
+on:
+  schedule:
+    # Every 15 minutes, Monday to Friday, from 6/7 am to 8/9 pm Paris time (cron runs in UTC).
+    - cron: '*/15 5-19 * * 1-5'
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Refetch the whole rolling window instead of an incremental sync
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # The raw pull requests snapshot is never published: it only lives in the Actions cache.
+      - name: Restore snapshot
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/snapshot.json
+          key: snapshot-${{ github.run_id }}
+          restore-keys: snapshot-
+
+      - name: Sync pull requests
+        run: node scripts/sync.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_STATS_TOKEN }}
+          FULL_SYNC: ${{ inputs.full }}
+
+      - name: Save snapshot
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/snapshot.json
+          key: snapshot-${{ github.run_id }}
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
