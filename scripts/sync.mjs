@@ -10,6 +10,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 const ORG = process.env.ORG
+const SNAPSHOT_VERSION = 2
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.json'
@@ -20,32 +21,30 @@ const SEARCH_RESULT_LIMIT = 1000
 const CONCURRENCY = 4
 const EVENTS_LIMIT = 50
 const EVENTS_MAX_AGE_DAYS = 7
+const TOP_REPOS_PER_REVIEWER = 3
 const DAY_MS = 86_400_000
 
+// minApprovedPrs: reviewers below it are left out of the approvals without comment chart.
 const PERIODS = [
-  { key: '30d', days: 30, bucket: 'day' },
-  { key: '90d', days: 90, bucket: 'week' },
-  { key: '365d', days: 365, bucket: 'month' },
+  { key: '30d', days: 30, bucket: 'day', minApprovedPrs: 5 },
+  { key: '90d', days: 90, bucket: 'week', minApprovedPrs: 15 },
+  { key: '365d', days: 365, bucket: 'month', minApprovedPrs: 50 },
 ]
 
-const BOTS = new Set([
-  'dependabot',
-  'github-actions',
-  'copilot-swe-agent',
-  'copilot-pull-request-reviewer',
-  'coderabbitai',
-  'it-hellocse',
-  'ghost',
-])
+// GitHub Apps are detected from their actor type: these are user accounts acting as bots.
+const BOT_USERS = new Set(['it-hellocse', 'ghost'])
 
-const REVIEW_FIELDS = 'author { login } state submittedAt comments { totalCount }'
+const ACTOR_FIELDS = '__typename login ... on User { name }'
+const REVIEW_FIELDS = `author { ${ACTOR_FIELDS} } state submittedAt comments { totalCount }`
+const COMMENT_FIELDS = `author { ${ACTOR_FIELDS} } createdAt`
 
 const PULL_REQUEST_FIELDS = `
-  number title state createdAt mergedAt closedAt additions deletions headRefName baseRefName
+  number title state createdAt mergedAt closedAt additions deletions changedFiles headRefName baseRefName
   repository { name }
-  author { login }
-  mergedBy { login }
+  author { ${ACTOR_FIELDS} }
+  mergedBy { ${ACTOR_FIELDS} }
   reviews(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${REVIEW_FIELDS} } }
+  comments(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${COMMENT_FIELDS} } }
 `
 
 const REPOSITORIES_QUERY = `
@@ -61,7 +60,7 @@ const REPOSITORIES_QUERY = `
 const REPOSITORY_PULL_REQUESTS_QUERY = `
   query($org: String!, $name: String!, $cursor: String) {
     repository(owner: $org, name: $name) {
-      pullRequests(first: 25, after: $cursor, orderBy: { field: CREATED_AT, direction: DESC }) {
+      pullRequests(first: 20, after: $cursor, orderBy: { field: CREATED_AT, direction: DESC }) {
         pageInfo { hasNextPage endCursor }
         nodes { ${PULL_REQUEST_FIELDS} }
       }
@@ -70,24 +69,29 @@ const REPOSITORY_PULL_REQUESTS_QUERY = `
 
 const SEARCH_PULL_REQUESTS_QUERY = `
   query($query: String!, $cursor: String) {
-    search(query: $query, type: ISSUE, first: 50, after: $cursor) {
+    search(query: $query, type: ISSUE, first: 25, after: $cursor) {
       issueCount
       pageInfo { hasNextPage endCursor }
       nodes { ... on PullRequest { ${PULL_REQUEST_FIELDS} } }
     }
   }`
 
-const REVIEWS_QUERY = `
+const remainingItemsQuery = (connection, fields) => `
   query($org: String!, $name: String!, $number: Int!, $cursor: String) {
     repository(owner: $org, name: $name) {
       pullRequest(number: $number) {
-        reviews(first: 100, after: $cursor) {
+        ${connection}(first: 100, after: $cursor) {
           pageInfo { hasNextPage endCursor }
-          nodes { ${REVIEW_FIELDS} }
+          nodes { ${fields} }
         }
       }
     }
   }`
+
+const REMAINING_ITEMS_QUERIES = {
+  reviews: remainingItemsQuery('reviews', REVIEW_FIELDS),
+  comments: remainingItemsQuery('comments', COMMENT_FIELDS),
+}
 
 const parisDayFormat = new Intl.DateTimeFormat('en-CA', {
   timeZone: TIMEZONE,
@@ -101,6 +105,9 @@ if (!ORG) {
 }
 
 const token = resolveToken()
+
+// Display names and bot accounts seen in the API answers, kept in the snapshot between syncs.
+const people = { names: new Map(), bots: new Set() }
 
 function resolveToken() {
   const envToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
@@ -160,8 +167,36 @@ async function mapWithConcurrency(items, limit, callback) {
   return results
 }
 
+function actorLogin(actor) {
+  if (!actor) {
+    return 'ghost'
+  }
+  if (actor.__typename !== 'User') {
+    people.bots.add(actor.login)
+  }
+  if (actor.name) {
+    people.names.set(actor.login, actor.name)
+  }
+
+  return actor.login
+}
+
+async function fetchAllItems(node, connection, toItem) {
+  const items = node[connection].nodes.map(toItem)
+  let { hasNextPage, endCursor } = node[connection].pageInfo
+  while (hasNextPage) {
+    const variables = { org: ORG, name: node.repository.name, number: node.number, cursor: endCursor }
+    const data = await graphql(REMAINING_ITEMS_QUERIES[connection], variables)
+    const page = data.repository.pullRequest[connection]
+    items.push(...page.nodes.map(toItem))
+    ;({ hasNextPage, endCursor } = page.pageInfo)
+  }
+
+  return items
+}
+
 async function toRecord(node) {
-  const record = {
+  return {
     repo: node.repository.name,
     number: node.number,
     title: node.title,
@@ -171,31 +206,27 @@ async function toRecord(node) {
     closedAt: node.closedAt,
     additions: node.additions,
     deletions: node.deletions,
+    changedFiles: node.changedFiles,
     head: node.headRefName,
     base: node.baseRefName,
-    author: node.author?.login ?? 'ghost',
-    mergedBy: node.mergedBy?.login ?? null,
-    reviews: node.reviews.nodes.map(toReview),
+    author: actorLogin(node.author),
+    mergedBy: node.mergedBy ? actorLogin(node.mergedBy) : null,
+    reviews: await fetchAllItems(node, 'reviews', toReview),
+    comments: await fetchAllItems(node, 'comments', toComment),
   }
-
-  let { hasNextPage, endCursor } = node.reviews.pageInfo
-  while (hasNextPage) {
-    const data = await graphql(REVIEWS_QUERY, { org: ORG, name: record.repo, number: record.number, cursor: endCursor })
-    const reviews = data.repository.pullRequest.reviews
-    record.reviews.push(...reviews.nodes.map(toReview))
-    ;({ hasNextPage, endCursor } = reviews.pageInfo)
-  }
-
-  return record
 }
 
 function toReview(node) {
   return {
-    author: node.author?.login ?? 'ghost',
+    author: actorLogin(node.author),
     state: node.state,
     submittedAt: node.submittedAt,
     comments: node.comments.totalCount,
   }
+}
+
+function toComment(node) {
+  return { author: actorLogin(node.author), createdAt: node.createdAt }
 }
 
 async function listActiveRepositories(sinceIso) {
@@ -270,7 +301,7 @@ async function readSnapshot() {
   try {
     const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'))
 
-    return snapshot.org === ORG ? snapshot : null
+    return snapshot.org === ORG && snapshot.version === SNAPSHOT_VERSION ? snapshot : null
   } catch {
     return null
   }
@@ -282,11 +313,12 @@ async function writeJson(path, data) {
 }
 
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
-const isBot = (login) => BOTS.has(login)
+const isBot = (login) => BOT_USERS.has(login) || people.bots.has(login)
 const parisDay = (iso) => parisDayFormat.format(new Date(iso))
 const hoursBetween = (fromIso, toIso) => (Date.parse(toIso) - Date.parse(fromIso)) / 3_600_000
 const round = (value, digits = 0) => (value === null ? null : Number(value.toFixed(digits)))
 const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0)
+const mean = (values) => (values.length ? values.reduce((total, value) => total + value, 0) / values.length : null)
 
 function median(values) {
   if (values.length === 0) {
@@ -355,18 +387,39 @@ function bucketKeys(start, end, bucket) {
   return keys
 }
 
+// Every action of someone other than the author on a pull request, oldest first. A review without inline
+// comments counts as one comment when it is a plain comment, not when it only approves or requests changes.
+function reviewInterventions(pr) {
+  const fromReviews = pr.reviews
+    .filter((review) => review.submittedAt && review.author !== pr.author && !isBot(review.author))
+    .map((review) => ({
+      login: review.author,
+      at: review.submittedAt,
+      state: review.state,
+      comments: review.comments + (review.state === 'COMMENTED' && review.comments === 0 ? 1 : 0),
+    }))
+  const fromComments = pr.comments
+    .filter((comment) => comment.author !== pr.author && !isBot(comment.author))
+    .map((comment) => ({ login: comment.author, at: comment.createdAt, state: null, comments: 1 }))
+
+  return [...fromReviews, ...fromComments].sort((a, b) => a.at.localeCompare(b.at))
+}
+
 function computePeriod(pullRequests, period, now) {
   const startIso = new Date(now.getTime() - period.days * DAY_MS).toISOString()
   const keys = bucketKeys(new Date(startIso), now, period.bucket)
-  const buckets = new Map(keys.map((key) => [key, { key, opened: 0, merged: 0, reviews: 0 }]))
+  const buckets = new Map(
+    keys.map((key) => [key, { key, opened: 0, merged: 0, reviews: 0, comments: 0, approvals: 0 }]),
+  )
   const authors = new Map()
   const reviewers = new Map()
+  const repositories = new Map()
   const bots = new Map()
   const reviewedPullRequests = new Set()
-  const bump = (iso, field) => {
+  const bump = (iso, field, amount = 1) => {
     const bucket = buckets.get(bucketKey(iso, period.bucket))
     if (bucket) {
-      bucket[field]++
+      bucket[field] += amount
     }
   }
 
@@ -387,19 +440,24 @@ function computePeriod(pullRequests, period, now) {
   const reviewer = (login) =>
     getOrCreate(reviewers, login, () => ({
       login,
-      reviewed: new Set(),
+      reviewed: new Map(),
+      approvedPrs: new Set(),
+      silentApprovedPrs: new Set(),
+      comments: 0,
       approvals: 0,
       changesRequested: 0,
-      comments: 0,
       merges: 0,
+      series: new Map(),
     }))
+  const repository = (name) =>
+    getOrCreate(repositories, name, () => ({ repo: name, reviewed: new Set(), comments: 0, approvals: 0 }))
 
   for (const pr of pullRequests) {
+    const kind = classify(pr)
     if (pr.createdAt >= startIso) {
       if (isBot(pr.author)) {
         bots.set(pr.author, (bots.get(pr.author) ?? 0) + 1)
       } else {
-        const kind = classify(pr)
         const stats = author(pr.author)
         stats.opened++
         stats[kind]++
@@ -419,32 +477,60 @@ function computePeriod(pullRequests, period, now) {
       }
     }
 
+    // Review stats only cover code pull requests written by people.
+    if (kind !== 'code' || isBot(pr.author)) {
+      continue
+    }
+
     if (pr.mergedAt && pr.mergedAt >= startIso) {
-      if (!isBot(pr.author) && classify(pr) === 'code') {
-        bump(pr.mergedAt, 'merged')
-      }
+      bump(pr.mergedAt, 'merged')
       if (pr.mergedBy && !isBot(pr.mergedBy)) {
         reviewer(pr.mergedBy).merges++
       }
     }
 
-    for (const review of pr.reviews) {
-      if (!review.submittedAt || review.submittedAt < startIso) {
+    const key = keyOf(pr)
+    const interventions = reviewInterventions(pr)
+    const commenters = new Set(interventions.filter((item) => item.comments > 0).map((item) => item.login))
+    for (const intervention of interventions) {
+      if (intervention.at < startIso) {
         continue
       }
-      if (review.author === pr.author || isBot(review.author)) {
-        continue
+      const stats = reviewer(intervention.login)
+      const repo = repository(pr.repo)
+      const point = getOrCreate(stats.series, bucketKey(intervention.at, period.bucket), () => ({
+        prs: 0,
+        comments: 0,
+        approvals: 0,
+        changes: 0,
+      }))
+      if (!stats.reviewed.has(key)) {
+        stats.reviewed.set(key, pr)
+        point.prs++
       }
-      const stats = reviewer(review.author)
-      stats.reviewed.add(keyOf(pr))
-      stats.comments += review.comments
-      if (review.state === 'APPROVED') {
+      reviewedPullRequests.add(key)
+      repo.reviewed.add(key)
+
+      stats.comments += intervention.comments
+      point.comments += intervention.comments
+      repo.comments += intervention.comments
+      bump(intervention.at, 'comments', intervention.comments)
+      if (intervention.state) {
+        bump(intervention.at, 'reviews')
+      }
+      if (intervention.state === 'APPROVED') {
         stats.approvals++
-      } else if (review.state === 'CHANGES_REQUESTED') {
+        point.approvals++
+        repo.approvals++
+        bump(intervention.at, 'approvals')
+        stats.approvedPrs.add(key)
+        if (!commenters.has(intervention.login)) {
+          stats.silentApprovedPrs.add(key)
+        }
+      } else if (intervention.state === 'CHANGES_REQUESTED') {
         stats.changesRequested++
+        point.changes++
       }
-      reviewedPullRequests.add(keyOf(pr))
-      bump(review.submittedAt, 'reviews')
     }
   }
 
@@ -468,26 +554,78 @@ function computePeriod(pullRequests, period, now) {
   })
   const reviewerRows = [...reviewers.values()]
     .filter((stats) => stats.reviewed.size > 0 || stats.merges > 0)
-    .map((stats) => ({
-      login: stats.login,
-      reviewed: stats.reviewed.size,
-      approvals: stats.approvals,
-      changesRequested: stats.changesRequested,
-      comments: stats.comments,
-      merges: stats.merges,
-    }))
+    .map((stats) => {
+      const reviewed = [...stats.reviewed.values()]
+      const files = reviewed.map((pr) => pr.changedFiles)
+      const lines = reviewed.map((pr) => pr.additions + pr.deletions)
+      const perRepository = new Map()
+      for (const pr of reviewed) {
+        perRepository.set(pr.repo, (perRepository.get(pr.repo) ?? 0) + 1)
+      }
+
+      return {
+        login: stats.login,
+        prs: reviewed.length,
+        comments: stats.comments,
+        approvals: stats.approvals,
+        changesRequested: stats.changesRequested,
+        commentsPerPr: reviewed.length ? round(stats.comments / reviewed.length, 2) : null,
+        approvedPrs: stats.approvedPrs.size,
+        silentApprovedPrs: stats.silentApprovedPrs.size,
+        silentApprovalRate: stats.approvedPrs.size
+          ? round(stats.silentApprovedPrs.size / stats.approvedPrs.size, 3)
+          : null,
+        repos: perRepository.size,
+        avgFiles: round(mean(files), 1),
+        medianFiles: round(median(files), 1),
+        avgLines: round(mean(lines)),
+        medianLines: round(median(lines)),
+        topRepos: [...perRepository].sort((a, b) => b[1] - a[1]).slice(0, TOP_REPOS_PER_REVIEWER),
+        merges: stats.merges,
+      }
+    })
+  const reviewerSeries = Object.fromEntries(
+    reviewerRows
+      .filter((row) => row.prs > 0)
+      .map((row) => {
+        const series = reviewers.get(row.login).series
+
+        return [
+          row.login,
+          keys.map((key) => {
+            const point = series.get(key)
+
+            return point ? [point.prs, point.comments, point.approvals, point.changes] : [0, 0, 0, 0]
+          }),
+        ]
+      }),
+  )
+  const repositoryRows = [...repositories.values()].map((stats) => ({
+    repo: stats.repo,
+    prs: stats.reviewed.size,
+    comments: stats.comments,
+    approvals: stats.approvals,
+  }))
   const timesToMerge = [...authors.values()].flatMap((stats) => stats.timesToMerge)
+  const approvedPrs = sum(reviewerRows, 'approvedPrs')
 
   return {
     days: period.days,
     bucket: period.bucket,
+    minApprovedPrs: period.minApprovedPrs,
     totals: {
       opened: sum(authorRows, 'opened'),
       code: sum(authorRows, 'code'),
+      release: sum(authorRows, 'release'),
+      integration: sum(authorRows, 'integration'),
       merged: sum(authorRows, 'merged'),
       open: sum(authorRows, 'open'),
       reviewed: reviewedPullRequests.size,
+      reviewers: reviewerRows.filter((row) => row.prs > 0).length,
+      comments: sum(reviewerRows, 'comments'),
       approvals: sum(reviewerRows, 'approvals'),
+      changesRequested: sum(reviewerRows, 'changesRequested'),
+      silentApprovalRate: approvedPrs ? round(sum(reviewerRows, 'silentApprovedPrs') / approvedPrs, 3) : null,
       medianTimeToMergeHours: round(median(timesToMerge), 1),
       bots: [...bots.values()].reduce((total, count) => total + count, 0),
       contributors: authorRows.length,
@@ -495,7 +633,9 @@ function computePeriod(pullRequests, period, now) {
     bots: Object.fromEntries([...bots].sort((a, b) => b[1] - a[1])),
     series: keys.map((key, index) => ({ ...buckets.get(key), partial: index === 0 || index === keys.length - 1 })),
     authors: authorRows.sort((a, b) => b.code - a.code),
-    reviewers: reviewerRows.sort((a, b) => b.reviewed - a.reviewed),
+    reviewers: reviewerRows.sort((a, b) => b.prs - a.prs),
+    reviewerSeries,
+    repositories: repositoryRows.sort((a, b) => b.prs - a.prs),
   }
 }
 
@@ -546,8 +686,13 @@ function computeEvents(pullRequests, now) {
         push('approved', review.submittedAt, review.author, pr)
       } else if (review.state === 'CHANGES_REQUESTED') {
         push('changes_requested', review.submittedAt, review.author, pr)
-      } else if (review.state === 'COMMENTED' && review.comments > 0) {
+      } else if (review.state === 'COMMENTED') {
         push('commented', review.submittedAt, review.author, pr)
+      }
+    }
+    for (const comment of pr.comments) {
+      if (comment.author !== pr.author) {
+        push('commented', comment.createdAt, comment.author, pr)
       }
     }
   }
@@ -559,6 +704,12 @@ async function sync({ full }) {
   const now = new Date()
   const windowStartIso = new Date(now.getTime() - WINDOW_DAYS * DAY_MS).toISOString()
   const snapshot = full ? null : await readSnapshot()
+  for (const [login, name] of Object.entries(snapshot?.names ?? {})) {
+    people.names.set(login, name)
+  }
+  for (const login of snapshot?.bots ?? []) {
+    people.bots.add(login)
+  }
 
   let mode = 'incremental'
   let fetched = snapshot
@@ -575,11 +726,19 @@ async function sync({ full }) {
   }
   const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= windowStartIso)
 
-  await writeJson(SNAPSHOT_PATH, { org: ORG, syncedAt: now.toISOString(), pullRequests: inWindow })
+  await writeJson(SNAPSHOT_PATH, {
+    version: SNAPSHOT_VERSION,
+    org: ORG,
+    syncedAt: now.toISOString(),
+    names: Object.fromEntries(people.names),
+    bots: [...people.bots],
+    pullRequests: inWindow,
+  })
   await writeJson(STATS_PATH, {
     org: ORG,
     generatedAt: now.toISOString(),
     timezone: TIMEZONE,
+    people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
     today: computeToday(inWindow, now),
     periods: Object.fromEntries(PERIODS.map((period) => [period.key, computePeriod(inWindow, period, now)])),
     events: computeEvents(inWindow, now),

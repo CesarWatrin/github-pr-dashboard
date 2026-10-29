@@ -6,6 +6,15 @@ Dashboard web des pull requests et des reviews par contributeur d'une organisati
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
 
+Le dashboard montre :
+
+- l'activité du jour et de la période (PR ouvertes, mergées, délai médian de merge), avec le fil d'activité récente ;
+- les auteurs : PR de code, taux de merge, délai médian, taille médiane ;
+- les reviews : PR relues, commentaires, approbations, part des approbations sans commentaire, activité de review par
+  période, dépôts les plus relus, tableau par relecteur (taille des PR relues, principaux dépôts) et évolution par
+  personne ;
+- une section Méthode qui définit chaque indicateur.
+
 ## Fonctionnement
 
 - `scripts/sync.mjs` interroge l'API GraphQL de GitHub :
@@ -14,7 +23,9 @@ chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews ar
     secondes).
 - Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). Seules les stats agrégées sont écrites
   dans `site/data/stats.json`.
-- Les bots (dependabot, github-actions, copilot, coderabbit, it-hellocse) sont exclus des classements.
+- Les bots sont exclus partout : comptes de type bot (GitHub Apps, détectés via l'API) et comptes de service listés
+  dans `BOT_USERS`.
+- Les noms affichés sont ceux des profils GitHub (identifiant à défaut).
 - Les PR de release (`release/*`, release-please, `develop` → `master`) et d'intégration (`merge*`, back-merges,
   `project/*/main` → `develop`/`master`) sont comptées à part : les merges, taux et délais portent sur les PR de code.
 

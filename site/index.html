@@ -35,8 +35,8 @@
           class="search"
           type="search"
           name="contributor"
-          placeholder="Filtrer un contributeur"
-          aria-label="Filtrer un contributeur"
+          placeholder="Filtrer une personne ou un dépôt"
+          aria-label="Filtrer une personne ou un dépôt"
           data-search
         />
       </div>
@@ -83,10 +83,118 @@
           <div class="table-wrap" data-authors></div>
         </section>
 
-        <section class="card" aria-labelledby="reviewers-title">
-          <h2 id="reviewers-title">Reviewers</h2>
-          <p class="card-sub">Reviews soumises sur la période, sur les PR des autres. Merges effectués sur la période.</p>
-          <div class="table-wrap" data-reviewers></div>
+        <section class="section" aria-labelledby="reviews-title">
+          <div class="section-head">
+            <h2 id="reviews-title" class="section-title">Reviews</h2>
+            <p class="takeaway" data-takeaway></p>
+            <p class="card-sub" data-scope></p>
+          </div>
+
+          <div class="card">
+            <div class="tiles tiles-flush" data-review-tiles></div>
+          </div>
+
+          <div class="grid-2 grid-even">
+            <section class="card" aria-labelledby="review-activity-title">
+              <h3 id="review-activity-title" data-review-activity-title>Activité de review</h3>
+              <p class="card-sub">Commentaires et approbations déposés sur chaque période.</p>
+              <div class="legend" data-review-activity-legend></div>
+              <div class="chart" data-review-activity-chart></div>
+              <details class="chart-data">
+                <summary>Voir les données du graphique</summary>
+                <div class="table-wrap" data-review-activity-table></div>
+              </details>
+            </section>
+
+            <section class="card" aria-labelledby="repos-title">
+              <h3 id="repos-title">Dépôts les plus relus</h3>
+              <p class="card-sub" data-repos-sub></p>
+              <div class="bar-chart" data-repos-chart></div>
+            </section>
+          </div>
+
+          <section class="card" aria-labelledby="silent-title">
+            <h3 id="silent-title">Part des approbations sans commentaire</h3>
+            <p class="card-sub" data-silent-sub></p>
+            <div class="bar-chart" data-silent-chart></div>
+          </section>
+
+          <section class="card" aria-labelledby="reviewers-title">
+            <h3 id="reviewers-title">Par relecteur</h3>
+            <p class="card-sub">
+              Reviews et commentaires déposés sur la période, sur les PR de code des autres. Les moyennes et médianes
+              de fichiers et de lignes portent sur les PR relues par la personne.
+            </p>
+            <div class="table-wrap" data-reviewers></div>
+          </section>
+
+          <section class="card" aria-labelledby="evolution-title">
+            <div class="card-toolbar">
+              <h3 id="evolution-title">Évolution par personne</h3>
+              <select class="search" name="person" aria-label="Personne" data-person></select>
+            </div>
+            <p class="card-sub" data-person-summary></p>
+            <p class="card-sub">
+              Une PR compte dans la période où la personne est intervenue dessus pour la première fois ; commentaires,
+              approbations et demandes de changements comptent dans la période où ils ont été déposés.
+            </p>
+            <div class="minis">
+              <div class="mini"><h4>PR relues</h4><div class="chart chart-sm" data-mini="prs"></div></div>
+              <div class="mini"><h4>Commentaires</h4><div class="chart chart-sm" data-mini="comments"></div></div>
+              <div class="mini"><h4>Approbations</h4><div class="chart chart-sm" data-mini="approvals"></div></div>
+              <div class="mini">
+                <h4>Commentaires par PR relue</h4>
+                <div class="chart chart-sm" data-mini="ratio"></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="card" aria-labelledby="method-title">
+          <h2 id="method-title">Méthode</h2>
+          <dl class="definitions">
+            <dt>Périmètre</dt>
+            <dd>
+              Tous les dépôts de l’organisation, PR créées au cours des 12 derniers mois. La période choisie filtre les
+              PR créées (auteurs) et la date des actions (reviews, commentaires, merges).
+            </dd>
+            <dt>PR exclues des reviews</dt>
+            <dd>
+              PR de release (<code>release/*</code>, release-please, <code>develop</code> vers <code>master</code>) et de
+              synchronisation de branches (<code>merge*</code>, back-merges, <code>project/…/main</code> vers
+              <code>develop</code> ou <code>master</code>). Elles restent comptées dans les PR ouvertes.
+            </dd>
+            <dt>Bots</dt>
+            <dd>Comptes de type bot (GitHub Apps) et comptes de service, exclus partout.</dd>
+            <dt>PR relue</dt>
+            <dd>
+              La personne a déposé au moins une review (approbation, commentaire ou demande de changements) ou un
+              commentaire sur la PR. Les réponses de l’auteur sur sa propre PR ne comptent pas.
+            </dd>
+            <dt>Commentaires</dt>
+            <dd>
+              Commentaires dans le code, commentaires généraux sur la PR, et reviews « commentaire » sans commentaire
+              dans le code.
+            </dd>
+            <dt>Approbations</dt>
+            <dd>Reviews « Approve ». Une personne qui réapprouve une PR après de nouveaux commits compte plusieurs approbations.</dd>
+            <dt>Comment. / PR</dt>
+            <dd>Commentaires divisés par PR relues.</dd>
+            <dt>Approb. sans comment.</dt>
+            <dd>Parmi les PR approuvées par la personne, part de celles où elle n’a laissé aucun commentaire.</dd>
+            <dt>Fichiers et lignes</dt>
+            <dd>
+              Taille des PR relues : fichiers modifiés et lignes ajoutées plus supprimées. La médiane est moins sensible
+              aux quelques très grosses PR que la moyenne.
+            </dd>
+            <dt>Taux et délai de merge</dt>
+            <dd>
+              PR de code créées sur la période : mergées / (mergées + fermées sans merge), et délai médian entre la
+              création et le merge.
+            </dd>
+            <dt>Noms</dt>
+            <dd>Nom affiché sur le profil GitHub, ou identifiant quand le profil n’a pas de nom.</dd>
+          </dl>
         </section>
       </main>
 

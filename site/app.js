@@ -6,7 +6,9 @@ const BUMP_VISIBLE_MS = 6000
 const COUNTER_ANIMATION_MS = 900
 const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const DEFAULT_PERIOD = '365d'
+const TOP_REPOSITORIES = 12
 const SVG_NS = 'http://www.w3.org/2000/svg'
+const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 
 const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
@@ -20,6 +22,7 @@ const EVENT_VERBS = {
 }
 
 const numberFormat = new Intl.NumberFormat('fr-FR')
+const decimalFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
 const compactFormat = new Intl.NumberFormat('fr-FR', { notation: 'compact' })
 const relativeFormat = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' })
 const monthShortFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' })
@@ -29,12 +32,15 @@ const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: '
 const dateTimeFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
 
-const formatNumber = (value) => (value === null || value === undefined ? '–' : numberFormat.format(value))
-const formatPercent = (value) => (value === null ? '–' : `${value} %`)
+const isMissing = (value) => value === null || value === undefined
+const formatNumber = (value) => (isMissing(value) ? '–' : numberFormat.format(value))
+const formatDecimal = (value) => (isMissing(value) ? '–' : decimalFormat.format(value))
+const formatPercent = (value) => (isMissing(value) ? '–' : `${value} %`)
+const formatShare = (value) => (isMissing(value) ? '–' : `${Math.round(value * 100)} %`)
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1)
 
 function formatDuration(hours) {
-  if (hours === null || hours === undefined) {
+  if (isMissing(hours)) {
     return '–'
   }
   if (hours < 1) {
@@ -72,14 +78,30 @@ const TODAY_TILES = [
 const TOTAL_TILES = [
   { key: 'opened', label: 'PR ouvertes' },
   { key: 'merged', label: 'PR de code mergées' },
-  { key: 'reviewed', label: 'PR reviewées' },
   { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
   { key: 'contributors', label: 'Contributeurs' },
   { key: 'bots', label: 'PR de bots (exclues)' },
 ]
 
+const REVIEW_TILES = [
+  { key: 'reviewed', label: 'PR relues', sub: () => 'au moins une review ou un commentaire' },
+  { key: 'reviewers', label: 'Relecteurs actifs', sub: () => 'personnes ayant relu au moins une PR' },
+  { key: 'comments', label: 'Commentaires', sub: () => 'dans le code et sur la PR' },
+  {
+    key: 'approvals',
+    label: 'Approbations',
+    sub: (totals) => `${formatNumber(totals.changesRequested)} demandes de changements`,
+  },
+  {
+    key: 'silentApprovalRate',
+    label: 'Approbations sans commentaire',
+    format: formatShare,
+    sub: () => 'des PR approuvées, sans aucun commentaire du relecteur',
+  },
+]
+
 const AUTHOR_COLUMNS = [
-  { key: 'login', label: 'Contributeur', kind: 'person' },
+  { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
   { key: 'opened', label: 'PR ouvertes' },
   { key: 'code', label: 'PR de code', kind: 'bar' },
   {
@@ -108,12 +130,59 @@ const AUTHOR_COLUMNS = [
 ]
 
 const REVIEWER_COLUMNS = [
-  { key: 'login', label: 'Reviewer', kind: 'person' },
-  { key: 'reviewed', label: 'PR reviewées', kind: 'bar' },
+  { key: 'login', label: 'Relecteur', kind: 'person', value: (row) => displayName(row.login) },
+  { key: 'prs', label: 'PR relues', kind: 'bar' },
+  { key: 'comments', label: 'Commentaires' },
   { key: 'approvals', label: 'Approbations' },
-  { key: 'changesRequested', label: 'Changes requested' },
-  { key: 'comments', label: 'Commentaires', hint: 'commentaires laissés dans les reviews' },
+  { key: 'changesRequested', label: 'Changements demandés' },
+  {
+    key: 'commentsPerPr',
+    label: 'Comment. / PR',
+    hint: 'commentaires divisés par PR relues',
+    format: (row) => formatDecimal(row.commentsPerPr),
+  },
+  {
+    key: 'silentApprovalRate',
+    label: 'Approb. sans comment.',
+    hint: 'part des PR approuvées sans aucun commentaire de la personne',
+    format: (row) => formatShare(row.silentApprovalRate),
+  },
+  { key: 'repos', label: 'Dépôts' },
+  { key: 'avgFiles', label: 'Fichiers moy.', hint: 'fichiers modifiés par PR relue', format: (row) => formatDecimal(row.avgFiles) },
+  { key: 'medianFiles', label: 'Fichiers méd.', format: (row) => formatDecimal(row.medianFiles) },
+  { key: 'avgLines', label: 'Lignes moy.', hint: 'lignes ajoutées + supprimées par PR relue' },
+  { key: 'medianLines', label: 'Lignes méd.' },
   { key: 'merges', label: 'Merges effectués' },
+  {
+    key: 'topRepos',
+    label: 'Principaux dépôts (PR relues)',
+    kind: 'text',
+    value: (row) => row.topRepos[0]?.[0] ?? '',
+    format: (row) => row.topRepos.map(([repo, count]) => `${repo} (${count})`).join(', ') || '–',
+  },
+]
+
+const MINI_CHARTS = [
+  { key: 'prs', title: 'PR relues', color: 'var(--series-1)', value: (point) => point.prs },
+  { key: 'comments', title: 'Commentaires', color: 'var(--series-1)', value: (point) => point.comments },
+  {
+    key: 'approvals',
+    title: 'Approbations',
+    color: 'var(--series-2)',
+    value: (point) => point.approvals,
+    extraRows: (point) => [{ label: 'changements demandés', value: formatNumber(point.changes) }],
+  },
+  {
+    key: 'ratio',
+    title: 'Commentaires par PR relue',
+    color: 'var(--series-1)',
+    decimals: true,
+    value: (point) => (point.prs ? point.comments / point.prs : null),
+    extraRows: (point) => [
+      { label: 'PR relues', value: formatNumber(point.prs) },
+      { label: 'commentaires', value: formatNumber(point.comments) },
+    ],
+  },
 ]
 
 const $ = (selector) => document.querySelector(selector)
@@ -122,9 +191,10 @@ const state = {
   stats: null,
   period: readStoredPeriod(),
   query: '',
+  person: null,
   sort: {
     authors: { key: 'code', direction: -1 },
-    reviewers: { key: 'reviewed', direction: -1 },
+    reviewers: { key: 'prs', direction: -1 },
   },
   previousRows: { authors: new Map(), reviewers: new Map() },
   seenEvents: null,
@@ -165,7 +235,8 @@ function svg(tag, attributes = {}) {
 }
 
 const currentPeriod = () => state.stats.periods[state.period]
-const matchesQuery = (...logins) => !state.query || logins.some((login) => login.toLowerCase().includes(state.query))
+const displayName = (login) => state.stats?.people?.[login] ?? login
+const matchesQuery = (...texts) => !state.query || texts.some((text) => text.toLowerCase().includes(state.query))
 const githubUrl = (path) => `https://github.com/${path}`
 const avatarUrl = (login) => githubUrl(`${encodeURIComponent(login)}.png?size=48`)
 
@@ -173,19 +244,40 @@ function avatar(login) {
   return el('img', { className: 'avatar', src: avatarUrl(login), alt: '', loading: 'lazy', width: 24, height: 24 })
 }
 
+const measureContext = document.createElement('canvas').getContext('2d')
+
+function measureText(text) {
+  measureContext.font = CHART_FONT
+
+  return measureContext.measureText(text).width
+}
+
+function truncateText(text, maxWidth) {
+  if (measureText(text) <= maxWidth) {
+    return text
+  }
+  let truncated = text
+  while (truncated.length > 1 && measureText(`${truncated}…`) > maxWidth) {
+    truncated = truncated.slice(0, -1)
+  }
+
+  return `${truncated}…`
+}
+
 // Stat tiles
 
 function ensureTiles(container, definitions) {
   if (container.childElementCount === 0) {
     for (const definition of definitions) {
-      const value = el('span', { className: 'tile-value' })
-      const bump = el('span', { className: 'tile-bump' })
       const tile = el(
         'div',
         { className: 'tile' },
         el('span', { className: 'tile-label', textContent: definition.label }),
-        el('span', { className: 'tile-value-row' }, value, bump),
+        el('span', { className: 'tile-value-row' }, el('span', { className: 'tile-value' }), el('span', { className: 'tile-bump' })),
       )
+      if (definition.sub) {
+        tile.append(el('span', { className: 'tile-sub' }))
+      }
       tile.dataset.key = definition.key
       container.append(tile)
     }
@@ -210,6 +302,9 @@ function renderTiles(container, definitions, values, animate) {
       showBump(tile.querySelector('.tile-bump'), value - previous)
     } else {
       valueNode.textContent = format(value)
+    }
+    if (definition.sub) {
+      tile.querySelector('.tile-sub').textContent = definition.sub(values)
     }
   }
 }
@@ -257,14 +352,57 @@ function renderTotals(animate) {
   renderTiles($('[data-totals]'), TOTAL_TILES, currentPeriod().totals, animate)
 }
 
-// Chart
+// Tooltip
 
-function niceStep(rawStep) {
+function showTooltip({ title, rows, note }, x, y) {
+  const tooltip = $('[data-tooltip]')
+  tooltip.replaceChildren(el('p', { className: 'tooltip-title', textContent: title }))
+  for (const row of rows) {
+    const key = el('span', { className: 'line-key' })
+    if (row.color) {
+      key.style.background = row.color
+    } else {
+      key.classList.add('is-empty')
+    }
+    tooltip.append(
+      el('div', { className: 'tooltip-row' }, key, el('strong', { textContent: row.value }), el('span', { textContent: row.label })),
+    )
+  }
+  if (note) {
+    tooltip.append(el('p', { className: 'tooltip-note', textContent: note }))
+  }
+  tooltip.hidden = false
+
+  const box = tooltip.getBoundingClientRect()
+  const left = Math.min(Math.max(8, x + 14), window.innerWidth - box.width - 8)
+  const top = y - box.height - 14 < 8 ? y + 18 : y - box.height - 14
+  tooltip.style.left = `${left}px`
+  tooltip.style.top = `${top}px`
+}
+
+function hideTooltip() {
+  $('[data-tooltip]').hidden = true
+}
+
+// Hover and keyboard focus show the same tooltip.
+function bindTooltip(target, onActivate, onDeactivate) {
+  target.addEventListener('pointermove', (event) => onActivate(event.clientX, event.clientY))
+  target.addEventListener('pointerleave', onDeactivate)
+  target.addEventListener('focus', () => {
+    const box = target.getBoundingClientRect()
+    onActivate(box.left + box.width / 2, box.top + box.height / 2)
+  })
+  target.addEventListener('blur', onDeactivate)
+}
+
+// Charts
+
+function niceStep(rawStep, integer) {
   const power = 10 ** Math.floor(Math.log10(rawStep))
   const fraction = rawStep / power
-  const nice = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10
+  const nice = (fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10) * power
 
-  return Math.max(1, nice * power)
+  return integer ? Math.max(1, nice) : nice
 }
 
 // Square at the baseline, 4px rounded at the data end.
@@ -278,6 +416,20 @@ function columnPath(x, y, width, height) {
     `H${x + width - radius}`,
     `A${radius},${radius} 0 0 1 ${x + width},${y + radius}`,
     `V${y + height}`,
+    'Z',
+  ].join(' ')
+}
+
+function barPath(x, y, width, height) {
+  const radius = Math.min(4, height / 2, width)
+
+  return [
+    `M${x},${y}`,
+    `H${x + width - radius}`,
+    `A${radius},${radius} 0 0 1 ${x + width},${y + radius}`,
+    `V${y + height - radius}`,
+    `A${radius},${radius} 0 0 1 ${x + width - radius},${y + height}`,
+    `H${x}`,
     'Z',
   ].join(' ')
 }
@@ -306,72 +458,81 @@ function bucketTitle(key, bucket) {
   return capitalize(dayLongFormat.format(date))
 }
 
-function renderChart() {
-  const container = $('[data-chart]')
+// Columns over time buckets: one series, or several grouped side by side.
+function columnChart(container, { points, bucket, series, ariaLabel, decimals = false, extraRows = () => [] }) {
   const width = container.clientWidth
-  if (!state.stats || width === 0) {
+  if (width === 0) {
     return
   }
-  const { series, bucket } = currentPeriod()
-  $('[data-chart-title]').textContent = `PR ouvertes ${BUCKET_TITLES[bucket]}`
-
   const height = container.clientHeight
-  const margin = { top: 24, right: 4, bottom: 28, left: 40 }
+  const format = decimals ? formatDecimal : formatNumber
+  const margin = { top: 22, right: 4, bottom: 26, left: 8 }
+  const values = points.flatMap((point) => series.map((item) => item.value(point) ?? 0))
+  const maxValue = Math.max(0, ...values)
+  const step = niceStep(Math.max(decimals ? 0.1 : 1, maxValue) / 4, !decimals)
+  const top = Math.max(step, Math.ceil(maxValue / step - 1e-9) * step)
+  const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, index) => index * step)
+  margin.left = Math.max(...ticks.map((tick) => measureText(compactFormat.format(tick)))) + 10
+
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
   const baselineY = margin.top + innerHeight
-  const maxValue = Math.max(0, ...series.map((point) => point.opened))
-  const step = niceStep(Math.max(1, maxValue) / 4)
-  const top = Math.max(step, Math.ceil(maxValue / step) * step)
   const yOf = (value) => baselineY - (value / top) * innerHeight
-  const slot = innerWidth / series.length
-  const barWidth = Math.min(24, Math.max(2, slot * 0.62))
-  const labelEvery = Math.max(1, Math.ceil(series.length / Math.max(1, Math.floor(innerWidth / 64))))
-  const maxIndex = series.findIndex((point) => point.opened === maxValue)
-  const labelled = new Set([maxIndex, series.length - 1])
+  const slot = innerWidth / points.length
+  const groupWidth = Math.min(series.length * 24 + (series.length - 1) * 2, slot * 0.7)
+  const barWidth = Math.max(1, (groupWidth - (series.length - 1) * 2) / series.length)
+  const labelEvery = Math.max(1, Math.ceil(points.length / Math.max(1, Math.floor(innerWidth / 64))))
 
-  const root = svg('svg', {
-    width,
-    height,
-    viewBox: `0 0 ${width} ${height}`,
-    role: 'img',
-    'aria-label': `PR ouvertes ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
-  })
-
-  for (let value = step; value <= top; value += step) {
-    root.append(svg('line', { class: 'gridline', x1: margin.left, x2: width - margin.right, y1: yOf(value), y2: yOf(value) }))
-  }
-  for (let value = 0; value <= top; value += step) {
-    const tick = svg('text', { class: 'tick', x: margin.left - 8, y: yOf(value), 'text-anchor': 'end', 'dominant-baseline': 'middle' })
-    tick.textContent = compactFormat.format(value)
-    root.append(tick)
+  const root = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel })
+  for (const tick of ticks) {
+    if (tick > 0) {
+      root.append(svg('line', { class: 'gridline', x1: margin.left, x2: width - margin.right, y1: yOf(tick), y2: yOf(tick) }))
+    }
+    const label = svg('text', { class: 'tick', x: margin.left - 8, y: yOf(tick), 'text-anchor': 'end', 'dominant-baseline': 'middle' })
+    label.textContent = compactFormat.format(tick)
+    root.append(label)
   }
 
-  const bars = []
-  series.forEach((point, index) => {
-    const center = margin.left + slot * index + slot / 2
-    const barHeight = (point.opened / top) * innerHeight
-    const bar = svg('path', {
-      class: point.partial ? 'bar is-partial' : 'bar',
-      d: barHeight > 0 ? columnPath(center - barWidth / 2, baselineY - barHeight, barWidth, barHeight) : '',
+  // A single series labels its peak and its latest value; grouped series rely on the legend and tooltip.
+  const labelled = new Set()
+  if (series.length === 1) {
+    const singleValues = points.map((point) => series[0].value(point) ?? 0)
+    labelled.add(singleValues.indexOf(Math.max(...singleValues)))
+    labelled.add(points.length - 1)
+  }
+
+  const groups = points.map((point, index) => {
+    const group = svg('g', { class: point.partial ? 'bar-group is-partial' : 'bar-group' })
+    const left = margin.left + slot * index + (slot - groupWidth) / 2
+    series.forEach((item, seriesIndex) => {
+      const value = item.value(point) ?? 0
+      const barHeight = (value / top) * innerHeight
+      if (barHeight > 0) {
+        const x = left + seriesIndex * (barWidth + 2)
+        group.append(svg('path', { class: 'bar', style: `fill: ${item.color}`, d: columnPath(x, baselineY - barHeight, barWidth, barHeight) }))
+      }
     })
-    bars.push(bar)
-    root.append(bar)
+    root.append(group)
 
-    if (labelled.has(index) && point.opened > 0) {
-      const valueLabel = svg('text', { class: 'value-label', x: center, y: yOf(point.opened) - 6, 'text-anchor': 'middle' })
-      valueLabel.textContent = formatNumber(point.opened)
+    const center = margin.left + slot * index + slot / 2
+    const value = series[0].value(point)
+    if (labelled.has(index) && value > 0) {
+      const valueLabel = svg('text', { class: 'value-label', x: center, y: yOf(value) - 6, 'text-anchor': 'middle' })
+      valueLabel.textContent = format(value)
       root.append(valueLabel)
     }
-    if ((series.length - 1 - index) % labelEvery === 0) {
+    if ((points.length - 1 - index) % labelEvery === 0) {
       const axis = svg('text', { class: 'axis-label', x: center, y: baselineY + 18, 'text-anchor': 'middle' })
       axis.textContent = axisLabel(point.key, bucket)
       root.append(axis)
     }
+
+    return group
   })
   root.append(svg('line', { class: 'baseline', x1: margin.left, x2: width - margin.right, y1: baselineY, y2: baselineY }))
 
-  series.forEach((point, index) => {
+  points.forEach((point, index) => {
+    const title = bucketTitle(point.key, bucket)
     const hit = svg('rect', {
       class: 'hit',
       x: margin.left + slot * index,
@@ -379,81 +540,276 @@ function renderChart() {
       width: slot,
       height: innerHeight,
       tabindex: 0,
-      'aria-label': `${bucketTitle(point.key, bucket)} : ${point.opened} PR ouvertes`,
+      'aria-label': `${title} : ${series.map((item) => `${format(item.value(point))} ${item.label}`).join(', ')}`,
     })
-    const activate = (x, y) => {
-      bars[index].classList.add('is-active')
-      showChartTooltip(point, bucket, x, y)
-    }
-    const deactivate = () => {
-      bars[index].classList.remove('is-active')
-      hideTooltip()
-    }
-    hit.addEventListener('pointermove', (event) => activate(event.clientX, event.clientY))
-    hit.addEventListener('pointerleave', deactivate)
-    hit.addEventListener('focus', () => {
-      const box = hit.getBoundingClientRect()
-      activate(box.left + box.width / 2, box.top + box.height / 2)
-    })
-    hit.addEventListener('blur', deactivate)
+    bindTooltip(
+      hit,
+      (x, y) => {
+        groups[index].classList.add('is-active')
+        showTooltip(
+          {
+            title,
+            rows: [
+              ...series.map((item) => ({ color: item.color, value: format(item.value(point)), label: item.label })),
+              ...extraRows(point),
+            ],
+            note: point.partial ? 'Période incomplète' : null,
+          },
+          x,
+          y,
+        )
+      },
+      () => {
+        groups[index].classList.remove('is-active')
+        hideTooltip()
+      },
+    )
     root.append(hit)
   })
 
   container.replaceChildren(root)
 }
 
-function tooltipRow(value, label, keyed) {
-  return el(
-    'div',
-    { className: 'tooltip-row' },
-    el('span', { className: keyed ? 'line-key' : 'line-key is-empty' }),
-    el('strong', { textContent: formatNumber(value) }),
-    el('span', { textContent: label }),
-  )
-}
-
-function showChartTooltip(point, bucket, x, y) {
-  const tooltip = $('[data-tooltip]')
-  tooltip.replaceChildren(
-    el('p', { className: 'tooltip-title', textContent: bucketTitle(point.key, bucket) }),
-    tooltipRow(point.opened, 'PR ouvertes', true),
-    tooltipRow(point.merged, 'PR de code mergées', false),
-    tooltipRow(point.reviews, 'reviews soumises', false),
-  )
-  if (point.partial) {
-    tooltip.append(el('p', { className: 'tooltip-note', textContent: 'Période incomplète' }))
+// Horizontal bars, one row per item, value at the tip.
+function barChart(container, { rows, label, value, format, max, color, ariaLabel, tooltip }) {
+  const width = container.clientWidth
+  if (width === 0) {
+    return
   }
-  tooltip.hidden = false
+  if (rows.length === 0) {
+    container.replaceChildren(el('p', { className: 'chart-empty', textContent: 'Aucune donnée sur la période' }))
 
-  const box = tooltip.getBoundingClientRect()
-  const left = Math.min(Math.max(8, x + 14), window.innerWidth - box.width - 8)
-  const top = y - box.height - 14 < 8 ? y + 18 : y - box.height - 14
-  tooltip.style.left = `${left}px`
-  tooltip.style.top = `${top}px`
+    return
+  }
+  const rowHeight = 28
+  const height = rows.length * rowHeight
+  const labelMax = width * 0.4
+  const labelWidth = Math.min(labelMax, Math.max(...rows.map((row) => measureText(label(row)))))
+  const valueWidth = Math.max(...rows.map((row) => measureText(format(value(row))))) + 8
+  const start = labelWidth + 10
+  const domainMax = (max ?? Math.max(...rows.map(value))) || 1
+  const scale = (amount) => (Math.max(0, amount) / domainMax) * Math.max(20, width - start - valueWidth)
+
+  const root = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel })
+  rows.forEach((row, index) => {
+    const y = index * rowHeight
+    const barWidth = Math.max(2, scale(value(row)))
+    const group = svg('g', { class: 'bar-group' })
+    const name = svg('text', { class: 'axis-label', x: labelWidth, y: y + rowHeight / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
+    name.textContent = truncateText(label(row), labelMax)
+    const amount = svg('text', { class: 'value-label', x: start + barWidth + 6, y: y + rowHeight / 2, 'dominant-baseline': 'middle' })
+    amount.textContent = format(value(row))
+    group.append(name, svg('path', { class: 'bar', style: `fill: ${color}`, d: barPath(start, y + 7, barWidth, rowHeight - 14) }), amount)
+
+    const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': `${label(row)} : ${format(value(row))}` })
+    bindTooltip(
+      hit,
+      (x, pointerY) => {
+        group.classList.add('is-active')
+        showTooltip(tooltip(row), x, pointerY)
+      },
+      () => {
+        group.classList.remove('is-active')
+        hideTooltip()
+      },
+    )
+    root.append(group, hit)
+  })
+
+  container.replaceChildren(root)
 }
 
-function hideTooltip() {
-  $('[data-tooltip]').hidden = true
-}
-
-function renderChartTable() {
-  const { series, bucket } = currentPeriod()
-  const head = el(
-    'tr',
-    {},
-    ...['Période', 'PR ouvertes', 'PR de code mergées', 'Reviews'].map((label) => el('th', { scope: 'col', textContent: label })),
-  )
-  const rows = series.toReversed().map((point) =>
+function dataTable(container, headers, rows) {
+  container.replaceChildren(
     el(
-      'tr',
+      'table',
       {},
-      el('td', { textContent: bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : '') }),
-      el('td', { textContent: formatNumber(point.opened) }),
-      el('td', { textContent: formatNumber(point.merged) }),
-      el('td', { textContent: formatNumber(point.reviews) }),
+      el('thead', {}, el('tr', {}, ...headers.map((label) => el('th', { scope: 'col', textContent: label })))),
+      el('tbody', {}, ...rows.map((cells) => el('tr', {}, ...cells.map((text) => el('td', { textContent: text }))))),
     ),
   )
-  $('[data-chart-table]').replaceChildren(el('table', {}, el('thead', {}, head), el('tbody', {}, ...rows)))
+}
+
+function renderOpenedChart() {
+  const { series, bucket } = currentPeriod()
+  $('[data-chart-title]').textContent = `PR ouvertes ${BUCKET_TITLES[bucket]}`
+  columnChart($('[data-chart]'), {
+    points: series,
+    bucket,
+    series: [{ label: 'PR ouvertes', color: 'var(--series-1)', value: (point) => point.opened }],
+    ariaLabel: `PR ouvertes ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
+    extraRows: (point) => [
+      { label: 'PR de code mergées', value: formatNumber(point.merged) },
+      { label: 'reviews soumises', value: formatNumber(point.reviews) },
+    ],
+  })
+}
+
+const REVIEW_ACTIVITY_SERIES = [
+  { label: 'commentaires', legend: 'Commentaires', color: 'var(--series-1)', value: (point) => point.comments },
+  { label: 'approbations', legend: 'Approbations', color: 'var(--series-2)', value: (point) => point.approvals },
+]
+
+function renderReviewActivityChart() {
+  const { series, bucket } = currentPeriod()
+  $('[data-review-activity-title]').textContent = `Activité de review ${BUCKET_TITLES[bucket]}`
+  columnChart($('[data-review-activity-chart]'), {
+    points: series,
+    bucket,
+    series: REVIEW_ACTIVITY_SERIES,
+    ariaLabel: `Commentaires et approbations ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
+    extraRows: (point) => [{ label: 'reviews soumises', value: formatNumber(point.reviews) }],
+  })
+}
+
+function renderRepositoriesChart() {
+  const repositories = currentPeriod().repositories
+  $('[data-repos-sub]').textContent = `Nombre de PR relues par dépôt, ${Math.min(TOP_REPOSITORIES, repositories.length)} premiers sur ${formatNumber(repositories.length)} dépôts avec au moins une review.`
+  barChart($('[data-repos-chart]'), {
+    rows: repositories.slice(0, TOP_REPOSITORIES),
+    label: (row) => row.repo,
+    value: (row) => row.prs,
+    format: formatNumber,
+    color: 'var(--series-1)',
+    ariaLabel: 'PR relues par dépôt',
+    tooltip: (row) => ({
+      title: row.repo,
+      rows: [
+        { label: 'PR relues', value: formatNumber(row.prs) },
+        { label: 'commentaires', value: formatNumber(row.comments) },
+        { label: 'approbations', value: formatNumber(row.approvals) },
+      ],
+    }),
+  })
+}
+
+function renderSilentApprovalsChart() {
+  const { reviewers, minApprovedPrs } = currentPeriod()
+  $('[data-silent-sub]').textContent = `Pour chaque relecteur ayant approuvé au moins ${minApprovedPrs} PR sur la période : part des PR approuvées sur lesquelles la personne n’a laissé aucun commentaire. Une part élevée peut signaler des validations rapides.`
+  barChart($('[data-silent-chart]'), {
+    rows: reviewers
+      .filter((row) => row.approvedPrs >= minApprovedPrs && row.silentApprovalRate !== null)
+      .sort((a, b) => b.silentApprovalRate - a.silentApprovalRate),
+    label: (row) => displayName(row.login),
+    value: (row) => row.silentApprovalRate,
+    format: formatShare,
+    max: 1,
+    color: 'var(--series-1)',
+    ariaLabel: 'Part des approbations sans commentaire par relecteur',
+    tooltip: (row) => ({
+      title: displayName(row.login),
+      rows: [
+        { label: `PR approuvées sans commentaire sur ${formatNumber(row.approvedPrs)}`, value: formatNumber(row.silentApprovedPrs) },
+        { label: 'commentaires par PR relue', value: formatDecimal(row.commentsPerPr) },
+      ],
+    }),
+  })
+}
+
+function personPoints(login) {
+  const { series, reviewerSeries } = currentPeriod()
+  const values = reviewerSeries[login] ?? []
+
+  return series.map((point, index) => {
+    const [prs, comments, approvals, changes] = values[index] ?? [0, 0, 0, 0]
+
+    return { key: point.key, partial: point.partial, prs, comments, approvals, changes }
+  })
+}
+
+function renderMiniCharts() {
+  const { bucket } = currentPeriod()
+  const points = personPoints(state.person)
+  for (const mini of MINI_CHARTS) {
+    columnChart($(`[data-mini="${mini.key}"]`), {
+      points,
+      bucket,
+      decimals: mini.decimals,
+      series: [{ label: mini.title.toLowerCase(), color: mini.color, value: mini.value }],
+      ariaLabel: `${mini.title} ${BUCKET_TITLES[bucket]}, ${displayName(state.person)}`,
+      extraRows: mini.extraRows,
+    })
+  }
+}
+
+function renderCharts() {
+  if (!state.stats) {
+    return
+  }
+  renderOpenedChart()
+  renderReviewActivityChart()
+  renderRepositoriesChart()
+  renderSilentApprovalsChart()
+  if (state.person) {
+    renderMiniCharts()
+  }
+}
+
+function renderChartTables() {
+  const { series, bucket } = currentPeriod()
+  const newestFirst = series.toReversed()
+  const period = (point) => bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : '')
+  dataTable(
+    $('[data-chart-table]'),
+    ['Période', 'PR ouvertes', 'PR de code mergées', 'Reviews'],
+    newestFirst.map((point) => [period(point), formatNumber(point.opened), formatNumber(point.merged), formatNumber(point.reviews)]),
+  )
+  dataTable(
+    $('[data-review-activity-table]'),
+    ['Période', 'Commentaires', 'Approbations', 'Reviews'],
+    newestFirst.map((point) => [period(point), formatNumber(point.comments), formatNumber(point.approvals), formatNumber(point.reviews)]),
+  )
+}
+
+function renderLegend() {
+  $('[data-review-activity-legend]').replaceChildren(
+    ...REVIEW_ACTIVITY_SERIES.map((item) => {
+      const swatch = el('span', { className: 'swatch' })
+      swatch.style.background = item.color
+
+      return el('span', {}, swatch, document.createTextNode(item.legend))
+    }),
+  )
+}
+
+// Review summary
+
+function renderReviewSummary(animate) {
+  const { totals, reviewers } = currentPeriod()
+  const top = reviewers.filter((row) => row.prs > 0).sort((a, b) => b.prs - a.prs)[0]
+  const takeaway = $('[data-takeaway]')
+  if (top) {
+    takeaway.replaceChildren(
+      el('strong', { textContent: displayName(top.login) }),
+      document.createTextNode(` est la personne qui a relu le plus de PR (${formatNumber(top.prs)}). Sur l’ensemble de l’équipe, `),
+      el('strong', { textContent: formatShare(totals.silentApprovalRate) }),
+      document.createTextNode(' des PR approuvées l’ont été sans aucun commentaire du relecteur.'),
+    )
+  } else {
+    takeaway.textContent = 'Aucune review sur la période.'
+  }
+  $('[data-scope]').textContent =
+    `${formatNumber(totals.opened)} PR ouvertes par des personnes sur la période, dont ${formatNumber(totals.code)} PR de code. ` +
+    `Les ${formatNumber(totals.release)} PR de release et ${formatNumber(totals.integration)} PR de synchronisation de branches ` +
+    `sont exclues des stats de review, comme les ${formatNumber(totals.bots)} PR de bots.`
+  renderTiles($('[data-review-tiles]'), REVIEW_TILES, totals, animate)
+}
+
+function renderPersonPicker() {
+  const reviewers = currentPeriod()
+    .reviewers.filter((row) => row.prs > 0)
+    .sort((a, b) => b.prs - a.prs)
+  if (!reviewers.some((row) => row.login === state.person)) {
+    state.person = reviewers[0]?.login ?? null
+  }
+  const picker = $('[data-person]')
+  picker.replaceChildren(...reviewers.map((row) => new Option(displayName(row.login), row.login)))
+  picker.value = state.person ?? ''
+
+  const row = reviewers.find((reviewer) => reviewer.login === state.person)
+  $('[data-person-summary]').textContent = row
+    ? `Sur la période : ${formatNumber(row.prs)} PR relues, ${formatNumber(row.comments)} commentaires, ${formatNumber(row.approvals)} approbations, ${formatNumber(row.changesRequested)} demandes de changements.`
+    : 'Aucun relecteur sur la période.'
 }
 
 // Tables
@@ -464,22 +820,22 @@ function compareValues(a, b) {
   if (a === b) {
     return 0
   }
-  if (a === null || a === undefined) {
+  if (isMissing(a)) {
     return 1
   }
-  if (b === null || b === undefined) {
+  if (isMissing(b)) {
     return -1
   }
 
-  return typeof a === 'string' ? a.localeCompare(b) : a - b
+  return typeof a === 'string' ? a.localeCompare(b, 'fr') : a - b
 }
 
 function personLink(login) {
   return el(
     'a',
-    { href: githubUrl(encodeURIComponent(login)), target: '_blank', rel: 'noopener' },
+    { href: githubUrl(encodeURIComponent(login)), target: '_blank', rel: 'noopener', title: login },
     avatar(login),
-    document.createTextNode(login),
+    document.createTextNode(displayName(login)),
   )
 }
 
@@ -498,18 +854,19 @@ function renderCell(column, row, barMax) {
       el('span', { className: 'bar-cell' }, el('span', { textContent: text }), el('span', { className: 'inline-bar' }, fill)),
     )
   }
+  const classes = [column.kind === 'text' ? 'text' : '', text === '–' ? 'muted' : ''].filter(Boolean)
 
-  return el('td', { className: text === '–' ? 'muted' : '', textContent: text })
+  return el('td', { className: classes.join(' '), textContent: text })
 }
 
-function renderTable(name, columns, rows, highlight) {
+function renderTable(name, columns, rows, searchTexts, highlight) {
   const sort = state.sort[name]
   const sortColumn = columns.find((column) => column.key === sort.key)
   const barColumn = columns.find((column) => column.kind === 'bar')
   const barMax = Math.max(1, ...rows.map((row) => row[barColumn.key]))
   const previous = state.previousRows[name]
   const visible = rows
-    .filter((row) => matchesQuery(row.login))
+    .filter((row) => matchesQuery(...searchTexts(row)))
     .sort((a, b) => {
       const order = compareValues(columnValue(sortColumn, a), columnValue(sortColumn, b))
 
@@ -525,13 +882,11 @@ function renderTable(name, columns, rows, highlight) {
       el('span', { className: 'sort-icon', textContent: active ? (sort.direction < 0 ? '↓' : '↑') : '' }),
     )
     button.addEventListener('click', () => {
-      state.sort[name] = {
-        key: column.key,
-        direction: active ? -sort.direction : column.kind === 'person' ? 1 : -1,
-      }
+      const textual = column.kind === 'person' || column.kind === 'text'
+      state.sort[name] = { key: column.key, direction: active ? -sort.direction : textual ? 1 : -1 }
       renderTables(false)
     })
-    const cell = el('th', { scope: 'col' }, button)
+    const cell = el('th', { scope: 'col', className: column.kind === 'text' ? 'text' : '' }, button)
     if (active) {
       cell.setAttribute('aria-sort', sort.direction < 0 ? 'descending' : 'ascending')
     }
@@ -559,8 +914,14 @@ function renderTable(name, columns, rows, highlight) {
 
 function renderTables(highlight) {
   const period = currentPeriod()
-  renderTable('authors', AUTHOR_COLUMNS, period.authors, highlight)
-  renderTable('reviewers', REVIEWER_COLUMNS, period.reviewers, highlight)
+  renderTable('authors', AUTHOR_COLUMNS, period.authors, (row) => [row.login, displayName(row.login)], highlight)
+  renderTable(
+    'reviewers',
+    REVIEWER_COLUMNS,
+    period.reviewers,
+    (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
+    highlight,
+  )
 }
 
 // Activity feed
@@ -571,7 +932,9 @@ function renderFeed(highlight) {
   const { events, org } = state.stats
   const previous = state.seenEvents
   const items = events
-    .filter((event) => matchesQuery(event.actor, event.author))
+    .filter((event) =>
+      matchesQuery(event.actor, event.author, displayName(event.actor), displayName(event.author), event.repo),
+    )
     .map((event) => {
       const link = el('a', {
         href: githubUrl(`${org}/${encodeURIComponent(event.repo)}/pull/${event.number}`),
@@ -582,12 +945,12 @@ function renderFeed(highlight) {
       const text = el(
         'p',
         { className: 'feed-text' },
-        el('strong', { textContent: event.actor }),
+        el('strong', { textContent: displayName(event.actor) }),
         document.createTextNode(` ${EVENT_VERBS[event.type]} `),
         link,
       )
       if (event.type !== 'opened' && event.author !== event.actor) {
-        text.append(document.createTextNode(` de ${event.author}`))
+        text.append(document.createTextNode(` de ${displayName(event.author)}`))
       }
       const time = el('time', { className: 'feed-time', dateTime: event.at, title: dateTimeFormat.format(new Date(event.at)) })
       time.dataset.relative = event.at
@@ -653,8 +1016,10 @@ function render(animate) {
   renderPeriodSelector()
   renderToday(animate)
   renderTotals(animate)
-  renderChart()
-  renderChartTable()
+  renderReviewSummary(animate)
+  renderPersonPicker()
+  renderCharts()
+  renderChartTables()
   renderTables(animate)
   renderFeed(animate)
 }
@@ -706,11 +1071,22 @@ $('[data-search]').addEventListener('input', (event) => {
   }
 })
 
+$('[data-person]').addEventListener('change', (event) => {
+  state.person = event.target.value
+  renderPersonPicker()
+  renderMiniCharts()
+})
+
 let resizeFrame = 0
-new ResizeObserver(() => {
+let observedWidth = 0
+new ResizeObserver(([entry]) => {
+  if (entry.contentRect.width === observedWidth) {
+    return
+  }
+  observedWidth = entry.contentRect.width
   cancelAnimationFrame(resizeFrame)
-  resizeFrame = requestAnimationFrame(renderChart)
-}).observe($('[data-chart]'))
+  resizeFrame = requestAnimationFrame(renderCharts)
+}).observe($('[data-main]'))
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
@@ -722,3 +1098,4 @@ renderPeriodSelector()
 refresh()
 setInterval(refresh, POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)
+renderLegend()
