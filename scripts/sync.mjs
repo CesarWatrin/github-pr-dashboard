@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 const ORG = process.env.ORG
-const SNAPSHOT_VERSION = 2
+const SNAPSHOT_VERSION = 3
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.json'
@@ -22,6 +22,9 @@ const CONCURRENCY = 4
 const EVENTS_LIMIT = 50
 const EVENTS_MAX_AGE_DAYS = 7
 const TOP_REPOS_PER_REVIEWER = 3
+// Upper bounds (excluded) of the pull request size buckets, in changed lines.
+const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
+const RELEASE_BASES = ['master', 'main']
 const DAY_MS = 86_400_000
 
 const PERIODS = [
@@ -38,7 +41,7 @@ const REVIEW_FIELDS = `author { ${ACTOR_FIELDS} } state submittedAt comments { t
 const COMMENT_FIELDS = `author { ${ACTOR_FIELDS} } createdAt`
 
 const PULL_REQUEST_FIELDS = `
-  number title state createdAt mergedAt closedAt additions deletions headRefName baseRefName
+  number title state isDraft createdAt mergedAt closedAt additions deletions headRefName baseRefName
   repository { name }
   author { ${ACTOR_FIELDS} }
   mergedBy { ${ACTOR_FIELDS} }
@@ -200,6 +203,7 @@ async function toRecord(node) {
     number: node.number,
     title: node.title,
     state: node.state,
+    draft: node.isDraft,
     createdAt: node.createdAt,
     mergedAt: node.mergedAt,
     closedAt: node.closedAt,
@@ -405,11 +409,15 @@ function reviewInterventions(pr) {
 function computePeriod(pullRequests, period, now) {
   const startIso = new Date(now.getTime() - period.days * DAY_MS).toISOString()
   const keys = bucketKeys(new Date(startIso), now, period.bucket)
-  const buckets = new Map(keys.map((key) => [key, { key, opened: 0, merged: 0, comments: 0, approvals: 0 }]))
+  const buckets = new Map(
+    keys.map((key) => [key, { key, opened: 0, merged: 0, comments: 0, approvals: 0, releases: 0 }]),
+  )
   const authors = new Map()
   const reviewers = new Map()
   const repositories = new Map()
   const reviewedPullRequests = new Set()
+  const sizes = SIZE_BUCKETS.map((max) => ({ max, prs: 0, comments: 0, timesToMerge: [] }))
+  let releases = 0
   const bump = (iso, field, amount = 1) => {
     const bucket = buckets.get(bucketKey(iso, period.bucket))
     if (bucket) {
@@ -426,8 +434,10 @@ function computePeriod(pullRequests, period, now) {
       integration: 0,
       merged: 0,
       closedUnmerged: 0,
-      open: 0,
+      unreviewed: 0,
+      hotfix: 0,
       timesToMerge: [],
+      timesToFirstReview: [],
       sizes: [],
     }))
   const reviewer = (login) =>
@@ -445,27 +455,50 @@ function computePeriod(pullRequests, period, now) {
 
   for (const pr of pullRequests) {
     const kind = classify(pr)
-    if (pr.createdAt >= startIso && !isBot(pr.author)) {
-      const stats = author(pr.author)
-      stats.opened++
-      stats[kind]++
-      bump(pr.createdAt, 'opened')
-      if (kind === 'code') {
-        if (pr.mergedAt) {
-          stats.merged++
-          stats.timesToMerge.push(hoursBetween(pr.createdAt, pr.mergedAt))
-          stats.sizes.push(pr.additions + pr.deletions)
-        } else if (pr.state === 'CLOSED') {
-          stats.closedUnmerged++
-        } else {
-          stats.open++
-        }
-      }
+    // Release pull requests count whoever opened them: release-please ones come from a bot.
+    if (kind === 'release' && pr.mergedAt && pr.mergedAt >= startIso && RELEASE_BASES.includes(pr.base)) {
+      releases++
+      bump(pr.mergedAt, 'releases')
     }
 
-    // Review stats only cover code pull requests written by people.
-    if (kind !== 'code' || isBot(pr.author)) {
+    // Everything else only covers code pull requests written by people.
+    if (isBot(pr.author)) {
       continue
+    }
+    if (pr.createdAt >= startIso) {
+      author(pr.author)[kind]++
+      author(pr.author).opened++
+      bump(pr.createdAt, 'opened')
+    }
+    if (kind !== 'code') {
+      continue
+    }
+
+    const interventions = reviewInterventions(pr)
+    if (pr.createdAt >= startIso) {
+      const stats = author(pr.author)
+      if (pr.head.startsWith('hotfix')) {
+        stats.hotfix++
+      }
+      if (interventions.length > 0) {
+        stats.timesToFirstReview.push(hoursBetween(pr.createdAt, interventions[0].at))
+      }
+      if (pr.mergedAt) {
+        const lines = pr.additions + pr.deletions
+        const timeToMerge = hoursBetween(pr.createdAt, pr.mergedAt)
+        stats.merged++
+        stats.timesToMerge.push(timeToMerge)
+        stats.sizes.push(lines)
+        if (interventions.length === 0) {
+          stats.unreviewed++
+        }
+        const size = sizes.find((bucket) => lines < bucket.max)
+        size.prs++
+        size.timesToMerge.push(timeToMerge)
+        size.comments += interventions.reduce((total, intervention) => total + intervention.comments, 0)
+      } else if (pr.state === 'CLOSED') {
+        stats.closedUnmerged++
+      }
     }
 
     if (pr.mergedAt && pr.mergedAt >= startIso) {
@@ -476,7 +509,6 @@ function computePeriod(pullRequests, period, now) {
     }
 
     const key = keyOf(pr)
-    const interventions = reviewInterventions(pr)
     const commenters = new Set(interventions.filter((item) => item.comments > 0).map((item) => item.login))
     for (const intervention of interventions) {
       if (intervention.at < startIso) {
@@ -513,14 +545,19 @@ function computePeriod(pullRequests, period, now) {
   const reviewPairs = reviewerStats.reduce((total, stats) => total + stats.reviewed.size, 0)
   const approvedPairs = reviewerStats.reduce((total, stats) => total + stats.approvedPrs.size, 0)
   const silentPairs = reviewerStats.reduce((total, stats) => total + stats.silentApprovedPrs.size, 0)
+  const merged = sum(authorStats, 'merged')
+  const code = sum(authorStats, 'code')
 
   return {
     days: period.days,
     bucket: period.bucket,
     totals: {
       opened: sum(authorStats, 'opened'),
-      merged: sum(authorStats, 'merged'),
+      merged,
       medianTimeToMergeHours: round(median(authorStats.flatMap((stats) => stats.timesToMerge)), 1),
+      releases,
+      hotfixShare: code ? round(sum(authorStats, 'hotfix') / code, 3) : null,
+      unreviewedShare: merged ? round(sum(authorStats, 'unreviewed') / merged, 3) : null,
       reviewed: reviewedPullRequests.size,
       commentsPerPr: reviewPairs ? round(sum(reviewerStats, 'comments') / reviewPairs, 2) : null,
       silentApprovalRate: approvedPairs ? round(silentPairs / approvedPairs, 3) : null,
@@ -536,7 +573,8 @@ function computePeriod(pullRequests, period, now) {
           release: stats.release,
           integration: stats.integration,
           mergeRate: decided ? Math.round((100 * stats.merged) / decided) : null,
-          open: stats.open,
+          unreviewedRate: stats.merged ? round(stats.unreviewed / stats.merged, 3) : null,
+          medianTimeToFirstReviewHours: round(median(stats.timesToFirstReview), 1),
           medianTimeToMergeHours: round(median(stats.timesToMerge), 1),
           medianSize: round(median(stats.sizes)),
         }
@@ -576,10 +614,25 @@ function computePeriod(pullRequests, period, now) {
           }),
         ]),
     ),
+    sizes: sizes.map((bucket) => ({
+      max: Number.isFinite(bucket.max) ? bucket.max : null,
+      prs: bucket.prs,
+      medianTimeToMergeHours: round(median(bucket.timesToMerge), 1),
+      commentsPerPr: bucket.prs ? round(bucket.comments / bucket.prs, 2) : null,
+    })),
     repositories: [...repositories.values()]
       .map((stats) => ({ repo: stats.repo, prs: stats.reviewed.size, comments: stats.comments }))
       .sort((a, b) => b.prs - a.prs),
   }
+}
+
+// Open code pull requests nobody has looked at yet, oldest first.
+function computeWaiting(pullRequests) {
+  return pullRequests
+    .filter((pr) => pr.state === 'OPEN' && !pr.draft && !isBot(pr.author) && classify(pr) === 'code')
+    .filter((pr) => reviewInterventions(pr).length === 0)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((pr) => ({ repo: pr.repo, number: pr.number, author: pr.author, createdAt: pr.createdAt }))
 }
 
 function computeToday(pullRequests, now) {
@@ -679,12 +732,14 @@ async function sync({ full }) {
   })
   await writeJson(STATS_PATH, {
     org: ORG,
+    build: process.env.BUILD_ID || null,
     generatedAt: now.toISOString(),
     timezone: TIMEZONE,
     people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
     today: computeToday(inWindow, now),
     periods: Object.fromEntries(PERIODS.map((period) => [period.key, computePeriod(inWindow, period, now)])),
     events: computeEvents(inWindow, now),
+    waiting: computeWaiting(inWindow),
   })
 
   console.log(`[${now.toISOString()}] ${mode} sync: ${fetched.length} PR fetched, ${inWindow.length} PR in window`)

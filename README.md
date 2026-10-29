@@ -8,12 +8,16 @@ chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews ar
 
 Le dashboard montre :
 
-- l'activité du jour et de la période (PR ouvertes, mergées, délai médian de merge), avec le fil d'activité récente ;
-- les auteurs : PR de code, taux de merge, délai médian, taille médiane ;
-- les reviews : PR relues, commentaires, approbations, part des approbations sans commentaire, activité de review par
-  période, dépôts les plus relus, tableau par relecteur (taille des PR relues, principaux dépôts) et évolution par
-  personne ;
+- l'activité du jour, puis celle de la période en deux volets : livraison (PR ouvertes et mergées, délai de merge,
+  mises en production, part de hotfix) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR
+  mergées sans review) ;
+- l'activité par période et le fil des 7 derniers jours ;
+- les tableaux par auteur et par relecteur ;
+- l'effet de la taille des PR sur le délai de merge et la profondeur de review ;
+- les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
 - une section Méthode qui définit chaque indicateur.
+
+Une page restée ouverte se recharge d'elle-même après un nouveau déploiement.
 
 ## Fonctionnement
 

@@ -319,6 +319,19 @@ main.is-loading {
   margin-top: 14px;
 }
 
+.tile-group {
+  margin-top: 18px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tile-group + .tiles {
+  margin-top: 8px;
+}
+
 .tile {
   display: grid;
   align-content: start;

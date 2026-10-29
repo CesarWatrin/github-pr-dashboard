@@ -9,8 +9,10 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='8' width='3' height='6' rx='1' fill='%232a78d6'/%3E%3Crect x='6.5' y='4' width='3' height='10' rx='1' fill='%232a78d6'/%3E%3Crect x='11' y='2' width='3' height='12' rx='1' fill='%232a78d6'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="style.css" />
-    <script type="module" src="app.js"></script>
+    <!-- The deploy workflow stamps the build placeholder with the commit, so a new deploy never mixes old and new files. -->
+    <meta name="build" content="__BUILD__" />
+    <link rel="stylesheet" href="style.css?v=__BUILD__" />
+    <script type="module" src="app.js?v=__BUILD__"></script>
   </head>
   <body>
     <div class="page">
@@ -53,7 +55,10 @@
 
         <section class="card" aria-labelledby="totals-title">
           <h2 id="totals-title" data-totals-title>Sur la période</h2>
-          <div class="tiles" data-totals></div>
+          <h3 class="tile-group">Livraison</h3>
+          <div class="tiles" data-totals-delivery></div>
+          <h3 class="tile-group">Revue</h3>
+          <div class="tiles" data-totals-review></div>
         </section>
 
         <div class="grid-2">
@@ -83,6 +88,23 @@
           <h2 id="reviewers-title">Relecteurs</h2>
           <div class="table-wrap" data-reviewers></div>
         </section>
+
+        <div class="grid-2 grid-even">
+          <section class="card" aria-labelledby="sizes-title">
+            <h2 id="sizes-title">Taille des PR</h2>
+            <p class="card-sub">PR de code mergées, par nombre de lignes modifiées</p>
+            <div class="minis">
+              <div class="mini"><h3>Délai médian de merge</h3><div class="bar-chart" data-sizes-chart="time"></div></div>
+              <div class="mini"><h3>Commentaires par PR</h3><div class="bar-chart" data-sizes-chart="comments"></div></div>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="waiting-title">
+            <h2 id="waiting-title" data-waiting-title>PR en attente de review</h2>
+            <p class="card-sub">Les plus anciennes d’abord</p>
+            <ol class="feed" data-waiting></ol>
+          </section>
+        </div>
 
         <div class="grid-2 grid-even">
           <section class="card" aria-labelledby="repos-title">
@@ -121,13 +143,22 @@
               <code>project/…/main</code> vers <code>develop</code> ou <code>master</code>), comptées à part dans
               « Release / intég. ». Merges, délais, tailles et reviews ne portent que sur les PR de code.
             </dd>
+            <dt>Mises en production</dt>
+            <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
+            <dt>Part de hotfix</dt>
+            <dd>PR de code dont la branche commence par <code>hotfix</code>, rapportées à toutes les PR de code.</dd>
             <dt>Taux de merge</dt>
             <dd>Mergées / (mergées + fermées sans merge).</dd>
-            <dt>Délai et taille</dt>
+            <dt>Délais et taille</dt>
             <dd>
-              Médianes, moins sensibles que la moyenne aux quelques très grosses PR : délai entre la création et le
-              merge, lignes ajoutées plus supprimées.
+              Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Attente 1re review : de la
+              création à la première review ou au premier commentaire d’une autre personne. Délai de merge : de la
+              création au merge. Taille : lignes ajoutées plus supprimées.
             </dd>
+            <dt>Mergées sans review</dt>
+            <dd>PR de code mergées sans aucune review ni commentaire d’une autre personne que l’auteur.</dd>
+            <dt>PR en attente de review</dt>
+            <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
             <dt>PR relue</dt>
             <dd>
               Au moins une review ou un commentaire de quelqu’un d’autre que l’auteur. Dans l’évolution, elle compte

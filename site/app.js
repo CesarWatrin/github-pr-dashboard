@@ -5,10 +5,14 @@ const STALE_AFTER_MS = 2 * 60 * 60_000
 const BUMP_VISIBLE_MS = 6000
 const COUNTER_ANIMATION_MS = 900
 const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
+const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
+
+// Stamped with the commit by the deploy workflow; the placeholder stays when the site is served locally.
+const PAGE_BUILD = document.querySelector('meta[name="build"]')?.content.replace('__BUILD__', '') || null
 
 const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
@@ -75,13 +79,19 @@ const TODAY_TILES = [
   { key: 'reviews', label: 'Reviews soumises' },
 ]
 
-const TOTAL_TILES = [
+const DELIVERY_TILES = [
   { key: 'opened', label: 'PR ouvertes' },
   { key: 'merged', label: 'PR de code mergées' },
   { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
+  { key: 'releases', label: 'Mises en production' },
+  { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare },
+]
+
+const REVIEW_TILES = [
   { key: 'reviewed', label: 'PR relues' },
   { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal },
   { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare },
+  { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare },
 ]
 
 const AUTHOR_COLUMNS = [
@@ -94,8 +104,13 @@ const AUTHOR_COLUMNS = [
     format: (row) => `${row.release} / ${row.integration}`,
   },
   { key: 'mergeRate', label: 'Taux de merge', format: (row) => formatPercent(row.mergeRate) },
-  { key: 'open', label: 'Encore ouvertes' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian', format: (row) => formatDuration(row.medianTimeToMergeHours) },
+  { key: 'unreviewedRate', label: 'Mergées sans review', format: (row) => formatShare(row.unreviewedRate) },
+  {
+    key: 'medianTimeToFirstReviewHours',
+    label: 'Attente 1re review',
+    format: (row) => formatDuration(row.medianTimeToFirstReviewHours),
+  },
+  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
   { key: 'medianSize', label: 'Taille médiane' },
 ]
 
@@ -115,6 +130,9 @@ const REVIEWER_COLUMNS = [
     format: (row) => row.topRepos.map(([repo, count]) => `${repo} (${count})`).join(', ') || '–',
   },
 ]
+
+// One label per size bucket sent by the sync script, smallest first.
+const SIZE_LABELS = ['< 10', '10 à 100', '100 à 500', '500 à 1 000', '> 1 000']
 
 const ACTIVITY_SERIES = [
   { label: 'PR ouvertes', color: 'var(--series-1)', value: (point) => point.opened },
@@ -148,6 +166,7 @@ const state = {
   },
   previousRows: { authors: new Map(), reviewers: new Map() },
   seenEvents: null,
+  seenWaiting: null,
   fetchFailed: false,
 }
 
@@ -292,8 +311,10 @@ function renderToday(animate) {
 }
 
 function renderTotals(animate) {
+  const { totals } = currentPeriod()
   $('[data-totals-title]').textContent = capitalize(PERIOD_TITLES[state.period])
-  renderTiles($('[data-totals]'), TOTAL_TILES, currentPeriod().totals, animate)
+  renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, animate)
+  renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, animate)
 }
 
 // Tooltip
@@ -585,7 +606,37 @@ function renderActivityChart() {
     extraRows: (point) => [
       { label: 'PR de code mergées', value: formatNumber(point.merged) },
       { label: 'approbations', value: formatNumber(point.approvals) },
+      { label: 'mises en production', value: formatNumber(point.releases) },
     ],
+  })
+}
+
+function renderSizeCharts() {
+  const rows = currentPeriod().sizes.map((size, index) => ({ ...size, label: SIZE_LABELS[index] }))
+  const common = {
+    rows,
+    label: (row) => row.label,
+    color: 'var(--series-1)',
+    tooltip: (row) => ({
+      title: `${row.label} lignes`,
+      rows: [
+        { label: 'PR mergées', value: formatNumber(row.prs) },
+        { label: 'délai médian de merge', value: formatDuration(row.medianTimeToMergeHours) },
+        { label: 'commentaires par PR', value: formatDecimal(row.commentsPerPr) },
+      ],
+    }),
+  }
+  barChart($('[data-sizes-chart="time"]'), {
+    ...common,
+    value: (row) => row.medianTimeToMergeHours,
+    format: formatDuration,
+    ariaLabel: 'Délai médian de merge selon la taille des PR',
+  })
+  barChart($('[data-sizes-chart="comments"]'), {
+    ...common,
+    value: (row) => row.commentsPerPr,
+    format: formatDecimal,
+    ariaLabel: 'Commentaires par PR selon la taille des PR',
   })
 }
 
@@ -640,6 +691,7 @@ function renderCharts() {
     return
   }
   renderActivityChart()
+  renderSizeCharts()
   renderRepositoriesChart()
   if (state.person) {
     renderMiniCharts()
@@ -650,7 +702,7 @@ function renderChartTable() {
   const { series, bucket } = currentPeriod()
   dataTable(
     $('[data-chart-table]'),
-    ['Période', 'PR ouvertes', 'Commentaires', 'PR de code mergées', 'Approbations'],
+    ['Période', 'PR ouvertes', 'Commentaires', 'PR de code mergées', 'Approbations', 'Mises en production'],
     series
       .toReversed()
       .map((point) => [
@@ -659,6 +711,7 @@ function renderChartTable() {
         formatNumber(point.comments),
         formatNumber(point.merged),
         formatNumber(point.approvals),
+        formatNumber(point.releases),
       ]),
   )
 }
@@ -800,51 +853,90 @@ function renderTables(highlight) {
   )
 }
 
-// Activity feed
+// Activity feed and waiting list
 
 const eventId = (event) => `${event.type}:${event.repo}#${event.number}:${event.actor}:${event.at}`
+const waitingId = (pr) => `${pr.repo}#${pr.number}`
+
+function pullRequestLink(repo, number) {
+  return el('a', {
+    href: githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}/pull/${number}`),
+    target: '_blank',
+    rel: 'noopener',
+    textContent: `${repo}#${number}`,
+  })
+}
+
+function listItem(login, text, at, timePrefix = '') {
+  const time = el('time', { dateTime: at, title: dateTimeFormat.format(new Date(at)), textContent: formatRelative(at) })
+  time.dataset.relative = at
+
+  return el(
+    'li',
+    { className: 'feed-item' },
+    avatar(login),
+    el('div', {}, text, el('span', { className: 'feed-time' }, document.createTextNode(timePrefix), time)),
+  )
+}
+
+function renderList(container, items, emptyText) {
+  container.replaceChildren(...(items.length ? items : [el('li', { className: 'feed-empty', textContent: emptyText })]))
+}
 
 function renderFeed(highlight) {
-  const { events, org } = state.stats
+  const { events } = state.stats
   const previous = state.seenEvents
   const items = events
     .filter((event) =>
       matchesQuery(event.actor, event.author, displayName(event.actor), displayName(event.author), event.repo),
     )
     .map((event) => {
-      const link = el('a', {
-        href: githubUrl(`${org}/${encodeURIComponent(event.repo)}/pull/${event.number}`),
-        target: '_blank',
-        rel: 'noopener',
-        textContent: `${event.repo}#${event.number}`,
-      })
       const text = el(
         'p',
         { className: 'feed-text' },
         el('strong', { textContent: displayName(event.actor) }),
         document.createTextNode(` ${EVENT_VERBS[event.type]} `),
-        link,
+        pullRequestLink(event.repo, event.number),
       )
       if (event.type !== 'opened' && event.author !== event.actor) {
         text.append(document.createTextNode(` de ${displayName(event.author)}`))
       }
-      const time = el('time', { className: 'feed-time', dateTime: event.at, title: dateTimeFormat.format(new Date(event.at)) })
-      time.dataset.relative = event.at
-      time.textContent = formatRelative(event.at)
-
-      const item = el('li', { className: 'feed-item' }, avatar(event.actor), el('div', {}, text, time))
+      const item = listItem(event.actor, text, event.at)
       if (highlight && previous && !previous.has(eventId(event))) {
         item.classList.add('is-new')
       }
 
       return item
     })
-  if (items.length === 0) {
-    items.push(el('li', { className: 'feed-empty', textContent: 'Aucune activité' }))
-  }
 
   state.seenEvents = new Set(events.map(eventId))
-  $('[data-feed]').replaceChildren(...items)
+  renderList($('[data-feed]'), items, 'Aucune activité')
+}
+
+function renderWaiting(highlight) {
+  const { waiting } = state.stats
+  const previous = state.seenWaiting
+  $('[data-waiting-title]').textContent = `PR en attente de review (${formatNumber(waiting.length)})`
+  const items = waiting
+    .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo))
+    .map((pr) => {
+      const text = el(
+        'p',
+        { className: 'feed-text' },
+        pullRequestLink(pr.repo, pr.number),
+        document.createTextNode(' de '),
+        el('strong', { textContent: displayName(pr.author) }),
+      )
+      const item = listItem(pr.author, text, pr.createdAt, 'ouverte ')
+      if (highlight && previous && !previous.has(waitingId(pr))) {
+        item.classList.add('is-new')
+      }
+
+      return item
+    })
+
+  state.seenWaiting = new Set(waiting.map(waitingId))
+  renderList($('[data-waiting]'), items, 'Aucune PR en attente')
 }
 
 // Sync status
@@ -897,31 +989,53 @@ function render(animate) {
   renderChartTable()
   renderTables(animate)
   renderFeed(animate)
+  renderWaiting(animate)
+}
+
+// An open page reloads itself on a new deploy rather than running old code on new data. The URL changes
+// to skip the cached page, and a build is only reloaded for once to never loop on a stale cache.
+function reloadForNewBuild(build) {
+  if (!PAGE_BUILD || !build || build === PAGE_BUILD) {
+    return false
+  }
+  try {
+    if (sessionStorage.getItem(RELOAD_STORAGE_KEY) === build) {
+      return false
+    }
+    sessionStorage.setItem(RELOAD_STORAGE_KEY, build)
+  } catch {
+    return false
+  }
+  location.replace(`${location.pathname}?v=${encodeURIComponent(build)}`)
+
+  return true
 }
 
 async function refresh() {
+  let stats
   try {
     const response = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
-    const stats = await response.json()
+    stats = await response.json()
     state.fetchFailed = false
-    if (stats.generatedAt !== state.stats?.generatedAt) {
-      const isUpdate = state.stats !== null
-      state.stats = stats
-      render(isUpdate)
-      if (isUpdate) {
-        const status = $('[data-sync]')
-        status.classList.remove('is-pulsing')
-        void status.offsetWidth
-        status.classList.add('is-pulsing')
-      }
-    }
   } catch {
     state.fetchFailed = true
     if (!state.stats) {
       $('[data-empty]').hidden = false
+    }
+  }
+
+  if (stats && !reloadForNewBuild(stats.build) && stats.generatedAt !== state.stats?.generatedAt) {
+    const isUpdate = state.stats !== null
+    state.stats = stats
+    render(isUpdate)
+    if (isUpdate) {
+      const status = $('[data-sync]')
+      status.classList.remove('is-pulsing')
+      void status.offsetWidth
+      status.classList.add('is-pulsing')
     }
   }
   renderSyncStatus()
@@ -943,6 +1057,7 @@ $('[data-search]').addEventListener('input', (event) => {
   if (state.stats) {
     renderTables(false)
     renderFeed(false)
+    renderWaiting(false)
   }
 })
 

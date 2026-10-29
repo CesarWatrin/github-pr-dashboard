@@ -51,12 +51,16 @@ jobs:
           ORG: ${{ vars.ORG }}
           GITHUB_TOKEN: ${{ secrets.ORG_STATS_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
+          BUILD_ID: ${{ github.sha }}
 
       - name: Save snapshot
         uses: actions/cache/save@v6
         with:
           path: .cache/snapshot.json
           key: snapshot-${{ github.run_id }}
+
+      - name: Stamp the build
+        run: sed -i "s/__BUILD__/${GITHUB_SHA}/g" site/index.html
 
       - uses: actions/configure-pages@v6
 
