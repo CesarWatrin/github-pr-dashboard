@@ -47,6 +47,7 @@ jobs:
       - name: Sync pull requests
         run: node scripts/sync.mjs
         env:
+          ORG: ${{ vars.ORG }}
           GITHUB_TOKEN: ${{ secrets.ORG_STATS_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
 

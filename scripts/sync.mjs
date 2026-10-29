@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-const ORG = process.env.ORG ?? 'PDC-HCSE'
+const ORG = process.env.ORG
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.json'
@@ -95,6 +95,10 @@ const parisDayFormat = new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
   day: '2-digit',
 })
+
+if (!ORG) {
+  throw new Error('No organization: set the ORG environment variable (in .env locally, as a repository variable in CI).')
+}
 
 const token = resolveToken()
 

@@ -1,7 +1,7 @@
 # github-pr-dashboard
 
-Dashboard web des pull requests et des reviews par contributeur d'une organisation GitHub (par défaut `PDC-HCSE`),
-sur une période glissante (30 jours, 90 jours, 12 mois).
+Dashboard web des pull requests et des reviews par contributeur d'une organisation GitHub, sur une période glissante
+(30 jours, 90 jours, 12 mois). L'organisation n'a pas de valeur par défaut : elle se configure avec la variable `ORG`.
 
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
@@ -21,6 +21,7 @@ chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews ar
 ## En local
 
 Node 24 et `gh` authentifié suffisent (le token est lu via `gh auth token` si `GITHUB_TOKEN` n'est pas défini).
+Copier `.env.example` en `.env` et renseigner `ORG`.
 
 ```bash
 npm run sync        # synchro (complète la première fois, incrémentale ensuite)
@@ -37,11 +38,12 @@ conservé d'un run à l'autre dans le cache Actions.
 
 Prérequis :
 
-1. Un secret `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les
+1. Une variable de repo `ORG` : l'organisation à suivre (Settings → Secrets and variables → Actions → Variables).
+2. Un secret `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les
    scopes `repo` et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_).
-2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
+3. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 > La page publiée sur un compte personnel est publique, même si le repo est privé : elle expose les logins, les
 > noms des repos et les stats par personne.
 
-Configuration via variables d'environnement : `ORG` (organisation), `SNAPSHOT_PATH`, `STATS_PATH`.
+Variables d'environnement : `ORG` (obligatoire), `SNAPSHOT_PATH` et `STATS_PATH` (facultatives).
