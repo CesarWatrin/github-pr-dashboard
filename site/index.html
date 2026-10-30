@@ -129,6 +129,7 @@
             <h2 id="authors-title">Auteurs</h2>
             <details class="repo-filter" data-repo-filter="authors"></details>
           </div>
+          <div class="legend" data-stack-legend></div>
           <div class="table-wrap" data-authors></div>
         </section>
 
@@ -137,6 +138,7 @@
             <h2 id="reviewers-title">Relecteurs</h2>
             <details class="repo-filter" data-repo-filter="reviewers"></details>
           </div>
+          <div class="legend" data-stack-legend></div>
           <div class="table-wrap" data-reviewers></div>
         </section>
 
@@ -158,26 +160,32 @@
         </div>
 
         <div class="grid-2 grid-even">
+          <section class="card" aria-labelledby="languages-title">
+            <h2 id="languages-title">Langages</h2>
+            <p class="card-sub" data-languages-sub></p>
+            <div class="bar-chart" data-languages-chart></div>
+          </section>
+
           <section class="card" aria-labelledby="repos-title">
             <h2 id="repos-title">Dépôts les plus relus</h2>
             <p class="card-sub" data-repos-sub></p>
             <div class="bar-chart" data-repos-chart></div>
           </section>
-
-          <section class="card" aria-labelledby="evolution-title">
-            <div class="card-toolbar">
-              <h2 id="evolution-title">Évolution par relecteur</h2>
-              <select class="search" name="person" aria-label="Relecteur" data-person></select>
-            </div>
-            <div class="minis">
-              <div class="mini"><h3>PR relues</h3><div class="chart chart-sm" data-mini="prs"></div></div>
-              <div class="mini">
-                <h3>Commentaires par PR relue</h3>
-                <div class="chart chart-sm" data-mini="ratio"></div>
-              </div>
-            </div>
-          </section>
         </div>
+
+        <section class="card" aria-labelledby="evolution-title">
+          <div class="card-toolbar">
+            <h2 id="evolution-title">Évolution par relecteur</h2>
+            <select class="search" name="person" aria-label="Relecteur" data-person></select>
+          </div>
+          <div class="minis">
+            <div class="mini"><h3>PR relues</h3><div class="chart chart-sm" data-mini="prs"></div></div>
+            <div class="mini">
+              <h3>Commentaires par PR relue</h3>
+              <div class="chart chart-sm" data-mini="ratio"></div>
+            </div>
+          </div>
+        </section>
 
         <section class="card" aria-labelledby="method-title">
           <h2 id="method-title">Méthode</h2>
@@ -193,6 +201,22 @@
               <code>master</code>) et de synchronisation de branches (<code>merge*</code>, back-merges,
               <code>project/…/main</code> vers <code>develop</code> ou <code>master</code>), comptées à part dans
               « Release / intég. ». Merges, délais, tailles et reviews ne portent que sur les PR de code.
+            </dd>
+            <dt>Type de dépôt</dt>
+            <dd>
+              Déduit des langages détectés par GitHub : Vue donne front ; PHP, Go, Rust donnent back ; Dart (Flutter)
+              donne mobile ; la documentation, l’infrastructure et l’outillage sont classés « autres ». TypeScript et
+              JavaScript comptent en front à côté de Vue, en back sinon. Quelques dépôts sont classés à la main.
+            </dd>
+            <dt>Stack</dt>
+            <dd>
+              Répartition des PR de code (auteurs) ou des PR relues (relecteurs) entre dépôts front, back et mobile, et
+              langages principaux de ces dépôts. Les dépôts « autres » n’y comptent pas.
+            </dd>
+            <dt>Langages</dt>
+            <dd>
+              Chaque PR de code est répartie entre les langages de son dépôt, au prorata de leur part dans le code
+              (langages sous 2 % ignorés). Logos : Simple Icons.
             </dd>
             <dt>Mises en production</dt>
             <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>

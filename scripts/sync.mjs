@@ -37,6 +37,38 @@ const PERIODS = [
   { key: '365d', days: 365, bucket: 'month' },
 ]
 
+// Repository types, from the languages GitHub detects in them. TypeScript and JavaScript go with Vue: front-end code
+// next to it, back-end services without it. Docs, infrastructure and tooling fall under "other".
+const CATEGORIES = ['front', 'back', 'mobile', 'other']
+const LANGUAGE_CATEGORIES = new Map(
+  Object.entries({
+    front: ['Vue', 'Svelte', 'SCSS', 'CSS', 'Less', 'HTML'],
+    back: ['PHP', 'Blade', 'Go', 'Rust', 'Python', 'Java', 'Ruby', 'C#', 'PLpgSQL'],
+    mobile: ['Dart', 'Swift', 'Kotlin', 'Objective-C'],
+    other: ['HCL', 'Dockerfile', 'Makefile', 'Shell', 'Jinja', 'Go Template', 'Batchfile', 'CMake'],
+  }).flatMap(([category, languages]) => languages.map((language) => [language, category])),
+)
+const SCRIPT_LANGUAGES = ['TypeScript', 'JavaScript']
+const FRAMEWORK_LANGUAGES = ['Vue', 'Svelte']
+const MIN_LANGUAGE_SHARE = 0.02
+
+// Corrections for the repositories their languages misjudge, as "repo:category,repo:category". They come from the
+// environment rather than the code because the repository names of the organization are private.
+const CATEGORY_OVERRIDES = new Map(
+  (process.env.REPO_CATEGORIES ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [repo, category] = entry.split(':').map((part) => part.trim())
+      if (!CATEGORIES.includes(category)) {
+        throw new Error(`REPO_CATEGORIES: "${entry}" should be repo:${CATEGORIES.join('|')}`)
+      }
+
+      return [repo, category]
+    }),
+)
+
 // GitHub Apps are detected from their actor type: these are user accounts acting as bots.
 const BOT_USERS = new Set(['it-hellocse', 'ghost'])
 
@@ -59,6 +91,16 @@ const REPOSITORIES_QUERY = `
       repositories(first: 100, after: $cursor, orderBy: { field: PUSHED_AT, direction: DESC }) {
         pageInfo { hasNextPage endCursor }
         nodes { name pushedAt }
+      }
+    }
+  }`
+
+const REPOSITORY_LANGUAGES_QUERY = `
+  query($org: String!, $cursor: String) {
+    organization(login: $org) {
+      repositories(first: 50, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { name languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } } }
       }
     }
   }`
@@ -305,6 +347,47 @@ async function fetchUpdatedSince(sinceIso) {
     }
     cursor = pageInfo.endCursor
   }
+}
+
+// Languages of every repository of the organization, as [name, bytes] pairs, largest first.
+async function fetchLanguages() {
+  const languages = {}
+  let cursor = null
+  do {
+    const data = await graphql(REPOSITORY_LANGUAGES_QUERY, { org: ORG, cursor })
+    const { nodes, pageInfo } = data.organization.repositories
+    for (const node of nodes) {
+      languages[node.name] = node.languages.edges.map((edge) => [edge.node.name, edge.size])
+    }
+    cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null
+  } while (cursor)
+
+  return languages
+}
+
+function repositoryCategory(repo, languages) {
+  if (CATEGORY_OVERRIDES.has(repo)) {
+    return CATEGORY_OVERRIDES.get(repo)
+  }
+  const withVue = languages.some(([name]) => FRAMEWORK_LANGUAGES.includes(name))
+  const sizes = new Map()
+  for (const [name, size] of languages) {
+    const category = SCRIPT_LANGUAGES.includes(name) ? (withVue ? 'front' : 'back') : LANGUAGE_CATEGORIES.get(name)
+    if (category) {
+      sizes.set(category, (sizes.get(category) ?? 0) + size)
+    }
+  }
+
+  return [...sizes].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'other'
+}
+
+// Share of each language in the code of a repository, without the marginal ones.
+function languageShares(languages) {
+  const total = languages.reduce((sum, [, size]) => sum + size, 0)
+
+  return languages
+    .map(([name, size]) => [name, round(size / total, 3)])
+    .filter(([, share]) => share >= MIN_LANGUAGE_SHARE)
 }
 
 async function readSnapshot() {
@@ -745,12 +828,24 @@ async function sync({ full }) {
   }
   const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= windowStartIso)
 
+  // Languages are only looked up for repositories not seen yet: a full sync refreshes them all.
+  const repositories = [...new Set(inWindow.map((pr) => pr.repo))]
+  let languages = mode === 'full' ? {} : (snapshot.languages ?? {})
+  if (repositories.some((repo) => !languages[repo])) {
+    languages = await fetchLanguages()
+    for (const repo of repositories) {
+      // Gone from the organization: kept empty so that it is not looked up again.
+      languages[repo] ??= []
+    }
+  }
+
   await writeJson(SNAPSHOT_PATH, {
     version: SNAPSHOT_VERSION,
     org: ORG,
     syncedAt: now.toISOString(),
     names: Object.fromEntries(people.names),
     bots: [...people.bots],
+    languages,
     pullRequests: inWindow,
   })
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
@@ -761,6 +856,12 @@ async function sync({ full }) {
       ...version,
       timezone: TIMEZONE,
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
+      repos: Object.fromEntries(
+        repositories.map((repo) => [
+          repo,
+          { category: repositoryCategory(repo, languages[repo]), languages: languageShares(languages[repo]) },
+        ]),
+      ),
       today: computeToday(inWindow, now),
       periods: Object.fromEntries(PERIODS.map((period) => [period.key, computePeriod(inWindow, period, now)])),
       events: computeEvents(inWindow, now),

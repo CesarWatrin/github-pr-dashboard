@@ -11,6 +11,7 @@
   --border: rgba(11, 11, 11, 0.1);
   --series-1: #2a78d6;
   --series-2: #eb6834;
+  --series-3: #1baf7a;
   --highlight: rgba(42, 120, 214, 0.14);
   --success-text: #006300;
   --status-good: #0ca30c;
@@ -34,6 +35,7 @@
     --border: rgba(255, 255, 255, 0.1);
     --series-1: #3987e5;
     --series-2: #d95926;
+    --series-3: #199e70;
     --highlight: rgba(57, 135, 229, 0.22);
     --success-text: #0ca30c;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -53,6 +55,7 @@
   --border: rgba(255, 255, 255, 0.1);
   --series-1: #3987e5;
   --series-2: #d95926;
+  --series-3: #199e70;
   --highlight: rgba(57, 135, 229, 0.22);
   --success-text: #0ca30c;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -751,16 +754,16 @@ main.is-loading {
   box-shadow: var(--shadow);
 }
 
-.repo-filter-actions {
+.repo-presets {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.repo-filter-actions button {
-  padding: 4px 6px;
-  border: 0;
-  border-radius: 6px;
+.repo-presets button {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
@@ -768,9 +771,16 @@ main.is-loading {
   cursor: pointer;
 }
 
-.repo-filter-actions button:hover {
+.repo-presets button:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
+}
+
+.repo-presets button[aria-pressed='true'] {
+  border-color: var(--text-primary);
+  background: var(--text-primary);
+  color: var(--surface);
+  font-weight: 600;
 }
 
 .repo-filter-note {
@@ -803,6 +813,16 @@ main.is-loading {
   background: var(--surface-hover);
 }
 
+.repo-group:not(:first-child) {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--gridline);
+}
+
+.repo-group label {
+  font-weight: 600;
+}
+
 .repo-filter-list input {
   margin: 0;
   accent-color: var(--text-primary);
@@ -820,6 +840,69 @@ main.is-loading {
   color: var(--text-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Language logos: the brand color, or the text color where it would fade into the surface. */
+.lang-icon {
+  flex: none;
+  color: var(--logo, var(--text-muted));
+  fill: currentColor;
+}
+
+.lang-icon.is-faint-on-light {
+  color: var(--text-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .lang-icon.is-faint-on-light {
+    color: var(--logo);
+  }
+
+  :root:not([data-theme='light']) .lang-icon.is-faint-on-dark {
+    color: var(--text-primary);
+  }
+}
+
+:root[data-theme='dark'] .lang-icon.is-faint-on-light {
+  color: var(--logo);
+}
+
+:root[data-theme='dark'] .lang-icon.is-faint-on-dark {
+  color: var(--text-primary);
+}
+
+/* Stack cell: main type, front / back / mobile split, main languages */
+.stack-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stack-main {
+  min-width: 76px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: right;
+}
+
+.stack-bar {
+  display: flex;
+  gap: 2px;
+  width: 72px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.stack-bar span {
+  min-width: 3px;
+  flex-basis: 0;
+}
+
+.stack-logos {
+  display: inline-flex;
+  gap: 5px;
+  min-width: 58px;
 }
 
 /* Tables */

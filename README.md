@@ -12,7 +12,9 @@ Le dashboard montre :
   mises en production, part de hotfix) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR
   mergées sans review) ;
 - l'activité par période et le fil des 7 derniers jours ;
-- les tableaux par auteur et par relecteur, filtrables par dépôt ;
+- les tableaux par auteur et par relecteur, filtrables par dépôt ou par type de dépôt (front, back, mobile, autres),
+  avec la stack de chaque personne : sa répartition front / back / mobile et ses langages principaux ;
+- la part de chaque langage dans les PR de code, avec son logo ;
 - l'effet de la taille des PR sur le délai de merge et la profondeur de review ;
 - les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
 - une section Méthode qui définit chaque indicateur.
@@ -47,6 +49,11 @@ DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent al
   filtre des tableaux.
   `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne
   retélécharge les stats que lorsqu'elle change.
+- Le type de chaque dépôt (front, back, mobile ou autres : docs, infra, outillage) est déduit des langages que
+  GitHub y détecte. Les dépôts mal jugés se corrigent avec `REPO_CATEGORIES` (`repo:type,repo:type`), gardée dans le
+  `.env` et dans un secret plutôt que dans le code, puisque les noms des dépôts de l'org sont privés.
+- Les logos des langages viennent de [Simple Icons](https://simpleicons.org) (CC0), embarqués dans
+  `site/language-icons.svg` : la page n'appelle aucun service tiers.
 - Les bots sont exclus partout : comptes de type bot (GitHub Apps, détectés via l'API) et comptes de service listés
   dans `BOT_USERS`.
 - Les noms affichés sont ceux des profils GitHub (identifiant à défaut).
@@ -82,8 +89,9 @@ Prérequis :
    - `ORG` : l'organisation à suivre ;
    - `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les scopes `repo`
      et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_) ;
-   - `DASHBOARD_PASSWORD` : le mot de passe de la page.
+   - `DASHBOARD_PASSWORD` : le mot de passe de la page ;
+   - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
-Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `SNAPSHOT_PATH` et `STATS_PATH`
-(facultatives).
+Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `SNAPSHOT_PATH` et
+`STATS_PATH` (facultatives).

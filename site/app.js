@@ -14,11 +14,15 @@ const UNLOCK_DURATION_MS = 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
 const TOP_REPOS_PER_REVIEWER = 3
+const TOP_LANGUAGES = 10
+const STACK_LANGUAGES = 3
+const MIN_STACK_LANGUAGE_SHARE = 0.05
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 
 // Stamped with the commit by the deploy workflow; the placeholder stays when the site is served locally.
 const PAGE_BUILD = document.querySelector('meta[name="build"]')?.content.replace('__BUILD__', '') || null
+const ICONS_URL = `language-icons.svg${PAGE_BUILD ? `?v=${PAGE_BUILD}` : ''}`
 
 const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
@@ -104,6 +108,7 @@ const REVIEW_TILES = [
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
   { key: 'code', label: 'PR de code', kind: 'bar' },
+  { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
   {
     key: 'process',
     label: 'Release / intég.',
@@ -124,6 +129,7 @@ const AUTHOR_COLUMNS = [
 const REVIEWER_COLUMNS = [
   { key: 'login', label: 'Relecteur', kind: 'person', value: (row) => displayName(row.login) },
   { key: 'prs', label: 'PR relues', kind: 'bar' },
+  { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
   { key: 'commentsPerPr', label: 'Comment. / PR', format: (row) => formatDecimal(row.commentsPerPr) },
   { key: 'silentApprovalRate', label: 'Approb. sans comment.', format: (row) => formatShare(row.silentApprovalRate) },
   { key: 'changesRequested', label: 'Changements demandés' },
@@ -137,6 +143,50 @@ const REVIEWER_COLUMNS = [
     format: (row) => row.topRepos.map(([repo, count]) => `${repo} (${count})`).join(', ') || '–',
   },
 ]
+
+// Repository types sent by the sync script, in the order of the stack bars. Docs, infrastructure and tooling
+// repositories ("Autres") stay out of the stacks: they are neither front nor back.
+const CATEGORIES = [
+  { key: 'front', label: 'Front', color: 'var(--series-1)' },
+  { key: 'back', label: 'Back', color: 'var(--series-2)' },
+  { key: 'mobile', label: 'Mobile', color: 'var(--series-3)' },
+  { key: 'other', label: 'Autres' },
+]
+const STACK_CATEGORIES = CATEGORIES.filter((category) => category.color)
+
+// Logo in language-icons.svg and brand color of each language. A third value flags a brand color too close to the
+// light or dark surface: the logo takes the text color there.
+const LANGUAGE_ICONS = {
+  PHP: ['php', '#777bb4'],
+  Blade: ['laravel', '#ff2d20'],
+  Vue: ['vuedotjs', '#4fc08d'],
+  TypeScript: ['typescript', '#3178c6'],
+  JavaScript: ['javascript', '#f7df1e', 'light'],
+  Dart: ['dart', '#0175c2'],
+  Go: ['go', '#00add8'],
+  'Go Template': ['go', '#00add8'],
+  Rust: ['rust', '#000000', 'dark'],
+  Python: ['python', '#3776ab'],
+  Ruby: ['ruby', '#cc342d'],
+  Java: ['openjdk', '#000000', 'dark'],
+  'C#': ['dotnet', '#512bd4'],
+  Kotlin: ['kotlin', '#7f52ff'],
+  Swift: ['swift', '#f05138'],
+  'C++': ['cplusplus', '#00599c'],
+  C: ['c', '#a8b9cc', 'light'],
+  HTML: ['html5', '#e34f26'],
+  CSS: ['css', '#663399'],
+  SCSS: ['sass', '#cc6699'],
+  Less: ['less', '#1d365d', 'dark'],
+  Svelte: ['svelte', '#ff3e00'],
+  Shell: ['gnubash', '#4eaa25'],
+  HCL: ['terraform', '#844fba'],
+  Dockerfile: ['docker', '#2496ed'],
+  PLpgSQL: ['postgresql', '#4169e1'],
+  CMake: ['cmake', '#064f8c'],
+  Jinja: ['jinja', '#7e0c1b', 'dark'],
+}
+const ICON_SIZE = 16
 
 // One label per size bucket sent by the sync script, smallest first.
 const SIZE_LABELS = ['< 10', '10 à 100', '100 à 500', '500 à 1 000', '> 1 000']
@@ -242,6 +292,25 @@ function truncateText(text, maxWidth) {
   }
 
   return `${truncated}…`
+}
+
+// Language logo, as an inline SVG pointing to the sprite; a generic code glyph for unknown languages.
+function languageIcon(language, attributes = {}) {
+  const [slug, color, faint] = LANGUAGE_ICONS[language] ?? ['code']
+  const icon = svg('svg', {
+    class: faint ? `lang-icon is-faint-on-${faint}` : 'lang-icon',
+    viewBox: '0 0 24 24',
+    width: ICON_SIZE,
+    height: ICON_SIZE,
+    'aria-hidden': 'true',
+    ...attributes,
+  })
+  if (color) {
+    icon.style.setProperty('--logo', color)
+  }
+  icon.append(svg('use', { href: `${ICONS_URL}#${slug}` }))
+
+  return icon
 }
 
 // Stat tiles
@@ -547,7 +616,7 @@ function columnChart(container, { points, bucket, series, ariaLabel, decimals = 
 }
 
 // Horizontal bars, one row per item, value at the tip.
-function barChart(container, { rows, label, value, format, max, color, ariaLabel, tooltip }) {
+function barChart(container, { rows, label, value, format, max, color, ariaLabel, tooltip, language }) {
   const width = container.clientWidth
   if (width === 0) {
     return
@@ -560,7 +629,8 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
   const rowHeight = 28
   const height = rows.length * rowHeight
   const labelMax = width * 0.4
-  const labelWidth = Math.min(labelMax, Math.max(...rows.map((row) => measureText(label(row)))))
+  const iconSpace = language ? ICON_SIZE + 6 : 0
+  const labelWidth = Math.min(labelMax, Math.max(...rows.map((row) => measureText(label(row)))) + iconSpace)
   const valueWidth = Math.max(...rows.map((row) => measureText(format(value(row))))) + 8
   const start = labelWidth + 10
   const domainMax = (max ?? Math.max(...rows.map(value))) || 1
@@ -572,7 +642,11 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
     const barWidth = Math.max(2, scale(value(row)))
     const group = svg('g', { class: 'bar-group' })
     const name = svg('text', { class: 'axis-label', x: labelWidth, y: y + rowHeight / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
-    name.textContent = truncateText(label(row), labelMax)
+    name.textContent = truncateText(label(row), labelMax - iconSpace)
+    if (language) {
+      const iconX = labelWidth - measureText(name.textContent) - iconSpace
+      group.append(languageIcon(language(row), { x: iconX, y: y + (rowHeight - ICON_SIZE) / 2 }))
+    }
     const amount = svg('text', { class: 'value-label', x: start + barWidth + 6, y: y + rowHeight / 2, 'dominant-baseline': 'middle' })
     amount.textContent = format(value(row))
     group.append(name, svg('path', { class: 'bar', style: `fill: ${color}`, d: barPath(start, y + 7, barWidth, rowHeight - 14) }), amount)
@@ -671,6 +745,38 @@ function renderRepositoriesChart() {
   })
 }
 
+const formatLanguageShare = (value) => (value < 0.01 ? '< 1 %' : formatShare(value))
+
+function renderLanguagesChart() {
+  const prsPerRepo = new Map()
+  for (const person of currentPeriod().authors) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      prsPerRepo.set(repo, (prsPerRepo.get(repo) ?? 0) + stats.code)
+    }
+  }
+  const weights = languageWeights([...prsPerRepo])
+  const total = weights.reduce((sum, [, weight]) => sum + weight, 0)
+  const rows = weights.map(([name, weight]) => ({ name, weight, share: weight / total }))
+  $('[data-languages-sub]').textContent =
+    `Part des PR de code, ${Math.min(TOP_LANGUAGES, rows.length)} premiers sur ${formatNumber(rows.length)}`
+  barChart($('[data-languages-chart]'), {
+    rows: rows.slice(0, TOP_LANGUAGES),
+    label: (row) => row.name,
+    language: (row) => row.name,
+    value: (row) => row.share,
+    format: formatLanguageShare,
+    color: 'var(--series-1)',
+    ariaLabel: 'Part des PR de code par langage',
+    tooltip: (row) => ({
+      title: row.name,
+      rows: [
+        { label: 'des PR de code', value: formatLanguageShare(row.share) },
+        { label: 'PR de code, au prorata', value: formatNumber(Math.round(row.weight)) },
+      ],
+    }),
+  })
+}
+
 function personPoints(login) {
   const { series, reviewerSeries } = currentPeriod()
   const values = reviewerSeries[login] ?? []
@@ -703,6 +809,7 @@ function renderCharts() {
   }
   renderActivityChart()
   renderSizeCharts()
+  renderLanguagesChart()
   renderRepositoriesChart()
   if (state.person) {
     renderMiniCharts()
@@ -725,6 +832,21 @@ function renderChartTable() {
         formatNumber(point.releases),
       ]),
   )
+}
+
+function renderStackLegends() {
+  for (const legend of document.querySelectorAll('[data-stack-legend]')) {
+    legend.replaceChildren(
+      document.createTextNode('Stack :'),
+      ...STACK_CATEGORIES.map((category) => {
+        const swatch = el('span', { className: 'swatch' })
+        swatch.style.background = category.color
+
+        return el('span', {}, swatch, document.createTextNode(category.label))
+      }),
+      el('span', { className: 'muted', textContent: 'docs, infra et outillage exclus' }),
+    )
+  }
 }
 
 function renderLegend() {
@@ -775,7 +897,8 @@ function selectedEntries(person, name) {
 
 function authorRows() {
   return currentPeriod().authors.flatMap((person) => {
-    const parts = selectedEntries(person, 'authors').map(([, stats]) => stats)
+    const entries = selectedEntries(person, 'authors')
+    const parts = entries.map(([, stats]) => stats)
     if (parts.length === 0) {
       return []
     }
@@ -786,6 +909,7 @@ function authorRows() {
       {
         login: person.login,
         code: sumOf(parts, 'code'),
+        stack: stackOf(entries.map(([repo, stats]) => [repo, stats.code])),
         release: sumOf(parts, 'release'),
         integration: sumOf(parts, 'integration'),
         mergeRate: decided ? Math.round((100 * merged) / decided) : null,
@@ -813,6 +937,7 @@ function reviewerRows() {
       {
         login: person.login,
         prs,
+        stack: stackOf(entries.map(([repo, stats]) => [repo, stats.prs])),
         commentsPerPr: prs ? sumOf(parts, 'comments') / prs : null,
         silentApprovalRate: approved ? sumOf(parts, 'silentApproved') / approved : null,
         changesRequested: sumOf(parts, 'changesRequested'),
@@ -826,6 +951,39 @@ function reviewerRows() {
       },
     ]
   })
+}
+
+const repoInfo = (repo) => state.stats.repos[repo] ?? { category: 'other', languages: [] }
+
+// Spreads pull request counts per repository over the languages of each repository, by their share of its code.
+function languageWeights(prsPerRepo) {
+  const weights = new Map()
+  for (const [repo, prs] of prsPerRepo) {
+    const { languages } = repoInfo(repo)
+    const total = languages.reduce((sum, [, share]) => sum + share, 0)
+    for (const [name, share] of languages) {
+      weights.set(name, (weights.get(name) ?? 0) + (prs * share) / total)
+    }
+  }
+
+  return [...weights].filter(([, weight]) => weight > 0).sort((a, b) => b[1] - a[1])
+}
+
+// Front, back and mobile pull requests of a person, with the languages they involve.
+function stackOf(prsPerRepo) {
+  const counts = Object.fromEntries(STACK_CATEGORIES.map((category) => [category.key, 0]))
+  const development = prsPerRepo.filter(([repo]) => repoInfo(repo).category in counts)
+  for (const [repo, prs] of development) {
+    counts[repoInfo(repo).category] += prs
+  }
+
+  return { counts, languages: languageWeights(development) }
+}
+
+function frontShare({ counts }) {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+
+  return total ? counts.front / total : null
 }
 
 const TABLES = {
@@ -880,9 +1038,65 @@ function personLink(login) {
   )
 }
 
+function stackCell({ counts, languages }) {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  if (total === 0) {
+    return el('td', { className: 'muted', textContent: '–' })
+  }
+  const parts = STACK_CATEGORIES.filter((category) => counts[category.key] > 0)
+  const share = (category) => Math.round((100 * counts[category.key]) / total)
+  const main = parts.reduce((best, category) => (counts[category.key] > counts[best.key] ? category : best))
+  const languageTotal = languages.reduce((sum, [, weight]) => sum + weight, 0)
+  const top = languages.filter(([, weight]) => weight / languageTotal >= MIN_STACK_LANGUAGE_SHARE).slice(0, STACK_LANGUAGES)
+  const languageText = top.map(([name, weight]) => `${name} ${Math.round((100 * weight) / languageTotal)} %`).join(', ')
+
+  const bar = el(
+    'span',
+    { className: 'stack-bar' },
+    ...parts.map((category) => {
+      const segment = el('span')
+      segment.style.flexGrow = counts[category.key]
+      segment.style.background = category.color
+
+      return segment
+    }),
+  )
+  const cell = el(
+    'span',
+    { className: 'stack-cell', tabIndex: 0 },
+    el('span', { className: 'stack-main', textContent: `${share(main)} % ${main.label.toLowerCase()}` }),
+    bar,
+    el('span', { className: 'stack-logos' }, ...top.map(([name]) => languageIcon(name))),
+  )
+  cell.setAttribute('aria-label', `${parts.map((category) => `${category.label} ${share(category)} %`).join(', ')}. ${languageText}`)
+  bindTooltip(
+    cell,
+    (x, y) =>
+      showTooltip(
+        {
+          title: 'Stack',
+          rows: parts.map((category) => ({
+            color: category.color,
+            value: `${share(category)} %`,
+            label: `${category.label.toLowerCase()} · ${formatNumber(counts[category.key])} PR`,
+          })),
+          note: languageText ? `Langages : ${languageText}` : null,
+        },
+        x,
+        y,
+      ),
+    hideTooltip,
+  )
+
+  return el('td', {}, cell)
+}
+
 function renderCell(column, row, barMax) {
   if (column.kind === 'person') {
     return el('td', { className: 'person' }, personLink(row.login))
+  }
+  if (column.kind === 'stack') {
+    return stackCell(row.stack)
   }
   const text = column.format ? column.format(row) : formatNumber(row[column.key])
   if (column.kind === 'bar') {
@@ -973,52 +1187,125 @@ function repoOptions(name) {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 }
 
-function repoFilterLabel(name, options) {
+const reposOfCategory = (options, category) =>
+  options.filter(([repo]) => repoInfo(repo).category === category).map(([repo]) => repo)
+
+// Shortcuts of the list: every repository, one type of repository, or none.
+function presetSelection(preset, options) {
+  if (preset === 'all') {
+    return null
+  }
+
+  return new Set(preset === 'none' ? [] : reposOfCategory(options, preset))
+}
+
+// The selection restricted to the repositories listed for the period.
+function listedSelection(name, options) {
   const selection = state.repos[name]
-  if (!selection) {
+
+  return selection && new Set(options.map(([repo]) => repo).filter((repo) => selection.has(repo)))
+}
+
+const sameSelection = (a, b) => (a === null || b === null ? a === b : a.size === b.size && [...a].every((repo) => b.has(repo)))
+
+function repoFilterLabel(name, options) {
+  const selected = listedSelection(name, options)
+  if (!selected) {
     return 'Tous les dépôts'
   }
-  const selected = options.filter(([repo]) => selection.has(repo))
-  if (selected.length === 0) {
+  if (selected.size === 0) {
     return 'Aucun dépôt'
   }
+  // A selection made of whole types of repositories is named after them.
+  const types = CATEGORIES.map((category) => reposOfCategory(options, category.key)).map((repos, index) => ({
+    label: CATEGORIES[index].label,
+    repos,
+  }))
+  const whole = types.filter(({ repos }) => repos.length > 0 && repos.every((repo) => selected.has(repo)))
+  if (whole.reduce((total, { repos }) => total + repos.length, 0) === selected.size) {
+    return whole.map(({ label }) => label).join(' + ')
+  }
 
-  return selected.length === 1 ? selected[0][0] : `${selected.length} dépôts sur ${options.length}`
+  return selected.size === 1 ? [...selected][0] : `${selected.size} dépôts sur ${options.length}`
 }
 
-function renderRepoFilterLabel(name, options = repoOptions(name)) {
+// Checkboxes and shortcuts are updated in place so that keyboard focus stays where it is.
+function renderRepoFilterState(name, options = repoOptions(name)) {
   const filter = $(`[data-repo-filter="${name}"]`)
-  filter.classList.toggle('is-filtered', state.repos[name] !== null)
+  const selection = state.repos[name]
+  filter.classList.toggle('is-filtered', selection !== null)
   filter.querySelector('[data-repo-label]').textContent = repoFilterLabel(name, options)
+  for (const input of filter.querySelectorAll('input[data-repo]')) {
+    input.checked = inSelection(selection, input.dataset.repo)
+  }
+  for (const input of filter.querySelectorAll('input[data-category]')) {
+    const repos = reposOfCategory(options, input.dataset.category)
+    const checked = repos.filter((repo) => inSelection(selection, repo)).length
+    input.checked = checked === repos.length
+    input.indeterminate = checked > 0 && checked < repos.length
+  }
+  const selected = listedSelection(name, options)
+  for (const button of filter.querySelectorAll('[data-preset]')) {
+    button.setAttribute('aria-pressed', String(sameSelection(selected, presetSelection(button.dataset.preset, options))))
+  }
 }
 
+function repoCheckbox(label, count, data) {
+  const input = el('input', { type: 'checkbox' })
+  Object.assign(input.dataset, data)
+
+  return el(
+    'label',
+    {},
+    input,
+    el('span', { className: 'repo-name', textContent: label, title: label }),
+    el('span', { className: 'repo-count', textContent: formatNumber(count) }),
+  )
+}
+
+// The list groups the repositories by type, each type with a checkbox of its own.
 function renderRepoFilter(name) {
-  const list = $(`[data-repo-filter="${name}"] [data-repo-list]`)
+  const filter = $(`[data-repo-filter="${name}"]`)
+  const list = filter.querySelector('[data-repo-list]')
   const options = repoOptions(name)
+  const groups = CATEGORIES.map((category) => ({
+    category,
+    repos: options.filter(([repo]) => repoInfo(repo).category === category.key),
+  })).filter(({ repos }) => repos.length > 0)
+
+  const preset = (key, label) => {
+    const button = el('button', { type: 'button', textContent: label })
+    button.dataset.preset = key
+
+    return button
+  }
+  filter
+    .querySelector('[data-repo-presets]')
+    .replaceChildren(
+      preset('all', 'Tous'),
+      ...groups.map(({ category }) => preset(category.key, category.label)),
+      preset('none', 'Aucun'),
+    )
+
   const scrollTop = list.scrollTop
   list.replaceChildren(
-    ...options.map(([repo, count]) =>
+    ...groups.flatMap(({ category, repos }) => [
       el(
         'li',
-        {},
-        el(
-          'label',
-          {},
-          el('input', { type: 'checkbox', value: repo, checked: inSelection(state.repos[name], repo) }),
-          el('span', { className: 'repo-name', textContent: repo, title: repo }),
-          el('span', { className: 'repo-count', textContent: formatNumber(count) }),
-        ),
+        { className: 'repo-group' },
+        repoCheckbox(category.label, repos.reduce((total, [, count]) => total + count, 0), { category: category.key }),
       ),
-    ),
+      ...repos.map(([repo, count]) => el('li', {}, repoCheckbox(repo, count, { repo }))),
+    ]),
   )
   list.scrollTop = scrollTop
-  renderRepoFilterLabel(name, options)
+  renderRepoFilterState(name, options)
 }
 
 function setupRepoFilter(name) {
   const filter = $(`[data-repo-filter="${name}"]`)
-  const selectAll = el('button', { type: 'button', textContent: 'Tout sélectionner' })
-  const selectNone = el('button', { type: 'button', textContent: 'Tout désélectionner' })
+  const presets = el('div', { className: 'repo-presets' })
+  presets.dataset.repoPresets = ''
   const list = el('ul', { className: 'repo-filter-list' })
   list.dataset.repoList = ''
   list.setAttribute('aria-label', 'Dépôts')
@@ -1029,27 +1316,35 @@ function setupRepoFilter(name) {
     el(
       'div',
       { className: 'repo-filter-panel' },
-      el('div', { className: 'repo-filter-actions' }, selectAll, selectNone),
+      presets,
       el('p', { className: 'repo-filter-note', textContent: TABLES[name].repoCountsLabel }),
       list,
     ),
   )
 
-  // Checkboxes are updated in place so that keyboard focus stays where it is.
   const apply = (selection) => {
     state.repos[name] = selection
-    for (const input of list.querySelectorAll('input')) {
-      input.checked = inSelection(selection, input.value)
-    }
-    renderRepoFilterLabel(name)
+    renderRepoFilterState(name)
     renderTable(name, false)
   }
-  selectAll.addEventListener('click', () => apply(null))
-  selectNone.addEventListener('click', () => apply(new Set()))
-  list.addEventListener('change', () => {
-    const inputs = [...list.querySelectorAll('input')]
-    const checked = inputs.filter((input) => input.checked).map((input) => input.value)
-    apply(checked.length === inputs.length ? null : new Set(checked))
+  presets.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-preset]')
+    if (button) {
+      apply(presetSelection(button.dataset.preset, repoOptions(name)))
+    }
+  })
+  list.addEventListener('change', (event) => {
+    const repoInputs = [...list.querySelectorAll('input[data-repo]')]
+    const { category } = event.target.dataset
+    if (category) {
+      for (const input of repoInputs) {
+        if (repoInfo(input.dataset.repo).category === category) {
+          input.checked = event.target.checked
+        }
+      }
+    }
+    const checked = repoInputs.filter((input) => input.checked).map((input) => input.dataset.repo)
+    apply(checked.length === repoInputs.length ? null : new Set(checked))
   })
   filter.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && filter.open) {
@@ -1480,6 +1775,7 @@ for (const name of Object.keys(TABLES)) {
 renderThemeToggle()
 renderPeriodSelector()
 renderLegend()
+renderStackLegends()
 setInterval(refresh, POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)
 
