@@ -23,9 +23,12 @@ la recherche s'appliquent à toutes :
   taille des PR sur le délai de merge et la profondeur de review.
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
-- **Méthode** : la définition de chaque indicateur.
+- **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
+  rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par
+  workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
+- **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/tma`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
@@ -46,7 +49,8 @@ pour un visiteur comme pour un robot.
 ### Bouton de synchro
 
 Le bouton ⟳ en haut de la page lance une synchro rapide (PR modifiées, environ 1 min) ou complète (les 12 mois,
-environ 10 min), puis la page affiche les nouvelles données dès qu'elles sont publiées. Il n'apparaît que si le
+15 à 20 min, à garder exceptionnelle : les autres synchros attendent pendant ce temps), puis la page affiche les
+nouvelles données dès qu'elles sont publiées. Il n'apparaît que si le
 secret `DISPATCH_TOKEN` existe : un token fine-grained limité à ce repo, avec la seule permission _Actions_ en
 lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a le mot de passe peut s'en servir,
 pour lancer ou annuler des runs de ce workflow et rien d'autre.
@@ -60,9 +64,12 @@ DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent al
   - premier passage : toutes les PR créées sur les 12 derniers mois, repo par repo (environ 7 min pour une centaine de repos) ;
   - passages suivants : uniquement les PR modifiées depuis la dernière synchro, via l'API de recherche (quelques
     secondes).
-- Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). La synchro en tire une version réduite à
-  ce que comptent les stats (dépôt, numéro, auteur, dates, taille, reviews et commentaires, sans titre ni contenu),
-  publiée chiffrée dans `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
+- Elle lit aussi, par l'API REST, les exécutions GitHub Actions des dépôts poussés depuis la dernière synchro
+  (toutes celles des 12 derniers mois au premier passage), et l'état des checks du dernier commit de chaque PR.
+- Les PR brutes et les exécutions sont gardées dans `.cache/snapshot.json` (jamais publié). La synchro en tire une
+  version réduite à ce que comptent les stats (dépôt, numéro, auteur, dates, taille, reviews et commentaires, sans
+  titre ni contenu ; exécutions regroupées par workflow et par jour), publiée chiffrée dans
+  `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
   (`site/period.js`) : n'importe quelles dates des 12 derniers mois, et les chiffres de chaque personne détaillés par
   dépôt pour le filtre des tableaux.
   `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne

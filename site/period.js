@@ -3,7 +3,9 @@
 //
 // A record is one pull request of the rolling window, times in minutes since the epoch:
 // { repo, number, author, bot, kind, hotfix, production, createdAt, mergedAt, closed, lines, mergedBy, interventions }
-// with interventions as [login, at, state, comments], oldest first, bots and the author left out.
+// with interventions as [login, at, state, comments], oldest first, bots and the author left out. Optional fields:
+// deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
+// checksFailed (at its last commit) and dependency (the ecosystem of a Dependabot update).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -59,6 +61,18 @@ function median(values) {
 
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
 }
+
+// The value that this share of the values does not exceed.
+function percentile(values, share) {
+  if (values.length === 0) {
+    return null
+  }
+  const sorted = values.toSorted((a, b) => a - b)
+
+  return sorted[Math.max(0, Math.ceil(share * sorted.length) - 1)]
+}
+
+const rate = (part, total) => (total ? round(part / total, 3) : null)
 
 function getOrCreate(map, key, create) {
   if (!map.has(key)) {
@@ -124,7 +138,10 @@ export function computePeriod(records, { start, end, bucket }) {
   const bucketKey = (at) => bucketOfDay(parisDay(at * MINUTE_MS), bucket)
   const keys = bucketsOf(start, end, bucket)
   const buckets = new Map(
-    keys.map(({ key }) => [key, { key, opened: 0, merged: 0, comments: 0, approvals: 0, releases: 0, hotfixes: 0 }]),
+    keys.map(({ key }) => [
+      key,
+      { key, opened: 0, merged: 0, comments: 0, approvals: 0, releases: 0, hotfixes: 0, deployments: 0, corrective: 0 },
+    ]),
   )
   // Person stats are kept per repository so that the page can add them up over any selection of repositories.
   const authors = new Map()
@@ -134,6 +151,7 @@ export function computePeriod(records, { start, end, bucket }) {
   const reviewedPullRequests = new Set()
   const sizes = SIZE_BUCKETS.map((max) => ({ max, prs: 0, comments: 0, timesToMerge: [] }))
   let releases = 0
+  let mergedWithFailedChecks = 0
   const bump = (at, field, amount = 1) => {
     const bucket = buckets.get(bucketKey(at))
     if (bucket) {
@@ -165,6 +183,52 @@ export function computePeriod(records, { start, end, bucket }) {
       merges: 0,
     }))
   const repository = (name) => getOrCreate(repositories, name, () => ({ repo: name, reviewed: new Set(), comments: 0 }))
+
+  // DORA: deployments, the delay of code to production, the corrective deployments (hotfixes and reverts, the
+  // rework rate) and their own delay (the time to restore).
+  const delivery = new Map()
+  const deliveryOf = (repo) => getOrCreate(delivery, repo, () => ({ deployments: 0, corrective: 0, leadTimes: [], restoreTimes: [] }))
+  const addDeployment = (pr) => {
+    const stats = deliveryOf(pr.repo)
+    stats.deployments++
+    bump(pr.mergedAt, 'deployments')
+    if (pr.hotfix || pr.revert) {
+      stats.corrective++
+      stats.restoreTimes.push(hoursBetween(pr.createdAt, pr.mergedAt))
+      bump(pr.mergedAt, 'corrective')
+    }
+  }
+
+  // Dependabot: the updates opened over the range, and those still waiting whatever the range.
+  const dependencies = new Map()
+  const ecosystems = new Map()
+  const addDependency = (pr) => {
+    const stats = getOrCreate(dependencies, pr.repo, () => ({
+      opened: 0,
+      merged: 0,
+      closed: 0,
+      timesToMerge: [],
+      waiting: 0,
+      oldestWaitingAt: null,
+    }))
+    if (pr.mergedAt === null && !pr.closed) {
+      stats.waiting++
+      stats.oldestWaitingAt = Math.min(stats.oldestWaitingAt ?? Infinity, pr.createdAt)
+    }
+    if (!inRange(pr.createdAt)) {
+      return
+    }
+    const ecosystem = getOrCreate(ecosystems, pr.dependency, () => ({ opened: 0, merged: 0 }))
+    stats.opened++
+    ecosystem.opened++
+    if (pr.mergedAt !== null) {
+      stats.merged++
+      ecosystem.merged++
+      stats.timesToMerge.push(hoursBetween(pr.createdAt, pr.mergedAt))
+    } else if (pr.closed) {
+      stats.closed++
+    }
+  }
 
   // TMA: the hotfix pull requests and the people who make them.
   const hotfixes = { opened: 0, merged: 0, timesToMerge: [], timesToFirstReview: [], people: new Map(), repositories: new Map() }
@@ -199,6 +263,13 @@ export function computePeriod(records, { start, end, bucket }) {
       bump(pr.mergedAt, 'releases')
     }
 
+    if (pr.deployment && inRange(pr.mergedAt)) {
+      addDeployment(pr)
+    }
+    if (pr.dependency) {
+      addDependency(pr)
+    }
+
     // Everything else only covers code pull requests written by people.
     if (pr.bot) {
       continue
@@ -211,6 +282,9 @@ export function computePeriod(records, { start, end, bucket }) {
     }
     if (pr.kind !== 'code') {
       continue
+    }
+    if (inRange(pr.deployedAt ?? null)) {
+      deliveryOf(pr.repo).leadTimes.push(hoursBetween(pr.createdAt, pr.deployedAt))
     }
 
     if (opened) {
@@ -229,6 +303,9 @@ export function computePeriod(records, { start, end, bucket }) {
         stats.sizes.push(pr.lines)
         if (pr.interventions.length === 0) {
           stats.unreviewed++
+        }
+        if (pr.checksFailed) {
+          mergedWithFailedChecks++
         }
         const size = sizes.find((bucket) => pr.lines < bucket.max)
         size.prs++
@@ -299,6 +376,7 @@ export function computePeriod(records, { start, end, bucket }) {
       reviewed: reviewedPullRequests.size,
       commentsPerPr: reviewPairs ? round(sum(reviewerStats, 'comments') / reviewPairs, 2) : null,
       silentApprovalRate: approvedPairs ? round(silentPairs / approvedPairs, 3) : null,
+      checksFailedShare: rate(mergedWithFailedChecks, merged),
     },
     series: keys.map(({ key, partial }) => ({ ...buckets.get(key), partial })),
     // Durations and sizes stay as lists: medians cannot be added up across repositories.
@@ -380,5 +458,98 @@ export function computePeriod(records, { start, end, bucket }) {
     repositories: [...repositories.values()]
       .map((stats) => ({ repo: stats.repo, prs: stats.reviewed.size, comments: stats.comments }))
       .sort((a, b) => b.prs - a.prs),
+    delivery: deliveryStats([...delivery].map(([repo, stats]) => ({ repo, ...stats }))),
+    dependencies: dependencyStats(
+      [...dependencies].map(([repo, stats]) => ({ repo, ...stats })),
+      [...ecosystems].map(([ecosystem, stats]) => ({ ecosystem, ...stats })),
+    ),
+  }
+}
+
+function deliveryStats(repositories) {
+  const summary = (rows) => ({
+    deployments: sum(rows, 'deployments'),
+    corrective: sum(rows, 'corrective'),
+    medianLeadTimeHours: round(median(rows.flatMap((row) => row.leadTimes)), 1),
+    reworkRate: rate(sum(rows, 'corrective'), sum(rows, 'deployments')),
+    medianRestoreHours: round(median(rows.flatMap((row) => row.restoreTimes)), 1),
+  })
+
+  return {
+    ...summary(repositories),
+    repositories: repositories
+      .filter((row) => row.deployments > 0 || row.leadTimes.length > 0)
+      .map((row) => ({ repo: row.repo, ...summary([row]) })),
+  }
+}
+
+function dependencyStats(repositories, ecosystems) {
+  const oldest = (rows) => {
+    const times = rows.map((row) => row.oldestWaitingAt).filter((time) => time !== null)
+
+    return times.length ? new Date(Math.min(...times) * MINUTE_MS).toISOString() : null
+  }
+  const summary = (rows) => ({
+    opened: sum(rows, 'opened'),
+    merged: sum(rows, 'merged'),
+    closed: sum(rows, 'closed'),
+    medianTimeToMergeHours: round(median(rows.flatMap((row) => row.timesToMerge)), 1),
+    waiting: sum(rows, 'waiting'),
+    oldestWaitingAt: oldest(rows),
+  })
+
+  return {
+    ...summary(repositories),
+    repositories: repositories
+      .filter((row) => row.opened > 0 || row.waiting > 0)
+      .map((row) => ({ repo: row.repo, ...summary([row]) })),
+    ecosystems: ecosystems.sort((a, b) => b.opened - a.opened),
+  }
+}
+
+// CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.
+export function computeCi(workflows, { start, end, bucket }) {
+  const firstDay = parisDay(start)
+  const lastDay = parisDay(end - 1)
+  const keys = bucketsOf(start, end, bucket)
+  const empty = () => ({ runs: 0, failed: 0, rerun: 0, durations: [] })
+  const buckets = new Map(keys.map(({ key }) => [key, empty()]))
+  const add = (stats, [runs, failed, rerun, durations]) => {
+    stats.runs += runs
+    stats.failed += failed
+    stats.rerun += rerun
+    // One by one: a busy workflow has more durations than a spread call takes arguments.
+    for (const duration of durations) {
+      stats.durations.push(duration)
+    }
+  }
+  const summary = (stats) => ({
+    runs: stats.runs,
+    failureRate: rate(stats.failed, stats.runs),
+    rerunRate: rate(stats.rerun, stats.runs),
+    medianSeconds: median(stats.durations),
+    p90Seconds: percentile(stats.durations, 0.9),
+  })
+
+  const total = empty()
+  const rows = []
+  for (const { repo, workflow, days } of workflows) {
+    const stats = empty()
+    for (const [day, values] of Object.entries(days)) {
+      if (day >= firstDay && day <= lastDay) {
+        add(stats, values)
+        add(buckets.get(bucketOfDay(day, bucket)), values)
+      }
+    }
+    if (stats.runs > 0) {
+      add(total, [stats.runs, stats.failed, stats.rerun, stats.durations])
+      rows.push({ repo, workflow, ...summary(stats) })
+    }
+  }
+
+  return {
+    totals: summary(total),
+    series: keys.map(({ key, partial }) => ({ key, partial, ...summary(buckets.get(key)) })),
+    workflows: rows,
   }
 }

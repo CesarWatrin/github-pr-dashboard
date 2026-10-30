@@ -26,7 +26,8 @@ concurrency:
 jobs:
   sync-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The first sync after a snapshot format change reads a whole year of PRs and Actions runs.
+    timeout-minutes: 45
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

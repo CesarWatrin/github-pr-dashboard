@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, addDays, computePeriod, parisDay, parisMidnight } = await import(
+const { DAY_MS, addDays, computeCi, computePeriod, parisDay, parisMidnight } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -32,6 +32,7 @@ const DAY_BUCKET_MAX_DAYS = 31
 const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
+const TOP_ECOSYSTEMS = 8
 // Pull requests their author merged without approval: over a fixed month, like the activity feed over a week, on the
 // main repositories, the front, back and mobile ones. Docs, infrastructure and tooling are left out.
 const UNAPPROVED_DAYS = 30
@@ -52,8 +53,9 @@ const ICONS_URL = `technology-icons.svg${PAGE_BUILD ? `?v=${PAGE_BUILD}` : ''}`
 // The two syncs the page can start: the workflow's incremental one, or a full refetch of the rolling window.
 const SYNC_KINDS = {
   quick: { full: false, label: 'Synchro rapide en cours…', timeoutMs: 6 * 60_000 },
-  full: { full: true, label: 'Synchro complète en cours, environ 10 min…', timeoutMs: 20 * 60_000 },
-  running: { label: 'Une synchro est déjà en cours…', timeoutMs: 20 * 60_000 },
+  // Up to the workflow's own timeout.
+  full: { full: true, label: 'Synchro complète en cours, 15 à 20 min…', timeoutMs: 45 * 60_000 },
+  running: { label: 'Une synchro est déjà en cours…', timeoutMs: 45 * 60_000 },
 }
 const ACTIVE_RUN_STATUSES = ['requested', 'queued', 'pending', 'waiting', 'in_progress']
 
@@ -64,6 +66,7 @@ const ROUTES = {
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
+  devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
 }
 
@@ -103,6 +106,23 @@ const formatDecimal = (value) => (isMissing(value) ? '–' : decimalFormat.forma
 const formatPercent = (value) => (isMissing(value) ? '–' : `${value} %`)
 const formatShare = (value) => (isMissing(value) ? '–' : `${Math.round(value * 100)} %`)
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1)
+
+// CI durations, in seconds: to the second under ten minutes.
+function formatSeconds(seconds) {
+  if (isMissing(seconds)) {
+    return '–'
+  }
+  if (seconds < 60) {
+    return `${Math.round(seconds)} s`
+  }
+  if (seconds < 600) {
+    const rounded = Math.round(seconds)
+
+    return `${Math.floor(rounded / 60)} min ${String(rounded % 60).padStart(2, '0')}`
+  }
+
+  return formatDuration(seconds / 3600)
+}
 
 function formatDuration(hours) {
   if (isMissing(hours)) {
@@ -154,6 +174,31 @@ const REVIEW_TILES = [
   { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal, route: 'reviewers' },
   { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare, route: 'reviewers' },
   { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare, route: 'authors' },
+]
+
+const DORA_TILES = [
+  { key: 'deployments', label: 'Déploiements' },
+  { key: 'deploymentsPerWeek', label: 'Par semaine', format: formatDecimal },
+  { key: 'medianLeadTimeHours', label: 'Délai médian jusqu’en prod', format: formatDuration },
+  { key: 'reworkRate', label: 'Taux de reprise', format: formatShare },
+  { key: 'medianRestoreHours', label: 'Rétablissement médian', format: formatDuration },
+]
+
+const CI_TILES = [
+  { key: 'runs', label: 'Exécutions' },
+  { key: 'medianSeconds', label: 'Durée médiane', format: formatSeconds },
+  { key: 'p90Seconds', label: '9 sur 10 en moins de', format: formatSeconds },
+  { key: 'failureRate', label: 'En échec', format: formatShare },
+  { key: 'rerunRate', label: 'Relancées', format: formatShare },
+  { key: 'checksFailedShare', label: 'PR mergées avec un check rouge', format: formatShare },
+]
+
+const DEPENDENCY_TILES = [
+  { key: 'opened', label: 'PR ouvertes' },
+  { key: 'merged', label: 'Mergées' },
+  { key: 'closed', label: 'Fermées sans merge' },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
+  { key: 'waiting', label: 'En attente aujourd’hui' },
 ]
 
 const TMA_TILES = [
@@ -311,6 +356,108 @@ const TMA_COLUMNS = [
   },
 ]
 
+const DEPLOYMENT_COLUMNS = [
+  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  {
+    key: 'deployments',
+    label: 'Déploiements',
+    kind: 'bar',
+    hint: 'PR mergées dans master ou main sur la période : releases, hotfix et merges directs.',
+  },
+  { key: 'corrective', label: 'Correctifs', hint: 'Déploiements imprévus pour réparer la prod : hotfix ou revert.' },
+  {
+    key: 'medianLeadTimeHours',
+    label: 'Délai jusqu’en prod',
+    format: (row) => formatDuration(row.medianLeadTimeHours),
+    hint: 'Médiane, de l’ouverture d’une PR de code à son arrivée en prod, pour celles arrivées sur la période.',
+  },
+  {
+    key: 'reworkRate',
+    label: 'Taux de reprise',
+    format: (row) => formatShare(row.reworkRate),
+    hint: 'Part des déploiements qui sont des correctifs.',
+  },
+  {
+    key: 'medianRestoreHours',
+    label: 'Rétablissement',
+    format: (row) => formatDuration(row.medianRestoreHours),
+    hint: 'Médiane, de l’ouverture d’un correctif à son merge en prod.',
+  },
+]
+
+const WORKFLOW_COLUMNS = [
+  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'workflow', label: 'Workflow', kind: 'text', format: (row) => row.workflow },
+  {
+    key: 'runs',
+    label: 'Exécutions',
+    kind: 'bar',
+    hint: 'Exécutions sur des PR ou des push qui ont abouti à un verdict : annulées et ignorées exclues.',
+  },
+  {
+    key: 'medianSeconds',
+    label: 'Durée médiane',
+    format: (row) => formatSeconds(row.medianSeconds),
+    hint: 'Du démarrage de l’exécution à la fin de sa dernière tâche, attente des runners comprise.',
+  },
+  {
+    key: 'p90Seconds',
+    label: '9 sur 10 sous',
+    format: (row) => formatSeconds(row.p90Seconds),
+    hint: 'Durée sous laquelle se terminent 90 % des exécutions : les plus lentes, sans les cas extrêmes.',
+  },
+  {
+    key: 'failureRate',
+    label: 'En échec',
+    format: (row) => formatShare(row.failureRate),
+    hint: 'Exécutions en échec, dépassements de délai compris.',
+  },
+  {
+    key: 'rerunRate',
+    label: 'Relancées',
+    format: (row) => formatShare(row.rerunRate),
+    hint: 'Exécutions relancées au moins une fois, souvent le signe d’un test instable.',
+  },
+]
+
+const DEPENDENCY_COLUMNS = [
+  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'opened', label: 'Ouvertes', kind: 'bar', hint: 'PR Dependabot ouvertes sur la période.' },
+  { key: 'merged', label: 'Mergées', hint: 'Parmi elles, celles mergées.' },
+  {
+    key: 'closed',
+    label: 'Fermées',
+    hint: 'Parmi elles, celles fermées sans merge : remplacées par une version plus récente ou ignorées.',
+  },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane, de l’ouverture au merge.',
+  },
+  { key: 'waiting', label: 'En attente', hint: 'PR Dependabot encore ouvertes aujourd’hui, quelle que soit la période.' },
+  {
+    key: 'oldestWaitingAt',
+    label: 'Plus ancienne',
+    format: (row) => (row.oldestWaitingAt ? formatRelative(row.oldestWaitingAt) : '–'),
+    hint: 'Ouverture de la plus ancienne encore en attente.',
+  },
+]
+
+// Dependabot ecosystems, as named in its branches.
+const ECOSYSTEM_NAMES = {
+  github_actions: 'GitHub Actions',
+  npm_and_yarn: 'npm',
+  composer: 'Composer',
+  pub: 'pub (Dart)',
+  go_modules: 'Go',
+  cargo: 'Cargo',
+  docker: 'Docker',
+  pip: 'pip',
+  bundler: 'Bundler',
+  terraform: 'Terraform',
+}
+
 // Repository types sent by the sync script, in the order of the stack bars. Docs, infrastructure and tooling
 // repositories ("Autres") stay out of the stacks: they are neither front nor back.
 const CATEGORIES = [
@@ -364,6 +511,15 @@ const ICON_SIZE = 16
 // One label per size bucket sent by the sync script, smallest first.
 const SIZE_LABELS = ['< 10', '10 à 100', '100 à 500', '500 à 1 000', '> 1 000']
 
+const DEPLOYMENT_SERIES = [
+  {
+    label: 'releases et merges',
+    color: 'var(--series-1)',
+    value: (point) => point.deployments - point.corrective,
+  },
+  { label: 'correctifs', color: 'var(--series-2)', value: (point) => point.corrective },
+]
+
 const ACTIVITY_SERIES = [
   { label: 'PR ouvertes', color: 'var(--series-1)', value: (point) => point.opened },
   { label: 'commentaires de review', color: 'var(--series-2)', value: (point) => point.comments },
@@ -394,6 +550,7 @@ const state = {
   range: readStoredRange(),
   // The stats of the period shown, computed once per period and data.
   periodCache: null,
+  ciCache: null,
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
@@ -403,8 +560,13 @@ const state = {
     reviewers: { key: 'prs', direction: -1 },
     tma: { key: 'hotfixes', direction: -1 },
     repos: { key: 'code', direction: -1 },
+    deployments: { key: 'deployments', direction: -1 },
+    workflows: { key: 'runs', direction: -1 },
+    dependencies: { key: 'opened', direction: -1 },
   },
-  previousRows: { authors: new Map(), reviewers: new Map(), tma: new Map(), repos: new Map() },
+  previousRows: Object.fromEntries(
+    ['authors', 'reviewers', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [name, new Map()]),
+  ),
   // The sync started from the page, until new data arrives.
   syncRequest: null,
   seenEvents: null,
@@ -504,6 +666,16 @@ function currentPeriod() {
   }
 
   return state.periodCache.period
+}
+
+function currentCi() {
+  const range = periodRange()
+  const key = `${range.start}:${range.end}:${range.bucket}`
+  if (state.ciCache?.stats !== state.stats || state.ciCache.key !== key) {
+    state.ciCache = { stats: state.stats, key, ci: computeCi(state.stats.ci ?? [], range) }
+  }
+
+  return state.ciCache.ci
 }
 
 function periodTitle() {
@@ -642,6 +814,20 @@ function renderToday(mode) {
   $('[data-today-title]').textContent =
     today.date === currentDay ? 'Aujourd’hui' : `Le ${dayLongFormat.format(new Date(`${today.date}T12:00:00Z`))}`
   renderTiles($('[data-today]'), TODAY_TILES, today, mode)
+}
+
+function renderDevopsTiles(mode) {
+  const { delivery, dependencies, totals } = currentPeriod()
+  const { start, end } = periodRange()
+  $('[data-devops-title]').textContent = capitalize(periodTitle())
+  renderTiles(
+    $('[data-dora-tiles]'),
+    DORA_TILES,
+    { ...delivery, deploymentsPerWeek: Math.round((10 * delivery.deployments) / ((end - start) / DAY_MS / 7)) / 10 },
+    mode,
+  )
+  renderTiles($('[data-ci-tiles]'), CI_TILES, { ...currentCi().totals, checksFailedShare: totals.checksFailedShare }, mode)
+  renderTiles($('[data-dependency-tiles]'), DEPENDENCY_TILES, dependencies, mode)
 }
 
 function renderTmaTiles(mode) {
@@ -1065,6 +1251,53 @@ function renderMiniCharts() {
   }
 }
 
+function renderDevopsCharts() {
+  const { series, bucket, dependencies } = currentPeriod()
+  $('[data-deployments-chart-title]').textContent = `Déploiements ${BUCKET_TITLES[bucket]}`
+  columnChart($('[data-deployments-chart]'), {
+    points: series,
+    bucket,
+    series: DEPLOYMENT_SERIES,
+    ariaLabel: `Déploiements ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+  })
+
+  const ci = currentCi()
+  $('[data-ci-charts-title]').textContent = `Exécutions ${BUCKET_TITLES[bucket]}`
+  columnChart($('[data-ci-duration-chart]'), {
+    points: ci.series,
+    bucket,
+    series: [{ label: 'min, durée médiane', color: 'var(--series-1)', value: (point) => (point.medianSeconds ?? 0) / 60 }],
+    decimals: true,
+    ariaLabel: `Durée médiane des exécutions de CI ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    extraRows: (point) => [{ label: 'exécutions', value: formatNumber(point.runs) }],
+  })
+  columnChart($('[data-ci-failure-chart]'), {
+    points: ci.series,
+    bucket,
+    series: [{ label: '% en échec', color: 'var(--series-2)', value: (point) => (point.failureRate ?? 0) * 100 }],
+    decimals: true,
+    ariaLabel: `Part des exécutions de CI en échec ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    extraRows: (point) => [{ label: 'exécutions', value: formatNumber(point.runs) }],
+  })
+
+  const ecosystemName = (row) => ECOSYSTEM_NAMES[row.ecosystem] ?? row.ecosystem
+  barChart($('[data-dependency-ecosystems]'), {
+    rows: dependencies.ecosystems.slice(0, TOP_ECOSYSTEMS),
+    label: ecosystemName,
+    value: (row) => row.opened,
+    format: formatNumber,
+    color: 'var(--series-1)',
+    ariaLabel: 'PR Dependabot par écosystème',
+    tooltip: (row) => ({
+      title: ecosystemName(row),
+      rows: [
+        { label: 'ouvertes', value: formatNumber(row.opened) },
+        { label: 'mergées', value: formatNumber(row.merged) },
+      ],
+    }),
+  })
+}
+
 function renderCharts() {
   if (!state.stats) {
     return
@@ -1073,6 +1306,7 @@ function renderCharts() {
   renderSizeCharts()
   renderTechnologiesChart()
   renderTmaCharts()
+  renderDevopsCharts()
   if (state.person) {
     renderMiniCharts()
   }
@@ -1122,9 +1356,9 @@ function renderStackLegends() {
   }
 }
 
-function renderLegend() {
-  $('[data-chart-legend]').replaceChildren(
-    ...ACTIVITY_SERIES.map((item) => {
+function renderLegend(container, series) {
+  container.replaceChildren(
+    ...series.map((item) => {
       const swatch = el('span', { className: 'swatch' })
       swatch.style.background = item.color
 
@@ -1227,6 +1461,7 @@ function reviewerRows() {
 }
 
 const repoInfo = (repo) => state.stats.repos[repo] ?? { category: 'other', technologies: [] }
+const withCategory = (rows) => rows.map((row) => ({ ...row, category: repoInfo(row.repo).category }))
 
 // Spreads pull request counts per repository over the technologies of each repository, by their share of its code.
 function technologyWeights(prsPerRepo) {
@@ -1333,6 +1568,24 @@ const TABLES = {
     columns: TMA_COLUMNS,
     rows: () => currentPeriod().tma.people,
     searchTexts: (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
+  },
+  deployments: {
+    columns: DEPLOYMENT_COLUMNS,
+    rows: () => withCategory(currentPeriod().delivery.repositories),
+    rowKey: (row) => row.repo,
+    searchTexts: (row) => [row.repo],
+  },
+  workflows: {
+    columns: WORKFLOW_COLUMNS,
+    rows: () => withCategory(currentCi().workflows),
+    rowKey: (row) => `${row.repo}/${row.workflow}`,
+    searchTexts: (row) => [row.repo, row.workflow],
+  },
+  dependencies: {
+    columns: DEPENDENCY_COLUMNS,
+    rows: () => withCategory(currentPeriod().dependencies.repositories),
+    rowKey: (row) => row.repo,
+    searchTexts: (row) => [row.repo],
   },
 }
 const FILTERED_TABLES = Object.keys(TABLES).filter((name) => TABLES[name].repoCounts)
@@ -2119,6 +2372,7 @@ function render(animate) {
   renderToday(tileMode)
   renderTotals(tileMode)
   renderTmaTiles(tileMode)
+  renderDevopsTiles(tileMode)
   renderPersonPicker()
   renderCharts()
   renderChartTable()
@@ -2458,7 +2712,8 @@ for (const name of FILTERED_TABLES) {
 renderThemeToggle()
 renderRoute()
 renderPeriodSelector()
-renderLegend()
+renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)
+renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderStackLegends()
 renderTableLegends()
 setInterval(refresh, POLL_INTERVAL_MS)
