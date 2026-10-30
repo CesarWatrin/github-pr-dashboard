@@ -29,6 +29,9 @@ All days, buckets and "today" are Paris days (`Europe/Paris`).
 
 ## Configuration
 
+Locally, the variables live in `.env`. In CI they are secrets of the `github-pages` environment, which only `main` can
+deploy to: no workflow of another branch can read them.
+
 | Variable | Where | Role |
 |---|---|---|
 | `ORG` | `.env`, secret `ORG` | Tracked organization (required) |
