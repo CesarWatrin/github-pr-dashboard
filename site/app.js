@@ -59,7 +59,7 @@ const ROUTES = {
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
-  method: { hash: '#/methode', title: 'Méthode', subtitle: 'Comment chaque indicateur est calculé', filters: false },
+  method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
 }
 
 // Preset periods, up to the last sync. Picked dates are whole days within the synced year.
@@ -161,40 +161,85 @@ const TMA_TILES = [
 
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'code', label: 'PR de code', kind: 'bar' },
-  { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
+  { key: 'code', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  {
+    key: 'stack',
+    label: 'Stack',
+    kind: 'stack',
+    value: (row) => frontShare(row.stack),
+    hint: 'Part de ces PR dans les dépôts front, back et mobile. Full-stack : au moins 30 % côté back et 30 % côté client.',
+  },
   {
     key: 'process',
     label: 'Release / intég.',
     value: (row) => row.release + row.integration,
     format: (row) => `${row.release} / ${row.integration}`,
+    hint: 'PR de release / de synchronisation de branches, comptées à part.',
   },
-  { key: 'mergeRate', label: 'Taux de merge', format: (row) => formatPercent(row.mergeRate) },
-  { key: 'unreviewedRate', label: 'Mergées sans review', format: (row) => formatShare(row.unreviewedRate) },
+  {
+    key: 'mergeRate',
+    label: 'Taux de merge',
+    format: (row) => formatPercent(row.mergeRate),
+    hint: 'Mergées / (mergées + fermées sans merge).',
+  },
+  {
+    key: 'unreviewedRate',
+    label: 'Mergées sans review',
+    format: (row) => formatShare(row.unreviewedRate),
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
   {
     key: 'medianTimeToFirstReviewHours',
     label: 'Attente 1re review',
     format: (row) => formatDuration(row.medianTimeToFirstReviewHours),
+    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
   },
-  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
-  { key: 'medianSize', label: 'Taille médiane' },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane, de la création au merge.',
+  },
+  { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR mergées.' },
 ]
 
 const REVIEWER_COLUMNS = [
   { key: 'login', label: 'Relecteur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'prs', label: 'PR relues', kind: 'bar' },
-  { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
-  { key: 'commentsPerPr', label: 'Comment. / PR', format: (row) => formatDecimal(row.commentsPerPr) },
-  { key: 'silentApprovalRate', label: 'Approb. sans comment.', format: (row) => formatShare(row.silentApprovalRate) },
-  { key: 'changesRequested', label: 'Modif. demandées' },
-  { key: 'medianSize', label: 'Taille médiane' },
-  { key: 'merges', label: 'Merges effectués' },
+  {
+    key: 'prs',
+    label: 'PR relues',
+    kind: 'bar',
+    hint: 'PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.',
+  },
+  {
+    key: 'stack',
+    label: 'Stack',
+    kind: 'stack',
+    value: (row) => frontShare(row.stack),
+    hint: 'Part de ces PR dans les dépôts front, back et mobile.',
+  },
+  {
+    key: 'commentsPerPr',
+    label: 'Comment. / PR',
+    format: (row) => formatDecimal(row.commentsPerPr),
+    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+  },
+  {
+    key: 'silentApprovalRate',
+    label: 'Approb. sans comment.',
+    format: (row) => formatShare(row.silentApprovalRate),
+    hint: 'Part des PR approuvées sans y laisser de commentaire.',
+  },
+  { key: 'changesRequested', label: 'Modif. demandées', hint: 'Reviews « changements demandés ».' },
+  { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR relues.' },
+  { key: 'merges', label: 'Merges effectués', hint: 'PR de code mergées par la personne, les siennes comprises.' },
   {
     key: 'topRepos',
     label: 'Principaux dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
     cell: (row) => topReposCell(row.topRepos, 'PR relues'),
+    hint: 'Dépôts où la personne a relu le plus de PR.',
   },
 ]
 
@@ -206,27 +251,59 @@ const REPO_COLUMNS = [
     kind: 'text',
     value: (row) => row.technologies[0]?.[0] ?? '',
     cell: (row) => technologiesCell(row.technologies),
+    hint: 'Technologies principales du code du dépôt, détail au survol.',
   },
-  { key: 'code', label: 'PR de code', kind: 'bar' },
-  { key: 'contributors', label: 'Contributeurs' },
-  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
-  { key: 'unreviewedRate', label: 'Mergées sans review', format: (row) => formatShare(row.unreviewedRate) },
-  { key: 'reviewed', label: 'PR relues' },
+  { key: 'code', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  { key: 'contributors', label: 'Contributeurs', hint: 'Auteurs de ces PR.' },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane, de la création au merge.',
+  },
+  {
+    key: 'unreviewedRate',
+    label: 'Mergées sans review',
+    format: (row) => formatShare(row.unreviewedRate),
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+  { key: 'reviewed', label: 'PR relues', hint: 'PR du dépôt avec une review ou un commentaire sur la période.' },
 ]
 
 const TMA_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'hotfixes', label: 'Hotfix', kind: 'bar' },
-  { key: 'share', label: 'Part de ses PR', format: (row) => formatShare(row.share) },
-  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
+  {
+    key: 'hotfixes',
+    label: 'Hotfix',
+    kind: 'bar',
+    hint: 'PR de code ouvertes sur la période depuis une branche qui commence par hotfix.',
+  },
+  {
+    key: 'share',
+    label: 'Part de ses PR',
+    format: (row) => formatShare(row.share),
+    hint: 'Ses hotfix rapportés à toutes ses PR de code.',
+  },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane de ses hotfix, de la création au merge.',
+  },
   {
     key: 'topRepos',
     label: 'Dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
     cell: (row) => topReposCell(row.topRepos, 'hotfix'),
+    hint: 'Dépôts où la personne a fait le plus de hotfix.',
   },
-  { key: 'lastAt', label: 'Dernier hotfix', format: (row) => formatRelative(row.lastAt) },
+  {
+    key: 'lastAt',
+    label: 'Dernier hotfix',
+    format: (row) => formatRelative(row.lastAt),
+    hint: 'Création de son dernier hotfix sur la période.',
+  },
 ]
 
 // Repository types sent by the sync script, in the order of the stack bars. Docs, infrastructure and tooling
@@ -1011,6 +1088,17 @@ function renderChartTable() {
         formatNumber(point.releases),
       ]),
   )
+}
+
+// Under each table, what its columns count: the method page only keeps the rules they share.
+function renderTableLegends() {
+  for (const [name, table] of Object.entries(TABLES)) {
+    $(`[data-table-legend="${name}"]`).replaceChildren(
+      ...table.columns
+        .filter((column) => column.hint)
+        .map((column) => el('div', {}, el('dt', { textContent: column.label }), el('dd', { textContent: column.hint }))),
+    )
+  }
 }
 
 function renderStackLegends() {
@@ -2311,6 +2399,7 @@ renderRoute()
 renderPeriodSelector()
 renderLegend()
 renderStackLegends()
+renderTableLegends()
 setInterval(refresh, POLL_INTERVAL_MS)
 setInterval(() => state.syncRequest && refresh(), SYNC_POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)

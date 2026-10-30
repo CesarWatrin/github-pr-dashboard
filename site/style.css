@@ -986,6 +986,36 @@ main.is-loading {
   text-align: center;
 }
 
+/* What the columns of a table count: there to be found, quieter than the data. */
+.table-legend {
+  columns: 2 320px;
+  column-gap: 32px;
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.table-legend div {
+  margin-bottom: 3px;
+  break-inside: avoid;
+}
+
+.table-legend dt,
+.table-legend dd {
+  display: inline;
+  margin: 0;
+}
+
+.table-legend dt {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.table-legend dt::after {
+  content: '\00a0: ';
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;

@@ -212,6 +212,7 @@
               <h2 id="repos-title">Dépôts</h2>
               <p class="card-sub">Dépôts avec des PR de code ou des reviews sur la période</p>
               <div class="table-wrap" data-repos></div>
+              <dl class="table-legend" data-table-legend="repos"></dl>
             </section>
           </div>
 
@@ -224,6 +225,7 @@
               </div>
               <div class="legend" data-stack-legend></div>
               <div class="table-wrap" data-authors></div>
+              <dl class="table-legend" data-table-legend="authors"></dl>
             </section>
 
             <section class="card" aria-labelledby="sizes-title">
@@ -245,6 +247,7 @@
               </div>
               <div class="legend" data-stack-legend></div>
               <div class="table-wrap" data-reviewers></div>
+              <dl class="table-legend" data-table-legend="reviewers"></dl>
             </section>
 
             <section class="card" aria-labelledby="evolution-title">
@@ -273,6 +276,7 @@
               <section class="card" aria-labelledby="tma-people-title">
                 <h2 id="tma-people-title">Contributeurs</h2>
                 <div class="table-wrap tma-table" data-tma></div>
+                <dl class="table-legend" data-table-legend="tma"></dl>
               </section>
 
               <section class="card" aria-labelledby="tma-repos-title">
@@ -301,6 +305,16 @@
                   <code>project/…/main</code> vers <code>develop</code> ou <code>master</code>), comptées à part dans
                   « Release / intég. ». Merges, délais, tailles et reviews ne portent que sur les PR de code.
                 </dd>
+                <dt>PR relue</dt>
+                <dd>
+                  Au moins une review ou un commentaire de quelqu’un d’autre que l’auteur. Dans l’évolution, elle compte
+                  dans la période de la première intervention.
+                </dd>
+                <dt>Délais et tailles</dt>
+                <dd>
+                  Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Taille : lignes ajoutées plus
+                  supprimées.
+                </dd>
                 <dt>Type de dépôt</dt>
                 <dd>
                   Déduit des langages détectés par GitHub : Vue donne front ; PHP, Go, Rust donnent back ; Dart (Flutter)
@@ -323,34 +337,13 @@
                 </dd>
                 <dt>Mises en production</dt>
                 <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
-                <dt>Part de hotfix</dt>
-                <dd>PR de code dont la branche commence par <code>hotfix</code>, rapportées à toutes les PR de code.</dd>
-                <dt>Taux de merge</dt>
-                <dd>Mergées / (mergées + fermées sans merge).</dd>
-                <dt>Délais et taille</dt>
+                <dt>Hotfix</dt>
                 <dd>
-                  Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Attente 1re review : de la
-                  création à la première review ou au premier commentaire d’une autre personne. Délai de merge : de la
-                  création au merge. Taille : lignes ajoutées plus supprimées.
+                  PR de code dont la branche commence par <code>hotfix</code>. Part de hotfix : rapportées à toutes les PR
+                  de code.
                 </dd>
-                <dt>TMA</dt>
-                <dd>
-                  PR de code dont la branche commence par <code>hotfix</code>, créées sur la période. « Part de ses PR » :
-                  hotfix de la personne rapportés à toutes ses PR de code.
-                </dd>
-                <dt>Mergées sans review</dt>
-                <dd>PR de code mergées sans aucune review ni commentaire d’une autre personne que l’auteur.</dd>
                 <dt>PR en attente de review</dt>
                 <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
-                <dt>PR relue</dt>
-                <dd>
-                  Au moins une review ou un commentaire de quelqu’un d’autre que l’auteur. Dans l’évolution, elle compte
-                  dans la période de la première intervention.
-                </dd>
-                <dt>Commentaires par PR relue</dt>
-                <dd>Commentaires dans le code, commentaires généraux et reviews « commentaire », divisés par les PR relues.</dd>
-                <dt>Approbations sans commentaire</dt>
-                <dd>Parmi les PR approuvées, part de celles où le relecteur n’a laissé aucun commentaire.</dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>
               </dl>
