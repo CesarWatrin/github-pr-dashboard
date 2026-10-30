@@ -673,6 +673,106 @@ h3 {
   font-weight: 600;
 }
 
+.date-range {
+  position: relative;
+}
+
+.date-range summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.date-range summary::-webkit-details-marker {
+  display: none;
+}
+
+.date-range summary svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.3;
+  color: var(--text-secondary);
+}
+
+/* Picked dates replace the preset periods: they look selected the same way. */
+.date-range.is-active summary {
+  border-color: var(--text-primary);
+  background: var(--text-primary);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.date-range.is-active summary svg {
+  color: inherit;
+}
+
+.date-range-panel {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 10px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.date-range-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.date-range-fields label {
+  display: grid;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.date-range-fields input {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.date-range-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* On a phone the button may sit anywhere in the wrapped filters: the panel takes their whole width instead. */
+@media (max-width: 640px) {
+  .filters {
+    position: relative;
+  }
+
+  .date-range {
+    position: static;
+  }
+
+  .date-range-panel {
+    right: 0;
+    width: auto;
+  }
+}
+
 .search {
   flex: 0 1 260px;
   min-width: 0;
@@ -1609,6 +1709,11 @@ tbody td.person {
 .repo-filter[open] .repo-filter-panel,
 .sync-menu[open] .sync-menu-panel {
   transform-origin: top right;
+  animation: pop-down 180ms var(--ease-out);
+}
+
+.date-range[open] .date-range-panel {
+  transform-origin: top left;
   animation: pop-down 180ms var(--ease-out);
 }
 

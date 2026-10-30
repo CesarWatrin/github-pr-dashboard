@@ -1,7 +1,8 @@
 # github-pr-dashboard
 
 Dashboard web des pull requests et des reviews par contributeur d'une organisation GitHub, sur une période glissante
-(30 jours, 90 jours, 12 mois). L'organisation n'a pas de valeur par défaut : elle se configure avec la variable `ORG`.
+(30 jours, 90 jours, 12 mois) ou des dates choisies dans les 12 derniers mois. L'organisation n'a pas de valeur par
+défaut : elle se configure avec la variable `ORG`.
 
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
@@ -58,9 +59,11 @@ DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent al
   - premier passage : toutes les PR créées sur les 12 derniers mois, repo par repo (environ 7 min pour une centaine de repos) ;
   - passages suivants : uniquement les PR modifiées depuis la dernière synchro, via l'API de recherche (quelques
     secondes).
-- Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). Seules les stats agrégées sont publiées,
-  chiffrées dans `site/data/stats.enc.json`, avec les chiffres de chaque personne détaillés par dépôt pour le
-  filtre des tableaux.
+- Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). La synchro en tire une version réduite à
+  ce que comptent les stats (dépôt, numéro, auteur, dates, taille, reviews et commentaires, sans titre ni contenu),
+  publiée chiffrée dans `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
+  (`site/period.js`) : n'importe quelles dates des 12 derniers mois, et les chiffres de chaque personne détaillés par
+  dépôt pour le filtre des tableaux.
   `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne
   retélécharge les stats que lorsqu'elle change.
 - Le type de chaque dépôt (front, back, mobile ou autres : docs, infra, outillage) est déduit des langages que
