@@ -878,16 +878,34 @@ main.is-loading {
   gap: 6px;
 }
 
-.stack-main {
-  min-width: 60px;
-  color: var(--text-secondary);
+/* Type label, tinted with the color of its type; full-stack blends front and back. The text stays in ink. */
+.stack-type {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--type-color) 26%, var(--surface));
+  color: var(--text-primary);
   font-size: 12px;
-  text-align: right;
+  font-weight: 600;
 }
 
-.stack-main.is-full-stack {
-  color: var(--text-primary);
-  font-weight: 600;
+.stack-type.is-front {
+  --type-color: var(--series-1);
+}
+
+.stack-type.is-back {
+  --type-color: var(--series-2);
+}
+
+.stack-type.is-mobile {
+  --type-color: var(--series-3);
+}
+
+.stack-type.is-full-stack {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--series-1) 26%, var(--surface)),
+    color-mix(in srgb, var(--series-2) 26%, var(--surface))
+  );
 }
 
 .stack-bar {

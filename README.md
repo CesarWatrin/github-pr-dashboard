@@ -13,8 +13,9 @@ Le dashboard montre :
   mergées sans review) ;
 - l'activité par période et le fil des 7 derniers jours ;
 - les tableaux par auteur et par relecteur, filtrables par dépôt ou par type de dépôt (front, back, mobile, autres),
-  avec la stack de chaque personne : sa répartition front / back / mobile et ses langages principaux ;
-- la part de chaque langage dans les PR de code, avec son logo ;
+  avec la stack de chaque personne : front, back, mobile ou full-stack, et ses technologies principales ;
+- la part de chaque technologie dans les PR de code, avec son logo : les langages d'un dépôt sont regroupés sous le
+  framework que déclarent ses fichiers de dépendances (Laravel, Nuxt, NestJS, Flutter…) ;
 - l'effet de la taille des PR sur le délai de merge et la profondeur de review ;
 - les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
 - une section Méthode qui définit chaque indicateur.
@@ -52,8 +53,8 @@ DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent al
 - Le type de chaque dépôt (front, back, mobile ou autres : docs, infra, outillage) est déduit des langages que
   GitHub y détecte. Les dépôts mal jugés se corrigent avec `REPO_CATEGORIES` (`repo:type,repo:type`), gardée dans le
   `.env` et dans un secret plutôt que dans le code, puisque les noms des dépôts de l'org sont privés.
-- Les logos des langages viennent de [Simple Icons](https://simpleicons.org) (CC0), embarqués dans
-  `site/language-icons.svg` : la page n'appelle aucun service tiers.
+- Les logos des technologies viennent de [Simple Icons](https://simpleicons.org) (CC0), embarqués dans
+  `site/technology-icons.svg` : la page n'appelle aucun service tiers.
 - Les bots sont exclus partout : comptes de type bot (GitHub Apps, détectés via l'API) et comptes de service listés
   dans `BOT_USERS`.
 - Les noms affichés sont ceux des profils GitHub (identifiant à défaut).

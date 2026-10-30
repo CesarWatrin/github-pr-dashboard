@@ -160,10 +160,10 @@
         </div>
 
         <div class="grid-2 grid-even">
-          <section class="card" aria-labelledby="languages-title">
-            <h2 id="languages-title">Langages</h2>
-            <p class="card-sub" data-languages-sub></p>
-            <div class="bar-chart" data-languages-chart></div>
+          <section class="card" aria-labelledby="technologies-title">
+            <h2 id="technologies-title">Technologies</h2>
+            <p class="card-sub" data-technologies-sub></p>
+            <div class="bar-chart" data-technologies-chart></div>
           </section>
 
           <section class="card" aria-labelledby="repos-title">
@@ -211,13 +211,16 @@
             <dt>Stack</dt>
             <dd>
               Répartition des PR de code (auteurs) ou des PR relues (relecteurs) entre dépôts front, back et mobile, et
-              langages principaux de ces dépôts. Les dépôts « autres » n’y comptent pas. « Full-stack » : au moins
+              technologies principales de ces dépôts. Les dépôts « autres » n’y comptent pas. « Full-stack » : au moins
               30 % des PR côté back et au moins 30 % côté client (front ou mobile).
             </dd>
-            <dt>Langages</dt>
+            <dt>Technologies</dt>
             <dd>
-              Chaque PR de code est répartie entre les langages de son dépôt, au prorata de leur part dans le code
-              (langages sous 2 % ignorés). Logos : Simple Icons.
+              Les langages d’un dépôt sont regroupés sous le framework que déclarent ses fichiers de dépendances
+              (<code>composer.json</code>, <code>package.json</code>, <code>pubspec.yaml</code>) : PHP et Blade sous
+              Laravel, Vue et TypeScript sous Nuxt, Dart sous Flutter, TypeScript sous NestJS… Chaque PR de code est
+              répartie entre les technologies de son dépôt, au prorata de leur part dans le code (moins de 2 % :
+              ignorée). Logos : Simple Icons.
             </dd>
             <dt>Mises en production</dt>
             <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>

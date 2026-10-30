@@ -14,9 +14,9 @@ const UNLOCK_DURATION_MS = 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
 const TOP_REPOS_PER_REVIEWER = 3
-const TOP_LANGUAGES = 10
-const STACK_LANGUAGES = 3
-const MIN_STACK_LANGUAGE_SHARE = 0.05
+const TOP_TECHNOLOGIES = 10
+const STACK_TECHNOLOGIES = 3
+const MIN_STACK_TECHNOLOGY_SHARE = 0.05
 // Full-stack: at least this share of the pull requests on the back end and as much on the client, web or mobile.
 const FULL_STACK_MIN_SHARE = 0.3
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -24,7 +24,7 @@ const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 
 // Stamped with the commit by the deploy workflow; the placeholder stays when the site is served locally.
 const PAGE_BUILD = document.querySelector('meta[name="build"]')?.content.replace('__BUILD__', '') || null
-const ICONS_URL = `language-icons.svg${PAGE_BUILD ? `?v=${PAGE_BUILD}` : ''}`
+const ICONS_URL = `technology-icons.svg${PAGE_BUILD ? `?v=${PAGE_BUILD}` : ''}`
 
 const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
@@ -156,17 +156,24 @@ const CATEGORIES = [
 ]
 const STACK_CATEGORIES = CATEGORIES.filter((category) => category.color)
 
-// Logo in language-icons.svg and brand color of each language. A third value flags a brand color too close to the
-// light or dark surface: the logo takes the text color there.
-const LANGUAGE_ICONS = {
-  PHP: ['php', '#777bb4'],
-  Blade: ['laravel', '#ff2d20'],
+// Logo in technology-icons.svg and brand color of each technology. A third value flags a brand color too close to
+// the light or dark surface: the logo takes the text color there.
+const TECHNOLOGY_ICONS = {
+  Laravel: ['laravel', '#ff2d20'],
+  Symfony: ['symfony', '#000000', 'dark'],
+  Nuxt: ['nuxt', '#00dc82', 'light'],
+  'Next.js': ['nextdotjs', '#000000', 'dark'],
+  VitePress: ['vitepress', '#5c73e7'],
+  NestJS: ['nestjs', '#e0234e'],
   Vue: ['vuedotjs', '#4fc08d'],
+  React: ['react', '#61dafb', 'light'],
+  Svelte: ['svelte', '#ff3e00'],
+  Flutter: ['flutter', '#02569b'],
+  PHP: ['php', '#777bb4'],
   TypeScript: ['typescript', '#3178c6'],
   JavaScript: ['javascript', '#f7df1e', 'light'],
   Dart: ['dart', '#0175c2'],
   Go: ['go', '#00add8'],
-  'Go Template': ['go', '#00add8'],
   Rust: ['rust', '#000000', 'dark'],
   Python: ['python', '#3776ab'],
   Ruby: ['ruby', '#cc342d'],
@@ -180,11 +187,10 @@ const LANGUAGE_ICONS = {
   CSS: ['css', '#663399'],
   SCSS: ['sass', '#cc6699'],
   Less: ['less', '#1d365d', 'dark'],
-  Svelte: ['svelte', '#ff3e00'],
   Shell: ['gnubash', '#4eaa25'],
-  HCL: ['terraform', '#844fba'],
-  Dockerfile: ['docker', '#2496ed'],
-  PLpgSQL: ['postgresql', '#4169e1'],
+  Terraform: ['terraform', '#844fba'],
+  Docker: ['docker', '#2496ed'],
+  PostgreSQL: ['postgresql', '#4169e1'],
   CMake: ['cmake', '#064f8c'],
   Jinja: ['jinja', '#7e0c1b', 'dark'],
 }
@@ -296,9 +302,9 @@ function truncateText(text, maxWidth) {
   return `${truncated}…`
 }
 
-// Language logo, as an inline SVG pointing to the sprite; a generic code glyph for unknown languages.
-function languageIcon(language, attributes = {}) {
-  const [slug, color, faint] = LANGUAGE_ICONS[language] ?? ['code']
+// Technology logo, as an inline SVG pointing to the sprite; a generic code glyph for unknown ones.
+function technologyIcon(technology, attributes = {}) {
+  const [slug, color, faint] = TECHNOLOGY_ICONS[technology] ?? ['code']
   const icon = svg('svg', {
     class: faint ? `lang-icon is-faint-on-${faint}` : 'lang-icon',
     viewBox: '0 0 24 24',
@@ -618,7 +624,7 @@ function columnChart(container, { points, bucket, series, ariaLabel, decimals = 
 }
 
 // Horizontal bars, one row per item, value at the tip.
-function barChart(container, { rows, label, value, format, max, color, ariaLabel, tooltip, language }) {
+function barChart(container, { rows, label, value, format, max, color, ariaLabel, tooltip, technology }) {
   const width = container.clientWidth
   if (width === 0) {
     return
@@ -631,7 +637,7 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
   const rowHeight = 28
   const height = rows.length * rowHeight
   const labelMax = width * 0.4
-  const iconSpace = language ? ICON_SIZE + 6 : 0
+  const iconSpace = technology ? ICON_SIZE + 6 : 0
   const labelWidth = Math.min(labelMax, Math.max(...rows.map((row) => measureText(label(row)))) + iconSpace)
   const valueWidth = Math.max(...rows.map((row) => measureText(format(value(row))))) + 8
   const start = labelWidth + 10
@@ -645,9 +651,9 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
     const group = svg('g', { class: 'bar-group' })
     const name = svg('text', { class: 'axis-label', x: labelWidth, y: y + rowHeight / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
     name.textContent = truncateText(label(row), labelMax - iconSpace)
-    if (language) {
+    if (technology) {
       const iconX = labelWidth - measureText(name.textContent) - iconSpace
-      group.append(languageIcon(language(row), { x: iconX, y: y + (rowHeight - ICON_SIZE) / 2 }))
+      group.append(technologyIcon(technology(row), { x: iconX, y: y + (rowHeight - ICON_SIZE) / 2 }))
     }
     const amount = svg('text', { class: 'value-label', x: start + barWidth + 6, y: y + rowHeight / 2, 'dominant-baseline': 'middle' })
     amount.textContent = format(value(row))
@@ -747,32 +753,32 @@ function renderRepositoriesChart() {
   })
 }
 
-const formatLanguageShare = (value) => (value < 0.01 ? '< 1 %' : formatShare(value))
+const formatTechnologyShare = (value) => (value < 0.01 ? '< 1 %' : formatShare(value))
 
-function renderLanguagesChart() {
+function renderTechnologiesChart() {
   const prsPerRepo = new Map()
   for (const person of currentPeriod().authors) {
     for (const [repo, stats] of Object.entries(person.repos)) {
       prsPerRepo.set(repo, (prsPerRepo.get(repo) ?? 0) + stats.code)
     }
   }
-  const weights = languageWeights([...prsPerRepo])
+  const weights = technologyWeights([...prsPerRepo])
   const total = weights.reduce((sum, [, weight]) => sum + weight, 0)
   const rows = weights.map(([name, weight]) => ({ name, weight, share: weight / total }))
-  $('[data-languages-sub]').textContent =
-    `Part des PR de code, ${Math.min(TOP_LANGUAGES, rows.length)} premiers sur ${formatNumber(rows.length)}`
-  barChart($('[data-languages-chart]'), {
-    rows: rows.slice(0, TOP_LANGUAGES),
+  $('[data-technologies-sub]').textContent =
+    `Part des PR de code, ${Math.min(TOP_TECHNOLOGIES, rows.length)} premiers sur ${formatNumber(rows.length)}`
+  barChart($('[data-technologies-chart]'), {
+    rows: rows.slice(0, TOP_TECHNOLOGIES),
     label: (row) => row.name,
-    language: (row) => row.name,
+    technology: (row) => row.name,
     value: (row) => row.share,
-    format: formatLanguageShare,
+    format: formatTechnologyShare,
     color: 'var(--series-1)',
-    ariaLabel: 'Part des PR de code par langage',
+    ariaLabel: 'Part des PR de code par technologie',
     tooltip: (row) => ({
       title: row.name,
       rows: [
-        { label: 'des PR de code', value: formatLanguageShare(row.share) },
+        { label: 'des PR de code', value: formatTechnologyShare(row.share) },
         { label: 'PR de code, au prorata', value: formatNumber(Math.round(row.weight)) },
       ],
     }),
@@ -811,7 +817,7 @@ function renderCharts() {
   }
   renderActivityChart()
   renderSizeCharts()
-  renderLanguagesChart()
+  renderTechnologiesChart()
   renderRepositoriesChart()
   if (state.person) {
     renderMiniCharts()
@@ -955,15 +961,15 @@ function reviewerRows() {
   })
 }
 
-const repoInfo = (repo) => state.stats.repos[repo] ?? { category: 'other', languages: [] }
+const repoInfo = (repo) => state.stats.repos[repo] ?? { category: 'other', technologies: [] }
 
-// Spreads pull request counts per repository over the languages of each repository, by their share of its code.
-function languageWeights(prsPerRepo) {
+// Spreads pull request counts per repository over the technologies of each repository, by their share of its code.
+function technologyWeights(prsPerRepo) {
   const weights = new Map()
   for (const [repo, prs] of prsPerRepo) {
-    const { languages } = repoInfo(repo)
-    const total = languages.reduce((sum, [, share]) => sum + share, 0)
-    for (const [name, share] of languages) {
+    const { technologies } = repoInfo(repo)
+    const total = technologies.reduce((sum, [, share]) => sum + share, 0)
+    for (const [name, share] of technologies) {
       weights.set(name, (weights.get(name) ?? 0) + (prs * share) / total)
     }
   }
@@ -971,7 +977,7 @@ function languageWeights(prsPerRepo) {
   return [...weights].filter(([, weight]) => weight > 0).sort((a, b) => b[1] - a[1])
 }
 
-// Front, back and mobile pull requests of a person, with the languages they involve.
+// Front, back and mobile pull requests of a person, with the technologies they involve.
 function stackOf(prsPerRepo) {
   const counts = Object.fromEntries(STACK_CATEGORIES.map((category) => [category.key, 0]))
   const development = prsPerRepo.filter(([repo]) => repoInfo(repo).category in counts)
@@ -979,7 +985,7 @@ function stackOf(prsPerRepo) {
     counts[repoInfo(repo).category] += prs
   }
 
-  return { counts, languages: languageWeights(development) }
+  return { counts, technologies: technologyWeights(development) }
 }
 
 function frontShare({ counts }) {
@@ -1040,7 +1046,7 @@ function personLink(login) {
   )
 }
 
-function stackCell({ counts, languages }) {
+function stackCell({ counts, technologies }) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
   if (total === 0) {
     return el('td', { className: 'muted', textContent: '–' })
@@ -1050,9 +1056,9 @@ function stackCell({ counts, languages }) {
   const main = parts.reduce((best, category) => (counts[category.key] > counts[best.key] ? category : best))
   const fullStack =
     counts.back / total >= FULL_STACK_MIN_SHARE && (counts.front + counts.mobile) / total >= FULL_STACK_MIN_SHARE
-  const languageTotal = languages.reduce((sum, [, weight]) => sum + weight, 0)
-  const top = languages.filter(([, weight]) => weight / languageTotal >= MIN_STACK_LANGUAGE_SHARE).slice(0, STACK_LANGUAGES)
-  const languageText = top.map(([name, weight]) => `${name} ${Math.round((100 * weight) / languageTotal)} %`).join(', ')
+  const technologyTotal = technologies.reduce((sum, [, weight]) => sum + weight, 0)
+  const top = technologies.filter(([, weight]) => weight / technologyTotal >= MIN_STACK_TECHNOLOGY_SHARE).slice(0, STACK_TECHNOLOGIES)
+  const technologyText = top.map(([name, weight]) => `${name} ${Math.round((100 * weight) / technologyTotal)} %`).join(', ')
 
   const bar = el(
     'span',
@@ -1069,14 +1075,14 @@ function stackCell({ counts, languages }) {
     'span',
     { className: 'stack-cell', tabIndex: 0 },
     el('span', {
-      className: fullStack ? 'stack-main is-full-stack' : 'stack-main',
+      className: `stack-type is-${fullStack ? 'full-stack' : main.key}`,
       textContent: fullStack ? 'full-stack' : main.label.toLowerCase(),
     }),
     bar,
-    el('span', { className: 'stack-logos' }, ...top.map(([name]) => languageIcon(name))),
+    el('span', { className: 'stack-logos' }, ...top.map(([name]) => technologyIcon(name))),
   )
   const split = parts.map((category) => `${category.label} ${share(category)} %`).join(', ')
-  cell.setAttribute('aria-label', `${fullStack ? 'Full-stack. ' : ''}${split}. ${languageText}`)
+  cell.setAttribute('aria-label', `${fullStack ? 'Full-stack. ' : ''}${split}. ${technologyText}`)
   bindTooltip(
     cell,
     (x, y) =>
@@ -1088,7 +1094,7 @@ function stackCell({ counts, languages }) {
             value: `${share(category)} %`,
             label: `${category.label.toLowerCase()} · ${formatNumber(counts[category.key])} PR`,
           })),
-          note: languageText ? `Langages : ${languageText}` : null,
+          note: technologyText ? `Technos : ${technologyText}` : null,
         },
         x,
         y,

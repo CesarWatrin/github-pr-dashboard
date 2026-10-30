@@ -50,7 +50,30 @@ const LANGUAGE_CATEGORIES = new Map(
 )
 const SCRIPT_LANGUAGES = ['TypeScript', 'JavaScript']
 const FRAMEWORK_LANGUAGES = ['Vue', 'Svelte']
-const MIN_LANGUAGE_SHARE = 0.02
+
+// Technologies: the languages of a repository grouped under the framework they serve, read from its root manifests
+// (composer.json, package.json, pubspec.yaml). PHP and Blade make Laravel, Vue and TypeScript make Nuxt, and so on.
+const FRAMEWORK_DEPENDENCIES = new Map(
+  Object.entries({
+    'laravel/framework': 'Laravel',
+    'symfony/framework-bundle': 'Symfony',
+    nuxt: 'Nuxt',
+    next: 'Next.js',
+    vitepress: 'VitePress',
+    '@nestjs/core': 'NestJS',
+    vue: 'Vue',
+    react: 'React',
+    svelte: 'Svelte',
+  }),
+)
+const PHP_FRAMEWORKS = ['Laravel', 'Symfony']
+// The first one found wins: a Nuxt project depends on Vue too.
+const WEB_FRAMEWORKS = ['Nuxt', 'Next.js', 'VitePress', 'NestJS', 'Vue', 'React', 'Svelte']
+const WEB_LANGUAGES = ['Vue', 'Svelte', 'TypeScript', 'JavaScript', 'HTML', 'CSS', 'SCSS', 'Less']
+// Native code of the iOS and Android shells around a Flutter application.
+const FLUTTER_LANGUAGES = ['Dart', 'Swift', 'Kotlin', 'Objective-C', 'C++', 'C', 'CMake', 'Ruby']
+const TECHNOLOGY_NAMES = { HCL: 'Terraform', Dockerfile: 'Docker', PLpgSQL: 'PostgreSQL', 'Go Template': 'Go', Makefile: 'Make' }
+const MIN_TECHNOLOGY_SHARE = 0.02
 
 // Corrections for the repositories their languages misjudge, as "repo:category,repo:category". They come from the
 // environment rather than the code because the repository names of the organization are private.
@@ -95,12 +118,18 @@ const REPOSITORIES_QUERY = `
     }
   }`
 
-const REPOSITORY_LANGUAGES_QUERY = `
+const REPOSITORY_DETAILS_QUERY = `
   query($org: String!, $cursor: String) {
     organization(login: $org) {
-      repositories(first: 50, after: $cursor) {
+      repositories(first: 25, after: $cursor) {
         pageInfo { hasNextPage endCursor }
-        nodes { name languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } } }
+        nodes {
+          name
+          languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } }
+          composer: object(expression: "HEAD:composer.json") { ... on Blob { text } }
+          packageJson: object(expression: "HEAD:package.json") { ... on Blob { text } }
+          pubspec: object(expression: "HEAD:pubspec.yaml") { ... on Blob { text } }
+        }
       }
     }
   }`
@@ -349,20 +378,56 @@ async function fetchUpdatedSince(sinceIso) {
   }
 }
 
-// Languages of every repository of the organization, as [name, bytes] pairs, largest first.
-async function fetchLanguages() {
-  const languages = {}
+function parseManifest(blob) {
+  try {
+    return JSON.parse(blob?.text ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
+function frameworksOf(node) {
+  const composer = parseManifest(node.composer)
+  const npm = parseManifest(node.packageJson)
+  const dependencies = [composer.require, npm.dependencies, npm.devDependencies].flatMap((list) => Object.keys(list ?? {}))
+  const frameworks = dependencies.map((dependency) => FRAMEWORK_DEPENDENCIES.get(dependency)).filter(Boolean)
+  if (node.pubspec?.text?.includes('flutter')) {
+    frameworks.push('Flutter')
+  }
+
+  return [...new Set(frameworks)]
+}
+
+// Languages of every repository of the organization, as [name, bytes] pairs largest first, and the frameworks its
+// manifests declare.
+async function fetchRepositoryDetails() {
+  const details = { languages: {}, frameworks: {} }
   let cursor = null
   do {
-    const data = await graphql(REPOSITORY_LANGUAGES_QUERY, { org: ORG, cursor })
+    const data = await graphql(REPOSITORY_DETAILS_QUERY, { org: ORG, cursor })
     const { nodes, pageInfo } = data.organization.repositories
     for (const node of nodes) {
-      languages[node.name] = node.languages.edges.map((edge) => [edge.node.name, edge.size])
+      details.languages[node.name] = node.languages.edges.map((edge) => [edge.node.name, edge.size])
+      details.frameworks[node.name] = frameworksOf(node)
     }
     cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null
   } while (cursor)
 
-  return languages
+  return details
+}
+
+function technologyOf(language, frameworks) {
+  if (language === 'PHP' || language === 'Blade') {
+    return PHP_FRAMEWORKS.find((framework) => frameworks.includes(framework)) ?? 'PHP'
+  }
+  if (WEB_LANGUAGES.includes(language)) {
+    return WEB_FRAMEWORKS.find((framework) => frameworks.includes(framework)) ?? language
+  }
+  if (FLUTTER_LANGUAGES.includes(language) && frameworks.includes('Flutter')) {
+    return 'Flutter'
+  }
+
+  return TECHNOLOGY_NAMES[language] ?? language
 }
 
 function repositoryCategory(repo, languages) {
@@ -381,13 +446,19 @@ function repositoryCategory(repo, languages) {
   return [...sizes].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'other'
 }
 
-// Share of each language in the code of a repository, without the marginal ones.
-function languageShares(languages) {
+// Share of each technology in the code of a repository, without the marginal ones.
+function technologyShares(languages, frameworks) {
   const total = languages.reduce((sum, [, size]) => sum + size, 0)
+  const shares = new Map()
+  for (const [language, size] of languages) {
+    const technology = technologyOf(language, frameworks)
+    shares.set(technology, (shares.get(technology) ?? 0) + size / total)
+  }
 
-  return languages
-    .map(([name, size]) => [name, round(size / total, 3)])
-    .filter(([, share]) => share >= MIN_LANGUAGE_SHARE)
+  return [...shares]
+    .map(([name, share]) => [name, round(share, 3)])
+    .filter(([, share]) => share >= MIN_TECHNOLOGY_SHARE)
+    .sort((a, b) => b[1] - a[1])
 }
 
 async function readSnapshot() {
@@ -828,14 +899,18 @@ async function sync({ full }) {
   }
   const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= windowStartIso)
 
-  // Languages are only looked up for repositories not seen yet: a full sync refreshes them all.
+  // Languages and frameworks are only looked up for repositories not seen yet: a full sync refreshes them all.
   const repositories = [...new Set(inWindow.map((pr) => pr.repo))]
   let languages = mode === 'full' ? {} : (snapshot.languages ?? {})
-  if (repositories.some((repo) => !languages[repo])) {
-    languages = await fetchLanguages()
+  let frameworks = mode === 'full' ? {} : (snapshot.frameworks ?? {})
+  if (repositories.some((repo) => !languages[repo] || !frameworks[repo])) {
+    const details = await fetchRepositoryDetails()
+    languages = details.languages
+    frameworks = details.frameworks
     for (const repo of repositories) {
       // Gone from the organization: kept empty so that it is not looked up again.
       languages[repo] ??= []
+      frameworks[repo] ??= []
     }
   }
 
@@ -846,6 +921,7 @@ async function sync({ full }) {
     names: Object.fromEntries(people.names),
     bots: [...people.bots],
     languages,
+    frameworks,
     pullRequests: inWindow,
   })
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
@@ -859,7 +935,10 @@ async function sync({ full }) {
       repos: Object.fromEntries(
         repositories.map((repo) => [
           repo,
-          { category: repositoryCategory(repo, languages[repo]), languages: languageShares(languages[repo]) },
+          {
+            category: repositoryCategory(repo, languages[repo]),
+            technologies: technologyShares(languages[repo], frameworks[repo]),
+          },
         ]),
       ),
       today: computeToday(inWindow, now),
