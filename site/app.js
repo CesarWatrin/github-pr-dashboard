@@ -7,6 +7,8 @@ const BUMP_VISIBLE_MS = 6000
 const COUNTER_ANIMATION_MS = 900
 const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
+// Also read by the inline script of index.html, which applies the theme before the first paint.
+const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
 const TOP_REPOS_PER_REVIEWER = 3
@@ -37,6 +39,7 @@ const dayMonthFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month:
 const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 const dateTimeFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+const darkScheme = window.matchMedia('(prefers-color-scheme: dark)')
 
 const isMissing = (value) => value === null || value === undefined
 const formatNumber = (value) => (isMissing(value) ? '–' : numberFormat.format(value))
@@ -1174,6 +1177,28 @@ function refreshClock() {
   }
 }
 
+// Theme: follows the system until the toggle is used, then sticks to the chosen one.
+
+const currentTheme = () => document.documentElement.dataset.theme ?? (darkScheme.matches ? 'dark' : 'light')
+
+function renderThemeToggle() {
+  const dark = currentTheme() === 'dark'
+  const button = $('[data-theme-toggle]')
+  button.setAttribute('aria-pressed', String(dark))
+  button.title = dark ? 'Passer en mode clair' : 'Passer en mode sombre'
+}
+
+function toggleTheme() {
+  const theme = currentTheme() === 'dark' ? 'light' : 'dark'
+  document.documentElement.dataset.theme = theme
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
+  } catch {
+    // Storage can be unavailable (private browsing): the theme only lasts for this page.
+  }
+  renderThemeToggle()
+}
+
 // Main
 
 function renderPeriodSelector() {
@@ -1284,6 +1309,9 @@ $('[data-search]').addEventListener('input', (event) => {
   }
 })
 
+$('[data-theme-toggle]').addEventListener('click', toggleTheme)
+darkScheme.addEventListener('change', renderThemeToggle)
+
 $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
@@ -1309,6 +1337,7 @@ document.addEventListener('visibilitychange', () => {
 for (const name of Object.keys(TABLES)) {
   setupRepoFilter(name)
 }
+renderThemeToggle()
 renderPeriodSelector()
 refresh()
 setInterval(refresh, POLL_INTERVAL_MS)

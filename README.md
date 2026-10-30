@@ -17,7 +17,8 @@ Le dashboard montre :
 - les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
 - une section Méthode qui définit chaque indicateur.
 
-Une page restée ouverte se recharge d'elle-même après un nouveau déploiement.
+Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
+entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
 
 ## Fonctionnement
 
