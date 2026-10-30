@@ -1642,6 +1642,7 @@ async function startSync(kind) {
   } catch {
     error.textContent = 'La synchro n’a pas pu être lancée : le token est peut-être expiré.'
     error.hidden = false
+    menu.open = true
   }
   renderSyncMenu()
   renderSyncStatus()
@@ -1932,9 +1933,25 @@ $('[data-search]').addEventListener('input', (event) => {
 
 $('[data-theme-toggle]').addEventListener('click', toggleTheme)
 
+// The full sync is heavy: it is only started once confirmed.
 for (const button of document.querySelectorAll('[data-sync-kind]')) {
-  button.addEventListener('click', () => startSync(button.dataset.syncKind))
+  button.addEventListener('click', () => {
+    if (button.dataset.syncKind !== 'full') {
+      startSync(button.dataset.syncKind)
+
+      return
+    }
+    const dialog = $('[data-full-sync-dialog]')
+    $('[data-sync-menu]').open = false
+    dialog.returnValue = ''
+    dialog.showModal()
+  })
 }
+$('[data-full-sync-dialog]').addEventListener('close', (event) => {
+  if (event.currentTarget.returnValue === 'confirm') {
+    startSync('full')
+  }
+})
 $('[data-sync-menu]').addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && event.currentTarget.open) {
     event.currentTarget.open = false

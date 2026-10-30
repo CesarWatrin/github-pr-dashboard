@@ -305,6 +305,21 @@
       </footer>
     </div>
 
+    <dialog class="confirm" aria-labelledby="full-sync-title" data-full-sync-dialog>
+      <form method="dialog">
+        <h2 id="full-sync-title">Lancer une synchro complète ?</h2>
+        <p>
+          Elle recharge depuis GitHub toutes les PR des 12 derniers mois, dépôt par dépôt : environ 10 minutes, pendant
+          lesquelles la page garde les données actuelles.
+        </p>
+        <p>À réserver aux données qui semblent fausses ou incomplètes : pour les dernières PR, la synchro rapide suffit.</p>
+        <div class="confirm-actions">
+          <button type="submit" value="cancel" class="button-secondary" autofocus>Annuler</button>
+          <button type="submit" value="confirm" class="button-primary">Lancer la synchro complète</button>
+        </div>
+      </form>
+    </dialog>
+
     <div class="tooltip" role="tooltip" hidden data-tooltip></div>
   </body>
 </html>
