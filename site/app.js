@@ -2128,7 +2128,17 @@ $('[data-lock-form]').addEventListener('submit', (event) => {
   event.preventDefault()
   unlock(event.currentTarget)
 })
-$('[data-lock-now]').addEventListener('click', () => lock())
+// Locking forgets the key on this device: it is only done once confirmed.
+$('[data-lock-now]').addEventListener('click', () => {
+  const dialog = $('[data-lock-dialog]')
+  dialog.returnValue = ''
+  dialog.showModal()
+})
+$('[data-lock-dialog]').addEventListener('close', (event) => {
+  if (event.currentTarget.returnValue === 'confirm') {
+    lock()
+  }
+})
 
 $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value

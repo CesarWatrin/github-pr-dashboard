@@ -366,6 +366,17 @@
       </form>
     </dialog>
 
+    <dialog class="confirm" aria-labelledby="lock-title" data-lock-dialog>
+      <form method="dialog">
+        <h2 id="lock-title">Verrouiller la page ?</h2>
+        <p>Le mot de passe sera redemandé sur cet appareil pour revoir les statistiques.</p>
+        <div class="confirm-actions">
+          <button type="submit" value="cancel" class="button-secondary" autofocus>Annuler</button>
+          <button type="submit" value="confirm" class="button-primary">Verrouiller</button>
+        </div>
+      </form>
+    </dialog>
+
     <div class="tooltip" role="tooltip" hidden data-tooltip></div>
   </body>
 </html>
