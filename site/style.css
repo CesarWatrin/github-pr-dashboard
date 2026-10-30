@@ -144,11 +144,14 @@ code {
   color: var(--text-primary);
 }
 
-/* The current page, filled like the selected period. */
+/* The current page: a light tint, its icon in the accent colour. */
 .nav-link[aria-current='page'] {
-  background: var(--text-primary);
-  color: var(--surface);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--series-1) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.nav-link[aria-current='page'] svg {
+  color: var(--series-1);
 }
 
 .nav-link svg {
