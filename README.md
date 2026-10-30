@@ -16,6 +16,7 @@ Le dashboard montre :
   avec la stack de chaque personne : front, back, mobile ou full-stack, et ses technologies principales ;
 - la part de chaque technologie dans les PR de code, avec son logo : les langages d'un dépôt sont regroupés sous le
   framework que déclarent ses fichiers de dépendances (Laravel, Nuxt, NestJS, Flutter…) ;
+- la TMA : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand ;
 - l'effet de la taille des PR sur le délai de merge et la profondeur de review ;
 - les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
 - une section Méthode qui définit chaque indicateur.

@@ -14,6 +14,7 @@ const UNLOCK_DURATION_MS = 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
 const TOP_REPOS_PER_REVIEWER = 3
+const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_TECHNOLOGIES = 10
 const STACK_TECHNOLOGIES = 3
 const MIN_STACK_TECHNOLOGY_SHARE = 0.05
@@ -107,6 +108,14 @@ const REVIEW_TILES = [
   { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare },
 ]
 
+const TMA_TILES = [
+  { key: 'opened', label: 'Hotfix ouverts' },
+  { key: 'merged', label: 'Hotfix mergés' },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
+  { key: 'medianTimeToFirstReviewHours', label: 'Attente médiane 1re review', format: formatDuration },
+  { key: 'contributors', label: 'Contributeurs TMA' },
+]
+
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
   { key: 'code', label: 'PR de code', kind: 'bar' },
@@ -142,8 +151,23 @@ const REVIEWER_COLUMNS = [
     label: 'Principaux dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
-    cell: (row) => topReposCell(row.topRepos),
+    cell: (row) => topReposCell(row.topRepos, 'PR relues'),
   },
+]
+
+const TMA_COLUMNS = [
+  { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
+  { key: 'hotfixes', label: 'Hotfix', kind: 'bar' },
+  { key: 'share', label: 'Part de ses PR', format: (row) => formatShare(row.share) },
+  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
+  {
+    key: 'topRepos',
+    label: 'Dépôts',
+    kind: 'text',
+    value: (row) => row.topRepos[0]?.[0] ?? '',
+    cell: (row) => topReposCell(row.topRepos, 'hotfix'),
+  },
+  { key: 'lastAt', label: 'Dernier hotfix', format: (row) => formatRelative(row.lastAt) },
 ]
 
 // Repository types sent by the sync script, in the order of the stack bars. Docs, infrastructure and tooling
@@ -232,8 +256,9 @@ const state = {
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
+    tma: { key: 'hotfixes', direction: -1 },
   },
-  previousRows: { authors: new Map(), reviewers: new Map() },
+  previousRows: { authors: new Map(), reviewers: new Map(), tma: new Map() },
   seenEvents: null,
   seenWaiting: null,
   fetchFailed: false,
@@ -396,6 +421,11 @@ function renderToday(animate) {
   $('[data-today-title]').textContent =
     today.date === currentDay ? 'Aujourd’hui' : `Le ${dayLongFormat.format(new Date(`${today.date}T12:00:00Z`))}`
   renderTiles($('[data-today]'), TODAY_TILES, today, animate)
+}
+
+function renderTmaTiles(animate) {
+  const { tma } = currentPeriod()
+  renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, animate)
 }
 
 function renderTotals(animate) {
@@ -733,6 +763,26 @@ function renderSizeCharts() {
   })
 }
 
+function renderTmaCharts() {
+  const { tma, series, bucket } = currentPeriod()
+  $('[data-tma-chart-title]').textContent = `Hotfix ouverts ${BUCKET_TITLES[bucket]}`
+  barChart($('[data-tma-repos]'), {
+    rows: tma.repositories.slice(0, TOP_HOTFIX_REPOSITORIES),
+    label: (row) => row.repo,
+    value: (row) => row.hotfixes,
+    format: formatNumber,
+    color: 'var(--series-1)',
+    ariaLabel: 'Hotfix par dépôt',
+    tooltip: (row) => ({ title: row.repo, rows: [{ label: 'hotfix', value: formatNumber(row.hotfixes) }] }),
+  })
+  columnChart($('[data-tma-chart]'), {
+    points: series,
+    bucket,
+    series: [{ label: 'hotfix ouverts', color: 'var(--series-1)', value: (point) => point.hotfixes }],
+    ariaLabel: `Hotfix ouverts ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
+  })
+}
+
 function renderRepositoriesChart() {
   const repositories = currentPeriod().repositories
   $('[data-repos-sub]').textContent = `${Math.min(TOP_REPOSITORIES, repositories.length)} premiers sur ${formatNumber(repositories.length)}`
@@ -819,6 +869,7 @@ function renderCharts() {
   renderSizeCharts()
   renderTechnologiesChart()
   renderRepositoriesChart()
+  renderTmaCharts()
   if (state.person) {
     renderMiniCharts()
   }
@@ -1019,7 +1070,13 @@ const TABLES = {
     repoCounts: () => new Map(currentPeriod().repositories.map((row) => [row.repo, row.prs])),
     repoCountsLabel: 'PR relues sur la période',
   },
+  tma: {
+    columns: TMA_COLUMNS,
+    rows: () => currentPeriod().tma.people,
+    searchTexts: (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
+  },
 }
+const FILTERED_TABLES = Object.keys(TABLES).filter((name) => TABLES[name].repoCounts)
 
 const columnValue = (column, row) => (column.value ? column.value(row) : row[column.key])
 
@@ -1106,7 +1163,7 @@ function stackCell({ counts, technologies }) {
 }
 
 // The main repository only, the others in the tooltip: the full list made the column too wide.
-function topReposCell(topRepos) {
+function topReposCell(topRepos, unit) {
   if (topRepos.length === 0) {
     return el('td', { className: 'text muted', textContent: '–' })
   }
@@ -1120,7 +1177,7 @@ function topReposCell(topRepos) {
   if (others.length > 0) {
     content.append(el('span', { className: 'top-repos-more', textContent: `+${others.length}` }))
   }
-  content.setAttribute('aria-label', topRepos.map(([name, prs]) => `${name} : ${formatNumber(prs)} PR`).join(', '))
+  content.setAttribute('aria-label', topRepos.map(([name, prs]) => `${name} : ${formatNumber(prs)} ${unit}`).join(', '))
   bindTooltip(
     content,
     (x, y) =>
@@ -1128,7 +1185,7 @@ function topReposCell(topRepos) {
         {
           title: 'Principaux dépôts',
           rows: topRepos.map(([name, prs]) => ({ value: formatNumber(prs), label: name })),
-          note: 'PR relues',
+          note: unit,
         },
         x,
         y,
@@ -1567,10 +1624,11 @@ function render(animate) {
   renderPeriodSelector()
   renderToday(animate)
   renderTotals(animate)
+  renderTmaTiles(animate)
   renderPersonPicker()
   renderCharts()
   renderChartTable()
-  for (const name of Object.keys(TABLES)) {
+  for (const name of FILTERED_TABLES) {
     renderRepoFilter(name)
   }
   renderTables(animate)
@@ -1820,7 +1878,7 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
-for (const name of Object.keys(TABLES)) {
+for (const name of FILTERED_TABLES) {
   setupRepoFilter(name)
 }
 renderThemeToggle()

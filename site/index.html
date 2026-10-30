@@ -142,6 +142,24 @@
           <div class="table-wrap" data-reviewers></div>
         </section>
 
+        <section class="card" aria-labelledby="tma-title">
+          <h2 id="tma-title">TMA</h2>
+          <p class="card-sub">Hotfix : PR de code ouvertes depuis une branche <code>hotfix/*</code>, et qui les fait</p>
+          <div class="tiles" data-tma-tiles></div>
+          <div class="grid-2 tma-grid">
+            <div>
+              <h3 class="tile-group">Contributeurs</h3>
+              <div class="table-wrap" data-tma></div>
+            </div>
+            <div>
+              <h3 class="tile-group">Hotfix par dépôt</h3>
+              <div class="bar-chart" data-tma-repos></div>
+              <h3 class="tile-group" data-tma-chart-title>Hotfix ouverts</h3>
+              <div class="chart chart-sm" data-tma-chart></div>
+            </div>
+          </div>
+        </section>
+
         <div class="grid-2 grid-even">
           <section class="card" aria-labelledby="sizes-title">
             <h2 id="sizes-title">Taille des PR</h2>
@@ -233,6 +251,11 @@
               Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Attente 1re review : de la
               création à la première review ou au premier commentaire d’une autre personne. Délai de merge : de la
               création au merge. Taille : lignes ajoutées plus supprimées.
+            </dd>
+            <dt>TMA</dt>
+            <dd>
+              PR de code dont la branche commence par <code>hotfix</code>, créées sur la période. « Part de ses PR » :
+              hotfix de la personne rapportés à toutes ses PR de code.
             </dd>
             <dt>Mergées sans review</dt>
             <dd>PR de code mergées sans aucune review ni commentaire d’une autre personne que l’auteur.</dd>

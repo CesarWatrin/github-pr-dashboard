@@ -26,6 +26,7 @@ const EVENTS_LIMIT = 50
 const EVENTS_MAX_AGE_DAYS = 7
 // Upper bounds (excluded) of the pull request size buckets, in changed lines.
 const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
+const TOP_HOTFIX_REPOS = 3
 const RELEASE_BASES = ['master', 'main']
 const DAY_MS = 86_400_000
 // PBKDF2-SHA256 iterations deriving the encryption key from the password, also read from the file by the page.
@@ -591,7 +592,7 @@ function computePeriod(pullRequests, period, now) {
   const startIso = new Date(now.getTime() - period.days * DAY_MS).toISOString()
   const keys = bucketKeys(new Date(startIso), now, period.bucket)
   const buckets = new Map(
-    keys.map((key) => [key, { key, opened: 0, merged: 0, comments: 0, approvals: 0, releases: 0 }]),
+    keys.map((key) => [key, { key, opened: 0, merged: 0, comments: 0, approvals: 0, releases: 0, hotfixes: 0 }]),
   )
   // Person stats are kept per repository so that the page can add them up over any selection of repositories.
   const authors = new Map()
@@ -633,6 +634,32 @@ function computePeriod(pullRequests, period, now) {
     }))
   const repository = (name) => getOrCreate(repositories, name, () => ({ repo: name, reviewed: new Set(), comments: 0 }))
 
+  // TMA: the hotfix pull requests and the people who make them.
+  const hotfixes = { opened: 0, merged: 0, timesToMerge: [], timesToFirstReview: [], people: new Map(), repositories: new Map() }
+  const addHotfix = (pr, interventions) => {
+    const person = getOrCreate(hotfixes.people, pr.author, () => ({
+      hotfixes: 0,
+      timesToMerge: [],
+      repositories: new Map(),
+      lastAt: '',
+    }))
+    hotfixes.opened++
+    person.hotfixes++
+    person.repositories.set(pr.repo, (person.repositories.get(pr.repo) ?? 0) + 1)
+    person.lastAt = pr.createdAt > person.lastAt ? pr.createdAt : person.lastAt
+    hotfixes.repositories.set(pr.repo, (hotfixes.repositories.get(pr.repo) ?? 0) + 1)
+    bump(pr.createdAt, 'hotfixes')
+    if (interventions.length > 0) {
+      hotfixes.timesToFirstReview.push(hoursBetween(pr.createdAt, interventions[0].at))
+    }
+    if (pr.mergedAt) {
+      const timeToMerge = hoursBetween(pr.createdAt, pr.mergedAt)
+      hotfixes.merged++
+      hotfixes.timesToMerge.push(timeToMerge)
+      person.timesToMerge.push(timeToMerge)
+    }
+  }
+
   for (const pr of pullRequests) {
     const kind = classify(pr)
     // Release pull requests count whoever opened them: release-please ones come from a bot.
@@ -659,6 +686,7 @@ function computePeriod(pullRequests, period, now) {
       const stats = author(pr.author, pr.repo)
       if (pr.head.startsWith('hotfix')) {
         stats.hotfix++
+        addHotfix(pr, interventions)
       }
       if (interventions.length > 0) {
         stats.timesToFirstReview.push(hoursBetween(pr.createdAt, interventions[0].at))
@@ -797,6 +825,29 @@ function computePeriod(pullRequests, period, now) {
       medianTimeToMergeHours: round(median(bucket.timesToMerge), 1),
       commentsPerPr: bucket.prs ? round(bucket.comments / bucket.prs, 2) : null,
     })),
+    tma: {
+      opened: hotfixes.opened,
+      merged: hotfixes.merged,
+      medianTimeToMergeHours: round(median(hotfixes.timesToMerge), 1),
+      medianTimeToFirstReviewHours: round(median(hotfixes.timesToFirstReview), 1),
+      people: [...hotfixes.people]
+        .map(([login, person]) => {
+          const code = [...authors.get(login).values()].reduce((total, stats) => total + stats.code, 0)
+
+          return {
+            login,
+            hotfixes: person.hotfixes,
+            share: round(person.hotfixes / code, 3),
+            medianTimeToMergeHours: round(median(person.timesToMerge), 1),
+            topRepos: [...person.repositories].sort((a, b) => b[1] - a[1]).slice(0, TOP_HOTFIX_REPOS),
+            lastAt: person.lastAt,
+          }
+        })
+        .sort((a, b) => b.hotfixes - a.hotfixes),
+      repositories: [...hotfixes.repositories]
+        .map(([repo, count]) => ({ repo, hotfixes: count }))
+        .sort((a, b) => b.hotfixes - a.hotfixes),
+    },
     repositories: [...repositories.values()]
       .map((stats) => ({ repo: stats.repo, prs: stats.reviewed.size, comments: stats.comments }))
       .sort((a, b) => b.prs - a.prs),

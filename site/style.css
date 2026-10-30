@@ -700,6 +700,26 @@ main.is-loading {
   background: var(--gridline);
 }
 
+.tma-grid {
+  margin-top: 8px;
+}
+
+/* Everyone who made a hotfix is listed: the list scrolls under its header rather than stretching the card. */
+.tma-grid .table-wrap {
+  max-height: 520px;
+}
+
+.tma-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+
+.tma-grid thead th:first-child {
+  z-index: 3;
+}
+
 /* Repository filter */
 .repo-filter {
   position: relative;
