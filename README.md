@@ -13,7 +13,8 @@ la recherche s'appliquent à toutes :
 - **Vue d'ensemble** : l'activité du jour, puis celle de la période en deux volets, livraison (PR ouvertes et
   mergées, délai de merge, mises en production, part de hotfix) et revue (PR relues, commentaires par PR,
   approbations sans commentaire, PR mergées sans review), chaque tuile menant à sa page ; l'activité par période et
-  le fil des 7 derniers jours ; les PR en attente de review ; la part de chaque technologie dans les PR de code,
+  le fil des 7 derniers jours ; les PR en attente de review ; les PR de code que leur auteur a mergées sans
+  approbation sur les 30 derniers jours, dans les dépôts front, back et mobile ; la part de chaque technologie dans les PR de code,
   avec son logo (les langages d'un dépôt sont regroupés sous le framework que déclarent ses fichiers de
   dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
   de merge, PR mergées sans review, PR relues).

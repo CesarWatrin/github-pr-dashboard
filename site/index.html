@@ -201,6 +201,12 @@
                 <ol class="feed" data-waiting></ol>
               </section>
 
+              <section class="card" aria-labelledby="unapproved-title">
+                <h2 id="unapproved-title" data-unapproved-title>Mergées par leur auteur sans approbation</h2>
+                <p class="card-sub">PR de code des 30 derniers jours, dépôts front, back et mobile</p>
+                <ol class="feed" data-unapproved></ol>
+              </section>
+
               <section class="card" aria-labelledby="technologies-title">
                 <h2 id="technologies-title">Technologies</h2>
                 <p class="card-sub" data-technologies-sub></p>
@@ -341,6 +347,12 @@
                 <dd>
                   PR de code dont la branche commence par <code>hotfix</code>. Part de hotfix : rapportées à toutes les PR
                   de code.
+                </dd>
+                <dt>Mergées par leur auteur sans approbation</dt>
+                <dd>
+                  PR de code des dépôts front, back et mobile que leur auteur a mergées lui-même au cours des 30 derniers
+                  jours, quelle que soit la période choisie, sans approbation d’une autre personne avant le merge. Chacune
+                  dit ce qu’elle avait reçu à la place : aucune review, des commentaires ou une demande de changements.
                 </dd>
                 <dt>PR en attente de review</dt>
                 <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
