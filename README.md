@@ -6,20 +6,24 @@ Dashboard web des pull requests et des reviews par contributeur d'une organisati
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
 
-Le dashboard montre :
+Le dashboard est découpé en pages, dans une barre latérale (une barre en haut sur les écrans étroits). La période et
+la recherche s'appliquent à toutes :
 
-- l'activité du jour, puis celle de la période en deux volets : livraison (PR ouvertes et mergées, délai de merge,
-  mises en production, part de hotfix) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR
-  mergées sans review) ;
-- l'activité par période et le fil des 7 derniers jours ;
-- les tableaux par auteur et par relecteur, filtrables par dépôt ou par type de dépôt (front, back, mobile, autres),
-  avec la stack de chaque personne : front, back, mobile ou full-stack, et ses technologies principales ;
-- la part de chaque technologie dans les PR de code, avec son logo : les langages d'un dépôt sont regroupés sous le
-  framework que déclarent ses fichiers de dépendances (Laravel, Nuxt, NestJS, Flutter…) ;
-- la TMA : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand ;
-- l'effet de la taille des PR sur le délai de merge et la profondeur de review ;
-- les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
-- une section Méthode qui définit chaque indicateur.
+- **Vue d'ensemble** : l'activité du jour, puis celle de la période en deux volets, livraison (PR ouvertes et
+  mergées, délai de merge, mises en production, part de hotfix) et revue (PR relues, commentaires par PR,
+  approbations sans commentaire, PR mergées sans review), chaque tuile menant à sa page ; l'activité par période et
+  le fil des 7 derniers jours ; les PR en attente de review ; la part de chaque technologie dans les PR de code,
+  avec son logo (les langages d'un dépôt sont regroupés sous le framework que déclarent ses fichiers de
+  dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
+  de merge, PR mergées sans review, PR relues).
+- **Auteurs** : le tableau par auteur, filtrable par dépôt ou par type de dépôt (front, back, mobile, autres), avec
+  la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) ; l'effet de la
+  taille des PR sur le délai de merge et la profondeur de review.
+- **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
+- **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
+- **Méthode** : la définition de chaque indicateur.
+
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/tma`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.

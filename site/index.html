@@ -41,268 +41,314 @@
       </form>
     </div>
 
-    <div class="page" data-page hidden>
-      <header class="page-header">
-        <div>
-          <h1>Pull requests <span class="org" data-org></span></h1>
-          <p class="subtitle">PR et reviews par personne, sur une période glissante</p>
-        </div>
-        <div class="header-actions">
+    <div class="app" data-page hidden>
+      <aside class="sidebar">
+        <a class="brand" href="#/">
+          <span class="brand-title">Stats PR</span>
+          <span class="org" data-org></span>
+        </a>
+        <nav class="nav" aria-label="Pages">
+          <a class="nav-link" href="#/" data-route-link="overview">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H9.5V10h-3v3.5H3a.5.5 0 0 1-.5-.5Z" /></svg>
+            Vue d’ensemble
+          </a>
+          <a class="nav-link" href="#/auteurs" data-route-link="authors">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5 13.5 5.5 6 13H3v-3Z" /><path d="M9 4l3 3" /></svg>
+            Auteurs
+          </a>
+          <a class="nav-link" href="#/relecteurs" data-route-link="reviewers">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" /><circle cx="8" cy="8" r="2" /></svg>
+            Relecteurs
+          </a>
+          <a class="nav-link" href="#/tma" data-route-link="tma">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.5a3.5 3.5 0 0 0-3.2 4.9L2.5 11.7l1.8 1.8 4.3-4.3A3.5 3.5 0 0 0 13.5 6l-2 .5-1.5-1.5.5-2Z" /></svg>
+            TMA
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <a class="nav-link nav-link-secondary" href="#/methode" data-route-link="method">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7.5L13 5v8.5H3Z" /><path d="M5.5 7h5M5.5 9.5h5" /></svg>
+            Méthode
+          </a>
           <p class="sync" data-sync>
             <span class="sync-dot" aria-hidden="true"></span>
             <span data-sync-label>Chargement…</span>
           </p>
-          <button type="button" class="icon-button theme-toggle" aria-label="Mode sombre" aria-pressed="false" data-theme-toggle>
-            <svg class="icon-moon" viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M13.5 9.8A5.5 5.5 0 0 1 6.2 2.5a5.5 5.5 0 1 0 7.3 7.3Z" />
-            </svg>
-            <svg class="icon-sun" viewBox="0 0 16 16" aria-hidden="true">
-              <circle cx="8" cy="8" r="3" />
-              <path
-                d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"
-              />
-            </svg>
-          </button>
-          <details class="sync-menu" data-sync-menu hidden>
-            <summary class="icon-button" aria-label="Lancer une synchro" data-label="Synchroniser">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" />
-                <path d="M12.5 1.5v3h-3" />
+          <div class="header-actions">
+            <button type="button" class="icon-button theme-toggle" aria-label="Mode sombre" aria-pressed="false" data-theme-toggle>
+              <svg class="icon-moon" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M13.5 9.8A5.5 5.5 0 0 1 6.2 2.5a5.5 5.5 0 1 0 7.3 7.3Z" />
               </svg>
-            </summary>
-            <div class="sync-menu-panel">
-              <button type="button" data-sync-kind="quick">
-                <strong>Synchro rapide</strong>
-                <span>Nouvelles PR et changements, environ 1 min</span>
-              </button>
-              <button type="button" data-sync-kind="full">
-                <strong>Synchro complète</strong>
-                <span>Recharge les 12 derniers mois, environ 10 min</span>
-              </button>
-              <p class="sync-menu-error" role="alert" data-sync-error hidden></p>
-            </div>
-          </details>
-          <button type="button" class="icon-button" aria-label="Verrouiller" data-label="Verrouiller" data-lock-now>
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="3" y="7" width="10" height="7" rx="1.5" />
-              <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <div class="filters" role="toolbar" aria-label="Filtres">
-        <div class="segmented" role="radiogroup" aria-label="Période" data-periods>
-          <button type="button" role="radio" data-period="30d">30 jours</button>
-          <button type="button" role="radio" data-period="90d">90 jours</button>
-          <button type="button" role="radio" data-period="365d">12 mois</button>
-        </div>
-        <input
-          class="search"
-          type="search"
-          name="contributor"
-          placeholder="Filtrer une personne ou un dépôt"
-          aria-label="Filtrer une personne ou un dépôt"
-          data-search
-        />
-      </div>
-
-      <p class="empty" data-empty hidden>
-        Aucune donnée pour l’instant. En local, lance <code>npm run sync</code> puis recharge la page.
-      </p>
-
-      <main class="is-loading" data-main>
-        <section class="card" aria-labelledby="today-title">
-          <h2 id="today-title" data-today-title>Aujourd’hui</h2>
-          <div class="tiles" data-today></div>
-        </section>
-
-        <section class="card" aria-labelledby="totals-title">
-          <h2 id="totals-title" data-totals-title>Sur la période</h2>
-          <h3 class="tile-group">Livraison</h3>
-          <div class="tiles" data-totals-delivery></div>
-          <h3 class="tile-group">Revue</h3>
-          <div class="tiles" data-totals-review></div>
-        </section>
-
-        <div class="grid-2">
-          <section class="card" aria-labelledby="chart-title">
-            <h2 id="chart-title" data-chart-title>Activité</h2>
-            <div class="legend" data-chart-legend></div>
-            <div class="chart" data-chart></div>
-            <details class="chart-data">
-              <summary>Voir les données du graphique</summary>
-              <div class="table-wrap" data-chart-table></div>
+              <svg class="icon-sun" viewBox="0 0 16 16" aria-hidden="true">
+                <circle cx="8" cy="8" r="3" />
+                <path
+                  d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"
+                />
+              </svg>
+            </button>
+            <details class="sync-menu" data-sync-menu hidden>
+              <summary class="icon-button" aria-label="Lancer une synchro" data-label="Synchroniser">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" />
+                  <path d="M12.5 1.5v3h-3" />
+                </svg>
+              </summary>
+              <div class="sync-menu-panel">
+                <button type="button" data-sync-kind="quick">
+                  <strong>Synchro rapide</strong>
+                  <span>Nouvelles PR et changements, environ 1 min</span>
+                </button>
+                <button type="button" data-sync-kind="full">
+                  <strong>Synchro complète</strong>
+                  <span>Recharge les 12 derniers mois, environ 10 min</span>
+                </button>
+                <p class="sync-menu-error" role="alert" data-sync-error hidden></p>
+              </div>
             </details>
-          </section>
+            <button type="button" class="icon-button" aria-label="Verrouiller" data-label="Verrouiller" data-lock-now>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="3" y="7" width="10" height="7" rx="1.5" />
+                <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </aside>
 
-          <section class="card" aria-labelledby="feed-title">
-            <h2 id="feed-title">Activité récente</h2>
-            <p class="card-sub">7 derniers jours</p>
-            <ol class="feed" data-feed></ol>
-          </section>
+      <div class="page">
+        <header class="page-header">
+          <div>
+            <h1 data-route-title>Vue d’ensemble</h1>
+            <p class="subtitle" data-route-subtitle></p>
+          </div>
+        </header>
+
+        <div class="filters" role="toolbar" aria-label="Filtres" data-filters>
+          <div class="segmented" role="radiogroup" aria-label="Période" data-periods>
+            <button type="button" role="radio" data-period="30d">30 jours</button>
+            <button type="button" role="radio" data-period="90d">90 jours</button>
+            <button type="button" role="radio" data-period="365d">12 mois</button>
+          </div>
+          <input
+            class="search"
+            type="search"
+            name="contributor"
+            placeholder="Filtrer une personne ou un dépôt"
+            aria-label="Filtrer une personne ou un dépôt"
+            data-search
+          />
         </div>
 
-        <section class="card" aria-labelledby="authors-title">
-          <div class="card-toolbar">
-            <h2 id="authors-title">Auteurs</h2>
-            <details class="repo-filter" data-repo-filter="authors"></details>
-          </div>
-          <div class="legend" data-stack-legend></div>
-          <div class="table-wrap" data-authors></div>
-        </section>
-
-        <section class="card" aria-labelledby="reviewers-title">
-          <div class="card-toolbar">
-            <h2 id="reviewers-title">Relecteurs</h2>
-            <details class="repo-filter" data-repo-filter="reviewers"></details>
-          </div>
-          <div class="legend" data-stack-legend></div>
-          <div class="table-wrap" data-reviewers></div>
-        </section>
-
-        <section class="card" aria-labelledby="tma-title">
-          <h2 id="tma-title">TMA</h2>
-          <p class="card-sub">Hotfix : PR de code ouvertes depuis une branche <code>hotfix/*</code>, et qui les fait</p>
-          <div class="tiles" data-tma-tiles></div>
-          <div class="grid-2 tma-grid">
-            <div>
-              <h3 class="tile-group">Contributeurs</h3>
-              <div class="table-wrap" data-tma></div>
-            </div>
-            <div>
-              <h3 class="tile-group">Hotfix par dépôt</h3>
-              <div class="bar-chart" data-tma-repos></div>
-              <h3 class="tile-group" data-tma-chart-title>Hotfix ouverts</h3>
-              <div class="chart chart-sm" data-tma-chart></div>
-            </div>
-          </div>
-        </section>
-
-        <div class="grid-2 grid-even">
-          <section class="card" aria-labelledby="sizes-title">
-            <h2 id="sizes-title">Taille des PR</h2>
-            <p class="card-sub">PR de code mergées, par nombre de lignes modifiées</p>
-            <div class="minis">
-              <div class="mini"><h3>Délai médian de merge</h3><div class="bar-chart" data-sizes-chart="time"></div></div>
-              <div class="mini"><h3>Commentaires par PR</h3><div class="bar-chart" data-sizes-chart="comments"></div></div>
-            </div>
-          </section>
-
-          <section class="card" aria-labelledby="waiting-title">
-            <h2 id="waiting-title" data-waiting-title>PR en attente de review</h2>
-            <p class="card-sub">Les plus anciennes d’abord</p>
-            <ol class="feed" data-waiting></ol>
-          </section>
-        </div>
-
-        <div class="grid-2 grid-even">
-          <section class="card" aria-labelledby="technologies-title">
-            <h2 id="technologies-title">Technologies</h2>
-            <p class="card-sub" data-technologies-sub></p>
-            <div class="bar-chart" data-technologies-chart></div>
-          </section>
-
-          <section class="card" aria-labelledby="repos-title">
-            <h2 id="repos-title">Dépôts les plus relus</h2>
-            <p class="card-sub" data-repos-sub></p>
-            <div class="bar-chart" data-repos-chart></div>
-          </section>
-        </div>
-
-        <section class="card" aria-labelledby="evolution-title">
-          <div class="card-toolbar">
-            <h2 id="evolution-title">Évolution par relecteur</h2>
-            <select class="search" name="person" aria-label="Relecteur" data-person></select>
-          </div>
-          <div class="minis">
-            <div class="mini"><h3>PR relues</h3><div class="chart chart-sm" data-mini="prs"></div></div>
-            <div class="mini">
-              <h3>Commentaires par PR relue</h3>
-              <div class="chart chart-sm" data-mini="ratio"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card" aria-labelledby="method-title">
-          <h2 id="method-title">Méthode</h2>
-          <dl class="definitions">
-            <dt>Périmètre</dt>
-            <dd>
-              Tous les dépôts de l’organisation, PR créées au cours des 12 derniers mois. La période choisie filtre les
-              PR créées et la date des reviews, commentaires et merges. Les PR et reviews des bots sont exclues.
-            </dd>
-            <dt>PR de code</dt>
-            <dd>
-              Toutes les PR sauf celles de release (<code>release/*</code>, release-please, <code>develop</code> vers
-              <code>master</code>) et de synchronisation de branches (<code>merge*</code>, back-merges,
-              <code>project/…/main</code> vers <code>develop</code> ou <code>master</code>), comptées à part dans
-              « Release / intég. ». Merges, délais, tailles et reviews ne portent que sur les PR de code.
-            </dd>
-            <dt>Type de dépôt</dt>
-            <dd>
-              Déduit des langages détectés par GitHub : Vue donne front ; PHP, Go, Rust donnent back ; Dart (Flutter)
-              donne mobile ; la documentation, l’infrastructure et l’outillage sont classés « autres ». TypeScript et
-              JavaScript comptent en front à côté de Vue, en back sinon. Quelques dépôts sont classés à la main.
-            </dd>
-            <dt>Stack</dt>
-            <dd>
-              Répartition des PR de code (auteurs) ou des PR relues (relecteurs) entre dépôts front, back et mobile, et
-              technologies principales de ces dépôts. Les dépôts « autres » n’y comptent pas. « Full-stack » : au moins
-              30 % des PR côté back et au moins 30 % côté client (front ou mobile).
-            </dd>
-            <dt>Technologies</dt>
-            <dd>
-              Les langages d’un dépôt sont regroupés sous le framework que déclarent ses fichiers de dépendances
-              (<code>composer.json</code>, <code>package.json</code>, <code>pubspec.yaml</code>) : PHP et Blade sous
-              Laravel, Vue et TypeScript sous Nuxt, Dart sous Flutter, TypeScript sous NestJS… Chaque PR de code est
-              répartie entre les technologies de son dépôt, au prorata de leur part dans le code (moins de 2 % :
-              ignorée). Logos : Simple Icons.
-            </dd>
-            <dt>Mises en production</dt>
-            <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
-            <dt>Part de hotfix</dt>
-            <dd>PR de code dont la branche commence par <code>hotfix</code>, rapportées à toutes les PR de code.</dd>
-            <dt>Taux de merge</dt>
-            <dd>Mergées / (mergées + fermées sans merge).</dd>
-            <dt>Délais et taille</dt>
-            <dd>
-              Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Attente 1re review : de la
-              création à la première review ou au premier commentaire d’une autre personne. Délai de merge : de la
-              création au merge. Taille : lignes ajoutées plus supprimées.
-            </dd>
-            <dt>TMA</dt>
-            <dd>
-              PR de code dont la branche commence par <code>hotfix</code>, créées sur la période. « Part de ses PR » :
-              hotfix de la personne rapportés à toutes ses PR de code.
-            </dd>
-            <dt>Mergées sans review</dt>
-            <dd>PR de code mergées sans aucune review ni commentaire d’une autre personne que l’auteur.</dd>
-            <dt>PR en attente de review</dt>
-            <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
-            <dt>PR relue</dt>
-            <dd>
-              Au moins une review ou un commentaire de quelqu’un d’autre que l’auteur. Dans l’évolution, elle compte
-              dans la période de la première intervention.
-            </dd>
-            <dt>Commentaires par PR relue</dt>
-            <dd>Commentaires dans le code, commentaires généraux et reviews « commentaire », divisés par les PR relues.</dd>
-            <dt>Approbations sans commentaire</dt>
-            <dd>Parmi les PR approuvées, part de celles où le relecteur n’a laissé aucun commentaire.</dd>
-            <dt>Noms</dt>
-            <dd>Nom du profil GitHub, sinon identifiant.</dd>
-          </dl>
-        </section>
-      </main>
-
-      <footer class="page-footer">
-        <p>
-          Données GitHub actualisées automatiquement en semaine, à intervalles irréguliers. Pour les mettre à jour tout
-          de suite, utilise le bouton de synchro en haut, ou ouvre le workflow
-          <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a>
-          puis clique sur « Run workflow » (accès en écriture au dépôt requis). Compte environ une minute.
+        <p class="empty" data-empty hidden>
+          Aucune donnée pour l’instant. En local, lance <code>npm run sync</code> puis recharge la page.
         </p>
-      </footer>
+
+        <main class="is-loading" data-main>
+          <!-- Vue d'ensemble -->
+          <div class="route" data-route="overview">
+            <section class="card" aria-labelledby="today-title">
+              <h2 id="today-title" data-today-title>Aujourd’hui</h2>
+              <div class="tiles" data-today></div>
+            </section>
+
+            <section class="card" aria-labelledby="totals-title">
+              <h2 id="totals-title" data-totals-title>Sur la période</h2>
+              <h3 class="tile-group">Livraison</h3>
+              <div class="tiles" data-totals-delivery></div>
+              <h3 class="tile-group">Revue</h3>
+              <div class="tiles" data-totals-review></div>
+            </section>
+
+            <div class="grid-2">
+              <section class="card" aria-labelledby="chart-title">
+                <h2 id="chart-title" data-chart-title>Activité</h2>
+                <div class="legend" data-chart-legend></div>
+                <div class="chart" data-chart></div>
+                <details class="chart-data">
+                  <summary>Voir les données du graphique</summary>
+                  <div class="table-wrap" data-chart-table></div>
+                </details>
+              </section>
+
+              <section class="card" aria-labelledby="feed-title">
+                <h2 id="feed-title">Activité récente</h2>
+                <p class="card-sub">7 derniers jours</p>
+                <ol class="feed" data-feed></ol>
+              </section>
+            </div>
+
+            <div class="grid-2 grid-even">
+              <section class="card" aria-labelledby="waiting-title">
+                <h2 id="waiting-title" data-waiting-title>PR en attente de review</h2>
+                <p class="card-sub">Les plus anciennes d’abord</p>
+                <ol class="feed" data-waiting></ol>
+              </section>
+
+              <section class="card" aria-labelledby="technologies-title">
+                <h2 id="technologies-title">Technologies</h2>
+                <p class="card-sub" data-technologies-sub></p>
+                <div class="bar-chart" data-technologies-chart></div>
+              </section>
+            </div>
+
+            <section class="card" aria-labelledby="repos-title">
+              <h2 id="repos-title">Dépôts</h2>
+              <p class="card-sub">Dépôts avec des PR de code ou des reviews sur la période</p>
+              <div class="table-wrap" data-repos></div>
+            </section>
+          </div>
+
+          <!-- Auteurs -->
+          <div class="route" data-route="authors" hidden>
+            <section class="card" aria-labelledby="authors-title">
+              <div class="card-toolbar">
+                <h2 id="authors-title">Auteurs</h2>
+                <details class="repo-filter" data-repo-filter="authors"></details>
+              </div>
+              <div class="legend" data-stack-legend></div>
+              <div class="table-wrap" data-authors></div>
+            </section>
+
+            <section class="card" aria-labelledby="sizes-title">
+              <h2 id="sizes-title">Taille des PR</h2>
+              <p class="card-sub">PR de code mergées, par nombre de lignes modifiées</p>
+              <div class="minis">
+                <div class="mini"><h3>Délai médian de merge</h3><div class="bar-chart" data-sizes-chart="time"></div></div>
+                <div class="mini"><h3>Commentaires par PR</h3><div class="bar-chart" data-sizes-chart="comments"></div></div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Relecteurs -->
+          <div class="route" data-route="reviewers" hidden>
+            <section class="card" aria-labelledby="reviewers-title">
+              <div class="card-toolbar">
+                <h2 id="reviewers-title">Relecteurs</h2>
+                <details class="repo-filter" data-repo-filter="reviewers"></details>
+              </div>
+              <div class="legend" data-stack-legend></div>
+              <div class="table-wrap" data-reviewers></div>
+            </section>
+
+            <section class="card" aria-labelledby="evolution-title">
+              <div class="card-toolbar">
+                <h2 id="evolution-title">Évolution par relecteur</h2>
+                <select class="search" name="person" aria-label="Relecteur" data-person></select>
+              </div>
+              <div class="minis">
+                <div class="mini"><h3>PR relues</h3><div class="chart chart-sm" data-mini="prs"></div></div>
+                <div class="mini">
+                  <h3>Commentaires par PR relue</h3>
+                  <div class="chart chart-sm" data-mini="ratio"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- TMA -->
+          <div class="route" data-route="tma" hidden>
+            <section class="card" aria-labelledby="tma-title">
+              <h2 id="tma-title" data-tma-title>Hotfix</h2>
+              <div class="tiles" data-tma-tiles></div>
+            </section>
+
+            <div class="grid-2">
+              <section class="card" aria-labelledby="tma-people-title">
+                <h2 id="tma-people-title">Contributeurs</h2>
+                <div class="table-wrap tma-table" data-tma></div>
+              </section>
+
+              <section class="card" aria-labelledby="tma-repos-title">
+                <h2 id="tma-repos-title">Hotfix par dépôt</h2>
+                <div class="bar-chart" data-tma-repos></div>
+                <h3 class="tile-group" data-tma-chart-title>Hotfix ouverts</h3>
+                <div class="chart chart-sm" data-tma-chart></div>
+              </section>
+            </div>
+          </div>
+
+          <!-- Méthode -->
+          <div class="route" data-route="method" hidden>
+            <section class="card" aria-label="Définitions">
+              <dl class="definitions">
+                <dt>Périmètre</dt>
+                <dd>
+                  Tous les dépôts de l’organisation, PR créées au cours des 12 derniers mois. La période choisie filtre les
+                  PR créées et la date des reviews, commentaires et merges. Les PR et reviews des bots sont exclues.
+                </dd>
+                <dt>PR de code</dt>
+                <dd>
+                  Toutes les PR sauf celles de release (<code>release/*</code>, release-please, <code>develop</code> vers
+                  <code>master</code>) et de synchronisation de branches (<code>merge*</code>, back-merges,
+                  <code>project/…/main</code> vers <code>develop</code> ou <code>master</code>), comptées à part dans
+                  « Release / intég. ». Merges, délais, tailles et reviews ne portent que sur les PR de code.
+                </dd>
+                <dt>Type de dépôt</dt>
+                <dd>
+                  Déduit des langages détectés par GitHub : Vue donne front ; PHP, Go, Rust donnent back ; Dart (Flutter)
+                  donne mobile ; la documentation, l’infrastructure et l’outillage sont classés « autres ». TypeScript et
+                  JavaScript comptent en front à côté de Vue, en back sinon. Quelques dépôts sont classés à la main.
+                </dd>
+                <dt>Stack</dt>
+                <dd>
+                  Répartition des PR de code (auteurs) ou des PR relues (relecteurs) entre dépôts front, back et mobile, et
+                  technologies principales de ces dépôts. Les dépôts « autres » n’y comptent pas. « Full-stack » : au moins
+                  30 % des PR côté back et au moins 30 % côté client (front ou mobile).
+                </dd>
+                <dt>Technologies</dt>
+                <dd>
+                  Les langages d’un dépôt sont regroupés sous le framework que déclarent ses fichiers de dépendances
+                  (<code>composer.json</code>, <code>package.json</code>, <code>pubspec.yaml</code>) : PHP et Blade sous
+                  Laravel, Vue et TypeScript sous Nuxt, Dart sous Flutter, TypeScript sous NestJS… Chaque PR de code est
+                  répartie entre les technologies de son dépôt, au prorata de leur part dans le code (moins de 2 % :
+                  ignorée). Logos : Simple Icons.
+                </dd>
+                <dt>Mises en production</dt>
+                <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
+                <dt>Part de hotfix</dt>
+                <dd>PR de code dont la branche commence par <code>hotfix</code>, rapportées à toutes les PR de code.</dd>
+                <dt>Taux de merge</dt>
+                <dd>Mergées / (mergées + fermées sans merge).</dd>
+                <dt>Délais et taille</dt>
+                <dd>
+                  Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Attente 1re review : de la
+                  création à la première review ou au premier commentaire d’une autre personne. Délai de merge : de la
+                  création au merge. Taille : lignes ajoutées plus supprimées.
+                </dd>
+                <dt>TMA</dt>
+                <dd>
+                  PR de code dont la branche commence par <code>hotfix</code>, créées sur la période. « Part de ses PR » :
+                  hotfix de la personne rapportés à toutes ses PR de code.
+                </dd>
+                <dt>Mergées sans review</dt>
+                <dd>PR de code mergées sans aucune review ni commentaire d’une autre personne que l’auteur.</dd>
+                <dt>PR en attente de review</dt>
+                <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
+                <dt>PR relue</dt>
+                <dd>
+                  Au moins une review ou un commentaire de quelqu’un d’autre que l’auteur. Dans l’évolution, elle compte
+                  dans la période de la première intervention.
+                </dd>
+                <dt>Commentaires par PR relue</dt>
+                <dd>Commentaires dans le code, commentaires généraux et reviews « commentaire », divisés par les PR relues.</dd>
+                <dt>Approbations sans commentaire</dt>
+                <dd>Parmi les PR approuvées, part de celles où le relecteur n’a laissé aucun commentaire.</dd>
+                <dt>Noms</dt>
+                <dd>Nom du profil GitHub, sinon identifiant.</dd>
+              </dl>
+            </section>
+          </div>
+        </main>
+
+        <footer class="page-footer">
+          <p>
+            Données GitHub actualisées automatiquement en semaine, à intervalles irréguliers. Pour les mettre à jour
+            tout de suite, utilise le bouton ⟳ de la navigation, ou ouvre le workflow
+            <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a>
+            puis clique sur « Run workflow » (accès en écriture au dépôt requis).
+          </p>
+        </footer>
+      </div>
     </div>
 
     <dialog class="confirm" aria-labelledby="full-sync-title" data-full-sync-dialog>

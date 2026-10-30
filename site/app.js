@@ -14,7 +14,6 @@ const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
 const UNLOCK_DURATION_MS = 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
-const TOP_REPOSITORIES = 12
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_TECHNOLOGIES = 10
@@ -36,6 +35,16 @@ const SYNC_KINDS = {
   running: { label: 'Une synchro est déjà en cours…', timeoutMs: 20 * 60_000 },
 }
 const ACTIVE_RUN_STATUSES = ['requested', 'queued', 'pending', 'waiting', 'in_progress']
+
+// Pages of the dashboard, one per hash: links can be shared and the browser history works. The period and the search
+// apply to every page but the method.
+const ROUTES = {
+  overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
+  authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
+  reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
+  tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
+  method: { hash: '#/methode', title: 'Méthode', subtitle: 'Comment chaque indicateur est calculé', filters: false },
+}
 
 const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
@@ -103,19 +112,20 @@ const TODAY_TILES = [
   { key: 'reviews', label: 'Reviews soumises' },
 ]
 
+// A tile with a route leads to the page that details it.
 const DELIVERY_TILES = [
-  { key: 'opened', label: 'PR ouvertes' },
-  { key: 'merged', label: 'PR de code mergées' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
+  { key: 'opened', label: 'PR ouvertes', route: 'authors' },
+  { key: 'merged', label: 'PR de code mergées', route: 'authors' },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, route: 'authors' },
   { key: 'releases', label: 'Mises en production' },
-  { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare },
+  { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare, route: 'tma' },
 ]
 
 const REVIEW_TILES = [
-  { key: 'reviewed', label: 'PR relues' },
-  { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal },
-  { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare },
-  { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare },
+  { key: 'reviewed', label: 'PR relues', route: 'reviewers' },
+  { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal, route: 'reviewers' },
+  { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare, route: 'reviewers' },
+  { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare, route: 'authors' },
 ]
 
 const TMA_TILES = [
@@ -163,6 +173,22 @@ const REVIEWER_COLUMNS = [
     value: (row) => row.topRepos[0]?.[0] ?? '',
     cell: (row) => topReposCell(row.topRepos, 'PR relues'),
   },
+]
+
+const REPO_COLUMNS = [
+  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  {
+    key: 'technologies',
+    label: 'Technos',
+    kind: 'text',
+    value: (row) => row.technologies[0]?.[0] ?? '',
+    cell: (row) => technologiesCell(row.technologies),
+  },
+  { key: 'code', label: 'PR de code', kind: 'bar' },
+  { key: 'contributors', label: 'Contributeurs' },
+  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
+  { key: 'unreviewedRate', label: 'Mergées sans review', format: (row) => formatShare(row.unreviewedRate) },
+  { key: 'reviewed', label: 'PR relues' },
 ]
 
 const TMA_COLUMNS = [
@@ -267,8 +293,9 @@ const state = {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
     tma: { key: 'hotfixes', direction: -1 },
+    repos: { key: 'code', direction: -1 },
   },
-  previousRows: { authors: new Map(), reviewers: new Map(), tma: new Map() },
+  previousRows: { authors: new Map(), reviewers: new Map(), tma: new Map(), repos: new Map() },
   // The sync started from the page, until new data arrives.
   syncRequest: null,
   seenEvents: null,
@@ -364,8 +391,8 @@ function ensureTiles(container, definitions) {
   if (container.childElementCount === 0) {
     for (const definition of definitions) {
       const tile = el(
-        'div',
-        { className: 'tile' },
+        definition.route ? 'a' : 'div',
+        definition.route ? { className: 'tile tile-link', href: ROUTES[definition.route].hash } : { className: 'tile' },
         el('span', { className: 'tile-label', textContent: definition.label }),
         el('span', { className: 'tile-value-row' }, el('span', { className: 'tile-value' }), el('span', { className: 'tile-bump' })),
       )
@@ -437,6 +464,7 @@ function renderToday(animate) {
 
 function renderTmaTiles(animate) {
   const { tma } = currentPeriod()
+  $('[data-tma-title]').textContent = capitalize(PERIOD_TITLES[state.period])
   renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, animate)
 }
 
@@ -795,26 +823,6 @@ function renderTmaCharts() {
   })
 }
 
-function renderRepositoriesChart() {
-  const repositories = currentPeriod().repositories
-  $('[data-repos-sub]').textContent = `${Math.min(TOP_REPOSITORIES, repositories.length)} premiers sur ${formatNumber(repositories.length)}`
-  barChart($('[data-repos-chart]'), {
-    rows: repositories.slice(0, TOP_REPOSITORIES),
-    label: (row) => row.repo,
-    value: (row) => row.prs,
-    format: formatNumber,
-    color: 'var(--series-1)',
-    ariaLabel: 'PR relues par dépôt',
-    tooltip: (row) => ({
-      title: row.repo,
-      rows: [
-        { label: 'PR relues', value: formatNumber(row.prs) },
-        { label: 'commentaires', value: formatNumber(row.comments) },
-      ],
-    }),
-  })
-}
-
 const formatTechnologyShare = (value) => (value < 0.01 ? '< 1 %' : formatShare(value))
 
 function renderTechnologiesChart() {
@@ -880,7 +888,6 @@ function renderCharts() {
   renderActivityChart()
   renderSizeCharts()
   renderTechnologiesChart()
-  renderRepositoriesChart()
   renderTmaCharts()
   if (state.person) {
     renderMiniCharts()
@@ -1057,6 +1064,45 @@ function frontShare({ counts }) {
   return total ? counts.front / total : null
 }
 
+// Code pull requests, people, delays and reviews per repository over the period, from the per-person stats.
+function repoRows() {
+  const { authors, repositories } = currentPeriod()
+  const rows = new Map()
+  const row = (repo) => {
+    if (!rows.has(repo)) {
+      rows.set(repo, { repo, code: 0, contributors: 0, merged: 0, unreviewed: 0, timesToMerge: [], reviewed: 0 })
+    }
+
+    return rows.get(repo)
+  }
+  for (const person of authors) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      if (stats.code > 0) {
+        const totals = row(repo)
+        totals.code += stats.code
+        totals.contributors++
+        totals.merged += stats.merged
+        totals.unreviewed += stats.unreviewed
+        totals.timesToMerge.push(...stats.timesToMergeHours)
+      }
+    }
+  }
+  for (const { repo, prs } of repositories) {
+    row(repo).reviewed = prs
+  }
+
+  return [...rows.values()].map((totals) => ({
+    repo: totals.repo,
+    category: repoInfo(totals.repo).category,
+    technologies: repoInfo(totals.repo).technologies,
+    code: totals.code,
+    contributors: totals.contributors,
+    medianTimeToMergeHours: median(totals.timesToMerge),
+    unreviewedRate: totals.merged ? totals.unreviewed / totals.merged : null,
+    reviewed: totals.reviewed,
+  }))
+}
+
 const TABLES = {
   authors: {
     columns: AUTHOR_COLUMNS,
@@ -1081,6 +1127,12 @@ const TABLES = {
     // Counted once per pull request, however many people reviewed it.
     repoCounts: () => new Map(currentPeriod().repositories.map((row) => [row.repo, row.prs])),
     repoCountsLabel: 'PR relues sur la période',
+  },
+  repos: {
+    columns: REPO_COLUMNS,
+    rows: repoRows,
+    rowKey: (row) => row.repo,
+    searchTexts: (row) => [row.repo, ...row.technologies.map(([name]) => name)],
   },
   tma: {
     columns: TMA_COLUMNS,
@@ -1174,6 +1226,51 @@ function stackCell({ counts, technologies }) {
   return el('td', {}, cell)
 }
 
+function repoCell({ repo, category }) {
+  const type = CATEGORIES.find((item) => item.key === category) ?? CATEGORIES.at(-1)
+  const link = el('a', {
+    href: githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}`),
+    target: '_blank',
+    rel: 'noopener',
+    textContent: repo,
+  })
+
+  return el(
+    'td',
+    { className: 'person repo-cell' },
+    link,
+    el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() }),
+  )
+}
+
+function technologiesCell(technologies) {
+  if (technologies.length === 0) {
+    return el('td', { className: 'text muted', textContent: '–' })
+  }
+  const content = el(
+    'span',
+    { className: 'stack-logos', tabIndex: 0 },
+    ...technologies.slice(0, STACK_TECHNOLOGIES).map(([name]) => technologyIcon(name)),
+  )
+  content.setAttribute('aria-label', technologies.map(([name, share]) => `${name} ${formatTechnologyShare(share)}`).join(', '))
+  bindTooltip(
+    content,
+    (x, y) =>
+      showTooltip(
+        {
+          title: 'Technologies',
+          rows: technologies.map(([name, share]) => ({ value: formatTechnologyShare(share), label: name })),
+          note: 'Part dans le code du dépôt',
+        },
+        x,
+        y,
+      ),
+    hideTooltip,
+  )
+
+  return el('td', { className: 'text' }, content)
+}
+
 // The main repository only, the others in the tooltip: the full list made the column too wide.
 function topReposCell(topRepos, unit) {
   if (topRepos.length === 0) {
@@ -1235,7 +1332,7 @@ function renderCell(column, row, barMax) {
 }
 
 function renderTable(name, highlight) {
-  const { columns, searchTexts } = TABLES[name]
+  const { columns, searchTexts, rowKey = (row) => row.login } = TABLES[name]
   const rows = TABLES[name].rows()
   const sort = state.sort[name]
   const sortColumn = columns.find((column) => column.key === sort.key)
@@ -1247,7 +1344,7 @@ function renderTable(name, highlight) {
     .sort((a, b) => {
       const order = compareValues(columnValue(sortColumn, a), columnValue(sortColumn, b))
 
-      return order === 0 ? a.login.localeCompare(b.login) : order * sort.direction
+      return order === 0 ? rowKey(a).localeCompare(rowKey(b)) : order * sort.direction
     })
 
   const headCells = columns.map((column) => {
@@ -1273,7 +1370,7 @@ function renderTable(name, highlight) {
 
   const bodyRows = visible.map((row) => {
     const tr = el('tr', {}, ...columns.map((column) => renderCell(column, row, barMax)))
-    if (highlight && previous.size > 0 && previous.get(row.login) !== JSON.stringify(row)) {
+    if (highlight && previous.size > 0 && previous.get(rowKey(row)) !== JSON.stringify(row)) {
       tr.classList.add('is-updated')
     }
 
@@ -1283,7 +1380,7 @@ function renderTable(name, highlight) {
     bodyRows.push(el('tr', {}, el('td', { colSpan: columns.length, className: 'muted', textContent: 'Aucun résultat' })))
   }
 
-  state.previousRows[name] = new Map(rows.map((row) => [row.login, JSON.stringify(row)]))
+  state.previousRows[name] = new Map(rows.map((row) => [rowKey(row), JSON.stringify(row)]))
   $(`[data-${name}]`).replaceChildren(
     el('table', {}, el('thead', {}, el('tr', {}, ...headCells)), el('tbody', {}, ...bodyRows)),
   )
@@ -1666,6 +1763,35 @@ function refreshClock() {
   }
 }
 
+// Routing
+
+const currentRoute = () => Object.keys(ROUTES).find((key) => ROUTES[key].hash === location.hash) ?? 'overview'
+
+function renderRoute() {
+  const route = currentRoute()
+  for (const page of document.querySelectorAll('[data-route]')) {
+    page.hidden = page.dataset.route !== route
+  }
+  for (const link of document.querySelectorAll('[data-route-link]')) {
+    if (link.dataset.routeLink === route) {
+      link.setAttribute('aria-current', 'page')
+    } else {
+      link.removeAttribute('aria-current')
+    }
+  }
+  $('[data-route-title]').textContent = ROUTES[route].title
+  $('[data-route-subtitle]').textContent = ROUTES[route].subtitle
+  $('[data-filters]').hidden = ROUTES[route].filters === false
+  document.title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
+  // The charts of a hidden page cannot be measured: they are drawn when their page shows.
+  renderCharts()
+}
+
+window.addEventListener('hashchange', () => {
+  renderRoute()
+  window.scrollTo(0, 0)
+})
+
 // Theme: follows the system until the toggle is used, then sticks to the chosen one.
 
 const currentTheme = () => document.documentElement.dataset.theme ?? (darkScheme.matches ? 'dark' : 'light')
@@ -1992,6 +2118,7 @@ for (const name of FILTERED_TABLES) {
   setupRepoFilter(name)
 }
 renderThemeToggle()
+renderRoute()
 renderPeriodSelector()
 renderLegend()
 renderStackLegends()
