@@ -47,9 +47,13 @@ npm run sync:full   # force une resynchro complète
 
 ## Déploiement (GitHub Actions + Pages)
 
-Le workflow `.github/workflows/deploy.yml` tourne toutes les 15 minutes du lundi au vendredi, de 6-7 h à 20-21 h
-(heure de Paris), à chaque push sur `main` et à la demande (avec une option de resynchro complète). Le snapshot est
-conservé d'un run à l'autre dans le cache Actions.
+Le workflow `.github/workflows/deploy.yml` est planifié toutes les 15 minutes du lundi au vendredi, de 6-7 h à
+20-21 h (heure de Paris), et tourne aussi à chaque push sur `main` et à la demande (avec une option de resynchro
+complète). Le snapshot est conservé d'un run à l'autre dans le cache Actions.
+
+GitHub ne garantit pas les déclenchements planifiés : ils sont souvent retardés ou sautés. Pour des données à jour
+tout de suite, lance le workflow depuis Actions → _Sync and deploy_ → _Run workflow_, ou avec
+`gh workflow run deploy.yml`.
 
 Prérequis :
 
