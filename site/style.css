@@ -875,20 +875,25 @@ main.is-loading {
 .stack-cell {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .stack-main {
-  min-width: 76px;
+  min-width: 60px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   text-align: right;
+}
+
+.stack-main.is-full-stack {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .stack-bar {
   display: flex;
   gap: 2px;
-  width: 72px;
+  width: 48px;
   height: 8px;
   overflow: hidden;
   border-radius: 4px;
@@ -901,8 +906,30 @@ main.is-loading {
 
 .stack-logos {
   display: inline-flex;
-  gap: 5px;
-  min-width: 58px;
+  gap: 4px;
+  min-width: 56px;
+}
+
+/* Main repository of a reviewer, the count of the others as a badge */
+.top-repos {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 120px;
+}
+
+.top-repos-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-repos-more {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 /* Tables */
@@ -917,9 +944,10 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
+/* Compact enough for both tables to fit from a 1080 px wide window, without scrolling sideways. */
 th,
 td {
-  padding: 8px;
+  padding: 8px 6px;
   border-bottom: 1px solid var(--gridline);
   text-align: right;
   white-space: nowrap;
@@ -1013,8 +1041,12 @@ tbody tr.is-updated {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 150px;
   font-weight: 500;
+  line-height: 1.3;
   text-decoration: none;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .person a:hover {
@@ -1029,7 +1061,7 @@ tbody tr.is-updated {
 }
 
 .inline-bar {
-  width: 56px;
+  width: 40px;
   height: 6px;
   border-radius: 3px;
   background: var(--gridline);

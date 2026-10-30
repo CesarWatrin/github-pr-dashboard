@@ -17,6 +17,8 @@ const TOP_REPOS_PER_REVIEWER = 3
 const TOP_LANGUAGES = 10
 const STACK_LANGUAGES = 3
 const MIN_STACK_LANGUAGE_SHARE = 0.05
+// Full-stack: at least this share of the pull requests on the back end and as much on the client, web or mobile.
+const FULL_STACK_MIN_SHARE = 0.3
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 
@@ -132,7 +134,7 @@ const REVIEWER_COLUMNS = [
   { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
   { key: 'commentsPerPr', label: 'Comment. / PR', format: (row) => formatDecimal(row.commentsPerPr) },
   { key: 'silentApprovalRate', label: 'Approb. sans comment.', format: (row) => formatShare(row.silentApprovalRate) },
-  { key: 'changesRequested', label: 'Changements demandés' },
+  { key: 'changesRequested', label: 'Modif. demandées' },
   { key: 'medianSize', label: 'Taille médiane' },
   { key: 'merges', label: 'Merges effectués' },
   {
@@ -140,7 +142,7 @@ const REVIEWER_COLUMNS = [
     label: 'Principaux dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
-    format: (row) => row.topRepos.map(([repo, count]) => `${repo} (${count})`).join(', ') || '–',
+    cell: (row) => topReposCell(row.topRepos),
   },
 ]
 
@@ -1046,6 +1048,8 @@ function stackCell({ counts, languages }) {
   const parts = STACK_CATEGORIES.filter((category) => counts[category.key] > 0)
   const share = (category) => Math.round((100 * counts[category.key]) / total)
   const main = parts.reduce((best, category) => (counts[category.key] > counts[best.key] ? category : best))
+  const fullStack =
+    counts.back / total >= FULL_STACK_MIN_SHARE && (counts.front + counts.mobile) / total >= FULL_STACK_MIN_SHARE
   const languageTotal = languages.reduce((sum, [, weight]) => sum + weight, 0)
   const top = languages.filter(([, weight]) => weight / languageTotal >= MIN_STACK_LANGUAGE_SHARE).slice(0, STACK_LANGUAGES)
   const languageText = top.map(([name, weight]) => `${name} ${Math.round((100 * weight) / languageTotal)} %`).join(', ')
@@ -1064,17 +1068,21 @@ function stackCell({ counts, languages }) {
   const cell = el(
     'span',
     { className: 'stack-cell', tabIndex: 0 },
-    el('span', { className: 'stack-main', textContent: `${share(main)} % ${main.label.toLowerCase()}` }),
+    el('span', {
+      className: fullStack ? 'stack-main is-full-stack' : 'stack-main',
+      textContent: fullStack ? 'full-stack' : main.label.toLowerCase(),
+    }),
     bar,
     el('span', { className: 'stack-logos' }, ...top.map(([name]) => languageIcon(name))),
   )
-  cell.setAttribute('aria-label', `${parts.map((category) => `${category.label} ${share(category)} %`).join(', ')}. ${languageText}`)
+  const split = parts.map((category) => `${category.label} ${share(category)} %`).join(', ')
+  cell.setAttribute('aria-label', `${fullStack ? 'Full-stack. ' : ''}${split}. ${languageText}`)
   bindTooltip(
     cell,
     (x, y) =>
       showTooltip(
         {
-          title: 'Stack',
+          title: fullStack ? 'Stack full-stack' : 'Stack',
           rows: parts.map((category) => ({
             color: category.color,
             value: `${share(category)} %`,
@@ -1091,12 +1099,49 @@ function stackCell({ counts, languages }) {
   return el('td', {}, cell)
 }
 
+// The main repository only, the others in the tooltip: the full list made the column too wide.
+function topReposCell(topRepos) {
+  if (topRepos.length === 0) {
+    return el('td', { className: 'text muted', textContent: '–' })
+  }
+  const [[repo, count], ...others] = topRepos
+  const content = el(
+    'span',
+    { className: 'top-repos', tabIndex: 0 },
+    el('span', { className: 'top-repos-name', textContent: repo }),
+    el('span', { className: 'muted', textContent: formatNumber(count) }),
+  )
+  if (others.length > 0) {
+    content.append(el('span', { className: 'top-repos-more', textContent: `+${others.length}` }))
+  }
+  content.setAttribute('aria-label', topRepos.map(([name, prs]) => `${name} : ${formatNumber(prs)} PR`).join(', '))
+  bindTooltip(
+    content,
+    (x, y) =>
+      showTooltip(
+        {
+          title: 'Principaux dépôts',
+          rows: topRepos.map(([name, prs]) => ({ value: formatNumber(prs), label: name })),
+          note: 'PR relues',
+        },
+        x,
+        y,
+      ),
+    hideTooltip,
+  )
+
+  return el('td', { className: 'text' }, content)
+}
+
 function renderCell(column, row, barMax) {
   if (column.kind === 'person') {
     return el('td', { className: 'person' }, personLink(row.login))
   }
   if (column.kind === 'stack') {
     return stackCell(row.stack)
+  }
+  if (column.cell) {
+    return column.cell(row)
   }
   const text = column.format ? column.format(row) : formatNumber(row[column.key])
   if (column.kind === 'bar') {
