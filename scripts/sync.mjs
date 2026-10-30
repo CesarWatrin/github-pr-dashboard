@@ -111,8 +111,15 @@ const SYNC_TRIGGER = process.env.DISPATCH_TOKEN
     }
   : null
 
-// GitHub Apps are detected from their actor type: these are user accounts acting as bots.
-const BOT_USERS = new Set(['it-hellocse', 'ghost'])
+// GitHub Apps are detected from their actor type: these are user accounts acting as bots. The organization's own
+// come from BOT_USERS (logins separated by commas), so that its account names stay out of this public code.
+const BOT_USERS = new Set([
+  'ghost',
+  ...(process.env.BOT_USERS ?? '')
+    .split(',')
+    .map((login) => login.trim())
+    .filter(Boolean),
+])
 
 const ACTOR_FIELDS = '__typename login ... on User { name }'
 const REVIEW_FIELDS = `author { ${ACTOR_FIELDS} } state submittedAt comments { totalCount }`
