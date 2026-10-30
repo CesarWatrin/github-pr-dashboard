@@ -38,7 +38,6 @@ const UNAPPROVED_DAYS = 30
 const UNAPPROVED_CATEGORIES = ['front', 'back', 'mobile']
 // What the pull request got from others before its merge, when it was not an approval.
 const UNAPPROVED_TAGS = { none: 'sans review', commented: 'commentée', changes: 'changements demandés' }
-const TOP_TECHNOLOGIES = 10
 const STACK_TECHNOLOGIES = 3
 const MIN_STACK_TECHNOLOGY_SHARE = 0.05
 // Full-stack: at least this share of the pull requests on the back end and as much on the client, web or mobile.
@@ -1021,9 +1020,9 @@ function renderTechnologiesChart() {
   const total = weights.reduce((sum, [, weight]) => sum + weight, 0)
   const rows = weights.map(([name, weight]) => ({ name, weight, share: weight / total }))
   $('[data-technologies-sub]').textContent =
-    `Part des PR de code, ${Math.min(TOP_TECHNOLOGIES, rows.length)} premiers sur ${formatNumber(rows.length)}`
+    `Part des PR de code, ${formatNumber(rows.length)} technologie${rows.length > 1 ? 's' : ''}`
   barChart($('[data-technologies-chart]'), {
-    rows: rows.slice(0, TOP_TECHNOLOGIES),
+    rows,
     label: (row) => row.name,
     technology: (row) => row.name,
     value: (row) => row.share,
