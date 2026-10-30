@@ -701,7 +701,6 @@ function deployedAt(pr, index) {
   return index.deployments.get(pr.repo)?.find((time) => time >= at) ?? null
 }
 
-
 // What the page needs of a pull request to compute the stats of any range, see site/period.js. Bot pull requests
 // are only kept when they deploy or update a dependency (Dependabot).
 function toPeriodRecord(pr, index) {
@@ -936,11 +935,17 @@ async function sync({ full }) {
   console.log(`[${now.toISOString()}] ${mode} sync${counts}`)
 }
 
-const args = new Set(process.argv.slice(2))
-const full = args.has('--full') || process.env.FULL_SYNC === 'true'
+// The pure parts of the sync, for the tests.
+export { classify, computeCi, deliveryIndex, isBot, repositoryCategory, technologyShares, toPeriodRecord }
 
-await sync({ full })
-while (args.has('--watch')) {
-  await wait(WATCH_INTERVAL_MS)
-  await sync({ full: false }).catch((error) => console.error(error))
+// Runs when executed, not when imported by the tests.
+if (import.meta.main) {
+  const args = new Set(process.argv.slice(2))
+  const full = args.has('--full') || process.env.FULL_SYNC === 'true'
+
+  await sync({ full })
+  while (args.has('--watch')) {
+    await wait(WATCH_INTERVAL_MS)
+    await sync({ full: false }).catch((error) => console.error(error))
+  }
 }

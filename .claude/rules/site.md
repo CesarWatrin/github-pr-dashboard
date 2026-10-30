@@ -16,6 +16,8 @@ paths:
   apply to every page but the method one.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
+- `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
+  on made-up records.
 
 ## Building blocks
 

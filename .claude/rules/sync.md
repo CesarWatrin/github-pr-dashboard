@@ -49,7 +49,9 @@ paths:
 
 - A change in the snapshot shape bumps `SNAPSHOT_VERSION` (comment why): the next run reads everything again. Measure
   that run and keep it well under the workflow timeout.
-- A change in a computation is checked by comparing the outputs before and after on the same snapshot: copy the old
-  and new scripts to a temporary folder, cut the run lines at the end of `sync.mjs`, export the functions, and diff
-  the results. The existing stats must stay identical unless the change means them to move.
+- The pure parts of the sync are exported for the tests; the sync itself only runs when the file is executed
+  (`import.meta.main`). Keep new rules pure and exported, with their tests in `test/sync.test.mjs`.
+- A change in a computation is also checked against real data, outside the repository: run the old and new code on
+  the same snapshot (both importable) and diff the results. The existing stats must stay identical unless the change
+  means them to move. Never copy anything of that data into a test.
 - The page and `site/period.js` read what the sync publishes: change them together, in the same pull request.

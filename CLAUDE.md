@@ -18,12 +18,15 @@ English.
 | `site/technology-icons.svg` | Technology logos (Simple Icons, CC0) |
 | `scripts/serve.mjs` | Local static server (port 4173, `PORT` to change it) |
 | `.github/workflows/deploy.yml` | Sync then deploy to Pages: weekday cron, every push to `main`, manual runs |
+| `.github/workflows/checks.yml` | Syntax and tests of every pull request, without any secret |
+| `test/` | Tests of `site/period.js` and of the sync rules, on made-up data (`node --test`) |
 
 ## Commands
 
 - `npm run sync`: incremental sync (needs `.env`); `npm run sync:full`: full sync.
 - `npm run serve`: serves `site/` on http://localhost:4173.
 - `npm run dev`: a sync every minute, plus the server.
+- `npm run check`: syntax of every script; `npm test`: the tests. Both run on every pull request.
 
 ## Rules
 

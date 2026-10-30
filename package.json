@@ -10,6 +10,8 @@
     "sync": "node --env-file-if-exists=.env scripts/sync.mjs",
     "sync:full": "node --env-file-if-exists=.env scripts/sync.mjs --full",
     "serve": "node scripts/serve.mjs",
-    "dev": "node --env-file-if-exists=.env scripts/sync.mjs --watch & node scripts/serve.mjs"
+    "dev": "node --env-file-if-exists=.env scripts/sync.mjs --watch & node scripts/serve.mjs",
+    "check": "for file in scripts/*.mjs site/*.js test/*.mjs; do node --check \"$file\" || exit 1; done",
+    "test": "node --test"
   }
 }
