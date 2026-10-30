@@ -7,6 +7,12 @@ const CLOCK_INTERVAL_MS = 30_000
 const STALE_AFTER_MS = 2 * 60 * 60_000
 const BUMP_VISIBLE_MS = 6000
 const COUNTER_ANIMATION_MS = 900
+// How long a page that shows plays its entrance: cards rising, bars growing, rows following one another.
+const ENTRANCE_MS = 1000
+// Bars and rows start one after the other, within this spread.
+const STAGGER_SPREAD_MS = 320
+const STAGGERED_ROWS = 16
+const THEME_TRANSITION_MS = 350
 const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
@@ -404,7 +410,8 @@ function ensureTiles(container, definitions) {
   return new Map([...container.children].map((tile) => [tile.dataset.key, tile]))
 }
 
-function renderTiles(container, definitions, values, animate) {
+// "update" marks the values that grew since the last sync; "enter" rolls every value from where it was, or from zero.
+function renderTiles(container, definitions, values, mode) {
   const tiles = ensureTiles(container, definitions)
   for (const definition of definitions) {
     const tile = tiles.get(definition.key)
@@ -414,19 +421,22 @@ function renderTiles(container, definitions, values, animate) {
     valueNode.dataset.value = JSON.stringify(value ?? null)
 
     const format = definition.format ?? formatNumber
-    const increased = animate && typeof previous === 'number' && typeof value === 'number' && value > previous
-    if (increased && !definition.format) {
-      animateCounter(valueNode, previous, value)
+    const integer = !definition.format
+    const numbers = typeof value === 'number' && (previous === null || typeof previous === 'number')
+    if (mode === 'update' && numbers && integer && previous !== null && value > previous) {
+      animateCounter(valueNode, previous, value, format, integer)
       showBump(tile.querySelector('.tile-bump'), value - previous)
+    } else if (mode === 'enter' && numbers && value !== previous) {
+      animateCounter(valueNode, previous ?? 0, value, format, integer)
     } else {
       valueNode.textContent = format(value)
     }
   }
 }
 
-function animateCounter(node, from, to) {
+function animateCounter(node, from, to, format, integer) {
   if (reducedMotion.matches) {
-    node.textContent = formatNumber(to)
+    node.textContent = format(to)
 
     return
   }
@@ -438,8 +448,9 @@ function animateCounter(node, from, to) {
       return
     }
     const progress = Math.min(1, (time - start) / COUNTER_ANIMATION_MS)
-    const eased = 1 - (1 - progress) ** 3
-    node.textContent = formatNumber(Math.round(from + (to - from) * eased))
+    // Ease-out quart: fast at first, settling softly on the value.
+    const current = from + (to - from) * (1 - (1 - progress) ** 4)
+    node.textContent = format(progress < 1 ? (integer ? Math.round(current) : current) : to)
     if (progress < 1) {
       requestAnimationFrame(frame)
     }
@@ -454,25 +465,25 @@ function showBump(node, delta) {
   node.timer = setTimeout(() => node.classList.remove('is-visible'), BUMP_VISIBLE_MS)
 }
 
-function renderToday(animate) {
+function renderToday(mode) {
   const { today, timezone } = state.stats
   const currentDay = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
   $('[data-today-title]').textContent =
     today.date === currentDay ? 'Aujourd’hui' : `Le ${dayLongFormat.format(new Date(`${today.date}T12:00:00Z`))}`
-  renderTiles($('[data-today]'), TODAY_TILES, today, animate)
+  renderTiles($('[data-today]'), TODAY_TILES, today, mode)
 }
 
-function renderTmaTiles(animate) {
+function renderTmaTiles(mode) {
   const { tma } = currentPeriod()
   $('[data-tma-title]').textContent = capitalize(PERIOD_TITLES[state.period])
-  renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, animate)
+  renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, mode)
 }
 
-function renderTotals(animate) {
+function renderTotals(mode) {
   const { totals } = currentPeriod()
   $('[data-totals-title]').textContent = capitalize(PERIOD_TITLES[state.period])
-  renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, animate)
-  renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, animate)
+  renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, mode)
+  renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, mode)
 }
 
 // Tooltip
@@ -626,6 +637,7 @@ function columnChart(container, { points, bucket, series, ariaLabel, decimals = 
 
   const groups = points.map((point, index) => {
     const group = svg('g', { class: point.partial ? 'bar-group is-partial' : 'bar-group' })
+    group.style.setProperty('--delay', `${Math.round((index / points.length) * STAGGER_SPREAD_MS)}ms`)
     const left = margin.left + slot * index + (slot - groupWidth) / 2
     series.forEach((item, seriesIndex) => {
       const value = item.value(point) ?? 0
@@ -719,6 +731,7 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
     const y = index * rowHeight
     const barWidth = Math.max(2, scale(value(row)))
     const group = svg('g', { class: 'bar-group' })
+    group.style.setProperty('--delay', `${Math.round((index / rows.length) * STAGGER_SPREAD_MS)}ms`)
     const name = svg('text', { class: 'axis-label', x: labelWidth, y: y + rowHeight / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
     name.textContent = truncateText(label(row), labelMax - iconSpace)
     if (technology) {
@@ -1368,8 +1381,9 @@ function renderTable(name, highlight) {
     return cell
   })
 
-  const bodyRows = visible.map((row) => {
+  const bodyRows = visible.map((row, index) => {
     const tr = el('tr', {}, ...columns.map((column) => renderCell(column, row, barMax)))
+    tr.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
     if (highlight && previous.size > 0 && previous.get(rowKey(row)) !== JSON.stringify(row)) {
       tr.classList.add('is-updated')
     }
@@ -1765,6 +1779,19 @@ function refreshClock() {
 
 // Routing
 
+// The page that shows plays its entrance once: its cards rise, its bars grow and its rows follow one another.
+function playEntrance() {
+  const route = $(`[data-route="${currentRoute()}"]`)
+  if (!state.stats || reducedMotion.matches) {
+    return
+  }
+  route.classList.remove('is-entering')
+  void route.offsetWidth
+  route.classList.add('is-entering')
+  clearTimeout(playEntrance.timer)
+  playEntrance.timer = setTimeout(() => route.classList.remove('is-entering'), ENTRANCE_MS)
+}
+
 const currentRoute = () => Object.keys(ROUTES).find((key) => ROUTES[key].hash === location.hash) ?? 'overview'
 
 function renderRoute() {
@@ -1785,6 +1812,7 @@ function renderRoute() {
   document.title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
   // The charts of a hidden page cannot be measured: they are drawn when their page shows.
   renderCharts()
+  playEntrance()
 }
 
 window.addEventListener('hashchange', () => {
@@ -1805,7 +1833,12 @@ function renderThemeToggle() {
 
 function toggleTheme() {
   const theme = currentTheme() === 'dark' ? 'light' : 'dark'
-  document.documentElement.dataset.theme = theme
+  // Colours cross-fade for a moment rather than switching at once.
+  const root = document.documentElement
+  root.classList.add('is-theme-changing')
+  clearTimeout(toggleTheme.timer)
+  toggleTheme.timer = setTimeout(() => root.classList.remove('is-theme-changing'), THEME_TRANSITION_MS)
+  root.dataset.theme = theme
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme)
   } catch {
@@ -1830,9 +1863,10 @@ function render(animate) {
   $('[data-empty]').hidden = true
   $('[data-main]').classList.remove('is-loading')
   renderPeriodSelector()
-  renderToday(animate)
-  renderTotals(animate)
-  renderTmaTiles(animate)
+  const tileMode = animate ? 'update' : 'enter'
+  renderToday(tileMode)
+  renderTotals(tileMode)
+  renderTmaTiles(tileMode)
   renderPersonPicker()
   renderCharts()
   renderChartTable()
@@ -1989,6 +2023,9 @@ function applyStats(stats) {
   const isUpdate = state.stats !== null
   state.stats = stats
   render(isUpdate)
+  if (!isUpdate) {
+    playEntrance()
+  }
   if (isUpdate) {
     const status = $('[data-sync]')
     status.classList.remove('is-pulsing')
@@ -2045,6 +2082,7 @@ for (const button of document.querySelectorAll('[data-period]')) {
     state.period = button.dataset.period
     storePeriod(state.period)
     render(false)
+    playEntrance()
   })
 }
 

@@ -785,6 +785,7 @@ main.is-loading {
 }
 
 .tile-value {
+  font-variant-numeric: tabular-nums;
   font-size: 30px;
   font-weight: 600;
   line-height: 1.15;
@@ -798,8 +799,8 @@ main.is-loading {
   opacity: 0;
   transform: translateY(4px);
   transition:
-    opacity 0.3s,
-    transform 0.3s;
+    opacity 300ms ease,
+    transform 400ms var(--ease-out);
 }
 
 .tile-bump.is-visible {
@@ -1473,6 +1474,184 @@ tbody tr.is-updated {
   margin-top: 24px;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Motion: short, eased and quiet. Everything below stops for those who ask their system to reduce motion. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Interactive elements change colour softly */
+.nav-link,
+.icon-button,
+.segmented button,
+.tile-link,
+.search,
+th button,
+.repo-presets button,
+.repo-filter-list label,
+.sync-menu-panel button,
+.button-primary,
+.button-secondary,
+.lock-submit,
+tbody tr {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+/* The theme cross-fades instead of switching at once */
+.is-theme-changing,
+.is-theme-changing *,
+.is-theme-changing *::before,
+.is-theme-changing *::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease !important;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes grow-up {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes grow-right {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes pop-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes pop-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+/* A page that shows: its cards rise in turn, its bars grow from their axis, its rows follow one another. */
+.route.is-entering > * {
+  animation: rise-in 480ms var(--ease-out) both;
+}
+
+.route.is-entering > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.route.is-entering > :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.route.is-entering > :nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+
+.is-entering .chart .bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: grow-up 700ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .bar-chart .bar {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: grow-right 700ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .value-label {
+  animation: fade-in 320ms ease both;
+  animation-delay: 520ms;
+}
+
+.is-entering tbody tr {
+  animation: fade-in 420ms ease both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .inline-bar span,
+.is-entering .stack-bar {
+  transform-origin: 0 50%;
+  animation: grow-right 640ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 200ms);
+}
+
+/* Menus, tooltips and dialogs open with a short fade */
+.repo-filter[open] .repo-filter-panel,
+.sync-menu[open] .sync-menu-panel {
+  transform-origin: top right;
+  animation: pop-down 180ms var(--ease-out);
+}
+
+.sidebar .sync-menu[open] .sync-menu-panel {
+  transform-origin: bottom left;
+  animation-name: pop-up;
+}
+
+@media (max-width: 1279px) {
+  .sidebar .sync-menu[open] .sync-menu-panel {
+    transform-origin: top right;
+    animation-name: pop-down;
+  }
+}
+
+.tooltip:not([hidden]) {
+  animation: fade-in 140ms ease-out;
+}
+
+.icon-button[data-label]::after {
+  transform: translateY(-3px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms var(--ease-out);
+}
+
+.sidebar .icon-button[data-label]::after {
+  transform: translateY(3px);
+}
+
+.icon-button[data-label]:hover::after,
+.icon-button[data-label]:focus-visible::after {
+  transform: none;
+}
+
+.confirm[open] {
+  animation: pop-up 220ms var(--ease-out);
+}
+
+.confirm[open]::backdrop {
+  animation: fade-in 220ms ease-out;
+}
+
+.lock:not([hidden]) .lock-card {
+  animation: rise-in 420ms var(--ease-out) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
