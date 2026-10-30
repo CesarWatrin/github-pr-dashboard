@@ -596,6 +596,131 @@ main.is-loading {
   background: var(--gridline);
 }
 
+/* Repository filter */
+.repo-filter {
+  position: relative;
+  margin-left: auto;
+}
+
+.repo-filter summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 260px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.repo-filter summary::-webkit-details-marker {
+  display: none;
+}
+
+.repo-filter summary::after {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--text-secondary);
+  border-bottom: 1.5px solid var(--text-secondary);
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.repo-filter.is-filtered summary {
+  border-color: var(--text-primary);
+  font-weight: 600;
+}
+
+.repo-filter-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-filter-panel {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.repo-filter-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.repo-filter-actions button {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.repo-filter-actions button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.repo-filter-note {
+  margin: 4px 6px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--gridline);
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.repo-filter-list {
+  max-height: 300px;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.repo-filter-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.repo-filter-list label:hover {
+  background: var(--surface-hover);
+}
+
+.repo-filter-list input {
+  margin: 0;
+  accent-color: var(--text-primary);
+}
+
+.repo-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Tables */
 .table-wrap {
   margin-top: 12px;

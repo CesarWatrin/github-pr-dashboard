@@ -7,13 +7,14 @@
 
 import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 
 const ORG = process.env.ORG
 const SNAPSHOT_VERSION = 3
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.json'
+const VERSION_PATH = join(dirname(STATS_PATH), 'version.json')
 const TIMEZONE = 'Europe/Paris'
 const WATCH_INTERVAL_MS = 60_000
 const SYNC_OVERLAP_MS = 10 * 60_000
@@ -21,7 +22,6 @@ const SEARCH_RESULT_LIMIT = 1000
 const CONCURRENCY = 4
 const EVENTS_LIMIT = 50
 const EVENTS_MAX_AGE_DAYS = 7
-const TOP_REPOS_PER_REVIEWER = 3
 // Upper bounds (excluded) of the pull request size buckets, in changed lines.
 const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
 const RELEASE_BASES = ['master', 'main']
@@ -412,8 +412,10 @@ function computePeriod(pullRequests, period, now) {
   const buckets = new Map(
     keys.map((key) => [key, { key, opened: 0, merged: 0, comments: 0, approvals: 0, releases: 0 }]),
   )
+  // Person stats are kept per repository so that the page can add them up over any selection of repositories.
   const authors = new Map()
   const reviewers = new Map()
+  const reviewerSeries = new Map()
   const repositories = new Map()
   const reviewedPullRequests = new Set()
   const sizes = SIZE_BUCKETS.map((max) => ({ max, prs: 0, comments: 0, timesToMerge: [] }))
@@ -425,9 +427,8 @@ function computePeriod(pullRequests, period, now) {
     }
   }
 
-  const author = (login) =>
-    getOrCreate(authors, login, () => ({
-      login,
+  const author = (login, repo) =>
+    getOrCreate(getOrCreate(authors, login, () => new Map()), repo, () => ({
       opened: 0,
       code: 0,
       release: 0,
@@ -440,16 +441,14 @@ function computePeriod(pullRequests, period, now) {
       timesToFirstReview: [],
       sizes: [],
     }))
-  const reviewer = (login) =>
-    getOrCreate(reviewers, login, () => ({
-      login,
+  const reviewer = (login, repo) =>
+    getOrCreate(getOrCreate(reviewers, login, () => new Map()), repo, () => ({
       reviewed: new Map(),
       approvedPrs: new Set(),
       silentApprovedPrs: new Set(),
       comments: 0,
       changesRequested: 0,
       merges: 0,
-      series: new Map(),
     }))
   const repository = (name) => getOrCreate(repositories, name, () => ({ repo: name, reviewed: new Set(), comments: 0 }))
 
@@ -466,8 +465,8 @@ function computePeriod(pullRequests, period, now) {
       continue
     }
     if (pr.createdAt >= startIso) {
-      author(pr.author)[kind]++
-      author(pr.author).opened++
+      author(pr.author, pr.repo)[kind]++
+      author(pr.author, pr.repo).opened++
       bump(pr.createdAt, 'opened')
     }
     if (kind !== 'code') {
@@ -476,7 +475,7 @@ function computePeriod(pullRequests, period, now) {
 
     const interventions = reviewInterventions(pr)
     if (pr.createdAt >= startIso) {
-      const stats = author(pr.author)
+      const stats = author(pr.author, pr.repo)
       if (pr.head.startsWith('hotfix')) {
         stats.hotfix++
       }
@@ -504,7 +503,7 @@ function computePeriod(pullRequests, period, now) {
     if (pr.mergedAt && pr.mergedAt >= startIso) {
       bump(pr.mergedAt, 'merged')
       if (pr.mergedBy && !isBot(pr.mergedBy)) {
-        reviewer(pr.mergedBy).merges++
+        reviewer(pr.mergedBy, pr.repo).merges++
       }
     }
 
@@ -514,9 +513,10 @@ function computePeriod(pullRequests, period, now) {
       if (intervention.at < startIso) {
         continue
       }
-      const stats = reviewer(intervention.login)
+      const stats = reviewer(intervention.login, pr.repo)
       const repo = repository(pr.repo)
-      const point = getOrCreate(stats.series, bucketKey(intervention.at, period.bucket), () => ({ prs: 0, comments: 0 }))
+      const series = getOrCreate(reviewerSeries, intervention.login, () => new Map())
+      const point = getOrCreate(series, bucketKey(intervention.at, period.bucket), () => ({ prs: 0, comments: 0 }))
       if (!stats.reviewed.has(key)) {
         stats.reviewed.set(key, pr)
         point.prs++
@@ -540,8 +540,8 @@ function computePeriod(pullRequests, period, now) {
     }
   }
 
-  const authorStats = [...authors.values()]
-  const reviewerStats = [...reviewers.values()].filter((stats) => stats.reviewed.size > 0 || stats.merges > 0)
+  const authorStats = [...authors.values()].flatMap((perRepository) => [...perRepository.values()])
+  const reviewerStats = [...reviewers.values()].flatMap((perRepository) => [...perRepository.values()])
   const reviewPairs = reviewerStats.reduce((total, stats) => total + stats.reviewed.size, 0)
   const approvedPairs = reviewerStats.reduce((total, stats) => total + stats.approvedPrs.size, 0)
   const silentPairs = reviewerStats.reduce((total, stats) => total + stats.silentApprovedPrs.size, 0)
@@ -563,56 +563,52 @@ function computePeriod(pullRequests, period, now) {
       silentApprovalRate: approvedPairs ? round(silentPairs / approvedPairs, 3) : null,
     },
     series: keys.map((key, index) => ({ ...buckets.get(key), partial: index === 0 || index === keys.length - 1 })),
-    authors: authorStats
-      .map((stats) => {
-        const decided = stats.merged + stats.closedUnmerged
-
-        return {
-          login: stats.login,
-          code: stats.code,
-          release: stats.release,
-          integration: stats.integration,
-          mergeRate: decided ? Math.round((100 * stats.merged) / decided) : null,
-          unreviewedRate: stats.merged ? round(stats.unreviewed / stats.merged, 3) : null,
-          medianTimeToFirstReviewHours: round(median(stats.timesToFirstReview), 1),
-          medianTimeToMergeHours: round(median(stats.timesToMerge), 1),
-          medianSize: round(median(stats.sizes)),
-        }
-      })
-      .sort((a, b) => b.code - a.code),
-    reviewers: reviewerStats
-      .map((stats) => {
-        const reviewed = [...stats.reviewed.values()]
-        const perRepository = new Map()
-        for (const pr of reviewed) {
-          perRepository.set(pr.repo, (perRepository.get(pr.repo) ?? 0) + 1)
-        }
-
-        return {
-          login: stats.login,
-          prs: reviewed.length,
-          commentsPerPr: reviewed.length ? round(stats.comments / reviewed.length, 2) : null,
-          silentApprovalRate: stats.approvedPrs.size
-            ? round(stats.silentApprovedPrs.size / stats.approvedPrs.size, 3)
-            : null,
-          changesRequested: stats.changesRequested,
-          medianSize: round(median(reviewed.map((pr) => pr.additions + pr.deletions))),
-          merges: stats.merges,
-          topRepos: [...perRepository].sort((a, b) => b[1] - a[1]).slice(0, TOP_REPOS_PER_REVIEWER),
-        }
-      })
-      .sort((a, b) => b.prs - a.prs),
-    reviewerSeries: Object.fromEntries(
-      reviewerStats
-        .filter((stats) => stats.reviewed.size > 0)
-        .map((stats) => [
-          stats.login,
-          keys.map((key) => {
-            const point = stats.series.get(key)
-
-            return point ? [point.prs, point.comments] : [0, 0]
-          }),
+    // Durations and sizes stay as lists: medians cannot be added up across repositories.
+    authors: [...authors].map(([login, perRepository]) => ({
+      login,
+      repos: Object.fromEntries(
+        [...perRepository].map(([repo, stats]) => [
+          repo,
+          {
+            code: stats.code,
+            release: stats.release,
+            integration: stats.integration,
+            merged: stats.merged,
+            closedUnmerged: stats.closedUnmerged,
+            unreviewed: stats.unreviewed,
+            timesToFirstReviewHours: stats.timesToFirstReview.map((hours) => round(hours, 1)),
+            timesToMergeHours: stats.timesToMerge.map((hours) => round(hours, 1)),
+            sizes: stats.sizes,
+          },
         ]),
+      ),
+    })),
+    reviewers: [...reviewers].map(([login, perRepository]) => ({
+      login,
+      repos: Object.fromEntries(
+        [...perRepository].map(([repo, stats]) => [
+          repo,
+          {
+            prs: stats.reviewed.size,
+            comments: stats.comments,
+            approved: stats.approvedPrs.size,
+            silentApproved: stats.silentApprovedPrs.size,
+            changesRequested: stats.changesRequested,
+            merges: stats.merges,
+            sizes: [...stats.reviewed.values()].map((pr) => pr.additions + pr.deletions),
+          },
+        ]),
+      ),
+    })),
+    reviewerSeries: Object.fromEntries(
+      [...reviewerSeries].map(([login, series]) => [
+        login,
+        keys.map((key) => {
+          const point = series.get(key)
+
+          return point ? [point.prs, point.comments] : [0, 0]
+        }),
+      ]),
     ),
     sizes: sizes.map((bucket) => ({
       max: Number.isFinite(bucket.max) ? bucket.max : null,
@@ -730,10 +726,10 @@ async function sync({ full }) {
     bots: [...people.bots],
     pullRequests: inWindow,
   })
+  const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
   await writeJson(STATS_PATH, {
     org: ORG,
-    build: process.env.BUILD_ID || null,
-    generatedAt: now.toISOString(),
+    ...version,
     timezone: TIMEZONE,
     people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
     today: computeToday(inWindow, now),
@@ -741,6 +737,8 @@ async function sync({ full }) {
     events: computeEvents(inWindow, now),
     waiting: computeWaiting(inWindow),
   })
+  // Written last: the page polls this small file and only downloads the stats once it changes.
+  await writeJson(VERSION_PATH, version)
 
   console.log(`[${now.toISOString()}] ${mode} sync: ${fetched.length} PR fetched, ${inWindow.length} PR in window`)
 }

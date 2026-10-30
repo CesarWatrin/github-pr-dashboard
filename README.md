@@ -12,7 +12,7 @@ Le dashboard montre :
   mises en production, part de hotfix) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR
   mergées sans review) ;
 - l'activité par période et le fil des 7 derniers jours ;
-- les tableaux par auteur et par relecteur ;
+- les tableaux par auteur et par relecteur, filtrables par dépôt ;
 - l'effet de la taille des PR sur le délai de merge et la profondeur de review ;
 - les PR en attente de review, les dépôts les plus relus et l'évolution par relecteur ;
 - une section Méthode qui définit chaque indicateur.
@@ -26,7 +26,9 @@ Une page restée ouverte se recharge d'elle-même après un nouveau déploiement
   - passages suivants : uniquement les PR modifiées depuis la dernière synchro, via l'API de recherche (quelques
     secondes).
 - Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). Seules les stats agrégées sont écrites
-  dans `site/data/stats.json`.
+  dans `site/data/stats.json`, avec les chiffres de chaque personne détaillés par dépôt pour le filtre des tableaux.
+  `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne
+  retélécharge les stats que lorsqu'elle change.
 - Les bots sont exclus partout : comptes de type bot (GitHub Apps, détectés via l'API) et comptes de service listés
   dans `BOT_USERS`.
 - Les noms affichés sont ceux des profils GitHub (identifiant à défaut).

@@ -1,4 +1,5 @@
 const DATA_URL = 'data/stats.json'
+const VERSION_URL = 'data/version.json'
 const POLL_INTERVAL_MS = 60_000
 const CLOCK_INTERVAL_MS = 30_000
 const STALE_AFTER_MS = 2 * 60 * 60_000
@@ -8,6 +9,7 @@ const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
+const TOP_REPOS_PER_REVIEWER = 3
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 
@@ -160,6 +162,8 @@ const state = {
   period: readStoredPeriod(),
   query: '',
   person: null,
+  // Repositories selected for each table, null for all of them.
+  repos: { authors: null, reviewers: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -730,8 +734,8 @@ function renderLegend() {
 // Per-person evolution
 
 function renderPersonPicker() {
-  const reviewers = currentPeriod()
-    .reviewers.filter((row) => row.prs > 0)
+  const reviewers = Object.entries(currentPeriod().reviewerSeries)
+    .map(([login, points]) => ({ login, prs: points.reduce((total, [prs]) => total + prs, 0) }))
     .sort((a, b) => b.prs - a.prs)
   if (!reviewers.some((row) => row.login === state.person)) {
     state.person = reviewers[0]?.login ?? null
@@ -742,6 +746,107 @@ function renderPersonPicker() {
 }
 
 // Tables
+
+function median(values) {
+  if (values.length === 0) {
+    return null
+  }
+  const sorted = values.toSorted((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+}
+
+const roundedMedian = (values) => (values.length ? Math.round(median(values)) : null)
+const sumOf = (items, key) => items.reduce((total, item) => total + item[key], 0)
+const inSelection = (selection, repo) => !selection || selection.has(repo)
+
+// The sync script sends each person's figures per repository: rows add them up over the selected ones.
+function selectedEntries(person, name) {
+  return Object.entries(person.repos).filter(([repo]) => inSelection(state.repos[name], repo))
+}
+
+function authorRows() {
+  return currentPeriod().authors.flatMap((person) => {
+    const parts = selectedEntries(person, 'authors').map(([, stats]) => stats)
+    if (parts.length === 0) {
+      return []
+    }
+    const merged = sumOf(parts, 'merged')
+    const decided = merged + sumOf(parts, 'closedUnmerged')
+
+    return [
+      {
+        login: person.login,
+        code: sumOf(parts, 'code'),
+        release: sumOf(parts, 'release'),
+        integration: sumOf(parts, 'integration'),
+        mergeRate: decided ? Math.round((100 * merged) / decided) : null,
+        unreviewedRate: merged ? sumOf(parts, 'unreviewed') / merged : null,
+        medianTimeToFirstReviewHours: median(parts.flatMap((stats) => stats.timesToFirstReviewHours)),
+        medianTimeToMergeHours: median(parts.flatMap((stats) => stats.timesToMergeHours)),
+        medianSize: roundedMedian(parts.flatMap((stats) => stats.sizes)),
+      },
+    ]
+  })
+}
+
+function reviewerRows() {
+  return currentPeriod().reviewers.flatMap((person) => {
+    const entries = selectedEntries(person, 'reviewers')
+    const parts = entries.map(([, stats]) => stats)
+    const prs = sumOf(parts, 'prs')
+    const merges = sumOf(parts, 'merges')
+    if (prs === 0 && merges === 0) {
+      return []
+    }
+    const approved = sumOf(parts, 'approved')
+
+    return [
+      {
+        login: person.login,
+        prs,
+        commentsPerPr: prs ? sumOf(parts, 'comments') / prs : null,
+        silentApprovalRate: approved ? sumOf(parts, 'silentApproved') / approved : null,
+        changesRequested: sumOf(parts, 'changesRequested'),
+        medianSize: roundedMedian(parts.flatMap((stats) => stats.sizes)),
+        merges,
+        topRepos: entries
+          .filter(([, stats]) => stats.prs > 0)
+          .map(([repo, stats]) => [repo, stats.prs])
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, TOP_REPOS_PER_REVIEWER),
+      },
+    ]
+  })
+}
+
+const TABLES = {
+  authors: {
+    columns: AUTHOR_COLUMNS,
+    rows: authorRows,
+    searchTexts: (row) => [row.login, displayName(row.login)],
+    repoCounts: () => {
+      const counts = new Map()
+      for (const person of currentPeriod().authors) {
+        for (const [repo, stats] of Object.entries(person.repos)) {
+          counts.set(repo, (counts.get(repo) ?? 0) + stats.code + stats.release + stats.integration)
+        }
+      }
+
+      return counts
+    },
+    repoCountsLabel: 'PR ouvertes sur la période',
+  },
+  reviewers: {
+    columns: REVIEWER_COLUMNS,
+    rows: reviewerRows,
+    searchTexts: (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
+    // Counted once per pull request, however many people reviewed it.
+    repoCounts: () => new Map(currentPeriod().repositories.map((row) => [row.repo, row.prs])),
+    repoCountsLabel: 'PR relues sur la période',
+  },
+}
 
 const columnValue = (column, row) => (column.value ? column.value(row) : row[column.key])
 
@@ -788,7 +893,9 @@ function renderCell(column, row, barMax) {
   return el('td', { className: classes.join(' '), textContent: text })
 }
 
-function renderTable(name, columns, rows, searchTexts, highlight) {
+function renderTable(name, highlight) {
+  const { columns, searchTexts } = TABLES[name]
+  const rows = TABLES[name].rows()
   const sort = state.sort[name]
   const sortColumn = columns.find((column) => column.key === sort.key)
   const barColumn = columns.find((column) => column.kind === 'bar')
@@ -813,7 +920,7 @@ function renderTable(name, columns, rows, searchTexts, highlight) {
     button.addEventListener('click', () => {
       const textual = column.kind === 'person' || column.kind === 'text'
       state.sort[name] = { key: column.key, direction: active ? -sort.direction : textual ? 1 : -1 }
-      renderTables(false)
+      renderTable(name, false)
     })
     const cell = el('th', { scope: 'col', className: column.kind === 'text' ? 'text' : '' }, button)
     if (active) {
@@ -842,16 +949,117 @@ function renderTable(name, columns, rows, searchTexts, highlight) {
 }
 
 function renderTables(highlight) {
-  const period = currentPeriod()
-  renderTable('authors', AUTHOR_COLUMNS, period.authors, (row) => [row.login, displayName(row.login)], highlight)
-  renderTable(
-    'reviewers',
-    REVIEWER_COLUMNS,
-    period.reviewers,
-    (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
-    highlight,
-  )
+  for (const name of Object.keys(TABLES)) {
+    renderTable(name, highlight)
+  }
 }
+
+// Repository filter of a table
+
+// Repositories with activity in the table over the period, busiest first.
+function repoOptions(name) {
+  const counts = TABLES[name].repoCounts()
+  const repos = new Set(currentPeriod()[name].flatMap((person) => Object.keys(person.repos)))
+
+  return [...repos]
+    .map((repo) => [repo, counts.get(repo) ?? 0])
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+}
+
+function repoFilterLabel(name, options) {
+  const selection = state.repos[name]
+  if (!selection) {
+    return 'Tous les dépôts'
+  }
+  const selected = options.filter(([repo]) => selection.has(repo))
+  if (selected.length === 0) {
+    return 'Aucun dépôt'
+  }
+
+  return selected.length === 1 ? selected[0][0] : `${selected.length} dépôts sur ${options.length}`
+}
+
+function renderRepoFilterLabel(name, options = repoOptions(name)) {
+  const filter = $(`[data-repo-filter="${name}"]`)
+  filter.classList.toggle('is-filtered', state.repos[name] !== null)
+  filter.querySelector('[data-repo-label]').textContent = repoFilterLabel(name, options)
+}
+
+function renderRepoFilter(name) {
+  const list = $(`[data-repo-filter="${name}"] [data-repo-list]`)
+  const options = repoOptions(name)
+  const scrollTop = list.scrollTop
+  list.replaceChildren(
+    ...options.map(([repo, count]) =>
+      el(
+        'li',
+        {},
+        el(
+          'label',
+          {},
+          el('input', { type: 'checkbox', value: repo, checked: inSelection(state.repos[name], repo) }),
+          el('span', { className: 'repo-name', textContent: repo, title: repo }),
+          el('span', { className: 'repo-count', textContent: formatNumber(count) }),
+        ),
+      ),
+    ),
+  )
+  list.scrollTop = scrollTop
+  renderRepoFilterLabel(name, options)
+}
+
+function setupRepoFilter(name) {
+  const filter = $(`[data-repo-filter="${name}"]`)
+  const selectAll = el('button', { type: 'button', textContent: 'Tout sélectionner' })
+  const selectNone = el('button', { type: 'button', textContent: 'Tout désélectionner' })
+  const list = el('ul', { className: 'repo-filter-list' })
+  list.dataset.repoList = ''
+  list.setAttribute('aria-label', 'Dépôts')
+  const label = el('span', { className: 'repo-filter-label', textContent: 'Tous les dépôts' })
+  label.dataset.repoLabel = ''
+  filter.append(
+    el('summary', { className: 'search' }, label),
+    el(
+      'div',
+      { className: 'repo-filter-panel' },
+      el('div', { className: 'repo-filter-actions' }, selectAll, selectNone),
+      el('p', { className: 'repo-filter-note', textContent: TABLES[name].repoCountsLabel }),
+      list,
+    ),
+  )
+
+  // Checkboxes are updated in place so that keyboard focus stays where it is.
+  const apply = (selection) => {
+    state.repos[name] = selection
+    for (const input of list.querySelectorAll('input')) {
+      input.checked = inSelection(selection, input.value)
+    }
+    renderRepoFilterLabel(name)
+    renderTable(name, false)
+  }
+  selectAll.addEventListener('click', () => apply(null))
+  selectNone.addEventListener('click', () => apply(new Set()))
+  list.addEventListener('change', () => {
+    const inputs = [...list.querySelectorAll('input')]
+    const checked = inputs.filter((input) => input.checked).map((input) => input.value)
+    apply(checked.length === inputs.length ? null : new Set(checked))
+  })
+  filter.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && filter.open) {
+      filter.open = false
+      filter.querySelector('summary').focus()
+    }
+  })
+}
+
+// An open repository list closes when clicking anywhere else.
+document.addEventListener('click', (event) => {
+  for (const filter of document.querySelectorAll('[data-repo-filter][open]')) {
+    if (!filter.contains(event.target)) {
+      filter.open = false
+    }
+  }
+})
 
 // Activity feed and waiting list
 
@@ -987,6 +1195,9 @@ function render(animate) {
   renderPersonPicker()
   renderCharts()
   renderChartTable()
+  for (const name of Object.keys(TABLES)) {
+    renderRepoFilter(name)
+  }
   renderTables(animate)
   renderFeed(animate)
   renderWaiting(animate)
@@ -1011,14 +1222,26 @@ function reloadForNewBuild(build) {
   return true
 }
 
+async function fetchJson(url, options) {
+  const response = await fetch(url, options)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+
+  return response.json()
+}
+
+// Only the small version file is polled: the stats, much larger, are downloaded when they change.
 async function refresh() {
-  let stats
+  let stats = null
   try {
-    const response = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' })
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
+    const version = await fetchJson(`${VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' })
+    if (reloadForNewBuild(version.build)) {
+      return
     }
-    stats = await response.json()
+    if (version.generatedAt !== state.stats?.generatedAt) {
+      stats = await fetchJson(`${DATA_URL}?v=${encodeURIComponent(version.generatedAt)}`)
+    }
     state.fetchFailed = false
   } catch {
     state.fetchFailed = true
@@ -1027,7 +1250,7 @@ async function refresh() {
     }
   }
 
-  if (stats && !reloadForNewBuild(stats.build) && stats.generatedAt !== state.stats?.generatedAt) {
+  if (stats) {
     const isUpdate = state.stats !== null
     state.stats = stats
     render(isUpdate)
@@ -1083,6 +1306,9 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
+for (const name of Object.keys(TABLES)) {
+  setupRepoFilter(name)
+}
 renderPeriodSelector()
 refresh()
 setInterval(refresh, POLL_INTERVAL_MS)
