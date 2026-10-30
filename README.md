@@ -20,14 +20,31 @@ Le dashboard montre :
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
 
+## Accès protégé
+
+Les stats sont publiées **chiffrées** : le site est public, mais sans le mot de passe ses données sont illisibles,
+pour un visiteur comme pour un robot.
+
+- Le mot de passe (`DASHBOARD_PASSWORD`) est une clé aléatoire longue, gardée dans le `.env` local et dans les
+  secrets du repo. Il n'apparaît ni dans le code, ni dans les fichiers publiés, ni dans les logs.
+- La synchro dérive une clé AES-256 du mot de passe (PBKDF2-SHA256, 600 000 itérations), compresse les stats puis
+  les chiffre en AES-GCM dans `site/data/stats.enc.json`. Sans mot de passe, elle refuse de tourner : rien n'est
+  jamais publié en clair.
+- La page demande le mot de passe et déchiffre les stats dans le navigateur. La clé reste un jour sur l'appareil,
+  puis le mot de passe est redemandé. Le cadenas en haut à droite reverrouille tout de suite.
+
+Changer le mot de passe : mettre la nouvelle valeur dans le `.env` et dans le secret (`gh secret set
+DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent alors le mot de passe.
+
 ## Fonctionnement
 
 - `scripts/sync.mjs` interroge l'API GraphQL de GitHub :
-  - premier passage : toutes les PR créées sur les 12 derniers mois, repo par repo (environ 7 min pour PDC-HCSE) ;
+  - premier passage : toutes les PR créées sur les 12 derniers mois, repo par repo (environ 7 min pour une centaine de repos) ;
   - passages suivants : uniquement les PR modifiées depuis la dernière synchro, via l'API de recherche (quelques
     secondes).
-- Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). Seules les stats agrégées sont écrites
-  dans `site/data/stats.json`, avec les chiffres de chaque personne détaillés par dépôt pour le filtre des tableaux.
+- Les PR brutes sont gardées dans `.cache/snapshot.json` (jamais publié). Seules les stats agrégées sont publiées,
+  chiffrées dans `site/data/stats.enc.json`, avec les chiffres de chaque personne détaillés par dépôt pour le
+  filtre des tableaux.
   `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne
   retélécharge les stats que lorsqu'elle change.
 - Les bots sont exclus partout : comptes de type bot (GitHub Apps, détectés via l'API) et comptes de service listés
@@ -39,7 +56,7 @@ entre mode clair et mode sombre (par défaut, celui du système), et le choix es
 ## En local
 
 Node 24 et `gh` authentifié suffisent (le token est lu via `gh auth token` si `GITHUB_TOKEN` n'est pas défini).
-Copier `.env.example` en `.env` et renseigner `ORG`.
+Copier `.env.example` en `.env` et renseigner `ORG` et `DASHBOARD_PASSWORD`.
 
 ```bash
 npm run sync        # synchro (complète la première fois, incrémentale ensuite)
@@ -60,12 +77,13 @@ tout de suite, lance le workflow depuis Actions → _Sync and deploy_ → _Run w
 
 Prérequis :
 
-1. Une variable de repo `ORG` : l'organisation à suivre (Settings → Secrets and variables → Actions → Variables).
-2. Un secret `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les
-   scopes `repo` et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_).
-3. Pages activé avec la source **GitHub Actions** (Settings → Pages).
+1. Trois secrets de repo (Settings → Secrets and variables → Actions) : des secrets plutôt que des variables, pour
+   que les logs publics du workflow n'en affichent aucun.
+   - `ORG` : l'organisation à suivre ;
+   - `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les scopes `repo`
+     et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_) ;
+   - `DASHBOARD_PASSWORD` : le mot de passe de la page.
+2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
-> La page publiée sur un compte personnel est publique, même si le repo est privé : elle expose les logins, les
-> noms des repos et les stats par personne.
-
-Variables d'environnement : `ORG` (obligatoire), `SNAPSHOT_PATH` et `STATS_PATH` (facultatives).
+Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `SNAPSHOT_PATH` et `STATS_PATH`
+(facultatives).

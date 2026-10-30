@@ -166,8 +166,7 @@ h3 {
   gap: 8px;
 }
 
-/* Theme toggle: the moon switches to dark mode, the sun back to light mode. */
-.theme-toggle {
+.icon-button {
   display: inline-grid;
   place-items: center;
   width: 32px;
@@ -180,12 +179,12 @@ h3 {
   cursor: pointer;
 }
 
-.theme-toggle:hover {
+.icon-button:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
 }
 
-.theme-toggle svg {
+.icon-button svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -195,9 +194,71 @@ h3 {
   stroke-linejoin: round;
 }
 
+/* Theme toggle: the moon switches to dark mode, the sun back to light mode. */
 .theme-toggle[aria-pressed='true'] .icon-moon,
 .theme-toggle[aria-pressed='false'] .icon-sun {
   display: none;
+}
+
+/* Lock screen */
+.lock {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.lock[hidden] {
+  display: none;
+}
+
+.lock-card {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 380px);
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.lock-card h1 {
+  font-size: 20px;
+}
+
+.lock-field {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.lock-field input {
+  width: 100%;
+  font-size: 14px;
+}
+
+.lock-error {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--status-serious);
+  font-size: 13px;
+}
+
+.lock-submit {
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--text-primary);
+  color: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lock-submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 /* Sync status */

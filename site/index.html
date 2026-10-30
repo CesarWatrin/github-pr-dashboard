@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Stats PR</title>
     <meta name="description" content="Pull requests et reviews par contributeur, mises à jour depuis GitHub." />
+    <meta name="robots" content="noindex, nofollow" />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='8' width='3' height='6' rx='1' fill='%232a78d6'/%3E%3Crect x='6.5' y='4' width='3' height='10' rx='1' fill='%232a78d6'/%3E%3Crect x='11' y='2' width='3' height='12' rx='1' fill='%232a78d6'/%3E%3C/svg%3E"
@@ -24,7 +25,23 @@
     <script type="module" src="app.js?v=__BUILD__"></script>
   </head>
   <body>
-    <div class="page">
+    <!-- The stats are published encrypted: the page asks for the team password before it can read them. -->
+    <div class="lock" data-lock hidden>
+      <form class="lock-card" data-lock-form>
+        <div>
+          <h1>Stats PR</h1>
+          <p class="subtitle">Accès réservé à l’équipe. L’accès reste ouvert un jour sur cet appareil.</p>
+        </div>
+        <label class="lock-field">
+          Mot de passe
+          <input class="search" type="password" name="password" autocomplete="current-password" required data-lock-password />
+        </label>
+        <p class="lock-error" role="alert" data-lock-error hidden></p>
+        <button type="submit" class="lock-submit">Déverrouiller</button>
+      </form>
+    </div>
+
+    <div class="page" data-page hidden>
       <header class="page-header">
         <div>
           <h1>Pull requests <span class="org" data-org></span></h1>
@@ -35,7 +52,7 @@
             <span class="sync-dot" aria-hidden="true"></span>
             <span data-sync-label>Chargement…</span>
           </p>
-          <button type="button" class="theme-toggle" aria-label="Mode sombre" aria-pressed="false" data-theme-toggle>
+          <button type="button" class="icon-button theme-toggle" aria-label="Mode sombre" aria-pressed="false" data-theme-toggle>
             <svg class="icon-moon" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M13.5 9.8A5.5 5.5 0 0 1 6.2 2.5a5.5 5.5 0 1 0 7.3 7.3Z" />
             </svg>
@@ -44,6 +61,12 @@
               <path
                 d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"
               />
+            </svg>
+          </button>
+          <button type="button" class="icon-button" aria-label="Verrouiller" title="Verrouiller" data-lock-now>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" />
+              <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
             </svg>
           </button>
         </div>

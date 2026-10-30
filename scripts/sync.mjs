@@ -6,14 +6,16 @@
 // Usage: node scripts/sync.mjs [--full] [--watch]
 
 import { execFileSync } from 'node:child_process'
+import { createCipheriv, createHash, pbkdf2Sync, randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { gzipSync } from 'node:zlib'
 
 const ORG = process.env.ORG
 const SNAPSHOT_VERSION = 3
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
-const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.json'
+const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.enc.json'
 const VERSION_PATH = join(dirname(STATS_PATH), 'version.json')
 const TIMEZONE = 'Europe/Paris'
 const WATCH_INTERVAL_MS = 60_000
@@ -26,6 +28,8 @@ const EVENTS_MAX_AGE_DAYS = 7
 const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
 const RELEASE_BASES = ['master', 'main']
 const DAY_MS = 86_400_000
+// PBKDF2-SHA256 iterations deriving the encryption key from the password, also read from the file by the page.
+const KEY_ITERATIONS = 600_000
 
 const PERIODS = [
   { key: '30d', days: 30, bucket: 'day' },
@@ -104,6 +108,10 @@ const parisDayFormat = new Intl.DateTimeFormat('en-CA', {
 
 if (!ORG) {
   throw new Error('No organization: set the ORG environment variable (in .env locally, as a repository variable in CI).')
+}
+// The stats are only ever written encrypted: without a password, nothing is published.
+if (!process.env.DASHBOARD_PASSWORD) {
+  throw new Error('No password: set DASHBOARD_PASSWORD (in .env locally, as a repository secret in CI).')
 }
 
 const token = resolveToken()
@@ -306,6 +314,25 @@ async function readSnapshot() {
     return snapshot.org === ORG && snapshot.version === SNAPSHOT_VERSION ? snapshot : null
   } catch {
     return null
+  }
+}
+
+// The salt only depends on the organization so that the key stays the same from one sync to the next: the page
+// derives it once from the password and keeps it.
+const encryptionSalt = createHash('sha256').update(`github-pr-dashboard:${ORG}`).digest().subarray(0, 16)
+const encryptionKey = pbkdf2Sync(process.env.DASHBOARD_PASSWORD, encryptionSalt, KEY_ITERATIONS, 32, 'sha256')
+
+// Gzipped then encrypted with AES-256-GCM, the authentication tag appended as the Web Crypto API expects it.
+function encrypt(data) {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', encryptionKey, iv)
+  const encrypted = Buffer.concat([cipher.update(gzipSync(JSON.stringify(data))), cipher.final(), cipher.getAuthTag()])
+
+  return {
+    iterations: KEY_ITERATIONS,
+    salt: encryptionSalt.toString('base64'),
+    iv: iv.toString('base64'),
+    data: encrypted.toString('base64'),
   }
 }
 
@@ -727,16 +754,19 @@ async function sync({ full }) {
     pullRequests: inWindow,
   })
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
-  await writeJson(STATS_PATH, {
-    org: ORG,
-    ...version,
-    timezone: TIMEZONE,
-    people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
-    today: computeToday(inWindow, now),
-    periods: Object.fromEntries(PERIODS.map((period) => [period.key, computePeriod(inWindow, period, now)])),
-    events: computeEvents(inWindow, now),
-    waiting: computeWaiting(inWindow),
-  })
+  await writeJson(
+    STATS_PATH,
+    encrypt({
+      org: ORG,
+      ...version,
+      timezone: TIMEZONE,
+      people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
+      today: computeToday(inWindow, now),
+      periods: Object.fromEntries(PERIODS.map((period) => [period.key, computePeriod(inWindow, period, now)])),
+      events: computeEvents(inWindow, now),
+      waiting: computeWaiting(inWindow),
+    }),
+  )
   // Written last: the page polls this small file and only downloads the stats once it changes.
   await writeJson(VERSION_PATH, version)
 

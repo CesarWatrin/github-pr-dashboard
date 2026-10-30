@@ -1,4 +1,4 @@
-const DATA_URL = 'data/stats.json'
+const DATA_URL = 'data/stats.enc.json'
 const VERSION_URL = 'data/version.json'
 const POLL_INTERVAL_MS = 60_000
 const CLOCK_INTERVAL_MS = 30_000
@@ -9,6 +9,8 @@ const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
 const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
+const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
+const UNLOCK_DURATION_MS = 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const TOP_REPOSITORIES = 12
 const TOP_REPOS_PER_REVIEWER = 3
@@ -161,6 +163,8 @@ const MINI_CHARTS = [
 const $ = (selector) => document.querySelector(selector)
 
 const state = {
+  key: null,
+  keyExpiresAt: 0,
   stats: null,
   period: readStoredPeriod(),
   query: '',
@@ -1256,8 +1260,140 @@ async function fetchJson(url, options) {
   return response.json()
 }
 
+// Access: the published stats are encrypted with a key derived from the team password. Once the password is
+// entered, the key is kept on the device for a day.
+
+const fromBase64 = (text) => Uint8Array.from(atob(text), (char) => char.charCodeAt(0))
+const toBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))
+
+async function deriveKey(password, payload) {
+  const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [
+    'deriveKey',
+  ])
+
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: fromBase64(payload.salt), iterations: payload.iterations },
+    material,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['decrypt'],
+  )
+}
+
+// Null when the key does not open the file: a wrong password, or one changed since it was entered.
+async function decryptStats(payload, key) {
+  let plain
+  try {
+    plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(payload.iv) }, key, fromBase64(payload.data))
+  } catch {
+    return null
+  }
+
+  return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).json()
+}
+
+async function storeKey(key) {
+  const expiresAt = Date.now() + UNLOCK_DURATION_MS
+  try {
+    const raw = toBase64(await crypto.subtle.exportKey('raw', key))
+    localStorage.setItem(KEY_STORAGE_KEY, JSON.stringify({ key: raw, expiresAt }))
+  } catch {
+    // Storage can be unavailable (private browsing): the page then stays unlocked until it is closed.
+  }
+
+  return expiresAt
+}
+
+async function readStoredKey() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(KEY_STORAGE_KEY))
+    if (stored && stored.expiresAt > Date.now()) {
+      const key = await crypto.subtle.importKey('raw', fromBase64(stored.key), 'AES-GCM', true, ['decrypt'])
+
+      return { key, expiresAt: stored.expiresAt }
+    }
+  } catch {
+    // A missing or unreadable entry only means that the password is asked again.
+  }
+
+  return null
+}
+
+function showLock(message = '') {
+  $('[data-page]').hidden = true
+  $('[data-lock]').hidden = false
+  const error = $('[data-lock-error]')
+  error.textContent = message
+  error.hidden = !message
+  $('[data-lock-password]').focus()
+}
+
+function showDashboard() {
+  $('[data-lock]').hidden = true
+  $('[data-page]').hidden = false
+}
+
+function lock(message) {
+  try {
+    localStorage.removeItem(KEY_STORAGE_KEY)
+  } catch {
+    // Nothing was stored.
+  }
+  state.key = null
+  state.stats = null
+  showLock(message)
+}
+
+async function unlock(form) {
+  const button = form.querySelector('button')
+  button.disabled = true
+  try {
+    const payload = await fetchJson(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' })
+    const key = await deriveKey(form.elements.password.value, payload)
+    const stats = await decryptStats(payload, key)
+    if (!stats) {
+      showLock('Mot de passe incorrect.')
+
+      return
+    }
+    state.key = key
+    state.keyExpiresAt = await storeKey(key)
+    form.reset()
+    if (reloadForNewBuild(stats.build)) {
+      return
+    }
+    showDashboard()
+    applyStats(stats)
+    renderSyncStatus()
+  } catch {
+    showLock('Données indisponibles pour le moment, réessaie dans un instant.')
+  } finally {
+    button.disabled = false
+  }
+}
+
+function applyStats(stats) {
+  const isUpdate = state.stats !== null
+  state.stats = stats
+  render(isUpdate)
+  if (isUpdate) {
+    const status = $('[data-sync]')
+    status.classList.remove('is-pulsing')
+    void status.offsetWidth
+    status.classList.add('is-pulsing')
+  }
+}
+
 // Only the small version file is polled: the stats, much larger, are downloaded when they change.
 async function refresh() {
+  if (!state.key) {
+    return
+  }
+  if (Date.now() > state.keyExpiresAt) {
+    lock('L’accès dure un jour : saisis à nouveau le mot de passe.')
+
+    return
+  }
   let stats = null
   try {
     const version = await fetchJson(`${VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' })
@@ -1265,7 +1401,13 @@ async function refresh() {
       return
     }
     if (version.generatedAt !== state.stats?.generatedAt) {
-      stats = await fetchJson(`${DATA_URL}?v=${encodeURIComponent(version.generatedAt)}`)
+      const payload = await fetchJson(`${DATA_URL}?v=${encodeURIComponent(version.generatedAt)}`)
+      stats = await decryptStats(payload, state.key)
+      if (!stats) {
+        lock('Le mot de passe a changé : saisis le nouveau.')
+
+        return
+      }
     }
     state.fetchFailed = false
   } catch {
@@ -1276,15 +1418,7 @@ async function refresh() {
   }
 
   if (stats) {
-    const isUpdate = state.stats !== null
-    state.stats = stats
-    render(isUpdate)
-    if (isUpdate) {
-      const status = $('[data-sync]')
-      status.classList.remove('is-pulsing')
-      void status.offsetWidth
-      status.classList.add('is-pulsing')
-    }
+    applyStats(stats)
   }
   renderSyncStatus()
 }
@@ -1311,6 +1445,12 @@ $('[data-search]').addEventListener('input', (event) => {
 
 $('[data-theme-toggle]').addEventListener('click', toggleTheme)
 darkScheme.addEventListener('change', renderThemeToggle)
+
+$('[data-lock-form]').addEventListener('submit', (event) => {
+  event.preventDefault()
+  unlock(event.currentTarget)
+})
+$('[data-lock-now]').addEventListener('click', () => lock())
 
 $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
@@ -1339,7 +1479,16 @@ for (const name of Object.keys(TABLES)) {
 }
 renderThemeToggle()
 renderPeriodSelector()
-refresh()
+renderLegend()
 setInterval(refresh, POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)
-renderLegend()
+
+const stored = await readStoredKey()
+if (stored) {
+  state.key = stored.key
+  state.keyExpiresAt = stored.expiresAt
+  showDashboard()
+  refresh()
+} else {
+  showLock()
+}

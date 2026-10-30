@@ -45,11 +45,13 @@ jobs:
           key: snapshot-${{ github.run_id }}
           restore-keys: snapshot-
 
+      # Every value is a secret so that the public logs show none of them, the organization included.
       - name: Sync pull requests
         run: node scripts/sync.mjs
         env:
-          ORG: ${{ vars.ORG }}
+          ORG: ${{ secrets.ORG }}
           GITHUB_TOKEN: ${{ secrets.ORG_STATS_TOKEN }}
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
           FULL_SYNC: ${{ inputs.full }}
           BUILD_ID: ${{ github.sha }}
 
