@@ -187,6 +187,38 @@ h3 {
   color: var(--text-primary);
 }
 
+/* Label of an icon button, shown at once on hover or keyboard focus, aligned on its right edge to stay on screen. */
+.icon-button[data-label] {
+  position: relative;
+}
+
+.icon-button[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 6px);
+  right: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--text-primary);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+.icon-button[data-label]:hover::after,
+.icon-button[data-label]:focus-visible::after {
+  opacity: 1;
+}
+
+.sync-menu[open] .icon-button::after {
+  display: none;
+}
+
 .icon-button svg {
   width: 16px;
   height: 16px;

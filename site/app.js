@@ -1674,7 +1674,7 @@ function renderThemeToggle() {
   const dark = currentTheme() === 'dark'
   const button = $('[data-theme-toggle]')
   button.setAttribute('aria-pressed', String(dark))
-  button.title = dark ? 'Passer en mode clair' : 'Passer en mode sombre'
+  button.dataset.label = dark ? 'Passer en mode clair' : 'Passer en mode sombre'
 }
 
 function toggleTheme() {
