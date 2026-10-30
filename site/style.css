@@ -1368,6 +1368,7 @@ thead th:first-child {
   z-index: 2;
 }
 
+/* The sticky cell is opaque, so it repeats the row background and its transition. */
 tbody tr:hover td.person {
   background: var(--surface-hover);
 }
@@ -1415,7 +1416,8 @@ tbody tr:hover {
   background: var(--surface-hover);
 }
 
-tbody tr.is-updated {
+tbody tr.is-updated,
+tbody tr.is-updated td.person {
   animation: flash 4s ease-out;
 }
 
@@ -1493,7 +1495,8 @@ th button,
 .button-primary,
 .button-secondary,
 .lock-submit,
-tbody tr {
+tbody tr,
+tbody td.person {
   transition:
     background-color 160ms ease,
     color 160ms ease,
