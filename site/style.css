@@ -197,6 +197,73 @@ h3 {
   stroke-linejoin: round;
 }
 
+/* Sync menu: a quick or a full sync started from the page */
+.sync-menu {
+  position: relative;
+}
+
+.sync-menu summary {
+  list-style: none;
+}
+
+.sync-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.sync-menu-panel {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  gap: 2px;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.sync-menu-panel button {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sync-menu-panel button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.sync-menu-panel button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sync-menu-panel span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.sync-menu-error {
+  margin: 4px 10px 6px;
+  padding-left: 10px;
+  border-left: 3px solid var(--status-serious);
+  font-size: 13px;
+}
+
+.sync.is-syncing .sync-dot {
+  animation: pulse 1.2s ease-out infinite;
+}
+
 /* Theme toggle: the moon switches to dark mode, the sun back to light mode. */
 .theme-toggle[aria-pressed='true'] .icon-moon,
 .theme-toggle[aria-pressed='false'] .icon-sun {

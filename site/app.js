@@ -1,6 +1,8 @@
 const DATA_URL = 'data/stats.enc.json'
 const VERSION_URL = 'data/version.json'
 const POLL_INTERVAL_MS = 60_000
+// While a sync started from the page runs, new data is looked for more often.
+const SYNC_POLL_INTERVAL_MS = 10_000
 const CLOCK_INTERVAL_MS = 30_000
 const STALE_AFTER_MS = 2 * 60 * 60_000
 const BUMP_VISIBLE_MS = 6000
@@ -26,6 +28,14 @@ const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 // Stamped with the commit by the deploy workflow; the placeholder stays when the site is served locally.
 const PAGE_BUILD = document.querySelector('meta[name="build"]')?.content.replace('__BUILD__', '') || null
 const ICONS_URL = `technology-icons.svg${PAGE_BUILD ? `?v=${PAGE_BUILD}` : ''}`
+
+// The two syncs the page can start: the workflow's incremental one, or a full refetch of the rolling window.
+const SYNC_KINDS = {
+  quick: { full: false, label: 'Synchro rapide en cours…', timeoutMs: 6 * 60_000 },
+  full: { full: true, label: 'Synchro complète en cours, environ 10 min…', timeoutMs: 20 * 60_000 },
+  running: { label: 'Une synchro est déjà en cours…', timeoutMs: 20 * 60_000 },
+}
+const ACTIVE_RUN_STATUSES = ['requested', 'queued', 'pending', 'waiting', 'in_progress']
 
 const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
@@ -259,6 +269,8 @@ const state = {
     tma: { key: 'hotfixes', direction: -1 },
   },
   previousRows: { authors: new Map(), reviewers: new Map(), tma: new Map() },
+  // The sync started from the page, until new data arrives.
+  syncRequest: null,
   seenEvents: null,
   seenWaiting: null,
   fetchFailed: false,
@@ -1462,9 +1474,9 @@ function setupRepoFilter(name) {
   })
 }
 
-// An open repository list closes when clicking anywhere else.
+// An open repository list or sync menu closes when clicking anywhere else.
 document.addEventListener('click', (event) => {
-  for (const filter of document.querySelectorAll('[data-repo-filter][open]')) {
+  for (const filter of document.querySelectorAll('[data-repo-filter][open], [data-sync-menu][open]')) {
     if (!filter.contains(event.target)) {
       filter.open = false
     }
@@ -1573,8 +1585,77 @@ function renderSyncStatus() {
   const { generatedAt } = state.stats
   const stale = Date.now() - Date.parse(generatedAt) > STALE_AFTER_MS
   status.classList.add(state.fetchFailed ? 'is-error' : stale ? 'is-stale' : 'is-live')
+  status.classList.toggle('is-syncing', state.syncRequest !== null)
   status.title = `Données générées le ${dateTimeFormat.format(new Date(generatedAt))}`
-  label.textContent = `${state.fetchFailed ? 'Hors ligne · ' : ''}Mis à jour ${formatRelative(generatedAt)}`
+  label.textContent = state.syncRequest
+    ? SYNC_KINDS[state.syncRequest.kind].label
+    : `${state.fetchFailed ? 'Hors ligne · ' : ''}Mis à jour ${formatRelative(generatedAt)}`
+}
+
+// Sync started from the page, through the GitHub API with the token the encrypted stats carry.
+
+function githubApi(path, options = {}) {
+  const { repository, token } = state.stats.syncTrigger
+
+  return fetch(`https://api.github.com/repos/${repository}${path}`, {
+    ...options,
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: `Bearer ${token}`,
+      'x-github-api-version': '2022-11-28',
+    },
+  })
+}
+
+function renderSyncMenu() {
+  const menu = $('[data-sync-menu]')
+  menu.hidden = !state.stats?.syncTrigger
+  for (const button of menu.querySelectorAll('[data-sync-kind]')) {
+    button.disabled = state.syncRequest !== null
+  }
+}
+
+// A sync already queued or running is waited for rather than doubled.
+async function startSync(kind) {
+  const { workflow, ref } = state.stats.syncTrigger
+  const menu = $('[data-sync-menu]')
+  const error = $('[data-sync-error]')
+  error.hidden = true
+  try {
+    const runs = await githubApi(`/actions/workflows/${workflow}/runs?per_page=5`)
+    if (!runs.ok) {
+      throw new Error(`HTTP ${runs.status}`)
+    }
+    const { workflow_runs: recent } = await runs.json()
+    const running = recent.some((run) => ACTIVE_RUN_STATUSES.includes(run.status))
+    if (!running) {
+      const response = await githubApi(`/actions/workflows/${workflow}/dispatches`, {
+        method: 'POST',
+        body: JSON.stringify({ ref, inputs: { full: String(SYNC_KINDS[kind].full) } }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+    }
+    state.syncRequest = { kind: running ? 'running' : kind, at: Date.now() }
+    menu.open = false
+  } catch {
+    error.textContent = 'La synchro n’a pas pu être lancée : le token est peut-être expiré.'
+    error.hidden = false
+  }
+  renderSyncMenu()
+  renderSyncStatus()
+}
+
+// The request ends with the next data, or after a while if the run failed.
+function settleSyncRequest(newData) {
+  if (!state.syncRequest) {
+    return
+  }
+  if (newData || Date.now() - state.syncRequest.at > SYNC_KINDS[state.syncRequest.kind].timeoutMs) {
+    state.syncRequest = null
+    renderSyncMenu()
+  }
 }
 
 function refreshClock() {
@@ -1634,6 +1715,7 @@ function render(animate) {
   renderTables(animate)
   renderFeed(animate)
   renderWaiting(animate)
+  renderSyncMenu()
 }
 
 // An open page reloads itself on a new deploy rather than running old code on new data. The URL changes
@@ -1824,6 +1906,7 @@ async function refresh() {
   if (stats) {
     applyStats(stats)
   }
+  settleSyncRequest(stats !== null)
   renderSyncStatus()
 }
 
@@ -1848,6 +1931,16 @@ $('[data-search]').addEventListener('input', (event) => {
 })
 
 $('[data-theme-toggle]').addEventListener('click', toggleTheme)
+
+for (const button of document.querySelectorAll('[data-sync-kind]')) {
+  button.addEventListener('click', () => startSync(button.dataset.syncKind))
+}
+$('[data-sync-menu]').addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && event.currentTarget.open) {
+    event.currentTarget.open = false
+    event.currentTarget.querySelector('summary').focus()
+  }
+})
 darkScheme.addEventListener('change', renderThemeToggle)
 
 $('[data-lock-form]').addEventListener('submit', (event) => {
@@ -1886,6 +1979,7 @@ renderPeriodSelector()
 renderLegend()
 renderStackLegends()
 setInterval(refresh, POLL_INTERVAL_MS)
+setInterval(() => state.syncRequest && refresh(), SYNC_POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)
 
 const stored = await readStoredKey()

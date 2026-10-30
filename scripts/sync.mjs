@@ -93,6 +93,18 @@ const CATEGORY_OVERRIDES = new Map(
     }),
 )
 
+// Optional fine-grained token, restricted to starting the workflow of this repository, that lets the page start a
+// sync. It only travels inside the encrypted stats: only the people with the password can use it.
+const WORKFLOW_FILE = 'deploy.yml'
+const SYNC_TRIGGER = process.env.DISPATCH_TOKEN
+  ? {
+      repository: process.env.GITHUB_REPOSITORY ?? process.env.DISPATCH_REPOSITORY,
+      workflow: WORKFLOW_FILE,
+      ref: process.env.GITHUB_REF_NAME || 'main',
+      token: process.env.DISPATCH_TOKEN,
+    }
+  : null
+
 // GitHub Apps are detected from their actor type: these are user accounts acting as bots.
 const BOT_USERS = new Set(['it-hellocse', 'ghost'])
 
@@ -982,6 +994,7 @@ async function sync({ full }) {
       org: ORG,
       ...version,
       timezone: TIMEZONE,
+      syncTrigger: SYNC_TRIGGER?.repository ? SYNC_TRIGGER : null,
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
       repos: Object.fromEntries(
         repositories.map((repo) => [

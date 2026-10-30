@@ -53,6 +53,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ORG_STATS_TOKEN }}
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
           REPO_CATEGORIES: ${{ secrets.REPO_CATEGORIES }}
+          DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
           BUILD_ID: ${{ github.sha }}
 

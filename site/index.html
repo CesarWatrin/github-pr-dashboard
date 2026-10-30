@@ -63,6 +63,25 @@
               />
             </svg>
           </button>
+          <details class="sync-menu" data-sync-menu hidden>
+            <summary class="icon-button" aria-label="Lancer une synchro" title="Lancer une synchro">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" />
+                <path d="M12.5 1.5v3h-3" />
+              </svg>
+            </summary>
+            <div class="sync-menu-panel">
+              <button type="button" data-sync-kind="quick">
+                <strong>Synchro rapide</strong>
+                <span>Nouvelles PR et changements, environ 1 min</span>
+              </button>
+              <button type="button" data-sync-kind="full">
+                <strong>Synchro complète</strong>
+                <span>Recharge les 12 derniers mois, environ 10 min</span>
+              </button>
+              <p class="sync-menu-error" role="alert" data-sync-error hidden></p>
+            </div>
+          </details>
           <button type="button" class="icon-button" aria-label="Verrouiller" title="Verrouiller" data-lock-now>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="3" y="7" width="10" height="7" rx="1.5" />
@@ -279,7 +298,7 @@
       <footer class="page-footer">
         <p>
           Données GitHub actualisées automatiquement en semaine, à intervalles irréguliers. Pour les mettre à jour tout
-          de suite, ouvre le workflow
+          de suite, utilise le bouton de synchro en haut, ou ouvre le workflow
           <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a>
           puis clique sur « Run workflow » (accès en écriture au dépôt requis). Compte environ une minute.
         </p>

@@ -37,6 +37,14 @@ pour un visiteur comme pour un robot.
 - La page demande le mot de passe et déchiffre les stats dans le navigateur. La clé reste un jour sur l'appareil,
   puis le mot de passe est redemandé. Le cadenas en haut à droite reverrouille tout de suite.
 
+### Bouton de synchro
+
+Le bouton ⟳ en haut de la page lance une synchro rapide (PR modifiées, environ 1 min) ou complète (les 12 mois,
+environ 10 min), puis la page affiche les nouvelles données dès qu'elles sont publiées. Il n'apparaît que si le
+secret `DISPATCH_TOKEN` existe : un token fine-grained limité à ce repo, avec la seule permission _Actions_ en
+lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a le mot de passe peut s'en servir,
+pour lancer ou annuler des runs de ce workflow et rien d'autre.
+
 Changer le mot de passe : mettre la nouvelle valeur dans le `.env` et dans le secret (`gh secret set
 DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent alors le mot de passe.
 
@@ -92,8 +100,9 @@ Prérequis :
    - `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les scopes `repo`
      et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_) ;
    - `DASHBOARD_PASSWORD` : le mot de passe de la page ;
-   - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt.
+   - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
+   - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
-Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `SNAPSHOT_PATH` et
-`STATS_PATH` (facultatives).
+Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `DISPATCH_TOKEN`
+(avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH` et `STATS_PATH` (facultatives).
