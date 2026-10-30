@@ -32,6 +32,12 @@ const DAY_BUCKET_MAX_DAYS = 31
 const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
+// Pull requests their author merged without approval: over a fixed month, like the activity feed over a week, on the
+// main repositories, the front, back and mobile ones. Docs, infrastructure and tooling are left out.
+const UNAPPROVED_DAYS = 30
+const UNAPPROVED_CATEGORIES = ['front', 'back', 'mobile']
+// What the pull request got from others before its merge, when it was not an approval.
+const UNAPPROVED_TAGS = { none: 'sans review', commented: 'commentée', changes: 'changements demandés' }
 const TOP_TECHNOLOGIES = 10
 const STACK_TECHNOLOGIES = 3
 const MIN_STACK_TECHNOLOGY_SHARE = 0.05
@@ -404,6 +410,7 @@ const state = {
   syncRequest: null,
   seenEvents: null,
   seenWaiting: null,
+  seenUnapproved: null,
   fetchFailed: false,
 }
 
@@ -1830,6 +1837,59 @@ function renderFeed(highlight) {
   renderList($('[data-feed]'), items, 'Aucune activité')
 }
 
+// Code pull requests of the main repositories that their author merged over the last month with no approval from
+// someone else before, latest first.
+function mergedWithoutApproval() {
+  const since = (Date.parse(state.stats.generatedAt) - UNAPPROVED_DAYS * DAY_MS) / 60_000
+
+  return state.stats.pullRequests
+    .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt !== null && pr.mergedAt >= since)
+    .filter((pr) => pr.mergedBy === pr.author)
+    .filter((pr) => UNAPPROVED_CATEGORIES.includes(repoInfo(pr.repo).category))
+    .map((pr) => ({ ...pr, before: pr.interventions.filter(([, at]) => at <= pr.mergedAt) }))
+    .filter((pr) => !pr.before.some(([, , reviewState]) => reviewState === 'APPROVED'))
+    .sort((a, b) => b.mergedAt - a.mergedAt)
+}
+
+function unapprovedTag(pr) {
+  if (pr.before.length === 0) {
+    return UNAPPROVED_TAGS.none
+  }
+
+  return pr.before.some(([, , reviewState]) => reviewState === 'CHANGES_REQUESTED')
+    ? UNAPPROVED_TAGS.changes
+    : UNAPPROVED_TAGS.commented
+}
+
+function renderUnapproved(highlight) {
+  const prs = mergedWithoutApproval()
+  const previous = state.seenUnapproved
+  $('[data-unapproved-title]').textContent = `Mergées par leur auteur sans approbation (${formatNumber(prs.length)})`
+  const items = prs
+    .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo))
+    .map((pr) => {
+      const text = el(
+        'p',
+        { className: 'feed-text' },
+        el('strong', { textContent: displayName(pr.author) }),
+        document.createTextNode(' a mergé sa PR '),
+        pullRequestLink(pr.repo, pr.number),
+        ...[unapprovedTag(pr), pr.hotfix ? 'hotfix' : null]
+          .filter(Boolean)
+          .map((tag) => el('span', { className: 'feed-tag', textContent: tag })),
+      )
+      const item = listItem(pr.author, text, new Date(pr.mergedAt * 60_000).toISOString(), 'mergée ')
+      if (highlight && previous && !previous.has(waitingId(pr))) {
+        item.classList.add('is-new')
+      }
+
+      return item
+    })
+
+  state.seenUnapproved = new Set(prs.map(waitingId))
+  renderList($('[data-unapproved]'), items, 'Aucune PR mergée sans approbation')
+}
+
 function renderWaiting(highlight) {
   const { waiting } = state.stats
   const previous = state.seenWaiting
@@ -2069,6 +2129,7 @@ function render(animate) {
   renderTables(animate)
   renderFeed(animate)
   renderWaiting(animate)
+  renderUnapproved(animate)
   renderSyncMenu()
 }
 
@@ -2321,6 +2382,7 @@ $('[data-search]').addEventListener('input', (event) => {
     renderTables(false)
     renderFeed(false)
     renderWaiting(false)
+    renderUnapproved(false)
   }
 })
 

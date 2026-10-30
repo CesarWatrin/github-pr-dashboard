@@ -811,7 +811,15 @@ main.is-loading {
 }
 
 .grid-even {
+  container-type: inline-size;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+}
+
+/* Three cards on two columns: the last one takes the whole second row rather than half of it. */
+@container (min-width: 776px) and (max-width: 1171px) {
+  .grid-even > :nth-child(3):last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1141,6 +1149,19 @@ main.is-loading {
 
 .feed-text a {
   font-variant-numeric: tabular-nums;
+}
+
+/* What a pull request merged without approval got instead: quiet, next to its link. */
+.feed-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .feed-time {
