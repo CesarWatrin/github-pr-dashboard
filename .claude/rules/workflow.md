@@ -3,7 +3,11 @@
 ## Branches, commits, pull requests
 
 - Never push to `main`: one branch per topic, from an up-to-date `main` (`feature/…`, `fix/…`, `chore/…`, `docs/…`),
-  one pull request per topic. The owner merges them, squashed.
+  one pull request per topic. The owner merges them, squashed. The "Protect main" ruleset enforces it: only the owner
+  may push to `main`, and every other pull request needs the approval of the owner, the only code owner
+  (`.github/CODEOWNERS`).
+- Before adding a commit to a pull request, check that it is still open: a commit pushed to a merged branch goes
+  nowhere, it then needs a new branch from `main` and a new pull request.
 - Commits follow Conventional Commits, in English: `type(scope): description` (`feat`, `fix`, `refactor`, `style`,
   `chore`, `perf`, `docs`, `test`; scopes such as `site`, `sync`, `ci`).
 - Pull request descriptions are in French: what changes and why, then a test plan. No real data in them (see
