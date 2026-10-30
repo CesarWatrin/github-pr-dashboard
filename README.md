@@ -124,5 +124,8 @@ Prérequis :
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
+Les tests (`npm test`, sur des données inventées) et la vérification de syntaxe (`npm run check`) tournent sur
+chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
+
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`, `DISPATCH_TOKEN`
 (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH` et `STATS_PATH` (facultatives).

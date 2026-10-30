@@ -19,7 +19,10 @@
 
 ## Before shipping
 
-- `node --check` on every changed script.
+- `npm run check` and `npm test`. The "Checks" workflow runs them on every pull request, and the "Protect main"
+  ruleset requires it to pass.
+- A change in a computation or a sync rule comes with tests in `test/`, on made-up data only: invented repositories,
+  people and figures, never anything taken from the snapshot.
 - A change in a computation: before and after comparison on the same snapshot (see `sync.md`).
 - A visible change: a preview with real data, outside the repository.
   - Run the sync with `SNAPSHOT_PATH` and `STATS_PATH` pointing to a temporary folder and a throwaway
