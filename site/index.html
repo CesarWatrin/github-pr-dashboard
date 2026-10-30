@@ -64,6 +64,10 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.5a3.5 3.5 0 0 0-3.2 4.9L2.5 11.7l1.8 1.8 4.3-4.3A3.5 3.5 0 0 0 13.5 6l-2 .5-1.5-1.5.5-2Z" /></svg>
             TMA
           </a>
+          <a class="nav-link" href="#/devops" data-route-link="devops">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11v9h-11Z" /><path d="m5 6.5 2 1.5-2 1.5M8.5 10h2.5" /></svg>
+            DevOps
+          </a>
         </nav>
         <div class="sidebar-footer">
           <a class="nav-link nav-link-secondary" href="#/methode" data-route-link="method">
@@ -100,7 +104,7 @@
                 </button>
                 <button type="button" data-sync-kind="full">
                   <strong>Synchro complète</strong>
-                  <span>Recharge les 12 derniers mois, environ 10 min</span>
+                  <span>Très longue, 15 à 20 min : à titre exceptionnel</span>
                 </button>
                 <p class="sync-menu-error" role="alert" data-sync-error hidden></p>
               </div>
@@ -281,7 +285,7 @@
             <div class="grid-2">
               <section class="card" aria-labelledby="tma-people-title">
                 <h2 id="tma-people-title">Contributeurs</h2>
-                <div class="table-wrap tma-table" data-tma></div>
+                <div class="table-wrap scroll-table" data-tma></div>
                 <dl class="table-legend" data-table-legend="tma"></dl>
               </section>
 
@@ -292,6 +296,49 @@
                 <div class="chart chart-sm" data-tma-chart></div>
               </section>
             </div>
+          </div>
+
+          <!-- DevOps -->
+          <div class="route" data-route="devops" hidden>
+            <section class="card" aria-labelledby="devops-title">
+              <h2 id="devops-title" data-devops-title>Sur la période</h2>
+              <h3 class="tile-group">Mises en production</h3>
+              <div class="tiles" data-dora-tiles></div>
+              <h3 class="tile-group">Intégration continue</h3>
+              <div class="tiles" data-ci-tiles></div>
+              <h3 class="tile-group">Dependabot</h3>
+              <div class="tiles" data-dependency-tiles></div>
+            </section>
+
+            <section class="card" aria-labelledby="deployments-title">
+              <h2 id="deployments-title" data-deployments-chart-title>Déploiements</h2>
+              <p class="card-sub">PR mergées dans master ou main, et les indicateurs DORA de chaque dépôt</p>
+              <div class="legend" data-deployments-legend></div>
+              <div class="chart chart-sm" data-deployments-chart></div>
+              <div class="table-wrap scroll-table" data-deployments></div>
+              <dl class="table-legend" data-table-legend="deployments"></dl>
+            </section>
+
+            <section class="card" aria-labelledby="ci-title">
+              <h2 id="ci-title">Intégration continue</h2>
+              <p class="card-sub">Exécutions GitHub Actions déclenchées par une PR ou un push</p>
+              <h3 class="tile-group" data-ci-charts-title>Exécutions</h3>
+              <div class="minis">
+                <div class="mini"><h3>Durée médiane, en minutes</h3><div class="chart chart-sm" data-ci-duration-chart></div></div>
+                <div class="mini"><h3>Part en échec, en %</h3><div class="chart chart-sm" data-ci-failure-chart></div></div>
+              </div>
+              <div class="table-wrap scroll-table" data-workflows></div>
+              <dl class="table-legend" data-table-legend="workflows"></dl>
+            </section>
+
+            <section class="card" aria-labelledby="dependencies-title">
+              <h2 id="dependencies-title">Dependabot</h2>
+              <p class="card-sub">Mises à jour de dépendances proposées par Dependabot, comptées à part des PR de code</p>
+              <h3 class="tile-group">Par écosystème</h3>
+              <div class="bar-chart" data-dependency-ecosystems></div>
+              <div class="table-wrap scroll-table" data-dependencies></div>
+              <dl class="table-legend" data-table-legend="dependencies"></dl>
+            </section>
           </div>
 
           <!-- Méthode -->
@@ -354,6 +401,31 @@
                   jours, quelle que soit la période choisie, sans approbation d’une autre personne avant le merge. Chacune
                   dit ce qu’elle avait reçu à la place : aucune review, des commentaires ou une demande de changements.
                 </dd>
+                <dt>Déploiement</dt>
+                <dd>
+                  PR mergée dans <code>master</code> ou <code>main</code> : release, hotfix ou merge direct, hors
+                  back-merges entre ces deux branches. Les déploiements GitHub ne sont pas utilisés.
+                </dd>
+                <dt>Indicateurs DORA</dt>
+                <dd>
+                  Une PR mergée dans <code>develop</code> arrive en prod avec le déploiement suivant de son dépôt ; mergée
+                  dans une branche de projet, une fois cette branche mergée à son tour. Les correctifs sont les
+                  déploiements imprévus pour réparer la prod : hotfix et reverts. Leur part est le taux de reprise, ajouté
+                  par DORA en 2024 ; il remplace ici le taux d’échec des déploiements, que les hotfix quotidiens de la TMA
+                  empêchent d’isoler. Le rétablissement est le délai des correctifs jusqu’à leur merge en prod.
+                </dd>
+                <dt>Intégration continue</dt>
+                <dd>
+                  Exécutions GitHub Actions déclenchées par une PR ou un push, hors exécutions planifiées, manuelles et
+                  de Dependabot. Seules celles qui aboutissent à un verdict comptent : annulées et ignorées sont exclues.
+                  Elles sont regroupées par jour, et une période compte ses jours en entier. Check rouge : au moins un
+                  check en échec sur le dernier commit de la PR, checks facultatifs compris (Sentry, CodeRabbit…).
+                </dd>
+                <dt>Dependabot</dt>
+                <dd>
+                  PR de mise à jour de dépendances ouvertes par Dependabot, comptées à part des PR de code. Celles mergées
+                  dans <code>master</code> ou <code>main</code> comptent aussi comme déploiements.
+                </dd>
                 <dt>PR en attente de review</dt>
                 <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
                 <dt>Noms</dt>
@@ -378,10 +450,14 @@
       <form method="dialog">
         <h2 id="full-sync-title">Lancer une synchro complète ?</h2>
         <p>
-          Elle recharge depuis GitHub toutes les PR des 12 derniers mois, dépôt par dépôt : environ 10 minutes, pendant
-          lesquelles la page garde les données actuelles.
+          Elle relit depuis GitHub toutes les PR des 12 derniers mois, dépôt par dépôt, avec leurs checks :
+          <strong>15 à 20 minutes</strong>. Pendant ce temps, les autres synchros attendent leur tour et la page garde
+          les données actuelles.
         </p>
-        <p>À réserver aux données qui semblent fausses ou incomplètes : pour les dernières PR, la synchro rapide suffit.</p>
+        <p>
+          Elle doit rester exceptionnelle : seulement si des données semblent fausses ou manquantes. Pour les dernières
+          PR, la synchro rapide suffit.
+        </p>
         <div class="confirm-actions">
           <button type="submit" value="cancel" class="button-secondary" autofocus>Annuler</button>
           <button type="submit" value="confirm" class="button-primary">Lancer la synchro complète</button>

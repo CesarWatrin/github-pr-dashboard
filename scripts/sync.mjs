@@ -11,10 +11,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
-import { DAY_MS, TIMEZONE, parisDay, round } from '../site/period.js'
+import { DAY_MS, TIMEZONE, addDays, parisDay, round } from '../site/period.js'
 
 const ORG = process.env.ORG
-const SNAPSHOT_VERSION = 3
+// 4: the checks of each pull request and the Actions runs.
+const SNAPSHOT_VERSION = 4
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.enc.json'
@@ -26,6 +27,20 @@ const CONCURRENCY = 4
 const EVENTS_LIMIT = 50
 const EVENTS_MAX_AGE_DAYS = 7
 const RELEASE_BASES = ['master', 'main']
+// Branches that production releases are cut from: a pull request merged into one ships with the next release.
+const INTEGRATION_BASES = ['develop', 'staging']
+// The Actions runs API answers at most 1000 runs per filtered query: longer ranges are fetched in halves.
+const RUNS_QUERY_LIMIT = 1000
+const RUNS_PAGE_SIZE = 100
+// At most this many REST calls at once, across repositories and pages: a page of 100 runs weighs about 1 MB.
+const REST_CONCURRENCY = 8
+// Runs created this long before the last sync are fetched again, to get the outcome of those still running.
+const RUNS_OVERLAP_MS = DAY_MS
+// Runs that check code, on pull requests and pushes: scheduled, manual and Dependabot runs are left out.
+const CI_EVENTS = ['pull_request', 'pull_request_target', 'push', 'merge_group']
+// Cancelled and skipped runs reach no verdict: they are left out too.
+const VERDICT_CONCLUSIONS = ['success', 'failure', 'timed_out', 'startup_failure']
+const FAILED_CONCLUSIONS = ['failure', 'timed_out', 'startup_failure']
 // PBKDF2-SHA256 iterations deriving the encryption key from the password, also read from the file by the page.
 const KEY_ITERATIONS = 600_000
 
@@ -110,6 +125,7 @@ const PULL_REQUEST_FIELDS = `
   mergedBy { ${ACTOR_FIELDS} }
   reviews(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${REVIEW_FIELDS} } }
   comments(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${COMMENT_FIELDS} } }
+  commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
 `
 
 const REPOSITORIES_QUERY = `
@@ -201,15 +217,10 @@ function resolveToken() {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function graphql(query, variables, attempt = 1) {
-  const response = await fetch('https://api.github.com/graphql', {
-    method: 'POST',
-    headers: {
-      authorization: `bearer ${token}`,
-      'content-type': 'application/json',
-      'user-agent': 'github-pr-dashboard',
-    },
-    body: JSON.stringify({ query, variables }),
+async function request(url, init, attempt = 1) {
+  const response = await fetch(url, {
+    ...init,
+    headers: { authorization: `bearer ${token}`, 'user-agent': 'github-pr-dashboard', ...init.headers },
   })
 
   const retryable = response.status >= 500 || response.status === 403 || response.status === 429
@@ -217,8 +228,18 @@ async function graphql(query, variables, attempt = 1) {
     const retryAfter = Number(response.headers.get('retry-after'))
     await wait(retryAfter > 0 ? retryAfter * 1000 : attempt * 3000)
 
-    return graphql(query, variables, attempt + 1)
+    return request(url, init, attempt + 1)
   }
+
+  return response
+}
+
+async function graphql(query, variables) {
+  const response = await request('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  })
   if (!response.ok) {
     throw new Error(`GitHub API responded ${response.status}: ${await response.text()}`)
   }
@@ -229,6 +250,42 @@ async function graphql(query, variables, attempt = 1) {
   }
 
   return body.data
+}
+
+const restSlots = { used: 0, waiting: [] }
+
+async function withRestSlot(task) {
+  if (restSlots.used < REST_CONCURRENCY) {
+    restSlots.used++
+  } else {
+    // A call that ends hands its slot over.
+    await new Promise((resolve) => restSlots.waiting.push(resolve))
+  }
+  try {
+    return await task()
+  } finally {
+    const next = restSlots.waiting.shift()
+    if (next) {
+      next()
+    } else {
+      restSlots.used--
+    }
+  }
+}
+
+// REST call, null when the resource does not exist: a repository without Actions has no runs.
+async function rest(path) {
+  return withRestSlot(async () => {
+    const response = await request(`https://api.github.com${path}`, { headers: { accept: 'application/vnd.github+json' } })
+    if (response.status === 404) {
+      return null
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub API responded ${response.status}: ${await response.text()}`)
+    }
+
+    return response.json()
+  })
 }
 
 async function mapWithConcurrency(items, limit, callback) {
@@ -291,6 +348,8 @@ async function toRecord(node) {
     mergedBy: node.mergedBy ? actorLogin(node.mergedBy) : null,
     reviews: await fetchAllItems(node, 'reviews', toReview),
     comments: await fetchAllItems(node, 'comments', toComment),
+    // State of the checks of the last commit: SUCCESS, FAILURE, ERROR, PENDING or EXPECTED, null without checks.
+    checks: node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
   }
 }
 
@@ -355,6 +414,52 @@ async function fetchWindow(sinceIso) {
 }
 
 // Returns null when too many pull requests changed for the search API, the caller then refetches the window.
+// The Actions runs of a repository created between two days (UTC, included), the ones that check code.
+async function fetchRepositoryRuns(name, from, to) {
+  const path = (page) => `/repos/${ORG}/${name}/actions/runs?created=${from}..${to}&per_page=${RUNS_PAGE_SIZE}&page=${page}`
+  const first = await rest(path(1))
+  if (first === null) {
+    return []
+  }
+  if (first.total_count > RUNS_QUERY_LIMIT && from < to) {
+    const middle = addDays(from, Math.floor((Date.parse(to) - Date.parse(from)) / DAY_MS / 2))
+    const halves = await Promise.all([fetchRepositoryRuns(name, from, middle), fetchRepositoryRuns(name, addDays(middle, 1), to)])
+
+    return halves.flat()
+  }
+  // The other pages at once: REST_CONCURRENCY bounds the calls.
+  const pages = Math.ceil(Math.min(first.total_count, RUNS_QUERY_LIMIT) / RUNS_PAGE_SIZE)
+  const others = await Promise.all(Array.from({ length: pages - 1 }, (_, index) => rest(path(index + 2))))
+
+  return [first, ...others]
+    .flatMap((body) => body.workflow_runs)
+    .filter((run) => CI_EVENTS.includes(run.event))
+    .map((run) => toRun(name, run))
+}
+
+function toRun(repo, run) {
+  return {
+    id: run.id,
+    repo,
+    workflow: run.name,
+    conclusion: run.conclusion,
+    attempt: run.run_attempt,
+    createdAt: run.created_at,
+    startedAt: run.run_started_at,
+    updatedAt: run.updated_at,
+  }
+}
+
+// Runs of the repositories pushed to since then: pull requests and pushes both push commits.
+async function fetchRuns(sinceIso, now) {
+  const repositories = await listActiveRepositories(sinceIso)
+  const perRepository = await Promise.all(
+    repositories.map((name) => fetchRepositoryRuns(name, sinceIso.slice(0, 10), now.toISOString().slice(0, 10))),
+  )
+
+  return perRepository.flat()
+}
+
 async function fetchUpdatedSince(sinceIso) {
   const query = `org:${ORG} is:pr updated:>=${sinceIso.replace(/\.\d+Z$/, '+00:00')} sort:updated-asc`
   const records = []
@@ -536,13 +641,63 @@ function reviewInterventions(pr) {
 
 const minutes = (iso) => (iso ? Math.round(Date.parse(iso) / 60_000) : null)
 
+// Production deployments: pull requests merged into master or main, back-merges between them aside.
+const isDeployment = (pr) => pr.mergedAt !== null && RELEASE_BASES.includes(pr.base) && !RELEASE_BASES.includes(pr.head)
+
+// Per repository, the times of its deployments, and per branch the times it was merged, sorted.
+function deliveryIndex(pullRequests) {
+  const index = { deployments: new Map(), branchMerges: new Map() }
+  const add = (map, key, value) => (map.has(key) ? map.get(key).push(value) : map.set(key, [value]))
+  for (const pr of pullRequests) {
+    if (isDeployment(pr)) {
+      add(index.deployments, pr.repo, pr.mergedAt)
+    }
+    if (pr.mergedAt) {
+      add(index.branchMerges, `${pr.repo}:${pr.head}`, pr.mergedAt)
+    }
+  }
+  for (const map of Object.values(index)) {
+    for (const times of map.values()) {
+      times.sort()
+    }
+  }
+
+  return index
+}
+
+// When a pull request reached production: merged into master or main, at once; into develop, with the next
+// deployment of its repository; into another branch, a project one, with the next deployment once that branch is
+// merged in turn. Null while it waits.
+function deployedAt(pr, index) {
+  if (!pr.mergedAt) {
+    return null
+  }
+  if (RELEASE_BASES.includes(pr.base)) {
+    return pr.mergedAt
+  }
+  let at = pr.mergedAt
+  if (!INTEGRATION_BASES.includes(pr.base)) {
+    at = index.branchMerges.get(`${pr.repo}:${pr.base}`)?.find((time) => time >= at)
+    if (!at) {
+      return null
+    }
+  }
+
+  return index.deployments.get(pr.repo)?.find((time) => time >= at) ?? null
+}
+
+
 // What the page needs of a pull request to compute the stats of any range, see site/period.js. Bot pull requests
-// are only kept when they ship a release.
-function toPeriodRecord(pr) {
+// are only kept when they deploy or update a dependency (Dependabot).
+function toPeriodRecord(pr, index) {
   const kind = classify(pr)
   const production = kind === 'release' && RELEASE_BASES.includes(pr.base)
   const bot = isBot(pr.author)
-  if (bot && !(production && pr.mergedAt)) {
+  const deployment = isDeployment(pr)
+  const hotfix = pr.head.startsWith('hotfix')
+  // Dependabot branches read dependabot/<ecosystem>/<dependency>.
+  const dependency = pr.head.startsWith('dependabot/') ? pr.head.split('/')[1] : null
+  if (bot && !deployment && !dependency) {
     return null
   }
 
@@ -552,7 +707,7 @@ function toPeriodRecord(pr) {
     author: pr.author,
     bot,
     kind,
-    hotfix: pr.head.startsWith('hotfix'),
+    hotfix,
     production,
     createdAt: minutes(pr.createdAt),
     mergedAt: minutes(pr.mergedAt),
@@ -560,7 +715,35 @@ function toPeriodRecord(pr) {
     lines: pr.additions + pr.deletions,
     mergedBy: pr.mergedBy && !isBot(pr.mergedBy) ? pr.mergedBy : null,
     interventions: reviewInterventions(pr).map(({ login, at, state, comments }) => [login, minutes(at), state, comments]),
+    ...(deployment && { deployment: true }),
+    // A revert merged into production undoes a deployment, as a hotfix repairs one: the title says it.
+    ...(deployment && /^revert\b/i.test(pr.title) && { revert: true }),
+    ...(kind === 'code' && !bot && { deployedAt: minutes(deployedAt(pr, index)) }),
+    ...(['FAILURE', 'ERROR'].includes(pr.checks) && { checksFailed: true }),
+    ...(dependency && { dependency }),
   }
+}
+
+// Actions runs per repository, workflow and Paris day, as [runs, failed, rerun, durations in seconds]: the page adds
+// up the days of the range it shows.
+function computeCi(runs) {
+  const workflows = new Map()
+  for (const run of runs) {
+    if (!VERDICT_CONCLUSIONS.includes(run.conclusion)) {
+      continue
+    }
+    const key = `${run.repo}/${run.workflow}`
+    if (!workflows.has(key)) {
+      workflows.set(key, { repo: run.repo, workflow: run.workflow, days: {} })
+    }
+    const day = (workflows.get(key).days[parisDay(run.createdAt)] ??= [0, 0, 0, []])
+    day[0]++
+    day[1] += FAILED_CONCLUSIONS.includes(run.conclusion) ? 1 : 0
+    day[2] += run.attempt > 1 ? 1 : 0
+    day[3].push(Math.max(0, Math.round((Date.parse(run.updatedAt) - Date.parse(run.startedAt)) / 1000)))
+  }
+
+  return [...workflows.values()]
 }
 
 // Open code pull requests nobody has looked at yet, oldest first.
@@ -636,7 +819,8 @@ function computeEvents(pullRequests, now) {
 async function sync({ full }) {
   const now = new Date()
   const windowStartIso = new Date(now.getTime() - WINDOW_DAYS * DAY_MS).toISOString()
-  const snapshot = full ? null : await readSnapshot()
+  const previous = await readSnapshot()
+  const snapshot = full ? null : previous
   for (const [login, name] of Object.entries(snapshot?.names ?? {})) {
     people.names.set(login, name)
   }
@@ -658,6 +842,19 @@ async function sync({ full }) {
     pullRequests.set(keyOf(pr), pr)
   }
   const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= windowStartIso)
+
+  // Actions runs: the whole window the first time, then those created since shortly before the last sync. A full
+  // sync keeps them too: a finished run does not change.
+  const previousRuns = previous?.runs
+  const fetchedRuns = await fetchRuns(
+    previousRuns ? new Date(Date.parse(previous.syncedAt) - RUNS_OVERLAP_MS).toISOString() : windowStartIso,
+    now,
+  )
+  const runs = new Map((previousRuns ?? []).map((run) => [run.id, run]))
+  for (const run of fetchedRuns) {
+    runs.set(run.id, run)
+  }
+  const runsInWindow = [...runs.values()].filter((run) => run.createdAt >= windowStartIso)
 
   // Languages and frameworks are only looked up for repositories not seen yet: a full sync refreshes them all.
   const repositories = [...new Set(inWindow.map((pr) => pr.repo))]
@@ -683,7 +880,9 @@ async function sync({ full }) {
     languages,
     frameworks,
     pullRequests: inWindow,
+    runs: runsInWindow,
   })
+  const index = deliveryIndex(inWindow)
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
   await writeJson(
     STATS_PATH,
@@ -705,7 +904,8 @@ async function sync({ full }) {
       today: computeToday(inWindow, now),
       // The page computes the stats of the range it shows from these.
       windowStart: windowStartIso,
-      pullRequests: inWindow.map(toPeriodRecord).filter(Boolean),
+      pullRequests: inWindow.map((pr) => toPeriodRecord(pr, index)).filter(Boolean),
+      ci: computeCi(runsInWindow),
       events: computeEvents(inWindow, now),
       waiting: computeWaiting(inWindow),
     }),
@@ -713,7 +913,10 @@ async function sync({ full }) {
   // Written last: the page polls this small file and only downloads the stats once it changes.
   await writeJson(VERSION_PATH, version)
 
-  console.log(`[${now.toISOString()}] ${mode} sync: ${fetched.length} PR fetched, ${inWindow.length} PR in window`)
+  console.log(
+    `[${now.toISOString()}] ${mode} sync: ${fetched.length} PR fetched, ${inWindow.length} PR in window, ` +
+      `${fetchedRuns.length} runs fetched, ${runsInWindow.length} runs in window`,
+  )
 }
 
 const args = new Set(process.argv.slice(2))
