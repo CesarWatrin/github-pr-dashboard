@@ -1,3 +1,8 @@
+// Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
+const { DAY_MS, addDays, computePeriod, parisDay, parisMidnight } = await import(
+  `./period.js${new URL(import.meta.url).search}`
+)
+
 const DATA_URL = 'data/stats.enc.json'
 const VERSION_URL = 'data/version.json'
 const POLL_INTERVAL_MS = 60_000
@@ -14,12 +19,17 @@ const STAGGER_SPREAD_MS = 320
 const STAGGERED_ROWS = 16
 const THEME_TRANSITION_MS = 350
 const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
+const RANGE_STORAGE_KEY = 'github-pr-dashboard:range'
 const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
 const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
 const UNLOCK_DURATION_MS = 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
+const CUSTOM_PERIOD = 'custom'
+// Picked dates are shown by day up to a month, then by week up to four months, then by month.
+const DAY_BUCKET_MAX_DAYS = 31
+const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_TECHNOLOGIES = 10
@@ -49,10 +59,15 @@ const ROUTES = {
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
-  method: { hash: '#/methode', title: 'Méthode', subtitle: 'Comment chaque indicateur est calculé', filters: false },
+  method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
 }
 
-const PERIOD_TITLES = { '30d': '30 derniers jours', '90d': '90 derniers jours', '365d': '12 derniers mois' }
+// Preset periods, up to the last sync. Picked dates are whole days within the synced year.
+const PERIODS = {
+  '30d': { days: 30, bucket: 'day', title: '30 derniers jours' },
+  '90d': { days: 90, bucket: 'week', title: '90 derniers jours' },
+  '365d': { days: 365, bucket: 'month', title: '12 derniers mois' },
+}
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
 
 const EVENT_VERBS = {
@@ -72,6 +87,8 @@ const monthLongFormat = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 
 const dayMonthFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 const dateTimeFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
+const rangeShortFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+const rangeLongFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
 const darkScheme = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -144,40 +161,85 @@ const TMA_TILES = [
 
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'code', label: 'PR de code', kind: 'bar' },
-  { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
+  { key: 'code', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  {
+    key: 'stack',
+    label: 'Stack',
+    kind: 'stack',
+    value: (row) => frontShare(row.stack),
+    hint: 'Part de ces PR dans les dépôts front, back et mobile. Full-stack : au moins 30 % côté back et 30 % côté client.',
+  },
   {
     key: 'process',
     label: 'Release / intég.',
     value: (row) => row.release + row.integration,
     format: (row) => `${row.release} / ${row.integration}`,
+    hint: 'PR de release / de synchronisation de branches, comptées à part.',
   },
-  { key: 'mergeRate', label: 'Taux de merge', format: (row) => formatPercent(row.mergeRate) },
-  { key: 'unreviewedRate', label: 'Mergées sans review', format: (row) => formatShare(row.unreviewedRate) },
+  {
+    key: 'mergeRate',
+    label: 'Taux de merge',
+    format: (row) => formatPercent(row.mergeRate),
+    hint: 'Mergées / (mergées + fermées sans merge).',
+  },
+  {
+    key: 'unreviewedRate',
+    label: 'Mergées sans review',
+    format: (row) => formatShare(row.unreviewedRate),
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
   {
     key: 'medianTimeToFirstReviewHours',
     label: 'Attente 1re review',
     format: (row) => formatDuration(row.medianTimeToFirstReviewHours),
+    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
   },
-  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
-  { key: 'medianSize', label: 'Taille médiane' },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane, de la création au merge.',
+  },
+  { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR mergées.' },
 ]
 
 const REVIEWER_COLUMNS = [
   { key: 'login', label: 'Relecteur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'prs', label: 'PR relues', kind: 'bar' },
-  { key: 'stack', label: 'Stack', kind: 'stack', value: (row) => frontShare(row.stack) },
-  { key: 'commentsPerPr', label: 'Comment. / PR', format: (row) => formatDecimal(row.commentsPerPr) },
-  { key: 'silentApprovalRate', label: 'Approb. sans comment.', format: (row) => formatShare(row.silentApprovalRate) },
-  { key: 'changesRequested', label: 'Modif. demandées' },
-  { key: 'medianSize', label: 'Taille médiane' },
-  { key: 'merges', label: 'Merges effectués' },
+  {
+    key: 'prs',
+    label: 'PR relues',
+    kind: 'bar',
+    hint: 'PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.',
+  },
+  {
+    key: 'stack',
+    label: 'Stack',
+    kind: 'stack',
+    value: (row) => frontShare(row.stack),
+    hint: 'Part de ces PR dans les dépôts front, back et mobile.',
+  },
+  {
+    key: 'commentsPerPr',
+    label: 'Comment. / PR',
+    format: (row) => formatDecimal(row.commentsPerPr),
+    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+  },
+  {
+    key: 'silentApprovalRate',
+    label: 'Approb. sans comment.',
+    format: (row) => formatShare(row.silentApprovalRate),
+    hint: 'Part des PR approuvées sans y laisser de commentaire.',
+  },
+  { key: 'changesRequested', label: 'Modif. demandées', hint: 'Reviews « changements demandés ».' },
+  { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR relues.' },
+  { key: 'merges', label: 'Merges effectués', hint: 'PR de code mergées par la personne, les siennes comprises.' },
   {
     key: 'topRepos',
     label: 'Principaux dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
     cell: (row) => topReposCell(row.topRepos, 'PR relues'),
+    hint: 'Dépôts où la personne a relu le plus de PR.',
   },
 ]
 
@@ -189,27 +251,59 @@ const REPO_COLUMNS = [
     kind: 'text',
     value: (row) => row.technologies[0]?.[0] ?? '',
     cell: (row) => technologiesCell(row.technologies),
+    hint: 'Technologies principales du code du dépôt, détail au survol.',
   },
-  { key: 'code', label: 'PR de code', kind: 'bar' },
-  { key: 'contributors', label: 'Contributeurs' },
-  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
-  { key: 'unreviewedRate', label: 'Mergées sans review', format: (row) => formatShare(row.unreviewedRate) },
-  { key: 'reviewed', label: 'PR relues' },
+  { key: 'code', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  { key: 'contributors', label: 'Contributeurs', hint: 'Auteurs de ces PR.' },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane, de la création au merge.',
+  },
+  {
+    key: 'unreviewedRate',
+    label: 'Mergées sans review',
+    format: (row) => formatShare(row.unreviewedRate),
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+  { key: 'reviewed', label: 'PR relues', hint: 'PR du dépôt avec une review ou un commentaire sur la période.' },
 ]
 
 const TMA_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'hotfixes', label: 'Hotfix', kind: 'bar' },
-  { key: 'share', label: 'Part de ses PR', format: (row) => formatShare(row.share) },
-  { key: 'medianTimeToMergeHours', label: 'Délai de merge', format: (row) => formatDuration(row.medianTimeToMergeHours) },
+  {
+    key: 'hotfixes',
+    label: 'Hotfix',
+    kind: 'bar',
+    hint: 'PR de code ouvertes sur la période depuis une branche qui commence par hotfix.',
+  },
+  {
+    key: 'share',
+    label: 'Part de ses PR',
+    format: (row) => formatShare(row.share),
+    hint: 'Ses hotfix rapportés à toutes ses PR de code.',
+  },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Délai de merge',
+    format: (row) => formatDuration(row.medianTimeToMergeHours),
+    hint: 'Médiane de ses hotfix, de la création au merge.',
+  },
   {
     key: 'topRepos',
     label: 'Dépôts',
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
     cell: (row) => topReposCell(row.topRepos, 'hotfix'),
+    hint: 'Dépôts où la personne a fait le plus de hotfix.',
   },
-  { key: 'lastAt', label: 'Dernier hotfix', format: (row) => formatRelative(row.lastAt) },
+  {
+    key: 'lastAt',
+    label: 'Dernier hotfix',
+    format: (row) => formatRelative(row.lastAt),
+    hint: 'Création de son dernier hotfix sur la période.',
+  },
 ]
 
 // Repository types sent by the sync script, in the order of the stack bars. Docs, infrastructure and tooling
@@ -291,6 +385,10 @@ const state = {
   keyExpiresAt: 0,
   stats: null,
   period: readStoredPeriod(),
+  // Picked days, inclusive, used when the period is custom.
+  range: readStoredRange(),
+  // The stats of the period shown, computed once per period and data.
+  periodCache: null,
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
@@ -317,9 +415,22 @@ function readStoredPeriod() {
   }
 }
 
-function storePeriod(period) {
+function readStoredRange() {
   try {
-    localStorage.setItem(PERIOD_STORAGE_KEY, period)
+    const range = JSON.parse(localStorage.getItem(RANGE_STORAGE_KEY))
+
+    return typeof range?.from === 'string' && typeof range?.to === 'string' ? range : null
+  } catch {
+    return null
+  }
+}
+
+function storePeriod() {
+  try {
+    localStorage.setItem(PERIOD_STORAGE_KEY, state.period)
+    if (state.range) {
+      localStorage.setItem(RANGE_STORAGE_KEY, JSON.stringify(state.range))
+    }
   } catch {
     // Storage can be unavailable (private browsing): the period is simply not remembered.
   }
@@ -342,7 +453,61 @@ function svg(tag, attributes = {}) {
   return node
 }
 
-const currentPeriod = () => state.stats.periods[state.period]
+const dayDate = (day) => new Date(`${day}T12:00:00Z`)
+
+// Days that can be picked: from the start of the synced year to the day of the last sync.
+function dateBounds() {
+  return { min: parisDay(state.stats.windowStart), max: parisDay(state.stats.generatedAt) }
+}
+
+// Picked days kept within the bounds, or null when none of them is left.
+function clampRange(range) {
+  if (!range) {
+    return null
+  }
+  const { min, max } = dateBounds()
+  const from = range.from < min ? min : range.from
+  const to = range.to > max ? max : range.to
+
+  return from <= to ? { from, to } : null
+}
+
+// Time span of the period shown, in milliseconds, and the buckets of its charts.
+function periodRange() {
+  const lastSync = Date.parse(state.stats.generatedAt)
+  if (state.period !== CUSTOM_PERIOD) {
+    const { days, bucket } = PERIODS[state.period]
+
+    return { start: lastSync - days * DAY_MS, end: lastSync, bucket }
+  }
+  const { from, to } = state.range
+  const days = (dayDate(to) - dayDate(from)) / DAY_MS + 1
+
+  return {
+    start: Math.max(parisMidnight(from), Date.parse(state.stats.windowStart)),
+    end: Math.min(parisMidnight(addDays(to, 1)), lastSync),
+    bucket: days <= DAY_BUCKET_MAX_DAYS ? 'day' : days <= WEEK_BUCKET_MAX_DAYS ? 'week' : 'month',
+  }
+}
+
+function currentPeriod() {
+  const range = periodRange()
+  const key = `${range.start}:${range.end}:${range.bucket}`
+  if (state.periodCache?.stats !== state.stats || state.periodCache.key !== key) {
+    state.periodCache = { stats: state.stats, key, period: computePeriod(state.stats.pullRequests, range) }
+  }
+
+  return state.periodCache.period
+}
+
+function periodTitle() {
+  if (state.period !== CUSTOM_PERIOD) {
+    return PERIODS[state.period].title
+  }
+
+  return rangeLongFormat.formatRange(dayDate(state.range.from), dayDate(state.range.to))
+}
+
 const displayName = (login) => state.stats?.people?.[login] ?? login
 const matchesQuery = (...texts) => !state.query || texts.some((text) => text.toLowerCase().includes(state.query))
 const githubUrl = (path) => `https://github.com/${path}`
@@ -475,13 +640,13 @@ function renderToday(mode) {
 
 function renderTmaTiles(mode) {
   const { tma } = currentPeriod()
-  $('[data-tma-title]').textContent = capitalize(PERIOD_TITLES[state.period])
+  $('[data-tma-title]').textContent = capitalize(periodTitle())
   renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, mode)
 }
 
 function renderTotals(mode) {
   const { totals } = currentPeriod()
-  $('[data-totals-title]').textContent = capitalize(PERIOD_TITLES[state.period])
+  $('[data-totals-title]').textContent = capitalize(periodTitle())
   renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, mode)
   renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, mode)
 }
@@ -778,7 +943,7 @@ function renderActivityChart() {
     points: series,
     bucket,
     series: ACTIVITY_SERIES,
-    ariaLabel: `PR ouvertes et commentaires de review ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
+    ariaLabel: `PR ouvertes et commentaires de review ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
     extraRows: (point) => [
       { label: 'PR de code mergées', value: formatNumber(point.merged) },
       { label: 'approbations', value: formatNumber(point.approvals) },
@@ -832,7 +997,7 @@ function renderTmaCharts() {
     points: series,
     bucket,
     series: [{ label: 'hotfix ouverts', color: 'var(--series-1)', value: (point) => point.hotfixes }],
-    ariaLabel: `Hotfix ouverts ${BUCKET_TITLES[bucket]}, ${PERIOD_TITLES[state.period]}`,
+    ariaLabel: `Hotfix ouverts ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
   })
 }
 
@@ -923,6 +1088,17 @@ function renderChartTable() {
         formatNumber(point.releases),
       ]),
   )
+}
+
+// Under each table, what its columns count: the method page only keeps the rules they share.
+function renderTableLegends() {
+  for (const [name, table] of Object.entries(TABLES)) {
+    $(`[data-table-legend="${name}"]`).replaceChildren(
+      ...table.columns
+        .filter((column) => column.hint)
+        .map((column) => el('div', {}, el('dt', { textContent: column.label }), el('dd', { textContent: column.hint }))),
+    )
+  }
 }
 
 function renderStackLegends() {
@@ -1585,9 +1761,9 @@ function setupRepoFilter(name) {
   })
 }
 
-// An open repository list or sync menu closes when clicking anywhere else.
+// An open repository list, date picker or sync menu closes when clicking anywhere else.
 document.addEventListener('click', (event) => {
-  for (const filter of document.querySelectorAll('[data-repo-filter][open], [data-sync-menu][open]')) {
+  for (const filter of document.querySelectorAll('[data-repo-filter][open], [data-date-range][open], [data-sync-menu][open]')) {
     if (!filter.contains(event.target)) {
       filter.open = false
     }
@@ -1853,10 +2029,27 @@ function renderPeriodSelector() {
   for (const button of document.querySelectorAll('[data-period]')) {
     button.setAttribute('aria-checked', String(button.dataset.period === state.period))
   }
+  // Also shown before the stats arrive: the stored days are only checked against the synced year once they do.
+  const custom = state.period === CUSTOM_PERIOD && state.range !== null
+  $('[data-date-range]').classList.toggle('is-active', custom)
+  $('[data-date-range-label]').textContent = custom
+    ? rangeShortFormat.formatRange(dayDate(state.range.from), dayDate(state.range.to))
+    : 'Dates'
+  if (!state.stats) {
+    return
+  }
+  const { min, max } = dateBounds()
+  const { from, to } = $('[data-date-range-form]').elements
+  from.min = min
+  from.max = max
+  to.min = from.value || min
+  to.max = max
 }
 
 function render(animate) {
-  if (!state.stats.periods[state.period]) {
+  // A stored period may no longer exist, and picked days leave the synced year as time goes by.
+  state.range = clampRange(state.range)
+  if (state.period === CUSTOM_PERIOD ? !state.range : !PERIODS[state.period]) {
     state.period = DEFAULT_PERIOD
   }
   $('[data-org]').textContent = state.stats.org
@@ -2080,11 +2273,47 @@ for (const button of document.querySelectorAll('[data-period]')) {
       return
     }
     state.period = button.dataset.period
-    storePeriod(state.period)
+    storePeriod()
     render(false)
     playEntrance()
   })
 }
+
+// Picked dates: the form opens on the days of the period shown, and applies once both are valid.
+const datePicker = $('[data-date-range]')
+const dateForm = $('[data-date-range-form]')
+datePicker.addEventListener('toggle', () => {
+  if (!datePicker.open || !state.stats) {
+    return
+  }
+  const { from, to } = dateForm.elements
+  const range = state.period === CUSTOM_PERIOD ? state.range : { from: parisDay(periodRange().start), to: dateBounds().max }
+  from.value = range.from
+  to.value = range.to
+  to.min = range.from
+})
+dateForm.elements.from.addEventListener('input', (event) => {
+  dateForm.elements.to.min = event.target.value || dateBounds().min
+})
+dateForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  if (!state.stats) {
+    return
+  }
+  const { from, to } = dateForm.elements
+  state.period = CUSTOM_PERIOD
+  state.range = { from: from.value, to: to.value }
+  storePeriod()
+  datePicker.open = false
+  render(false)
+  playEntrance()
+})
+datePicker.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && datePicker.open) {
+    datePicker.open = false
+    datePicker.querySelector('summary').focus()
+  }
+})
 
 $('[data-search]').addEventListener('input', (event) => {
   state.query = event.target.value.trim().toLowerCase()
@@ -2170,6 +2399,7 @@ renderRoute()
 renderPeriodSelector()
 renderLegend()
 renderStackLegends()
+renderTableLegends()
 setInterval(refresh, POLL_INTERVAL_MS)
 setInterval(() => state.syncRequest && refresh(), SYNC_POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)
