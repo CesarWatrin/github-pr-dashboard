@@ -113,11 +113,13 @@ Prérequis :
    que les logs publics du workflow n'en affichent aucun.
    - `ORG` : l'organisation à suivre ;
    - `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les scopes `repo`
-     et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_) ;
+     et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_, plus _Actions_ et _Commit
+     statuses_ pour la page DevOps) ;
    - `DASHBOARD_PASSWORD` : le mot de passe de la page ;
    - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
+   - `BOT_USERS` (facultatif) : les comptes utilisateurs de l'org qui agissent en bots, séparés par des virgules ;
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
-Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `DISPATCH_TOKEN`
+Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`, `DISPATCH_TOKEN`
 (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH` et `STATS_PATH` (facultatives).
