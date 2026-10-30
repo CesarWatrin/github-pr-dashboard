@@ -80,10 +80,194 @@ code {
   font-size: 0.95em;
 }
 
+/* Layout: the pages and actions in a sidebar, the page beside it; a bar on top of it on narrower screens, where the
+   tables need the width. */
+.app {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.app[hidden] {
+  display: none;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100vh;
+  padding: 24px 14px 16px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  display: grid;
+  padding: 0 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.brand .org {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.nav {
+  display: grid;
+  gap: 2px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* The current page: a light tint, its icon in the accent colour. */
+.nav-link[aria-current='page'] {
+  background: color-mix(in srgb, var(--series-1) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.nav-link[aria-current='page'] svg {
+  color: var(--series-1);
+}
+
+.nav-link svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.sidebar .sync {
+  justify-self: start;
+}
+
+.sidebar .header-actions {
+  padding: 0 4px;
+}
+
+/* At the bottom of the sidebar, the sync menu and the button labels open upwards. */
+.sidebar .sync-menu-panel {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + 6px);
+  left: 0;
+}
+
+.sidebar .icon-button[data-label]::after {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + 6px);
+  left: 0;
+}
+
+@media (max-width: 1279px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    height: auto;
+    padding: 10px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    grid-auto-flow: column;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .nav {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 0 auto;
+  }
+
+  .sidebar .sync-menu-panel {
+    top: calc(100% + 6px);
+    right: 0;
+    bottom: auto;
+    left: auto;
+  }
+
+  .sidebar .icon-button[data-label]::after {
+    top: calc(100% + 6px);
+    right: 0;
+    bottom: auto;
+    left: auto;
+  }
+}
+
+/* Beside the sidebar, the page starts right after it; above the narrow bar, it is centered. */
 .page {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 32px 16px 48px;
+  width: 100%;
+  max-width: 1320px;
+  padding: 32px 40px 48px;
+}
+
+@media (max-width: 1279px) {
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+}
+
+.route {
+  display: grid;
+  gap: 16px;
+}
+
+.route[hidden],
+.filters[hidden] {
+  display: none;
 }
 
 .page-header {
@@ -600,6 +784,7 @@ main.is-loading {
 }
 
 .tile-value {
+  font-variant-numeric: tabular-nums;
   font-size: 30px;
   font-weight: 600;
   line-height: 1.15;
@@ -613,8 +798,8 @@ main.is-loading {
   opacity: 0;
   transform: translateY(4px);
   transition:
-    opacity 0.3s,
-    transform 0.3s;
+    opacity 300ms ease,
+    transform 400ms var(--ease-out);
 }
 
 .tile-bump.is-visible {
@@ -846,24 +1031,46 @@ main.is-loading {
   background: var(--gridline);
 }
 
-.tma-grid {
-  margin-top: 8px;
+/* Everyone who made a hotfix is listed: the list scrolls under its header rather than stretching the page. */
+.tma-table {
+  max-height: 560px;
 }
 
-/* Everyone who made a hotfix is listed: the list scrolls under its header rather than stretching the card. */
-.tma-grid .table-wrap {
-  max-height: 520px;
-}
-
-.tma-grid thead th {
+.tma-table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
   background: var(--surface);
 }
 
-.tma-grid thead th:first-child {
+.tma-table thead th:first-child {
   z-index: 3;
+}
+
+/* A tile that leads to its page */
+.tile-link {
+  margin: -6px -8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tile-link:hover {
+  background: var(--surface-hover);
+}
+
+.tile-link:hover .tile-label::after {
+  content: ' →';
+}
+
+/* Repository table */
+.repo-cell .stack-type {
+  margin-left: 8px;
+}
+
+.stack-type.is-other {
+  --type-color: var(--text-muted);
 }
 
 /* Repository filter */
@@ -1266,6 +1473,184 @@ tbody tr.is-updated {
   margin-top: 24px;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Motion: short, eased and quiet. Everything below stops for those who ask their system to reduce motion. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Interactive elements change colour softly */
+.nav-link,
+.icon-button,
+.segmented button,
+.tile-link,
+.search,
+th button,
+.repo-presets button,
+.repo-filter-list label,
+.sync-menu-panel button,
+.button-primary,
+.button-secondary,
+.lock-submit,
+tbody tr {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+/* The theme cross-fades instead of switching at once */
+.is-theme-changing,
+.is-theme-changing *,
+.is-theme-changing *::before,
+.is-theme-changing *::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease !important;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes grow-up {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes grow-right {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes pop-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes pop-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+/* A page that shows: its cards rise in turn, its bars grow from their axis, its rows follow one another. */
+.route.is-entering > * {
+  animation: rise-in 480ms var(--ease-out) both;
+}
+
+.route.is-entering > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.route.is-entering > :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.route.is-entering > :nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+
+.is-entering .chart .bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: grow-up 700ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .bar-chart .bar {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: grow-right 700ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .value-label {
+  animation: fade-in 320ms ease both;
+  animation-delay: 520ms;
+}
+
+.is-entering tbody tr {
+  animation: fade-in 420ms ease both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .inline-bar span,
+.is-entering .stack-bar {
+  transform-origin: 0 50%;
+  animation: grow-right 640ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 200ms);
+}
+
+/* Menus, tooltips and dialogs open with a short fade */
+.repo-filter[open] .repo-filter-panel,
+.sync-menu[open] .sync-menu-panel {
+  transform-origin: top right;
+  animation: pop-down 180ms var(--ease-out);
+}
+
+.sidebar .sync-menu[open] .sync-menu-panel {
+  transform-origin: bottom left;
+  animation-name: pop-up;
+}
+
+@media (max-width: 1279px) {
+  .sidebar .sync-menu[open] .sync-menu-panel {
+    transform-origin: top right;
+    animation-name: pop-down;
+  }
+}
+
+.tooltip:not([hidden]) {
+  animation: fade-in 140ms ease-out;
+}
+
+.icon-button[data-label]::after {
+  transform: translateY(-3px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms var(--ease-out);
+}
+
+.sidebar .icon-button[data-label]::after {
+  transform: translateY(3px);
+}
+
+.icon-button[data-label]:hover::after,
+.icon-button[data-label]:focus-visible::after {
+  transform: none;
+}
+
+.confirm[open] {
+  animation: pop-up 220ms var(--ease-out);
+}
+
+.confirm[open]::backdrop {
+  animation: fade-in 220ms ease-out;
+}
+
+.lock:not([hidden]) .lock-card {
+  animation: rise-in 420ms var(--ease-out) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
