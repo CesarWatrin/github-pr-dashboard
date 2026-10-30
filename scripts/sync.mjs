@@ -92,7 +92,8 @@ const CATEGORY_OVERRIDES = new Map(
     .map((entry) => {
       const [repo, category] = entry.split(':').map((part) => part.trim())
       if (!CATEGORIES.includes(category)) {
-        throw new Error(`REPO_CATEGORIES: "${entry}" should be repo:${CATEGORIES.join('|')}`)
+        // The entry holds a repository name: the public CI logs do not show it.
+        throw new Error(`REPO_CATEGORIES: ${process.env.CI ? 'an entry' : `"${entry}"`} should be repo:${CATEGORIES.join('|')}`)
       }
 
       return [repo, category]
@@ -198,11 +199,11 @@ const REMAINING_ITEMS_QUERIES = {
 }
 
 if (!ORG) {
-  throw new Error('No organization: set the ORG environment variable (in .env locally, as a repository variable in CI).')
+  throw new Error('No organization: set ORG (in .env locally, as a secret of the github-pages environment in CI).')
 }
 // The stats are only ever written encrypted: without a password, nothing is published.
 if (!process.env.DASHBOARD_PASSWORD) {
-  throw new Error('No password: set DASHBOARD_PASSWORD (in .env locally, as a repository secret in CI).')
+  throw new Error('No password: set DASHBOARD_PASSWORD (in .env locally, as a secret of the github-pages environment in CI).')
 }
 
 const token = resolveToken()
@@ -216,7 +217,7 @@ function resolveToken() {
     return envToken
   }
   if (process.env.CI) {
-    throw new Error('No GitHub token: set the ORG_STATS_TOKEN repository secret.')
+    throw new Error('No GitHub token: set ORG_STATS_TOKEN in the secrets of the github-pages environment.')
   }
 
   return execFileSync('gh', ['auth', 'token'], { encoding: 'utf8' }).trim()
@@ -241,6 +242,12 @@ async function request(url, init, attempt = 1) {
   return response
 }
 
+// What GitHub answered, for an error: in CI only its status, since its messages name the organization's repositories
+// and the logs of a public repository are public.
+async function responseDetail(response) {
+  return process.env.CI ? '' : `: ${await response.text()}`
+}
+
 async function graphql(query, variables) {
   const response = await request('https://api.github.com/graphql', {
     method: 'POST',
@@ -248,12 +255,13 @@ async function graphql(query, variables) {
     body: JSON.stringify({ query, variables }),
   })
   if (!response.ok) {
-    throw new Error(`GitHub API responded ${response.status}: ${await response.text()}`)
+    throw new Error(`GitHub API responded ${response.status}${await responseDetail(response)}`)
   }
 
   const body = await response.json()
   if (body.errors) {
-    throw new Error(`GitHub API error: ${JSON.stringify(body.errors)}`)
+    const detail = process.env.CI ? body.errors.map((error) => error.type).join(', ') : JSON.stringify(body.errors)
+    throw new Error(`GitHub API error: ${detail}`)
   }
 
   return body.data
@@ -288,7 +296,7 @@ async function rest(path) {
       return null
     }
     if (!response.ok) {
-      throw new Error(`GitHub API responded ${response.status}: ${await response.text()}`)
+      throw new Error(`GitHub API responded ${response.status}${await responseDetail(response)}`)
     }
 
     return response.json()
@@ -920,10 +928,12 @@ async function sync({ full }) {
   // Written last: the page polls this small file and only downloads the stats once it changes.
   await writeJson(VERSION_PATH, version)
 
-  console.log(
-    `[${now.toISOString()}] ${mode} sync: ${fetched.length} PR fetched, ${inWindow.length} PR in window, ` +
-      `${fetchedRuns.length} runs fetched, ${runsInWindow.length} runs in window`,
-  )
+  // The logs of a public repository are public: in CI they tell nothing of the organization's volumes.
+  const counts = process.env.CI
+    ? ''
+    : `: ${fetched.length} PR fetched, ${inWindow.length} PR in window, ` +
+      `${fetchedRuns.length} runs fetched, ${runsInWindow.length} runs in window`
+  console.log(`[${now.toISOString()}] ${mode} sync${counts}`)
 }
 
 const args = new Set(process.argv.slice(2))

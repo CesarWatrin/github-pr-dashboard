@@ -39,7 +39,8 @@ Les stats sont publiées **chiffrées** : le site est public, mais sans le mot d
 pour un visiteur comme pour un robot.
 
 - Le mot de passe (`DASHBOARD_PASSWORD`) est une clé aléatoire longue, gardée dans le `.env` local et dans les
-  secrets du repo. Il n'apparaît ni dans le code, ni dans les fichiers publiés, ni dans les logs.
+  secrets de l'environnement `github-pages`. Il n'apparaît ni dans le code, ni dans les fichiers publiés, ni dans
+  les logs.
 - La synchro dérive une clé AES-256 du mot de passe (PBKDF2-SHA256, 600 000 itérations), compresse les stats puis
   les chiffre en AES-GCM dans `site/data/stats.enc.json`. Sans mot de passe, elle refuse de tourner : rien n'est
   jamais publié en clair.
@@ -56,7 +57,7 @@ lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a
 pour lancer ou annuler des runs de ce workflow et rien d'autre.
 
 Changer le mot de passe : mettre la nouvelle valeur dans le `.env` et dans le secret (`gh secret set
-DASHBOARD_PASSWORD`), puis lancer le workflow. Les pages ouvertes redemandent alors le mot de passe.
+DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouvertes redemandent alors le mot de passe.
 
 ## Fonctionnement
 
@@ -109,8 +110,10 @@ tout de suite, lance le workflow depuis Actions → _Sync and deploy_ → _Run w
 
 Prérequis :
 
-1. Trois secrets de repo (Settings → Secrets and variables → Actions) : des secrets plutôt que des variables, pour
-   que les logs publics du workflow n'en affichent aucun.
+1. Des secrets dans l'environnement `github-pages` (Settings → Environments → github-pages), que seule `main` peut
+   utiliser : des secrets plutôt que des variables, pour que les logs publics du workflow n'en affichent aucun, et
+   dans l'environnement plutôt que dans le repo, pour qu'aucun workflow d'une autre branche ne puisse les lire.
+   En CI, la synchro n'écrit dans les logs ni chiffre ni réponse de GitHub.
    - `ORG` : l'organisation à suivre ;
    - `ORG_STATS_TOKEN` : token avec accès en lecture aux PR des repos de l'org (PAT classique avec les scopes `repo`
      et `read:org`, ou fine-grained en lecture seule sur _Pull requests_ et _Metadata_, plus _Actions_ et _Commit

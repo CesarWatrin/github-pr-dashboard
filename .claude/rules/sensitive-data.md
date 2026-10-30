@@ -14,10 +14,13 @@ The tracked organization is private. **Nothing of it may appear in clear text**,
 
 ## In practice
 
-- A value specific to the organization goes through an environment variable: `.env` locally, a repository secret in
-  CI (`ORG`, `REPO_CATEGORIES`, `BOT_USERS`…). Never a list of repositories or accounts in the code: select by
+- A value specific to the organization goes through an environment variable: `.env` locally, a secret of the
+  `github-pages` environment in CI (`ORG`, `REPO_CATEGORIES`, `BOT_USERS`…). Never a list of repositories or accounts in the code: select by
   criterion (repository type, account type) and put the exceptions in one of these variables.
-- In the workflow these values are **secrets**, not variables, so that the public logs mask them.
+- In the workflow these values are **secrets**, kept in the `github-pages` environment (only `main` can use it), so
+  that the public logs mask them and no workflow of another branch can read them.
+- Workflow logs are public: in CI, the sync prints no figure, name or GitHub response body. Counts, error details
+  and invalid configuration entries are only printed locally (`process.env.CI` unset). Keep it so for any new log.
 - The stats are only published encrypted (`site/data/stats.enc.json`): the sync refuses to run without
   `DASHBOARD_PASSWORD`. Never publish a clear version, never commit `site/data/`, `.cache/` or `.env`.
 - Commit messages and pull request descriptions describe the change and how it was checked, **without results
