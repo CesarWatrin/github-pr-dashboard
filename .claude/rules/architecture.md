@@ -21,7 +21,7 @@
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
    only when `generatedAt` changes, reloads itself when `build` changes. It decrypts with Web Crypto and keeps the
-   derived key (not the password) in `localStorage` for 24 hours. Every period stat is computed in the browser by
+   derived key (not the password) in `localStorage` for 7 days. Every period stat is computed in the browser by
    `site/period.js` from the records: presets (30 days, 90 days, 12 months, up to the last sync) or any whole Paris days
    within the window.
 

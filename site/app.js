@@ -24,7 +24,7 @@ const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
 const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
-const UNLOCK_DURATION_MS = 24 * 60 * 60_000
+const UNLOCK_DURATION_MS = 7 * 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const CUSTOM_PERIOD = 'custom'
 // Picked dates are shown by day up to a month, then by week up to four months, then by month.
@@ -2498,6 +2498,18 @@ function lock(message) {
   showLock(message)
 }
 
+// Browsers offer to save a password when a login navigates away. The page unlocks in place, so it hands the password
+// to the browser's password manager itself, once it is known to be right (Chrome and Edge only).
+function offerToSavePassword(form) {
+  if (!('PasswordCredential' in window)) {
+    return
+  }
+  const { username, password } = form.elements
+  navigator.credentials.store(new PasswordCredential({ id: username.value, password: password.value })).catch(() => {
+    // Refused or unavailable: the password is simply typed again next time.
+  })
+}
+
 async function unlock(form) {
   const button = form.querySelector('button')
   button.disabled = true
@@ -2512,6 +2524,7 @@ async function unlock(form) {
     }
     state.key = key
     state.keyExpiresAt = await storeKey(key)
+    offerToSavePassword(form)
     form.reset()
     if (reloadForNewBuild(stats.build)) {
       return
@@ -2547,7 +2560,7 @@ async function refresh() {
     return
   }
   if (Date.now() > state.keyExpiresAt) {
-    lock('L’accès dure un jour : saisis à nouveau le mot de passe.')
+    lock('L’accès dure sept jours : saisis à nouveau le mot de passe.')
 
     return
   }
