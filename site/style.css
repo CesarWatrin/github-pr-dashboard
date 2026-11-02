@@ -1455,6 +1455,7 @@ main.is-loading {
 
 .person-dialog-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   padding-right: 40px;
@@ -1496,10 +1497,32 @@ main.is-loading {
   font-size: 13px;
 }
 
-.person-dialog-link {
-  justify-self: start;
+/* The GitHub profile, at the bottom right of the head: below the close button, on the right edge of the content, over
+   the room the head keeps for that button. */
+.person-dialog-github {
+  display: inline-flex;
+  flex: none;
+  align-self: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-right: -40px;
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
   color: var(--text-secondary);
   font-size: 13px;
+  text-decoration: none;
+}
+
+.person-dialog-github:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.person-dialog-github svg {
+  fill: currentColor;
 }
 
 .person-dialog-scope {

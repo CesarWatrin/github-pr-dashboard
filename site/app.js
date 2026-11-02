@@ -1955,6 +1955,15 @@ function openPersonDialog(row, opener) {
   close.setAttribute('aria-label', 'Fermer')
   close.addEventListener('click', () => $('[data-person-dialog]').close())
   const heading = el('h2', { id: 'person-dialog-name' }, ...nameLines(name, row.login))
+  // The GitHub profile, at the right of the head, with the GitHub mark of the icon sprite.
+  const mark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, 'aria-hidden': 'true' })
+  mark.append(svg('use', { href: `${ICONS_URL}#github` }))
+  const github = el(
+    'a',
+    { className: 'person-dialog-github', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener' },
+    mark,
+    document.createTextNode('Profil GitHub'),
+  )
   const section = (title, ...children) => el('section', { className: 'person-dialog-section' }, el('h3', { textContent: title }), ...children)
 
   $('[data-person-dialog-card]').replaceChildren(
@@ -1973,8 +1982,8 @@ function openPersonDialog(row, opener) {
           className: 'person-dialog-meta',
           textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
         }),
-        el('a', { className: 'person-dialog-link', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener', textContent: 'Profil GitHub ↗' }),
       ),
+      github,
     ),
     el('p', {
       className: 'person-dialog-scope',
