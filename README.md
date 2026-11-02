@@ -50,8 +50,9 @@ pour un visiteur comme pour un robot.
 ### Bouton de synchro
 
 Le bouton ⟳ en haut de la page lance une synchro rapide (PR modifiées, environ 1 min) ou complète (les 12 mois,
-15 à 20 min, à garder exceptionnelle : les autres synchros attendent pendant ce temps), puis la page affiche les
-nouvelles données dès qu'elles sont publiées. Il n'apparaît que si le
+15 à 20 min, à garder exceptionnelle : les autres synchros attendent pendant ce temps). L'icône tourne les quelques
+secondes que GitHub met à accepter la demande, puis la page affiche les nouvelles données dès qu'elles sont
+publiées. Il n'apparaît que si le
 secret `DISPATCH_TOKEN` existe : un token fine-grained limité à ce repo, avec la seule permission _Actions_ en
 lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a le mot de passe peut s'en servir,
 pour lancer ou annuler des runs de ce workflow et rien d'autre.

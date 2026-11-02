@@ -567,6 +567,8 @@ const state = {
   previousRows: Object.fromEntries(
     ['authors', 'reviewers', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [name, new Map()]),
   ),
+  // The kind of sync the page is starting, until GitHub answers.
+  syncStarting: null,
   // The sync started from the page, until new data arrives.
   syncRequest: null,
   seenEvents: null,
@@ -2184,11 +2186,13 @@ function renderSyncStatus() {
   const { generatedAt } = state.stats
   const stale = Date.now() - Date.parse(generatedAt) > STALE_AFTER_MS
   status.classList.add(state.fetchFailed ? 'is-error' : stale ? 'is-stale' : 'is-live')
-  status.classList.toggle('is-syncing', state.syncRequest !== null)
+  status.classList.toggle('is-syncing', state.syncStarting !== null || state.syncRequest !== null)
   status.title = `Données générées le ${dateTimeFormat.format(new Date(generatedAt))}`
-  label.textContent = state.syncRequest
-    ? SYNC_KINDS[state.syncRequest.kind].label
-    : `${state.fetchFailed ? 'Hors ligne · ' : ''}Mis à jour ${formatRelative(generatedAt)}`
+  label.textContent = state.syncStarting
+    ? 'Lancement de la synchro…'
+    : state.syncRequest
+      ? SYNC_KINDS[state.syncRequest.kind].label
+      : `${state.fetchFailed ? 'Hors ligne · ' : ''}Mis à jour ${formatRelative(generatedAt)}`
 }
 
 // Sync started from the page, through the GitHub API with the token the encrypted stats carry.
@@ -2209,8 +2213,10 @@ function githubApi(path, options = {}) {
 function renderSyncMenu() {
   const menu = $('[data-sync-menu]')
   menu.hidden = !state.stats?.syncTrigger
+  menu.classList.toggle('is-starting', state.syncStarting !== null)
   for (const button of menu.querySelectorAll('[data-sync-kind]')) {
-    button.disabled = state.syncRequest !== null
+    button.disabled = state.syncStarting !== null || state.syncRequest !== null
+    button.classList.toggle('is-starting', button.dataset.syncKind === state.syncStarting)
   }
 }
 
@@ -2220,6 +2226,11 @@ async function startSync(kind) {
   const menu = $('[data-sync-menu]')
   const error = $('[data-sync-error]')
   error.hidden = true
+  // Reading the recent runs then starting one takes a few seconds: the menu and the status show it meanwhile, and
+  // the buttons wait.
+  state.syncStarting = kind
+  renderSyncMenu()
+  renderSyncStatus()
   try {
     const runs = await githubApi(`/actions/workflows/${workflow}/runs?per_page=5`)
     if (!runs.ok) {
@@ -2243,6 +2254,7 @@ async function startSync(kind) {
     error.hidden = false
     menu.open = true
   }
+  state.syncStarting = null
   renderSyncMenu()
   renderSyncStatus()
 }

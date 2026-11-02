@@ -230,9 +230,14 @@ code {
     margin: 0 0 0 auto;
   }
 
+  /* On a narrow bar the icons may wrap to the left: the menu hangs from the bar's right edge so that it always fits. */
+  .sidebar .sync-menu {
+    position: static;
+  }
+
   .sidebar .sync-menu-panel {
     top: calc(100% + 6px);
-    right: 0;
+    right: 16px;
     bottom: auto;
     left: auto;
   }
@@ -462,6 +467,29 @@ h3 {
 .sync-menu-panel button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* While the page starts a sync, the chosen entry and the menu icon turn: one click is enough. */
+.sync-menu-panel button.is-starting {
+  opacity: 1;
+  cursor: progress;
+}
+
+.sync-menu-panel button.is-starting strong::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: spin 0.8s linear infinite;
+}
+
+.sync-menu.is-starting summary svg {
+  animation: spin 0.8s linear infinite;
 }
 
 .sync-menu-panel span {
@@ -1694,6 +1722,12 @@ tbody td.person {
 @keyframes grow-up {
   from {
     transform: scaleY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
