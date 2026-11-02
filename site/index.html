@@ -220,6 +220,8 @@
               <h2 id="totals-title" data-totals-title>Sur la période</h2>
               <h3 class="tile-group">Livraison</h3>
               <div class="tiles" data-totals-delivery></div>
+              <h3 class="tile-group">Lignes de code</h3>
+              <div class="tiles" data-totals-lines></div>
               <h3 class="tile-group">Revue</h3>
               <div class="tiles" data-totals-review></div>
             </section>
@@ -243,7 +245,13 @@
             </div>
 
             <section class="card" aria-labelledby="technologies-title">
-              <h2 id="technologies-title">Technologies</h2>
+              <div class="card-toolbar">
+                <h2 id="technologies-title">Technologies</h2>
+                <div class="segmented" role="radiogroup" aria-label="Mesure des technologies" data-technology-measures>
+                  <button type="button" role="radio" data-technology-measure="prs">PR de code</button>
+                  <button type="button" role="radio" data-technology-measure="added">Lignes ajoutées</button>
+                </div>
+              </div>
               <p class="card-sub" data-technologies-sub></p>
               <div class="bar-chart" data-technologies-chart></div>
             </section>
@@ -682,6 +690,15 @@
                   comptent comme ouvrés. Seules les durées des exécutions de CI restent en temps réel. Taille : lignes
                   ajoutées plus supprimées.
                 </dd>
+                <dt>Lignes ajoutées et supprimées</dt>
+                <dd>
+                  Total des lignes des PR de code ouvertes sur la période et mergées, comptées comme GitHub : une ligne
+                  modifiée compte une fois supprimée et une fois ajoutée. Les PR de release et de synchronisation de
+                  branches n’y comptent pas, pour ne pas compter deux fois les mêmes lignes, ni celles des bots. Tous les
+                  fichiers comptent, fichiers générés et verrous de dépendances (<code>package-lock.json</code>,
+                  <code>composer.lock</code>…) compris : un gros chiffre peut en venir. Ils sont arrondis (12 k, 1,2 M),
+                  sauf dans le Bilan du mois.
+                </dd>
                 <dt>Type de dépôt</dt>
                 <dd>
                   Déduit des langages détectés par GitHub : Vue donne front ; PHP, Go, Rust donnent back ; Dart (Flutter)
@@ -700,7 +717,7 @@
                   (<code>composer.json</code>, <code>package.json</code>, <code>pubspec.yaml</code>) : PHP et Blade sous
                   Laravel, Vue et TypeScript sous Nuxt, Dart sous Flutter, TypeScript sous NestJS… Chaque PR de code est
                   répartie entre les technologies de son dépôt, au prorata de leur part dans le code (moins de 2 % :
-                  ignorée). Logos : Simple Icons.
+                  ignorée), tout comme, au choix, les lignes ajoutées par les PR de code mergées. Logos : Simple Icons.
                 </dd>
                 <dt>Cycle de vie</dt>
                 <dd>

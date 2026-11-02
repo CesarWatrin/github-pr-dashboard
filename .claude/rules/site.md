@@ -53,6 +53,11 @@ paths:
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
   `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
   by two, the forgotten pull requests beside those merged without approval.
+- **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
+  requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
+  `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added
+  over deleted), sorted on the lines added. The technologies chart weighs, at the viewer's choice
+  (`TECHNOLOGY_MEASURES`), the code pull requests or these lines added.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
   and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the

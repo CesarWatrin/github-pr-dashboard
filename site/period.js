@@ -5,9 +5,10 @@
 // { repo, number, author, bot, kind, hotfix, production, createdAt, mergedAt, closed, lines, mergedBy, interventions }
 // with interventions as [login, at, state, comments], oldest first, bots and the author left out. Optional fields:
 // deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
-// checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update), draft (still open as one) and
+// checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update), draft (still open as one),
 // codeOwners (the code owners still asked to review it while GitHub does not let it merge: logins, teams as @slug, null
-// for one the sync could not read).
+// for one the sync could not read) and deleted (the lines a merged code pull request deletes, among its lines: the
+// others are added).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -218,6 +219,8 @@ export function computePeriod(records, { start, end, bucket }) {
       timesToMerge: [],
       timesToFirstReview: [],
       sizes: [],
+      added: 0,
+      deleted: 0,
     }))
   const reviewer = (login, repo) =>
     getOrCreate(getOrCreate(reviewers, login, () => new Map()), repo, () => ({
@@ -372,6 +375,8 @@ export function computePeriod(records, { start, end, bucket }) {
         stats.merged++
         stats.timesToMerge.push(timeToMerge)
         stats.sizes.push(pr.lines)
+        stats.added += pr.lines - (pr.deleted ?? 0)
+        stats.deleted += pr.deleted ?? 0
         if (pr.interventions.length === 0) {
           stats.unreviewed++
         }
@@ -441,6 +446,9 @@ export function computePeriod(records, { start, end, bucket }) {
       opened: sum(authorStats, 'opened'),
       merged,
       medianTimeToMergeHours: round(median(authorStats.flatMap((stats) => stats.timesToMerge)), 1),
+      medianSize: round(median(authorStats.flatMap((stats) => stats.sizes))),
+      added: sum(authorStats, 'added'),
+      deleted: sum(authorStats, 'deleted'),
       releases,
       hotfixShare: code ? round(sum(authorStats, 'hotfix') / code, 3) : null,
       unreviewedShare: merged ? round(sum(authorStats, 'unreviewed') / merged, 3) : null,
@@ -467,6 +475,8 @@ export function computePeriod(records, { start, end, bucket }) {
             timesToFirstReviewHours: stats.timesToFirstReview.map((hours) => round(hours, 1)),
             timesToMergeHours: stats.timesToMerge.map((hours) => round(hours, 1)),
             sizes: stats.sizes,
+            added: stats.added,
+            deleted: stats.deleted,
           },
         ]),
       ),

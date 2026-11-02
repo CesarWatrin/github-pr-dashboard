@@ -198,6 +198,13 @@ describe('toPeriodRecord', () => {
     assert.deepEqual(record.interventions, [['bob', minutes('2026-03-02T10:00:00Z'), 'COMMENTED', 1]])
   })
 
+  test('a merged code pull request of a person tells the lines it deletes, among its lines', () => {
+    assert.equal(recordOf('feature').deleted, 5)
+    // Still open, or a release: nothing the stats add up.
+    assert.equal(recordOf('failedChecks').deleted, undefined)
+    assert.equal(recordOf('release').deleted, undefined)
+  })
+
   test('merged into develop, it reaches production with the next deployment', () => {
     assert.equal(recordOf('feature').deployedAt, minutes('2026-03-04T12:00:00Z'))
   })
