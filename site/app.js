@@ -74,6 +74,7 @@ const ROUTES = {
   overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
+  cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
   awards: { hash: '#/palmares', title: 'Palmarès', subtitle: 'Les badges de l’équipe, mois après mois, depuis la première synchro', filters: false },
@@ -212,6 +213,38 @@ const DEPENDENCY_TILES = [
   { key: 'closed', label: 'Fermées sans merge' },
   { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
   { key: 'waiting', label: 'En attente aujourd’hui' },
+]
+
+// The stages of a code pull request, in order, as cut by the period stats: the neutral color for the one that no
+// longer depends on the review.
+const CYCLE_STAGES = [
+  {
+    key: 'pickup',
+    label: 'Prise en charge',
+    color: 'var(--series-1)',
+    hint: 'Médiane, de l’ouverture à la première review ou au premier commentaire d’une autre personne.',
+  },
+  {
+    key: 'review',
+    label: 'Relecture',
+    color: 'var(--series-2)',
+    hint: 'Médiane, de cette première intervention à la dernière approbation avant le merge, ou au merge sans approbation.',
+  },
+  { key: 'merge', label: 'Merge', color: 'var(--series-3)', hint: 'Médiane, de la dernière approbation au merge.' },
+  {
+    key: 'deploy',
+    label: 'Mise en prod',
+    color: 'var(--text-muted)',
+    hint: 'Médiane, du merge à l’arrivée en prod, avec le déploiement suivant du dépôt.',
+  },
+]
+const CYCLE_KEYS = [...CYCLE_STAGES.map((stage) => stage.key), 'toMerge', 'toProduction']
+
+const CYCLE_STAGE_TILES = CYCLE_STAGES.map(({ key, label }) => ({ key, label, format: formatDuration }))
+const CYCLE_END_TO_END_TILES = [
+  { key: 'toMerge', label: 'De l’ouverture au merge', format: formatDuration },
+  { key: 'toProduction', label: 'De l’ouverture à la prod', format: formatDuration },
+  { key: 'prs', label: 'PR de code ouvertes' },
 ]
 
 const TMA_TILES = [
@@ -484,6 +517,18 @@ const REPO_COLUMNS = [
   { key: 'reviewed', label: 'PR relues', hint: 'PR du dépôt avec une review ou un commentaire sur la période.' },
 ]
 
+const CYCLE_COLUMNS = [
+  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'prs', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  ...CYCLE_STAGES.map(({ key, label, hint }) => ({ key, label, format: (row) => formatDuration(row[key]), hint })),
+  {
+    key: 'toProduction',
+    label: 'Jusqu’en prod',
+    format: (row) => formatDuration(row.toProduction),
+    hint: 'Médiane, de l’ouverture à l’arrivée en prod, pour les PR ouvertes sur la période.',
+  },
+]
+
 const TMA_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
   {
@@ -719,10 +764,11 @@ const state = {
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, collaboration: null, team: null },
+  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
+    cycle: { key: 'prs', direction: -1 },
     // Sorted on the pairs rather than on the people: the most frozen pairs first.
     collaboration: { key: 'topReviewerShare', direction: -1 },
     tma: { key: 'hotfixes', direction: -1 },
@@ -732,7 +778,7 @@ const state = {
     dependencies: { key: 'opened', direction: -1 },
   },
   previousRows: Object.fromEntries(
-    ['authors', 'reviewers', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [
+    ['authors', 'reviewers', 'cycle', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [
       name,
       new Map(),
     ]),
@@ -1088,6 +1134,9 @@ function columnPath(x, y, width, height) {
   ].join(' ')
 }
 
+// A part of a stacked bar, square on every side.
+const squarePath = (x, y, width, height) => `M${x},${y} H${x + width} V${y + height} H${x} Z`
+
 function barPath(x, y, width, height) {
   const radius = Math.min(4, height / 2, width)
 
@@ -1127,13 +1176,15 @@ function bucketTitle(key, bucket) {
 }
 
 // Columns over time buckets: one series, or several grouped side by side.
-function columnChart(container, { points, bucket, series, ariaLabel, decimals = false, extraRows = () => [] }) {
+function columnChart(
+  container,
+  { points, bucket, series, ariaLabel, decimals = false, format = decimals ? formatDecimal : formatNumber, extraRows = () => [] },
+) {
   const width = container.clientWidth
   if (width === 0) {
     return
   }
   const height = container.clientHeight
-  const format = decimals ? formatDecimal : formatNumber
   const margin = { top: 22, right: 4, bottom: 26, left: 8 }
   const values = points.flatMap((point) => series.map((item) => item.value(point) ?? 0))
   const maxValue = Math.max(0, ...values)
@@ -1282,6 +1333,81 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
       (x, pointerY) => {
         group.classList.add('is-active')
         showTooltip(tooltip(row), x, pointerY)
+      },
+      () => {
+        group.classList.remove('is-active')
+        hideTooltip()
+      },
+    )
+    root.append(group, hit)
+  })
+
+  container.replaceChildren(root)
+}
+
+// Bars cut into the stages of the cycle, one row per group of pull requests: each stage takes its share of their
+// time, written inside when it fits. rows are { label, shares, timed, ...medians }, shares null without any timed pull
+// request.
+function shareChart(container, { rows, ariaLabel }) {
+  const width = container.clientWidth
+  if (width === 0) {
+    return
+  }
+  const shown = rows.filter((row) => row.shares)
+  if (shown.length === 0) {
+    container.replaceChildren(el('p', { className: 'chart-empty', textContent: 'Aucune donnée sur la période' }))
+
+    return
+  }
+  const rowHeight = 32
+  const height = shown.length * rowHeight
+  const labelMax = width * 0.4
+  const labelWidth = Math.min(labelMax, Math.max(...shown.map((row) => measureText(row.label))))
+  const start = labelWidth + 10
+  const barWidth = Math.max(20, width - start)
+
+  const root = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel })
+  shown.forEach((row, index) => {
+    const y = index * rowHeight
+    const group = svg('g', { class: 'bar-group' })
+    group.style.setProperty('--delay', `${Math.round((index / shown.length) * STAGGER_SPREAD_MS)}ms`)
+    const name = svg('text', { class: 'axis-label', x: labelWidth, y: y + rowHeight / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
+    name.textContent = truncateText(row.label, labelMax)
+    group.append(name)
+    const stages = CYCLE_STAGES.filter((stage) => row.shares[stage.key] > 0)
+    let x = start
+    stages.forEach((stage, stageIndex) => {
+      const stageWidth = row.shares[stage.key] * barWidth
+      const last = stageIndex === stages.length - 1
+      const path = last ? barPath(x, y + 6, stageWidth, rowHeight - 12) : squarePath(x, y + 6, stageWidth, rowHeight - 12)
+      group.append(svg('path', { class: 'bar', style: `fill: ${stage.color}`, d: path }))
+      const text = formatShare(row.shares[stage.key])
+      if (measureText(text) + 12 <= stageWidth) {
+        const label = svg('text', { class: 'stage-label', x: x + stageWidth / 2, y: y + rowHeight / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central' })
+        label.textContent = text
+        group.append(label)
+      }
+      x += stageWidth
+    })
+
+    const content = {
+      title: row.label,
+      rows: [
+        ...CYCLE_STAGES.map((stage) => ({
+          color: stage.color,
+          value: formatShare(row.shares[stage.key]),
+          label: `${stage.label.toLowerCase()}, médiane ${formatDuration(row[stage.key])}`,
+        })),
+        { label: 'PR relues arrivées en prod', value: formatNumber(row.timed) },
+      ],
+    }
+    const text = CYCLE_STAGES.map((stage) => `${stage.label.toLowerCase()} ${formatShare(row.shares[stage.key])}`).join(', ')
+    const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': `${row.label} : ${text}` })
+    bindTooltip(
+      hit,
+      (pointerX, pointerY) => {
+        group.classList.add('is-active')
+        showTooltip(content, pointerX, pointerY)
       },
       () => {
         group.classList.remove('is-active')
@@ -1567,6 +1693,118 @@ function renderDevopsCharts() {
       ],
     }),
   })
+}
+
+// Cycle page
+
+// The code pull requests of the period, on the repositories selected on the cycle page.
+const selectedCycles = () => currentPeriod().cycles.filter((cycle) => inSelection(state.repos.cycle, cycle.repo))
+
+// How many pull requests, the median of each stage over those that went through it, and the share of each stage in
+// the time of the reviewed ones that reached production (timed): on average, each one weighing the same however long
+// it took. Their stages follow one another from the opening to production, an approval aside.
+function cycleSummary(cycles) {
+  const timed = cycles.flatMap((cycle) => {
+    const total = CYCLE_STAGES.reduce((sum, stage) => sum + (cycle[stage.key] ?? 0), 0)
+
+    return cycle.pickup !== null && cycle.deploy !== null && total > 0 ? [{ cycle, total }] : []
+  })
+
+  return {
+    prs: cycles.length,
+    ...Object.fromEntries(CYCLE_KEYS.map((key) => [key, median(cycles.map((cycle) => cycle[key]).filter((hours) => hours !== null))])),
+    timed: timed.length,
+    shares: timed.length
+      ? Object.fromEntries(
+          CYCLE_STAGES.map(({ key }) => [key, timed.reduce((sum, { cycle, total }) => sum + (cycle[key] ?? 0) / total, 0) / timed.length]),
+        )
+      : null,
+  }
+}
+
+function groupCycles(cycles, keyOf) {
+  const groups = new Map()
+  for (const cycle of cycles) {
+    const key = keyOf(cycle)
+    if (!groups.has(key)) {
+      groups.set(key, [])
+    }
+    groups.get(key).push(cycle)
+  }
+
+  return groups
+}
+
+function cycleRows() {
+  return [...groupCycles(selectedCycles(), (cycle) => cycle.repo)].map(([repo, cycles]) => ({
+    repo,
+    category: repoInfo(repo).category,
+    ...cycleSummary(cycles),
+  }))
+}
+
+function renderCycleTiles(mode) {
+  const summary = cycleSummary(selectedCycles())
+  $('[data-cycle-title]').textContent = capitalize(periodTitle())
+  renderTiles($('[data-cycle-stage-tiles]'), CYCLE_STAGE_TILES, summary, mode)
+  renderTiles($('[data-cycle-end-tiles]'), CYCLE_END_TO_END_TILES, summary, mode)
+}
+
+function renderCycleCharts() {
+  const cycles = selectedCycles()
+  const byType = groupCycles(cycles, (cycle) => repoInfo(cycle.repo).category)
+  shareChart($('[data-cycle-types]'), {
+    rows: [
+      { label: 'Tous les dépôts', ...cycleSummary(cycles) },
+      ...CATEGORIES.filter((category) => byType.has(category.key)).map((category) => ({
+        label: category.label,
+        ...cycleSummary(byType.get(category.key)),
+      })),
+    ],
+    ariaLabel: 'Part de chaque étape dans le temps des PR, par type de dépôt',
+  })
+  const bySize = groupCycles(cycles, (cycle) => cycle.size)
+  shareChart($('[data-cycle-sizes]'), {
+    rows: SIZE_LABELS.flatMap((label, index) => (bySize.has(index) ? [{ label: `${label} lignes`, ...cycleSummary(bySize.get(index)) }] : [])),
+    ariaLabel: 'Part de chaque étape dans le temps des PR, selon leur taille',
+  })
+
+  const { series, bucket } = currentPeriod()
+  const byBucket = groupCycles(cycles, (cycle) => cycle.bucket)
+  const points = series.map(({ key, partial }) => ({ key, partial, ...cycleSummary(byBucket.get(key) ?? []) }))
+  $('[data-cycle-charts-title]').textContent = `Médiane de chaque étape ${BUCKET_TITLES[bucket]}`
+  for (const stage of CYCLE_STAGES) {
+    // Long stages read in days, short ones in hours.
+    const hoursPerUnit = Math.max(0, ...points.map((point) => point[stage.key] ?? 0)) > 48 ? 24 : 1
+    $(`[data-cycle-chart-title="${stage.key}"]`).textContent = `${stage.label}, en ${hoursPerUnit === 24 ? 'jours' : 'heures'}`
+    columnChart($(`[data-cycle-chart="${stage.key}"]`), {
+      points,
+      bucket,
+      decimals: true,
+      format: (value) => formatDuration(value === null ? null : value * hoursPerUnit),
+      series: [
+        {
+          label: 'médiane',
+          color: stage.color,
+          value: (point) => (point[stage.key] === null ? null : point[stage.key] / hoursPerUnit),
+        },
+      ],
+      ariaLabel: `${stage.label}, médiane ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+      extraRows: (point) => [{ label: 'PR de code ouvertes', value: formatNumber(point.prs) }],
+    })
+  }
+  dataTable(
+    $('[data-cycle-chart-table]'),
+    ['Période', 'PR de code', ...CYCLE_STAGES.map((stage) => stage.label), 'Jusqu’en prod'],
+    points
+      .toReversed()
+      .map((point) => [
+        bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : ''),
+        formatNumber(point.prs),
+        ...CYCLE_STAGES.map((stage) => formatDuration(point[stage.key])),
+        formatDuration(point.toProduction),
+      ]),
+  )
 }
 
 // Collaboration page
@@ -2415,6 +2653,7 @@ function renderCharts() {
   renderTechnologiesChart()
   renderTmaCharts()
   renderDevopsCharts()
+  renderCycleCharts()
   renderCollaboration()
   if (state.person) {
     renderMiniCharts()
@@ -2674,6 +2913,20 @@ const TABLES = {
     // Counted once per pull request, however many people reviewed it.
     repoCounts: () => new Map(currentPeriod().repositories.map((row) => [row.repo, row.prs])),
     repoCountsLabel: 'PR relues sur la période',
+  },
+  cycle: {
+    columns: CYCLE_COLUMNS,
+    rows: cycleRows,
+    rowKey: (row) => row.repo,
+    searchTexts: (row) => [row.repo],
+    // The filter lists the repositories of the authors, and applies to the whole page.
+    source: 'authors',
+    repoCounts: () => TABLES.collaboration.repoCounts(),
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+    onFilter: () => {
+      renderCycleTiles('enter')
+      renderCycleCharts()
+    },
   },
   collaboration: {
     columns: COLLABORATION_COLUMNS,
@@ -3568,6 +3821,7 @@ function render(animate) {
   const tileMode = animate ? 'update' : 'enter'
   renderToday(tileMode)
   renderTotals(tileMode)
+  renderCycleTiles(tileMode)
   renderTmaTiles(tileMode)
   renderDevopsTiles(tileMode)
   renderPersonPicker()
@@ -3939,6 +4193,7 @@ renderRoute()
 renderPeriodSelector()
 renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)
 renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
+renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
 renderStackLegends()
 renderTableLegends()
 setInterval(refresh, POLL_INTERVAL_MS)

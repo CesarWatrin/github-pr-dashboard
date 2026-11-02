@@ -22,6 +22,10 @@ la recherche s'appliquent à toutes :
   la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) ; l'effet de la
   taille des PR sur le délai de merge et la profondeur de review.
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
+- **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
+  première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
+  la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
+  dépôt, avec un filtre de dépôts pour toute la page.
 - **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
@@ -55,8 +59,8 @@ la recherche s'appliquent à toutes :
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/equipe`, `#/palmares`, `#/tma`,
-`#/devops`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`, `#/palmares`,
+`#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
