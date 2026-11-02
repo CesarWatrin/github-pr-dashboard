@@ -54,7 +54,7 @@ paths:
   dialog. In the dialog it opens below the medals, clear of the close button.
   - The awards page (`renderAwards()`) shows the leaders of the last whole month and of the current one so far, the
     holders of each badge still in the team, and the leaders of every month of the history. A leader who left shows as
-    « une personne partie », never by name.
+    « une personne partie », but in the leaders of every month, a record of the history, where they show by name.
 - **Names of people**: always `personLink(login)` (with or without the avatar), never a GitHub link. Wherever it
   shows, a table, a feed, the pairs, the former people or the dialog itself, it opens the person's dialog
   (`openPersonOf()`); the dialog links to the GitHub profile. A person without any figure over the period opens their
@@ -63,7 +63,7 @@ paths:
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
   waiting pull requests, and the review networks through `withoutFormer()`. They only show in the former people of the
-  team page. Totals, charts and repository figures still count their pull requests.
+  team page, and among the leaders of every month of the awards page. Totals, charts and repository figures still count their pull requests.
   - In the dialog, the head comes forward as the card leans: anything clickable at its level, such as the close
     button, must come further forward still, or the head takes its clicks.
   - Each figure of the dialog shows the median of the person's peers (`statList()` given their details): the people

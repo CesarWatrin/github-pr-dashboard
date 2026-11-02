@@ -2080,8 +2080,9 @@ function renderTeam() {
 
 const amountOf = (value, [one, many]) => `${formatNumber(value)} ${value > 1 ? many : one}`
 
-// The people who led a badge over a month, and how much: someone who left the team shows without a name, as everywhere.
-function leadersLine(leader, badge) {
+// The people who led a badge over a month, and how much. Someone who left the team shows without a name, as everywhere,
+// but in the record of every month (withFormer), where their name opens their dialog, as among the former people.
+function leadersLine(leader, badge, { withFormer = false } = {}) {
   if (!leader) {
     return el('span', { className: 'muted', textContent: 'Personne' })
   }
@@ -2089,7 +2090,9 @@ function leadersLine(leader, badge) {
   return el(
     'span',
     { className: 'award-leaders' },
-    ...leader.people.map((login) => (isCurrent(login) ? personLink(login) : el('span', { className: 'award-former', textContent: 'une personne partie' }))),
+    ...leader.people.map((login) =>
+      withFormer || isCurrent(login) ? personLink(login) : el('span', { className: 'award-former', textContent: 'une personne partie' }),
+    ),
     el('span', { className: 'award-value', textContent: amountOf(leader.value, badge.units) }),
   )
 }
@@ -2217,9 +2220,11 @@ function renderAwardMonths({ history, leaders }) {
             'tr',
             {},
             el('th', { scope: 'row', className: 'text', textContent: capitalize(monthName(month)) }),
-            ...BADGES.map((badge) =>
-              el('td', { className: 'text' }, leadersLine(leaders.get(badge.key).find((leader) => leader.month === month), badge)),
-            ),
+            ...BADGES.map((badge) => {
+              const leader = leaders.get(badge.key).find((other) => other.month === month)
+
+              return el('td', { className: 'text' }, leadersLine(leader, badge, { withFormer: true }))
+            }),
           ),
         ),
       ),
