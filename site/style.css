@@ -1496,7 +1496,8 @@ main.is-loading {
   line-height: 17px;
 }
 
-/* What a badge means, over it on hover or focus, at once: its name and tier, then what won it. */
+/* What a badge means, over it on hover or focus, at once, like the tooltips of the charts: its name and tier, then
+   what won it. */
 .badge-tip {
   position: absolute;
   z-index: 2;
@@ -1507,26 +1508,17 @@ main.is-loading {
   width: max-content;
   max-width: 250px;
   padding: 10px 12px;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--text-primary);
-  color: var(--surface);
+  background: var(--surface);
+  color: var(--text-primary);
   font-size: 12px;
   line-height: 1.45;
   text-align: left;
   white-space: normal;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow);
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%);
-}
-
-.badge-tip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  border: 6px solid transparent;
-  border-top-color: var(--text-primary);
   transform: translateX(-50%);
 }
 
@@ -1542,16 +1534,6 @@ main.is-loading {
   right: -6px;
   bottom: auto;
   left: auto;
-  transform: none;
-}
-
-.person-dialog-badges .badge-tip::after {
-  top: auto;
-  right: calc(var(--size) / 2 - 6px + 6px);
-  bottom: 100%;
-  left: auto;
-  border-top-color: transparent;
-  border-bottom-color: var(--text-primary);
   transform: none;
 }
 
@@ -1575,7 +1557,7 @@ main.is-loading {
 }
 
 .badge-tip-text {
-  opacity: 0.8;
+  color: var(--text-secondary);
 }
 
 /* A person's details: a larger card in a dialog. It leans towards the pointer, its layers come apart and it catches
