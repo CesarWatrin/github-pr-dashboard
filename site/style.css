@@ -1507,7 +1507,8 @@ main.is-loading {
   font-weight: 600;
 }
 
-/* The month stays visible while the table scrolls sideways: its cell is opaque, so it takes the row's hover too. */
+/* The month stays visible while the table scrolls sideways: its cell is opaque, so it takes the row's hover too, and
+   its transition. */
 .awards-table tbody tr:hover th {
   background: var(--surface-hover);
 }
@@ -2632,7 +2633,8 @@ th button,
 .button-secondary,
 .lock-submit,
 tbody tr,
-tbody td.person {
+tbody td.person,
+tbody th {
   transition:
     background-color 160ms ease,
     color 160ms ease,
