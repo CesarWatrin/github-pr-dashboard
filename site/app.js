@@ -410,19 +410,17 @@ const PERSON_REVIEWED = [
   },
 ]
 
+// Only in the dialog, but explained in the legend under the cards, "Les chiffres des cartes".
+const DEPENDENCY_STAT = {
+  label: 'Dépendance au relecteur principal',
+  value: ({ network }) => network?.topReviewerShare,
+  format: formatShare,
+  hint: 'Dans la fiche d’une personne : part de ses PR relues sur lesquelles intervient son relecteur principal, la personne qui relit le plus son code. Proche de 100 % : son code ne circule qu’entre deux personnes.',
+}
+
 const PERSON_CIRCULATION = [
   { label: 'Relecteurs distincts', value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
-  {
-    label: 'Dépendance au relecteur principal',
-    value: ({ network }) => network?.topReviewerShare,
-    format: formatShare,
-    // Spelled out under the figure, with the name of that reviewer: the label alone does not say what it measures.
-    wide: true,
-    note: ({ network }) =>
-      network?.topReviewer
-        ? `Part de ses PR relues sur lesquelles intervient ${displayName(network.topReviewer)}, son relecteur principal. Proche de 100 % : son code ne circule qu’entre deux personnes.`
-        : null,
-  },
+  DEPENDENCY_STAT,
 ]
 // People and repositories listed in the dialog, the busiest first.
 const PERSON_TOP = 3
@@ -1773,23 +1771,19 @@ function stackLine(stack) {
   )
 }
 
-// Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint,
-// and optionally a note written under the figure, on a wider cell.
+// Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint.
 function statList(definitions, source) {
   return el(
     'dl',
     { className: 'person-stats' },
-    ...definitions.map((stat) => {
-      const note = stat.note?.(source)
-
-      return el(
+    ...definitions.map((stat) =>
+      el(
         'div',
-        { className: stat.wide ? 'is-wide' : '' },
+        {},
         el('dt', { textContent: stat.label, title: stat.hint ?? '' }),
         el('dd', { textContent: (stat.format ?? formatNumber)(stat.value ? stat.value(source) : source[stat.key]) }),
-        ...(note ? [el('p', { className: 'person-stats-note', textContent: note })] : []),
-      )
-    }),
+      ),
+    ),
   )
 }
 
@@ -1999,7 +1993,7 @@ function renderTableLegends() {
   for (const [name, table] of Object.entries(TABLES)) {
     $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
-  $('[data-table-legend="team"]').replaceChildren(...legend(TEAM_STATS))
+  $('[data-table-legend="team"]').replaceChildren(...legend([...TEAM_STATS, DEPENDENCY_STAT]))
 }
 
 function renderStackLegends() {
