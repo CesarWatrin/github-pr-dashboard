@@ -2591,8 +2591,9 @@ function ciPerRepository() {
   return new Map([...workflows].map(([repo, list]) => [repo, computeCi(list, range).totals]))
 }
 
-// The repositories of the period with their figures, the people who wrote and reviewed them, the most first, people who
-// left included: their code is still there. The bus factor only counts those still in the team. The figures count everyone, people who left included, as the other figures of
+// The repositories of the period with their figures, the people who wrote them, the most first, people who left
+// included for the repositories that rest on them, those still in the team who reviewed them, and their bus factor, over
+// the people still in the team. The figures count everyone, people who left included, as the other figures of
 // repositories do. By default, those with code pull requests on the repositories selected on their page, for the cards;
 // with all, every repository with anything over the period, for their dialogs.
 function repositoryRows({ all = false } = {}) {
@@ -2672,8 +2673,8 @@ function repositoryRows({ all = false } = {}) {
         ciFailureRate: runs?.failureRate ?? null,
         ciRerunRate: runs?.rerunRate ?? null,
         writers,
-        readers: busiest(totals.readers),
-        busFactor: busFactor(writers.filter(([login]) => isCurrent(login)).map(([, code]) => code), totals.code),
+        readers: busiest(totals.readers).filter(inTeam),
+        busFactor: busFactor(writers.filter(inTeam).map(([, code]) => code), totals.code),
       }
     })
     .sort((a, b) => b.code - a.code || a.repo.localeCompare(b.repo))
@@ -2699,11 +2700,14 @@ function openRepoOf(repo, opener) {
   }
 }
 
+// Of [login, count] pairs, those of the people still in the team.
+const inTeam = ([login]) => isCurrent(login)
+
 // The share of a repository's code pull requests written by some of its writers.
 const writtenShare = (row, writers) => writers.reduce((total, [, code]) => total + code, 0) / row.code
 
-// The mark of someone who left the team, next to their name where they still show: as an author of a repository, whose
-// code is still there.
+// The mark of someone who left the team, next to their name in the repositories that rest on a single person: when its
+// authors left, the one who wrote the most still shows there, their code is still there.
 function formerMark(login) {
   return isFormer(login) ? [el('span', { className: 'former-tag is-small', textContent: 'hors équipe', title: 'Ne fait plus partie de l’équipe' })] : []
 }
@@ -2735,7 +2739,7 @@ function technologyLogos(technologies) {
 }
 
 function repositoryCard(row, index) {
-  const writers = row.writers.slice(0, REPOSITORY_TOP_AUTHORS)
+  const writers = row.writers.filter(inTeam).slice(0, REPOSITORY_TOP_AUTHORS)
   const people = writers.length
     ? el(
         'ul',
@@ -2744,7 +2748,7 @@ function repositoryCard(row, index) {
           el(
             'li',
             {},
-            el('span', { className: 'repo-card-person' }, personLink(login), ...formerMark(login)),
+            personLink(login),
             el('span', {
               className: 'repo-card-share',
               textContent: formatShare(code / row.code),
@@ -2753,7 +2757,7 @@ function repositoryCard(row, index) {
           ),
         ),
       )
-    : el('p', { className: 'muted', textContent: '–' })
+    : el('p', { className: 'muted', textContent: 'Plus personne de l’équipe' })
   // The whole card opens the repository's dialog: the button of its head stretches over it, under the people.
   const open = el(
     'button',
@@ -2791,7 +2795,7 @@ function renderFragile(rows) {
   // The person it rests on: the one of the team who wrote the most, or, when its authors left, the one who wrote the most.
   $('[data-repositories-fragile]').replaceChildren(
     ...fragile.map((row) => {
-      const team = row.writers.filter(([login]) => isCurrent(login))
+      const team = row.writers.filter(inTeam)
       const [login, code] = row.busFactor === 1 ? team[0] : row.writers[0]
       const share = `${formatShare(code / row.code)} des ${formatNumber(row.code)} PR de code`
 
@@ -2835,7 +2839,7 @@ function topList(title, items, withAvatar) {
             'li',
             {},
             // A person or a repository opens its own dialog in place of this one.
-            ...(withAvatar ? [personLink(key), ...formerMark(key)] : [repoLink(key, 'repo-link person-dialog-list-name')]),
+            withAvatar ? personLink(key) : repoLink(key, 'repo-link person-dialog-list-name'),
             el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
           ),
         ),
@@ -3018,7 +3022,7 @@ function openRepoDialog(row, opener) {
         el(
           'div',
           { className: 'person-dialog-columns is-pair' },
-          topList('Ses auteurs', row.writers.slice(0, PERSON_TOP), true),
+          topList('Ses auteurs', row.writers.filter(inTeam).slice(0, PERSON_TOP), true),
           topList('Ses relecteurs', row.readers.slice(0, PERSON_TOP), true),
         ),
       ),
