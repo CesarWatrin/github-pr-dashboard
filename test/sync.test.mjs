@@ -1,18 +1,39 @@
 // Tests of the rules of the sync, on pull requests shaped like the snapshot's. Every repository, person and figure
 // here is made up.
 import assert from 'node:assert/strict'
-import { describe, test } from 'node:test'
+import { createCipheriv, createHash, pbkdf2Sync, randomBytes } from 'node:crypto'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { after, describe, test } from 'node:test'
+import { gzipSync } from 'node:zlib'
 
-// The sync reads its configuration when loaded: a made-up one, set before importing it.
+// The sync reads its configuration when loaded: a made-up one, set before importing it. Its published stats go to a
+// temporary folder, and no address of a deployed page is known: the tests never reach the network.
+const statsFolder = await mkdtemp(join(tmpdir(), 'sync-test-'))
 process.env.ORG = 'example-org'
 process.env.DASHBOARD_PASSWORD = 'test-password'
 process.env.GITHUB_TOKEN = 'test-token'
 process.env.BOT_USERS = 'robot, dependabot'
 process.env.REPO_CATEGORIES = 'docs-site:other'
+process.env.STATS_PATH = join(statsFolder, 'stats.enc.json')
 delete process.env.DISPATCH_TOKEN
+delete process.env.GITHUB_REPOSITORY
+delete process.env.PUBLISHED_STATS_URL
+after(() => rm(statsFolder, { recursive: true, force: true }))
 
-const { classify, computeCi, deliveryIndex, isBot, repositoryCategory, technologyShares, toPeriodRecord } =
-  await import('../scripts/sync.mjs')
+const {
+  classify,
+  computeCi,
+  deliveryIndex,
+  isBot,
+  mergeMonthlyHistory,
+  readPublishedHistory,
+  repositoryCategory,
+  technologyShares,
+  toPeriodRecord,
+  wholeMonthsWithin,
+} = await import('../scripts/sync.mjs')
 
 const minutes = (iso) => Date.parse(iso) / 60_000
 
@@ -237,5 +258,105 @@ describe('computeCi', () => {
         days: { '2026-03-02': [1, 0, 0, [120]], '2026-03-03': [2, 2, 1, [300, 600]] },
       },
     ])
+  })
+})
+
+describe('monthly history', () => {
+  // A period record of the sync, reduced to what the monthly figures read.
+  const record = (fields) => ({ bot: false, kind: 'code', hotfix: false, interventions: [], ...fields })
+
+  test('only the Paris months lying whole within the window count', () => {
+    // From the 10th of January to the 15th of April: February and March only.
+    assert.deepEqual(wholeMonthsWithin(Date.parse('2026-01-10T12:00:00Z'), Date.parse('2026-04-15T12:00:00Z')), [
+      '2026-02',
+      '2026-03',
+    ])
+    // Paris midnight on the 1st of February is 23:00 UTC on the 31st of January: February is whole.
+    assert.deepEqual(wholeMonthsWithin(Date.parse('2026-01-31T23:00:00Z'), Date.parse('2026-03-01T00:00:00Z')), [
+      '2026-02',
+    ])
+  })
+
+  test('a month is worked out until a week after its end, then stays as kept', () => {
+    const history = {
+      // Long gone from the window: kept as it is.
+      '2025-06': { ana: { code: 9, hotfixes: 0, reviewed: 0, comments: 0 } },
+      // Cut by the start of the window now: its records are only partial, the history keeps the whole month.
+      '2026-01': { ben: { code: 4, hotfixes: 1, reviewed: 2, comments: 3 } },
+      // Whole within the window but over for long: final, even if its records have moved since.
+      '2026-02': { ana: { code: 5, hotfixes: 0, reviewed: 0, comments: 0 } },
+      // Over for 4 days only: worked out again, for the data synced late.
+      '2026-03': { ana: { code: 1, hotfixes: 0, reviewed: 0, comments: 0 } },
+    }
+    const records = [
+      record({ author: 'ben', createdAt: minutes('2026-01-20T09:00:00Z') }),
+      record({ author: 'ana', createdAt: minutes('2026-02-10T09:00:00Z') }),
+      record({
+        author: 'ana',
+        createdAt: minutes('2026-03-02T09:00:00Z'),
+        interventions: [['ben', minutes('2026-03-03T09:00:00Z'), 'COMMENTED', 2]],
+      }),
+      record({ author: 'ana', createdAt: minutes('2026-03-30T09:00:00Z') }),
+      // The current month is not over: it is left out.
+      record({ author: 'ana', createdAt: minutes('2026-04-02T09:00:00Z') }),
+    ]
+    const merged = mergeMonthlyHistory(history, records, {
+      windowStart: Date.parse('2026-01-10T12:00:00Z'),
+      now: Date.parse('2026-04-05T12:00:00Z'),
+    })
+
+    assert.deepEqual(Object.keys(merged), ['2025-06', '2026-01', '2026-02', '2026-03'])
+    assert.deepEqual(merged['2025-06'], history['2025-06'])
+    assert.deepEqual(merged['2026-01'], history['2026-01'])
+    assert.deepEqual(merged['2026-02'], history['2026-02'])
+    assert.deepEqual(merged['2026-03'], {
+      ana: { code: 2, hotfixes: 0, reviewed: 0, comments: 0 },
+      ben: { code: 0, hotfixes: 0, reviewed: 1, comments: 2 },
+    })
+  })
+
+  test('a whole month the history lacks is worked out, even an empty one', () => {
+    const merged = mergeMonthlyHistory({}, [], {
+      windowStart: Date.parse('2026-01-10T12:00:00Z'),
+      now: Date.parse('2026-04-15T12:00:00Z'),
+    })
+    // Runs of months go through the months without any activity.
+    assert.deepEqual(merged, { '2026-02': {}, '2026-03': {} })
+  })
+
+  test('the first sync starts the history from the whole months of its window', () => {
+    const merged = mergeMonthlyHistory({}, [record({ author: 'ana', createdAt: minutes('2026-02-02T09:00:00Z') })], {
+      windowStart: Date.parse('2026-01-10T12:00:00Z'),
+      now: Date.parse('2026-03-05T12:00:00Z'),
+    })
+    assert.deepEqual(merged, { '2026-02': { ana: { code: 1, hotfixes: 0, reviewed: 0, comments: 0 } } })
+  })
+})
+
+describe('readPublishedHistory', () => {
+  // Stats as the sync publishes them, encrypted with the given password.
+  function encrypted(data, password) {
+    const salt = createHash('sha256').update('github-pr-dashboard:example-org').digest().subarray(0, 16)
+    const key = pbkdf2Sync(password, salt, 600_000, 32, 'sha256')
+    const iv = randomBytes(12)
+    const cipher = createCipheriv('aes-256-gcm', key, iv)
+    const blob = Buffer.concat([cipher.update(gzipSync(JSON.stringify(data))), cipher.final(), cipher.getAuthTag()])
+
+    return JSON.stringify({ iterations: 600_000, salt: salt.toString('base64'), iv: iv.toString('base64'), data: blob.toString('base64') })
+  }
+  const monthly = { '2026-02': { ana: { code: 2, hotfixes: 0, reviewed: 1, comments: 3 } } }
+
+  test('the history of the stats last published comes back when the snapshot has none', async () => {
+    await writeFile(process.env.STATS_PATH, encrypted({ monthly }, 'test-password'))
+    assert.deepEqual(await readPublishedHistory(), monthly)
+  })
+
+  test('stats without a history, or encrypted with another password, give none', async () => {
+    await writeFile(process.env.STATS_PATH, encrypted({ pullRequests: [] }, 'test-password'))
+    assert.equal(await readPublishedHistory(), null)
+    await writeFile(process.env.STATS_PATH, encrypted({ monthly }, 'another-password'))
+    assert.equal(await readPublishedHistory(), null)
+    await rm(process.env.STATS_PATH)
+    assert.equal(await readPublishedHistory(), null)
   })
 })

@@ -42,13 +42,20 @@ paths:
   `checksFailed`, `dependency`). `site/period.js` documents the shape and is the only consumer.
 - `computeCi()`: per repository, workflow and Paris day, `[runs, failed, rerun, durations in seconds]`, for runs on pull
   requests and pushes that reached a verdict (cancelled and skipped ones left out).
+- `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first
+  sync, published as `monthly` for the badges. A whole month of the window is worked out until a week after its end
+  (`MONTH_FINAL_AFTER_MS`), then it is final: worked out again, it would lose the reviews of pull requests created
+  before the window as the window moves on. The history lives in the snapshot; without one (a lost Actions cache, a
+  `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
+  the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.
 - Never publish titles, bodies, branch names or anything not needed by a stat: what is published must stay minimal,
   even encrypted.
 
 ## Changing the sync
 
 - A change in the snapshot shape bumps `SNAPSHOT_VERSION` (comment why): the next run reads everything again. Measure
-  that run and keep it well under the workflow timeout.
+  that run and keep it well under the workflow timeout. An optional field an older snapshot can do without, like
+  `monthly`, needs no bump.
 - The pure parts of the sync are exported for the tests; the sync itself only runs when the file is executed
   (`import.meta.main`). Keep new rules pure and exported, with their tests in `test/sync.test.mjs`.
 - A change in a computation is also checked against real data, outside the repository: run the old and new code on

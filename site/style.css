@@ -1379,11 +1379,15 @@ main.is-loading {
 }
 
 /* On a card, the badges sit above the button that covers it: they show what they mean on hover, and a click on them
-   still opens the dialog. */
+   still opens the dialog. Over a medal the pointer stays the classic arrow. */
 .person-card .person-badges {
   position: relative;
   z-index: 1;
   cursor: pointer;
+}
+
+.badge-medal {
+  cursor: default;
 }
 
 .person-card:hover,
@@ -1497,12 +1501,13 @@ main.is-loading {
 }
 
 /* What a badge means, over it on hover or focus, at once, like the tooltips of the charts: its name and tier, then
-   what won it. */
+   what won it. On a card it opens from the medal's left edge towards the right: centred, it ran under the sidebar for
+   the medals at the left of a card. */
 .badge-tip {
   position: absolute;
   z-index: 2;
   bottom: calc(100% + 12px);
-  left: 50%;
+  left: -6px;
   display: grid;
   gap: 4px;
   width: max-content;
@@ -1519,7 +1524,6 @@ main.is-loading {
   box-shadow: var(--shadow);
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 .badge-medal:hover .badge-tip,
@@ -1534,7 +1538,6 @@ main.is-loading {
   right: -6px;
   bottom: auto;
   left: auto;
-  transform: none;
 }
 
 .badge-tip-head {

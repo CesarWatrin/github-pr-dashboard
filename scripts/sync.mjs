@@ -1,20 +1,22 @@
 // Syncs the pull requests of a GitHub organization and writes, encrypted, what the dashboard computes its stats from.
 //
 // The raw pull requests are kept in a local snapshot: the first run fetches the whole rolling window
-// repository by repository, the next runs only fetch the pull requests updated since the last sync.
+// repository by repository, the next runs only fetch the pull requests updated since the last sync. A monthly history
+// of each person's figures, for the badges of the page, outlasts the window: it goes back to the first sync.
 //
 // Usage: node scripts/sync.mjs [--full] [--watch]
 
 import { execFileSync } from 'node:child_process'
-import { createCipheriv, createHash, pbkdf2Sync, randomBytes } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, pbkdf2Sync, randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { gzipSync } from 'node:zlib'
+import { gunzipSync, gzipSync } from 'node:zlib'
 
-import { DAY_MS, TIMEZONE, addDays, parisDay, round } from '../site/period.js'
+import { DAY_MS, TIMEZONE, addDays, monthlyActivity, parisDay, parisMidnight, round } from '../site/period.js'
 
 const ORG = process.env.ORG
-// 4: the checks of each pull request and the Actions runs.
+// 4: the checks of each pull request and the Actions runs. The monthly history (monthly) came later as an optional
+// field: an older snapshot just has none yet, and never needs to be read again for it.
 const SNAPSHOT_VERSION = 4
 const WINDOW_DAYS = 365
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
@@ -43,6 +45,8 @@ const VERDICT_CONCLUSIONS = ['success', 'failure', 'timed_out', 'startup_failure
 const FAILED_CONCLUSIONS = ['failure', 'timed_out', 'startup_failure']
 // PBKDF2-SHA256 iterations deriving the encryption key from the password, also read from the file by the page.
 const KEY_ITERATIONS = 600_000
+// A month of the monthly history is final this long after its end (see mergeMonthlyHistory()).
+const MONTH_FINAL_AFTER_MS = 7 * DAY_MS
 
 // Repository types, from the languages GitHub detects in them. TypeScript and JavaScript go with Vue: front-end code
 // next to it, back-end services without it. Docs, infrastructure and tooling fall under "other".
@@ -607,9 +611,89 @@ function encrypt(data) {
   }
 }
 
+function decrypt({ iv, data }) {
+  const blob = Buffer.from(data, 'base64')
+  const decipher = createDecipheriv('aes-256-gcm', encryptionKey, Buffer.from(iv, 'base64'))
+  decipher.setAuthTag(blob.subarray(-16))
+
+  return JSON.parse(gunzipSync(Buffer.concat([decipher.update(blob.subarray(0, -16)), decipher.final()])))
+}
+
 async function writeJson(path, data) {
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, JSON.stringify(data))
+}
+
+const nextMonth = (month) => {
+  const [year, number] = month.split('-').map(Number)
+
+  return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
+}
+
+// The Paris months ('YYYY-MM') lying whole within [start, end), in milliseconds.
+function wholeMonthsWithin(start, end) {
+  let month = parisDay(start).slice(0, 7)
+  if (parisMidnight(`${month}-01`) < start) {
+    month = nextMonth(month)
+  }
+  const months = []
+  for (; parisMidnight(`${nextMonth(month)}-01`) <= end; month = nextMonth(month)) {
+    months.push(month)
+  }
+
+  return months
+}
+
+// The monthly history of each person's figures, as { 'YYYY-MM': { login: figures } } (see monthlyActivity()), for the
+// badges, back to the first sync. A whole month of the window is worked out from its records until it has been over for
+// MONTH_FINAL_AFTER_MS, for the data synced late; from then on it is final and stays as kept. Worked out again later, it
+// would lose the reviews of pull requests created before the window as the window moves on.
+function mergeMonthlyHistory(history, records, { windowStart, now }) {
+  const activity = monthlyActivity(records)
+  const merged = { ...history }
+  for (const month of wholeMonthsWithin(windowStart, now)) {
+    if (month in history && parisMidnight(`${nextMonth(month)}-01`) <= now - MONTH_FINAL_AFTER_MS) {
+      continue
+    }
+    merged[month] = Object.fromEntries(
+      [...activity]
+        .filter(([, perMonth]) => perMonth.has(month))
+        .map(([login, perMonth]) => [login, perMonth.get(month)])
+        .sort(([a], [b]) => a.localeCompare(b)),
+    )
+  }
+
+  return Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)))
+}
+
+// The monthly history of the stats last published, for a snapshot without one: a lost Actions cache or a new
+// SNAPSHOT_VERSION must not lose it. The local stats file first, else the deployed page (PUBLISHED_STATS_URL, by default
+// the GitHub Pages address of the repository in CI). Stats encrypted with another password, or without any history,
+// give none.
+async function readPublishedHistory() {
+  const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '').split('/')
+  const url = process.env.PUBLISHED_STATS_URL ?? (repo ? `https://${owner.toLowerCase()}.github.io/${repo}/data/stats.enc.json` : null)
+  const sources = [
+    async () => JSON.parse(await readFile(STATS_PATH, 'utf8')),
+    async () => {
+      const response = url ? await fetch(url, { cache: 'no-store' }) : null
+
+      return response?.ok ? response.json() : null
+    },
+  ]
+  for (const source of sources) {
+    try {
+      const payload = await source()
+      const history = payload && decrypt(payload).monthly
+      if (history) {
+        return history
+      }
+    } catch {
+      // Missing, unreachable or written with another password: the next source, or no history.
+    }
+  }
+
+  return null
 }
 
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
@@ -885,6 +969,14 @@ async function sync({ full }) {
     }
   }
 
+  const index = deliveryIndex(inWindow)
+  const records = inWindow.map((pr) => toPeriodRecord(pr, index)).filter(Boolean)
+  // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none.
+  const history = mergeMonthlyHistory(previous?.monthly ?? (await readPublishedHistory()) ?? {}, records, {
+    windowStart: Date.parse(windowStartIso),
+    now: now.getTime(),
+  })
+
   await writeJson(SNAPSHOT_PATH, {
     version: SNAPSHOT_VERSION,
     org: ORG,
@@ -895,8 +987,8 @@ async function sync({ full }) {
     frameworks,
     pullRequests: inWindow,
     runs: runsInWindow,
+    monthly: history,
   })
-  const index = deliveryIndex(inWindow)
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
   await writeJson(
     STATS_PATH,
@@ -918,7 +1010,9 @@ async function sync({ full }) {
       today: computeToday(inWindow, now),
       // The page computes the stats of the range it shows from these.
       windowStart: windowStartIso,
-      pullRequests: inWindow.map((pr) => toPeriodRecord(pr, index)).filter(Boolean),
+      pullRequests: records,
+      // The badges are won over this history, since the first sync.
+      monthly: history,
       ci: computeCi(runsInWindow),
       events: computeEvents(inWindow, now),
       waiting: computeWaiting(inWindow),
@@ -931,12 +1025,24 @@ async function sync({ full }) {
   const counts = process.env.CI
     ? ''
     : `: ${fetched.length} PR fetched, ${inWindow.length} PR in window, ` +
-      `${fetchedRuns.length} runs fetched, ${runsInWindow.length} runs in window`
+      `${fetchedRuns.length} runs fetched, ${runsInWindow.length} runs in window, ` +
+      `${Object.keys(history).length} months of history`
   console.log(`[${now.toISOString()}] ${mode} sync${counts}`)
 }
 
-// The pure parts of the sync, for the tests.
-export { classify, computeCi, deliveryIndex, isBot, repositoryCategory, technologyShares, toPeriodRecord }
+// The pure parts of the sync, for the tests, and the reading back of the published history.
+export {
+  classify,
+  computeCi,
+  deliveryIndex,
+  isBot,
+  mergeMonthlyHistory,
+  readPublishedHistory,
+  repositoryCategory,
+  technologyShares,
+  toPeriodRecord,
+  wholeMonthsWithin,
+}
 
 // Runs when executed, not when imported by the tests.
 if (import.meta.main) {

@@ -36,8 +36,10 @@ la recherche s'appliquent à toutes :
   collaborateurs.
 - **Badges**, sur les cartes et dans la fiche, à la façon des succès GitHub : 🦈 Requin des PR, 🔍 Œil de lynx,
   🪶 Plume et 🚒 Pompier, pour le plus de PR de code, de PR relues, de commentaires de review ou de hotfix de toute
-  l'équipe sur un mois complet de l'année synchronisée. Bronze pour un mois, argent pour deux mois d'affilée, or pour
-  trois ou plus ; leur sens s'affiche au survol.
+  l'équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
+  s'affiche au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
+  mensuel de chacun au-delà de la fenêtre de 12 mois, dans son snapshot, et le relit dans les stats déjà publiées si
+  le cache d'Actions s'est perdu.
 - **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, PR en attente,
   binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
@@ -156,4 +158,6 @@ Les tests (`npm test`, sur des données inventées) et la vérification de synta
 chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`, `DISPATCH_TOKEN`
-(avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH` et `STATS_PATH` (facultatives).
+(avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL`
+(facultatives ; la dernière indique où relire l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en
+CI).
