@@ -6,6 +6,7 @@ import {
   DAY_MS,
   activityBounds,
   addDays,
+  busFactor,
   computeCi,
   computePeriod,
   monthlyActivity,
@@ -512,6 +513,23 @@ describe('activityBounds', () => {
 
   test('no records, nobody', () => {
     assert.equal(activityBounds([]).size, 0)
+  })
+})
+
+describe('busFactor', () => {
+  test('the fewest people who wrote at least half of the pull requests', () => {
+    assert.equal(busFactor([6, 2, 2], 10), 1)
+    assert.equal(busFactor([3, 4, 3], 10), 2)
+    assert.equal(busFactor([2, 2, 2, 2, 2], 10), 3)
+  })
+
+  test('people who left count in the total only', () => {
+    assert.equal(busFactor([3, 1], 10), 0)
+    assert.equal(busFactor([], 4), 0)
+  })
+
+  test('no pull request, no bus factor', () => {
+    assert.equal(busFactor([], 0), null)
   })
 })
 

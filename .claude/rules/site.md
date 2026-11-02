@@ -12,8 +12,8 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, authors, reviewers, cycle, collaboration, team, tma, devops, method). The period
-  selector and the search apply to every page but the method one.
+  page of the hash (`ROUTES`: overview, authors, reviewers, cycle, collaboration, team, repositories, tma, devops,
+  method). The period selector and the search apply to every page but the method one.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -56,6 +56,20 @@ paths:
   publishes (`stats.monthly`, since the first sync; without it, the whole months of the window), ties sharing, the
   people who left included in the race; the tier comes from the longest run of calendar months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the charts would
   sit under the dialog. In the dialog it opens below the medals, clear of the close button.
+- **Repository cards** (repositories page): `repositoryRows()` gathers each repository's figures from the period
+  stats, its CI from `computeCi()` per repository, and the people still in the team who write and review it;
+  `repositoryCard()` draws one card with the figures of `REPOSITORY_STATS`, all of `REPOSITORY_FIGURES` making the
+  legend (`data-table-legend="repositories"`). Cards come most code pull requests first, filtered by the page's
+  repository filter (`REPO_FILTERS.repositories`) and the search. The bus factor comes from `busFactor()` of
+  `site/period.js`; the repositories that rest on a single person, or on people who left, with at least
+  `FRAGILE_MIN_PRS` code pull requests, are listed above the cards.
+  - A click on a card opens `openRepoDialog()`, in the dialog of people (`showCardDialog()`, shared): the figures of
+    `REPOSITORY_WRITTEN`, `REPOSITORY_REVIEWED` and `REPOSITORY_DELIVERED`, each with the median of the repositories of
+    the same type (or of all of them under `MIN_PEERS`), and who writes and reviews it. `repositoryRows({ all: true })`
+    gives a row to every repository with anything over the period, whatever the filter.
+- **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
+  page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
+  anything over the period opens on GitHub instead.
 - **Names of people**: always `personLink(login)` (with or without the avatar), never a GitHub link. Wherever it
   shows, a table, a feed, the pairs, the former people or the dialog itself, it opens the person's dialog
   (`openPersonOf()`); the dialog links to the GitHub profile. A person without any figure over the period opens their

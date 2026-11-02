@@ -80,6 +80,12 @@
             </svg>
             Équipe
           </a>
+          <a class="nav-link" href="#/depots" data-route-link="repositories">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3.5 13V3.5a1 1 0 0 1 1-1h8v9h-7.5a1.5 1.5 0 0 0 0 3h7.5" /><path d="M6.5 5.5h3" />
+            </svg>
+            Dépôts
+          </a>
           <a class="nav-link" href="#/tma" data-route-link="tma">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.5a3.5 3.5 0 0 0-3.2 4.9L2.5 11.7l1.8 1.8 4.3-4.3A3.5 3.5 0 0 0 13.5 6l-2 .5-1.5-1.5.5-2Z" /></svg>
             TMA
@@ -409,6 +415,27 @@
             </section>
           </div>
 
+          <!-- Dépôts -->
+          <div class="route" data-route="repositories" hidden>
+            <div class="team-toolbar">
+              <details class="repo-filter" data-repo-filter="repositories"></details>
+            </div>
+            <section class="card" aria-labelledby="repositories-fragile-title" data-repositories-fragile-card hidden>
+              <h2 id="repositories-fragile-title">Dépôts portés par une seule personne</h2>
+              <p class="card-sub" data-repositories-fragile-sub></p>
+              <ul class="fragile-list" data-repositories-fragile></ul>
+            </section>
+            <div class="repo-cards" data-repositories></div>
+            <section class="card" aria-labelledby="repositories-legend-title">
+              <h2 id="repositories-legend-title">Les chiffres des cartes</h2>
+              <p class="card-sub">
+                Sur la période et les dépôts choisis, pour chaque dépôt avec des PR de code, triés par nombre de PR de
+                code. Sous « Qui l’écrit », les personnes de l’équipe qui ont écrit le plus de ces PR.
+              </p>
+              <dl class="table-legend" data-table-legend="repositories"></dl>
+            </section>
+          </div>
+
           <!-- TMA -->
           <div class="route" data-route="tma" hidden>
             <section class="card" aria-labelledby="tma-title">
@@ -581,6 +608,13 @@
                   100 % avec plusieurs PR, elle signale un binôme figé : le code de l’auteur n’est connu que d’une autre
                   personne. Ces indicateurs servent à repérer des risques d’équipe, pas à classer des personnes.
                 </dd>
+                <dt>Bus factor</dt>
+                <dd>
+                  Le plus petit nombre de personnes de l’équipe qui ont écrit à elles seules au moins la moitié des PR de
+                  code d’un dépôt sur la période. À 1, le dépôt repose sur une seule personne ; « Auteurs partis » : les
+                  personnes encore là en ont écrit moins de la moitié. Il ne dit rien de la qualité du code, seulement
+                  du risque de le voir n’être connu de personne.
+                </dd>
                 <dt>PR en attente de review</dt>
                 <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
                 <dt>Noms</dt>
@@ -627,7 +661,7 @@
       </form>
     </dialog>
 
-    <!-- A person's details, opened from their card on the team page: the card is drawn when it opens. -->
+    <!-- The details of a person or a repository, opened from its card or its name: the card is drawn when it opens. -->
     <dialog class="person-dialog" aria-labelledby="person-dialog-name" data-person-dialog>
       <div class="person-dialog-scene" data-person-dialog-scene>
         <article class="person-dialog-card" data-person-dialog-card></article>

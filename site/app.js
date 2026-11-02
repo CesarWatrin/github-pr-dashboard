@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -77,6 +77,7 @@ const ROUTES = {
   cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
+  repositories: { hash: '#/depots', title: 'Dépôts', subtitle: 'Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -484,6 +485,90 @@ const SENIORITY_LEGEND = {
   label: 'Ancienneté',
   hint: `Depuis la première PR, review ou commentaire de la personne. Les données couvrent un an : une première activité dans ses ${SENIORITY_START_DAYS} premiers jours compte pour plus d’un an.`,
 }
+// The figures of a repository over the period, on its card and in its dialog. Their hints make the legend under the
+// cards.
+const REPOSITORY_FIGURES = {
+  code: { key: 'code', label: 'PR de code', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  merged: { key: 'merged', label: 'Mergées', hint: 'Parmi ces PR, celles qui ont été mergées.' },
+  authors: { key: 'authors', label: 'Auteurs', hint: 'Personnes qui ont ouvert ces PR, parties comprises.' },
+  medianSize: { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR mergées.' },
+  unreviewedRate: {
+    key: 'unreviewedRate',
+    label: 'Sans review',
+    format: formatShare,
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+  hotfixes: { key: 'hotfixes', label: 'Hotfix', hint: 'PR de code ouvertes sur la période depuis une branche qui commence par hotfix.' },
+  reviewers: { key: 'reviewers', label: 'Relecteurs', hint: 'Personnes intervenues sur des PR de code du dépôt sur la période.' },
+  reviewed: { key: 'reviewed', label: 'PR relues', hint: 'PR du dépôt avec une review ou un commentaire sur la période.' },
+  medianTimeToFirstReviewHours: {
+    key: 'medianTimeToFirstReviewHours',
+    label: '1re review',
+    format: formatDuration,
+    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
+  },
+  medianTimeToMergeHours: { key: 'medianTimeToMergeHours', label: 'Merge en', format: formatDuration, hint: 'Médiane, de la création au merge.' },
+  commentsPerPr: {
+    key: 'commentsPerPr',
+    label: 'Comm. / PR',
+    format: formatDecimal,
+    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+  },
+  silentApprovalRate: {
+    key: 'silentApprovalRate',
+    label: 'Approb. sans comm.',
+    format: formatShare,
+    hint: 'Part des approbations données sans laisser de commentaire.',
+  },
+  deployments: {
+    key: 'deployments',
+    label: 'Déploiements',
+    hint: 'PR mergées dans master ou main sur la période : releases, hotfix et merges directs.',
+  },
+  medianLeadTimeHours: {
+    key: 'medianLeadTimeHours',
+    label: 'Jusqu’en prod',
+    format: formatDuration,
+    hint: 'Médiane, de l’ouverture d’une PR de code à son arrivée en prod, pour celles arrivées sur la période.',
+  },
+  reworkRate: { key: 'reworkRate', label: 'Taux de reprise', format: formatShare, hint: 'Part des déploiements qui sont des correctifs : hotfix ou revert.' },
+  ciRuns: { key: 'ciRuns', label: 'Exécutions CI', hint: 'Exécutions GitHub Actions sur des PR ou des push qui ont abouti à un verdict.' },
+  ciFailureRate: { key: 'ciFailureRate', label: 'CI en échec', format: formatShare, hint: 'Part de ces exécutions en échec.' },
+  ciRerunRate: { key: 'ciRerunRate', label: 'CI relancée', format: formatShare, hint: 'Part de ces exécutions relancées au moins une fois.' },
+}
+const repositoryFigures = (...keys) => keys.map((key) => REPOSITORY_FIGURES[key])
+const REPOSITORY_STATS = repositoryFigures(
+  'code',
+  'authors',
+  'reviewers',
+  'medianTimeToFirstReviewHours',
+  'medianTimeToMergeHours',
+  'unreviewedRate',
+  'deployments',
+  'medianLeadTimeHours',
+  'ciFailureRate',
+)
+const REPOSITORY_WRITTEN = repositoryFigures('code', 'merged', 'authors', 'medianSize', 'unreviewedRate', 'hotfixes')
+const REPOSITORY_REVIEWED = repositoryFigures(
+  'reviewers',
+  'reviewed',
+  'medianTimeToFirstReviewHours',
+  'medianTimeToMergeHours',
+  'commentsPerPr',
+  'silentApprovalRate',
+)
+const REPOSITORY_DELIVERED = repositoryFigures('deployments', 'medianLeadTimeHours', 'reworkRate', 'ciRuns', 'ciFailureRate', 'ciRerunRate')
+// Explained in the legend under the cards, with the figures.
+const BUS_FACTOR_LEGEND = {
+  label: 'Bus factor',
+  hint: 'Le plus petit nombre de personnes de l’équipe qui ont écrit à elles seules au moins la moitié des PR de code du dépôt sur la période : à 1, le dépôt repose sur une seule personne. « Auteurs partis » : celles encore là en ont écrit moins de la moitié.',
+}
+// Fewest code pull requests for a repository to be listed among those that rest on a single person: under it, one
+// author is no sign of anything.
+const FRAGILE_MIN_PRS = 10
+// The people listed on a repository's card, those who wrote the most first.
+const REPOSITORY_TOP_AUTHORS = 3
+
 // How far the open card leans towards the pointer, at its edges.
 const PERSON_TILT_DEG = 4
 
@@ -761,7 +846,7 @@ const state = {
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null },
+  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null, repositories: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -2313,7 +2398,248 @@ function renderTeam() {
   container.replaceChildren(...rows.map(personCard))
 }
 
-// The busiest people or repositories of a person, each with its count of pull requests.
+// Repositories page
+
+// The CI of the period per repository: its runs, the share of them that failed or were run again.
+function ciPerRepository() {
+  const range = periodRange()
+  const workflows = new Map()
+  for (const workflow of state.stats.ci ?? []) {
+    if (!workflows.has(workflow.repo)) {
+      workflows.set(workflow.repo, [])
+    }
+    workflows.get(workflow.repo).push(workflow)
+  }
+
+  return new Map([...workflows].map(([repo, list]) => [repo, computeCi(list, range).totals]))
+}
+
+// The repositories of the period with their figures, the people still in the team who wrote and reviewed them, the
+// most first, and their bus factor. The figures count everyone, people who left included, as the other figures of
+// repositories do. By default, those with code pull requests on the repositories selected on their page, for the cards;
+// with all, every repository with anything over the period, for their dialogs.
+function repositoryRows({ all = false } = {}) {
+  const period = currentPeriod()
+  const selection = all ? null : state.repos.repositories
+  const rows = new Map()
+  const row = (repo) => {
+    if (!rows.has(repo)) {
+      rows.set(repo, { repo, code: 0, merged: 0, unreviewed: 0, timesToFirstReview: [], timesToMerge: [], sizes: [], authors: [], readers: [] })
+    }
+
+    return rows.get(repo)
+  }
+  for (const person of period.authors) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      if (stats.code > 0 && inSelection(selection, repo)) {
+        const totals = row(repo)
+        totals.code += stats.code
+        totals.merged += stats.merged
+        totals.unreviewed += stats.unreviewed
+        totals.timesToFirstReview.push(...stats.timesToFirstReviewHours)
+        totals.timesToMerge.push(...stats.timesToMergeHours)
+        totals.sizes.push(...stats.sizes)
+        totals.authors.push([person.login, stats.code])
+      }
+    }
+  }
+  const approvals = new Map()
+  for (const person of period.reviewers) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      if (stats.prs > 0 && (rows.has(repo) || all)) {
+        row(repo).readers.push([person.login, stats.prs])
+        const [approved, silent] = approvals.get(repo) ?? [0, 0]
+        approvals.set(repo, [approved + stats.approved, silent + stats.silentApproved])
+      }
+    }
+  }
+  const delivery = new Map(period.delivery.repositories.map((stats) => [stats.repo, stats]))
+  const ci = ciPerRepository()
+  if (all) {
+    for (const repo of [...delivery.keys(), ...[...ci].filter(([, stats]) => stats.runs > 0).map(([repo]) => repo)]) {
+      row(repo)
+    }
+  }
+  const reviewed = new Map(period.repositories.map((stats) => [stats.repo, stats]))
+  const hotfixes = new Map(period.tma.repositories.map((stats) => [stats.repo, stats.hotfixes]))
+  const current = (people) => people.filter(([login]) => isCurrent(login)).sort((a, b) => b[1] - a[1])
+
+  return [...rows.values()]
+    .map((totals) => {
+      const writers = current(totals.authors)
+      const [approved, silent] = approvals.get(totals.repo) ?? [0, 0]
+      const review = reviewed.get(totals.repo)
+      const deliveries = delivery.get(totals.repo)
+      const runs = ci.get(totals.repo)
+
+      return {
+        repo: totals.repo,
+        category: repoInfo(totals.repo).category,
+        technologies: repoInfo(totals.repo).technologies,
+        code: totals.code,
+        merged: totals.merged,
+        authors: totals.authors.length,
+        medianSize: roundedMedian(totals.sizes),
+        unreviewedRate: totals.merged ? totals.unreviewed / totals.merged : null,
+        hotfixes: hotfixes.get(totals.repo) ?? 0,
+        reviewers: totals.readers.length,
+        reviewed: review?.prs ?? 0,
+        medianTimeToFirstReviewHours: median(totals.timesToFirstReview),
+        medianTimeToMergeHours: median(totals.timesToMerge),
+        commentsPerPr: review?.prs ? review.comments / review.prs : null,
+        silentApprovalRate: approved ? silent / approved : null,
+        deployments: deliveries?.deployments ?? 0,
+        medianLeadTimeHours: deliveries?.medianLeadTimeHours ?? null,
+        reworkRate: deliveries?.reworkRate ?? null,
+        ciRuns: runs?.runs ?? 0,
+        ciFailureRate: runs?.failureRate ?? null,
+        ciRerunRate: runs?.rerunRate ?? null,
+        writers,
+        readers: current(totals.readers),
+        busFactor: busFactor(writers.map(([, code]) => code), totals.code),
+      }
+    })
+    .sort((a, b) => b.code - a.code || a.repo.localeCompare(b.repo))
+}
+
+// A repository, wherever it shows: a click opens its dialog, which leads to GitHub.
+function repoLink(repo, className = 'repo-link') {
+  const button = el('button', { type: 'button', className, textContent: repo, title: repo })
+  button.setAttribute('aria-haspopup', 'dialog')
+  button.addEventListener('click', () => openRepoOf(repo, button))
+
+  return button
+}
+
+// The dialog of a repository, from anywhere. A repository without anything over the period has no dialog: it opens on
+// GitHub instead.
+function openRepoOf(repo, opener) {
+  const row = repositoryRows({ all: true }).find((other) => other.repo === repo)
+  if (row) {
+    openRepoDialog(row, opener)
+  } else {
+    window.open(githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}`), '_blank', 'noopener')
+  }
+}
+
+// The share of a repository's code pull requests written by the people still in the team.
+const writtenShare = (row, writers = row.writers) => writers.reduce((total, [, code]) => total + code, 0) / row.code
+
+// Nothing for a repository without any code pull request.
+function busFactorTag(value) {
+  if (value === null) {
+    return []
+  }
+
+  return [
+    el('span', {
+      className: value <= 1 ? 'bus-factor is-fragile' : 'bus-factor',
+      textContent: value === 0 ? 'Auteurs partis' : `Bus factor ${value}`,
+      title: BUS_FACTOR_LEGEND.hint,
+    }),
+  ]
+}
+
+function technologyLogos(technologies) {
+  const names = technologies.slice(0, STACK_TECHNOLOGIES).map(([name]) => name)
+  const logos = el('span', { className: 'stack-logos', title: names.join(', ') }, ...names.map((name) => technologyIcon(name)))
+  if (names.length) {
+    logos.setAttribute('role', 'img')
+    logos.setAttribute('aria-label', `Technos : ${names.join(', ')}`)
+  }
+
+  return logos
+}
+
+function repositoryCard(row, index) {
+  const writers = row.writers.slice(0, REPOSITORY_TOP_AUTHORS)
+  const people = writers.length
+    ? el(
+        'ul',
+        {},
+        ...writers.map(([login, code]) =>
+          el(
+            'li',
+            {},
+            personLink(login),
+            el('span', {
+              className: 'repo-card-share',
+              textContent: formatShare(code / row.code),
+              title: `${formatNumber(code)} PR de code sur ${formatNumber(row.code)}`,
+            }),
+          ),
+        ),
+      )
+    : el('p', { className: 'muted', textContent: 'Plus personne de l’équipe' })
+  // The whole card opens the repository's dialog: the button of its head stretches over it, under the people.
+  const open = el(
+    'button',
+    { type: 'button', className: 'repo-card-head' },
+    el('strong', { className: 'repo-card-name', textContent: row.repo, title: row.repo }),
+    repoTypeTag(row.category),
+    technologyLogos(row.technologies),
+  )
+  open.setAttribute('aria-haspopup', 'dialog')
+  open.addEventListener('click', () => openRepoDialog(row, open))
+  const card = el(
+    'article',
+    { className: 'repo-card' },
+    open,
+    el(
+      'div',
+      { className: 'repo-card-people' },
+      el('div', { className: 'repo-card-people-head' }, el('span', { textContent: 'Qui l’écrit' }), ...busFactorTag(row.busFactor)),
+      people,
+    ),
+    statList(REPOSITORY_STATS, row),
+  )
+  card.setAttribute('aria-label', row.repo)
+  card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
+
+  return card
+}
+
+// The busy repositories that rest on a single person of the team, or on people who left, the busiest first.
+function renderFragile(rows) {
+  const fragile = rows.filter((row) => row.busFactor <= 1 && row.code >= FRAGILE_MIN_PRS)
+  $('[data-repositories-fragile-card]').hidden = fragile.length === 0
+  $('[data-repositories-fragile-sub]').textContent =
+    `Au moins ${FRAGILE_MIN_PRS} PR de code sur la période, dont au moins la moitié écrites par une seule personne de l’équipe, ou plus de la moitié par des personnes parties`
+  $('[data-repositories-fragile]').replaceChildren(
+    ...fragile.map((row) =>
+      el(
+        'li',
+        {},
+        el('span', { className: 'fragile-repo' }, repoLink(row.repo), repoTypeTag(row.category)),
+        row.busFactor === 1 ? personLink(row.writers[0][0]) : el('span', { className: 'muted', textContent: 'Auteurs partis' }),
+        el('span', {
+          className: 'fragile-share',
+          textContent:
+            row.busFactor === 1
+              ? `${formatShare(writtenShare(row, row.writers.slice(0, 1)))} des ${formatNumber(row.code)} PR de code`
+              : `${formatShare(writtenShare(row))} des ${formatNumber(row.code)} PR de code par l’équipe actuelle`,
+        }),
+      ),
+    ),
+  )
+}
+
+function renderRepositories() {
+  const rows = repositoryRows().filter((row) => matchesQuery(row.repo, ...row.technologies.map(([name]) => name)))
+  renderFragile(rows)
+  const container = $('[data-repositories]')
+  if (rows.length === 0) {
+    const filtered = state.query || state.repos.repositories
+    container.replaceChildren(
+      el('p', { className: 'feed-empty', textContent: filtered ? 'Aucun dépôt ne correspond à ces filtres' : 'Aucun dépôt sur la période' }),
+    )
+
+    return
+  }
+  container.replaceChildren(...rows.map(repositoryCard))
+}
+
+// The busiest people or repositories of a person or a repository, each with its count of pull requests.
 function topList(title, items, withAvatar) {
   const list = items.length
     ? el(
@@ -2323,8 +2649,8 @@ function topList(title, items, withAvatar) {
           el(
             'li',
             {},
-            // A person opens their own dialog in place of this one.
-            withAvatar ? personLink(key) : el('span', { className: 'person-dialog-list-name', textContent: key, title: key }),
+            // A person or a repository opens its own dialog in place of this one.
+            withAvatar ? personLink(key) : repoLink(key, 'repo-link person-dialog-list-name'),
             el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
           ),
         ),
@@ -2372,7 +2698,40 @@ function personDetails(row) {
   }
 }
 
-// Closing gives the focus back to the card that opened the dialog, even where a click does not focus a button.
+// The dialog of a person or a repository shows its card, in place of the one shown if any. Closing gives the focus back
+// to what opened the first one, even where a click does not focus a button.
+function showCardDialog(children, opener) {
+  const close = el(
+    'button',
+    { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
+    svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
+  )
+  close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
+  close.setAttribute('aria-label', 'Fermer')
+  close.addEventListener('click', () => $('[data-person-dialog]').close())
+  $('[data-person-dialog-card]').replaceChildren(close, ...children)
+  resetPersonTilt()
+  const dialog = $('[data-person-dialog]')
+  if (dialog.open) {
+    dialog.scrollTop = 0
+    close.focus()
+
+    return
+  }
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
+  dialog.showModal()
+}
+
+// A link to GitHub, at the right of the name, with the GitHub mark of the icon sprite.
+function githubPill(path, text) {
+  const mark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, 'aria-hidden': 'true' })
+  mark.append(svg('use', { href: `${ICONS_URL}#github` }))
+
+  return el('a', { className: 'person-dialog-github', href: githubUrl(path), target: '_blank', rel: 'noopener' }, mark, document.createTextNode(text))
+}
+
+const dialogSection = (title, ...children) => el('section', { className: 'person-dialog-section' }, el('h3', { textContent: title }), ...children)
+
 function openPersonDialog(row, opener) {
   const details = personDetails(row)
   const name = displayName(row.login)
@@ -2382,76 +2741,105 @@ function openPersonDialog(row, opener) {
   const peers = (keep) => details.peers.details.filter(keep)
   const writers = peers(({ row: other }) => other.code > 0)
   const reviewers = peers(({ row: other }) => other.reviewed > 0)
-  const close = el(
-    'button',
-    { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
-    svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
-  )
-  close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
-  close.setAttribute('aria-label', 'Fermer')
-  close.addEventListener('click', () => $('[data-person-dialog]').close())
-  // The GitHub profile, at the right of the name, with the GitHub mark of the icon sprite.
-  const mark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, 'aria-hidden': 'true' })
-  mark.append(svg('use', { href: `${ICONS_URL}#github` }))
-  const github = el(
-    'a',
-    { className: 'person-dialog-github', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener' },
-    mark,
-    document.createTextNode('Profil GitHub'),
-  )
-  const section = (title, ...children) => el('section', { className: 'person-dialog-section' }, el('h3', { textContent: title }), ...children)
 
-  $('[data-person-dialog-card]').replaceChildren(
-    close,
-    el(
-      'header',
-      { className: 'person-dialog-head' },
-      el('img', { className: 'person-dialog-avatar', src: avatarUrl(row.login, 176), alt: '', width: 88, height: 88 }),
+  showCardDialog(
+    [
       el(
-        'div',
-        { className: 'person-dialog-identity' },
-        el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: name, title: name }), github),
-        // The login is only worth showing when the display name differs from it.
-        ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
-        ...seniorityText('p', 'person-dialog-meta', row.login),
-        stackLine(row.stack),
-        el('p', {
-          className: 'person-dialog-meta',
-          textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
-        }),
+        'header',
+        { className: 'person-dialog-head' },
+        el('img', { className: 'person-dialog-avatar', src: avatarUrl(row.login, 176), alt: '', width: 88, height: 88 }),
+        el(
+          'div',
+          { className: 'person-dialog-identity' },
+          el(
+            'div',
+            { className: 'person-dialog-title' },
+            el('h2', { id: 'person-dialog-name', textContent: name, title: name }),
+            githubPill(encodeURIComponent(row.login), 'Profil GitHub'),
+          ),
+          // The login is only worth showing when the display name differs from it.
+          ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
+          ...seniorityText('p', 'person-dialog-meta', row.login),
+          stackLine(row.stack),
+          el('p', {
+            className: 'person-dialog-meta',
+            textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
+          }),
+        ),
+        ...badgeRow(row.login, 'person-dialog-badges', 'large'),
       ),
-      ...badgeRow(row.login, 'person-dialog-badges', 'large'),
-    ),
-    el('p', {
-      className: 'person-dialog-scope',
-      textContent: `${scope} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(details.peers.details.length)} personnes ${details.peers.label}`,
-    }),
-    section('Ce que la personne écrit', statList(PERSON_WRITTEN, details, writers)),
-    section('Ce que la personne relit', statList(PERSON_REVIEWED, details, reviewers)),
-    section(
-      'Avec qui, et où',
-      statList(PERSON_CIRCULATION, details, writers),
-      el(
-        'div',
-        { className: 'person-dialog-columns' },
-        topList('Son code est relu par', details.reviewedBy, true),
-        topList('Relit le code de', details.reviews, true),
-        topList('Ses dépôts', details.codeRepos, false),
-        topList('Dépôts relus', details.reviewer?.topRepos ?? [], false),
+      el('p', {
+        className: 'person-dialog-scope',
+        textContent: `${scope} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(details.peers.details.length)} personnes ${details.peers.label}`,
+      }),
+      dialogSection('Ce que la personne écrit', statList(PERSON_WRITTEN, details, writers)),
+      dialogSection('Ce que la personne relit', statList(PERSON_REVIEWED, details, reviewers)),
+      dialogSection(
+        'Avec qui, et où',
+        statList(PERSON_CIRCULATION, details, writers),
+        el(
+          'div',
+          { className: 'person-dialog-columns' },
+          topList('Son code est relu par', details.reviewedBy, true),
+          topList('Relit le code de', details.reviews, true),
+          topList('Ses dépôts', details.codeRepos, false),
+          topList('Dépôts relus', details.reviewer?.topRepos ?? [], false),
+        ),
       ),
-    ),
+    ],
+    opener,
   )
-  resetPersonTilt()
-  const dialog = $('[data-person-dialog]')
-  // From a name inside the dialog, the next person replaces the one shown; the focus goes back to the first opener.
-  if (dialog.open) {
-    dialog.scrollTop = 0
-    dialog.querySelector('.person-dialog-close').focus()
+}
 
-    return
-  }
-  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
-  dialog.showModal()
+// The dialog of a repository: its figures over the period, each set against the median of the repositories of the same
+// type that have such figures, or of all of them when that type has too few; who writes it and who reviews it.
+function openRepoDialog(row, opener) {
+  const all = repositoryRows({ all: true })
+  const sameType = all.filter((other) => other.category === row.category)
+  const peers = sameType.length >= MIN_PEERS ? sameType : all
+  const type = CATEGORIES.find((category) => category.key === row.category)
+  const peersLabel = peers === all ? 'dépôts' : type.key === 'other' ? 'autres dépôts' : `dépôts ${type.label.toLowerCase()}`
+  const technologies = row.technologies.map(([name, share]) => `${name} ${formatTechnologyShare(share)}`).join(' · ')
+  const main = row.technologies[0]?.[0]
+
+  showCardDialog(
+    [
+      el(
+        'header',
+        { className: 'person-dialog-head' },
+        el('span', { className: 'repo-dialog-logo' }, technologyIcon(main, { width: 44, height: 44 })),
+        el(
+          'div',
+          { className: 'person-dialog-identity' },
+          el(
+            'div',
+            { className: 'person-dialog-title' },
+            el('h2', { id: 'person-dialog-name', textContent: row.repo, title: row.repo }),
+            githubPill(`${state.stats.org}/${encodeURIComponent(row.repo)}`, 'Dépôt GitHub'),
+          ),
+          el('div', { className: 'person-card-stack' }, repoTypeTag(row.category), ...busFactorTag(row.busFactor)),
+          ...(technologies ? [el('p', { className: 'person-dialog-meta', textContent: technologies })] : []),
+        ),
+      ),
+      el('p', {
+        className: 'person-dialog-scope',
+        textContent: `${periodTitle()} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(peers.length)} ${peersLabel}`,
+      }),
+      dialogSection('Le code', statList(REPOSITORY_WRITTEN, row, peers.filter((other) => other.code > 0))),
+      dialogSection('La revue', statList(REPOSITORY_REVIEWED, row, peers.filter((other) => other.reviewed > 0))),
+      dialogSection('La mise en prod', statList(REPOSITORY_DELIVERED, row, peers.filter((other) => other.deployments > 0 || other.ciRuns > 0))),
+      dialogSection(
+        'Qui l’écrit, qui le relit',
+        el(
+          'div',
+          { className: 'person-dialog-columns is-pair' },
+          topList('Ses auteurs', row.writers.slice(0, PERSON_TOP), true),
+          topList('Ses relecteurs', row.readers.slice(0, PERSON_TOP), true),
+        ),
+      ),
+    ],
+    opener,
+  )
 }
 
 // The open card leans towards the pointer, its layers apart, and catches the light where the pointer is, like a printed
@@ -2522,6 +2910,7 @@ function renderTableLegends() {
     $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
   $('[data-table-legend="team"]').replaceChildren(...legend([SENIORITY_LEGEND, BADGES_LEGEND, ...TEAM_STATS, DEPENDENCY_STAT]))
+  $('[data-table-legend="repositories"]').replaceChildren(...legend([BUS_FACTOR_LEGEND, ...Object.values(REPOSITORY_FIGURES)]))
 }
 
 function renderStackLegends() {
@@ -2813,7 +3202,7 @@ const TABLES = {
     searchTexts: (row) => [row.repo],
   },
 }
-// The repository filters: those of the tables, and the one of the team page, which has no table.
+// The repository filters: those of the tables, and those of the team and repositories pages, which have no table.
 const REPO_FILTERS = {
   ...Object.fromEntries(Object.entries(TABLES).filter(([, table]) => table.repoCounts)),
   team: {
@@ -2821,6 +3210,12 @@ const REPO_FILTERS = {
     repoCounts: () => TABLES.collaboration.repoCounts(),
     repoCountsLabel: 'PR de code ouvertes sur la période',
     onFilter: () => renderTeam(),
+  },
+  repositories: {
+    source: 'authors',
+    repoCounts: () => TABLES.collaboration.repoCounts(),
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+    onFilter: () => renderRepositories(),
   },
 }
 const REPO_FILTER_NAMES = Object.keys(REPO_FILTERS)
@@ -2946,21 +3341,14 @@ function stackCell({ counts, technologies }) {
   return el('td', {}, cell)
 }
 
-function repoCell({ repo, category }) {
+function repoTypeTag(category) {
   const type = CATEGORIES.find((item) => item.key === category) ?? CATEGORIES.at(-1)
-  const link = el('a', {
-    href: githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}`),
-    target: '_blank',
-    rel: 'noopener',
-    textContent: repo,
-  })
 
-  return el(
-    'td',
-    { className: 'person repo-cell' },
-    link,
-    el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() }),
-  )
+  return el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() })
+}
+
+function repoCell({ repo, category }) {
+  return el('td', { className: 'person repo-cell' }, repoLink(repo), repoTypeTag(category))
 }
 
 function technologiesCell(technologies) {
@@ -3668,6 +4056,7 @@ function render(animate) {
   }
   renderTables(animate)
   renderTeam()
+  renderRepositories()
   renderFeed(animate)
   renderWaiting(animate)
   renderUnapproved(animate)
@@ -3936,6 +4325,7 @@ $('[data-search]').addEventListener('input', (event) => {
     renderTables(false)
     renderCollaboration()
     renderTeam()
+    renderRepositories()
     renderFeed(false)
     renderWaiting(false)
     renderUnapproved(false)
