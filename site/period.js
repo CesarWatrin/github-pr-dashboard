@@ -169,6 +169,7 @@ export function computePeriod(records, { start, end, bucket }) {
       closedUnmerged: 0,
       unreviewed: 0,
       hotfix: 0,
+      reviewed: 0,
       timesToMerge: [],
       timesToFirstReview: [],
       sizes: [],
@@ -183,6 +184,17 @@ export function computePeriod(records, { start, end, bucket }) {
       merges: 0,
     }))
   const repository = (name) => getOrCreate(repositories, name, () => ({ repo: name, reviewed: new Set(), comments: 0 }))
+  // Who reviews whom: each distinct reviewer of a code pull request opened in the range counts once for the pair of its
+  // author and that reviewer, whenever the review came.
+  const pairs = new Map()
+  const addPair = (authorLogin, reviewerLogin, repo) => {
+    const pair = getOrCreate(pairs, `${authorLogin}\n${reviewerLogin}`, () => ({
+      author: authorLogin,
+      reviewer: reviewerLogin,
+      repos: new Map(),
+    }))
+    pair.repos.set(repo, (pair.repos.get(repo) ?? 0) + 1)
+  }
 
   // DORA: deployments, the delay of code to production, the corrective deployments (hotfixes and reverts, the
   // rework rate) and their own delay (the time to restore).
@@ -296,6 +308,14 @@ export function computePeriod(records, { start, end, bucket }) {
       if (pr.interventions.length > 0) {
         stats.timesToFirstReview.push(hoursBetween(pr.createdAt, pr.interventions[0][1]))
       }
+      // The sync already leaves the author out of the interventions: checked again, an author never reviews itself.
+      const prReviewers = new Set(pr.interventions.map(([login]) => login).filter((login) => login !== pr.author))
+      if (prReviewers.size > 0) {
+        stats.reviewed++
+      }
+      for (const login of prReviewers) {
+        addPair(pr.author, login, pr.repo)
+      }
       if (pr.mergedAt !== null) {
         const timeToMerge = hoursBetween(pr.createdAt, pr.mergedAt)
         stats.merged++
@@ -358,7 +378,7 @@ export function computePeriod(records, { start, end, bucket }) {
 
   const authorStats = [...authors.values()].flatMap((perRepository) => [...perRepository.values()])
   const reviewerStats = [...reviewers.values()].flatMap((perRepository) => [...perRepository.values()])
-  const reviewPairs = reviewerStats.reduce((total, stats) => total + stats.reviewed.size, 0)
+  const reviewerPrs = reviewerStats.reduce((total, stats) => total + stats.reviewed.size, 0)
   const approvedPairs = reviewerStats.reduce((total, stats) => total + stats.approvedPrs.size, 0)
   const silentPairs = reviewerStats.reduce((total, stats) => total + stats.silentApprovedPrs.size, 0)
   const merged = sum(authorStats, 'merged')
@@ -374,7 +394,7 @@ export function computePeriod(records, { start, end, bucket }) {
       hotfixShare: code ? round(sum(authorStats, 'hotfix') / code, 3) : null,
       unreviewedShare: merged ? round(sum(authorStats, 'unreviewed') / merged, 3) : null,
       reviewed: reviewedPullRequests.size,
-      commentsPerPr: reviewPairs ? round(sum(reviewerStats, 'comments') / reviewPairs, 2) : null,
+      commentsPerPr: reviewerPrs ? round(sum(reviewerStats, 'comments') / reviewerPrs, 2) : null,
       silentApprovalRate: approvedPairs ? round(silentPairs / approvedPairs, 3) : null,
       checksFailedShare: rate(mergedWithFailedChecks, merged),
     },
@@ -392,6 +412,7 @@ export function computePeriod(records, { start, end, bucket }) {
             merged: stats.merged,
             closedUnmerged: stats.closedUnmerged,
             unreviewed: stats.unreviewed,
+            reviewed: stats.reviewed,
             timesToFirstReviewHours: stats.timesToFirstReview.map((hours) => round(hours, 1)),
             timesToMergeHours: stats.timesToMerge.map((hours) => round(hours, 1)),
             sizes: stats.sizes,
@@ -415,6 +436,11 @@ export function computePeriod(records, { start, end, bucket }) {
           },
         ]),
       ),
+    })),
+    reviewPairs: [...pairs.values()].map(({ author: authorLogin, reviewer: reviewerLogin, repos }) => ({
+      author: authorLogin,
+      reviewer: reviewerLogin,
+      repos: Object.fromEntries(repos),
     })),
     reviewerSeries: Object.fromEntries(
       [...reviewerSeries].map(([login, series]) => [
@@ -463,6 +489,48 @@ export function computePeriod(records, { start, end, bucket }) {
       [...dependencies].map(([repo, stats]) => ({ repo, ...stats })),
       [...ecosystems].map(([ecosystem, stats]) => ({ ecosystem, ...stats })),
     ),
+  }
+}
+
+// Who reviews whom over a selection of repositories (a Set, or null for all of them), from the stats of a period.
+// pairs: how many pull requests of an author each reviewer intervened on, busiest first. authors: for each author of
+// code pull requests, how many were reviewed, by how many distinct reviewers, and the share of them the main reviewer
+// intervened on (the dependency on the main reviewer).
+export function reviewNetwork({ authors, reviewPairs }, selection = null) {
+  const selected = (perRepository) =>
+    Object.entries(perRepository).reduce((total, [repo, count]) => (selection && !selection.has(repo) ? total : total + count), 0)
+  const pairs = reviewPairs
+    .map(({ author, reviewer, repos }) => ({ author, reviewer, prs: selected(repos) }))
+    .filter((pair) => pair.prs > 0)
+    .sort((a, b) => b.prs - a.prs || a.author.localeCompare(b.author) || a.reviewer.localeCompare(b.reviewer))
+  const pairsByAuthor = new Map()
+  for (const pair of pairs) {
+    getOrCreate(pairsByAuthor, pair.author, () => []).push(pair)
+  }
+  const pick = (repos, key) => Object.fromEntries(Object.entries(repos).map(([repo, stats]) => [repo, stats[key]]))
+
+  return {
+    pairs,
+    authors: authors.flatMap(({ login, repos }) => {
+      const code = selected(pick(repos, 'code'))
+      if (code === 0) {
+        return []
+      }
+      const reviewed = selected(pick(repos, 'reviewed'))
+      // Pairs are sorted: the first one of an author is its main reviewer, alphabetical order breaking ties.
+      const own = pairsByAuthor.get(login) ?? []
+
+      return [
+        {
+          login,
+          code,
+          reviewed,
+          reviewers: own.length,
+          topReviewer: own[0]?.reviewer ?? null,
+          topReviewerShare: reviewed ? round(own[0].prs / reviewed, 3) : null,
+        },
+      ]
+    }),
   }
 }
 

@@ -62,6 +62,13 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" /><circle cx="8" cy="8" r="2" /></svg>
             Relecteurs
           </a>
+          <a class="nav-link" href="#/collaboration" data-route-link="collaboration">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="5.5" cy="5.5" r="2" /><circle cx="11" cy="6.5" r="1.7" />
+              <path d="M1.8 13c.4-2.3 1.9-3.7 3.7-3.7s3.3 1.4 3.7 3.7M10 9.8c.3-.1.7-.2 1-.2 1.6 0 2.8 1.2 3.1 3.4" />
+            </svg>
+            Collaboration
+          </a>
           <a class="nav-link" href="#/tma" data-route-link="tma">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.5a3.5 3.5 0 0 0-3.2 4.9L2.5 11.7l1.8 1.8 4.3-4.3A3.5 3.5 0 0 0 13.5 6l-2 .5-1.5-1.5.5-2Z" /></svg>
             TMA
@@ -277,6 +284,37 @@
             </section>
           </div>
 
+          <!-- Collaboration -->
+          <div class="route" data-route="collaboration" hidden>
+            <section class="card" aria-labelledby="collaboration-matrix-title" data-collaboration-matrix-card>
+              <div class="card-toolbar">
+                <h2 id="collaboration-matrix-title">Qui relit qui</h2>
+                <details class="repo-filter" data-repo-filter="collaboration"></details>
+              </div>
+              <p class="card-sub" data-collaboration-matrix-sub></p>
+              <div class="heatmap" data-collaboration-matrix></div>
+              <ol class="pairs" data-collaboration-pairs hidden></ol>
+              <p class="card-note">
+                Pour repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes. Les
+                personnes qui pèsent moins de 2 % des relectures de la période ont trop peu de données pour une ligne
+                ou une colonne : elles sont regroupées dans « Peu de relectures » (« Autres » quand la largeur en
+                écarte aussi d’autres), et une recherche les fait apparaître. Le filtre de dépôts s’applique à toute
+                la page.
+              </p>
+              <details class="chart-data">
+                <summary>Voir les données de la matrice</summary>
+                <div class="table-wrap" data-collaboration-table></div>
+              </details>
+            </section>
+
+            <section class="card" aria-labelledby="collaboration-authors-title">
+              <h2 id="collaboration-authors-title">Relecteurs de chaque auteur</h2>
+              <p class="card-sub">Combien de personnes relisent le code de chaque auteur, et la part du relecteur principal</p>
+              <div class="table-wrap" data-collaboration></div>
+              <dl class="table-legend" data-table-legend="collaboration"></dl>
+            </section>
+          </div>
+
           <!-- TMA -->
           <div class="route" data-route="tma" hidden>
             <section class="card" aria-labelledby="tma-title">
@@ -427,6 +465,18 @@
                 <dd>
                   PR de mise à jour de dépendances ouvertes par Dependabot, comptées à part des PR de code. Celles mergées
                   dans <code>master</code> ou <code>main</code> comptent aussi comme déploiements.
+                </dd>
+                <dt>Binôme</dt>
+                <dd>
+                  Un auteur et une personne qui intervient sur ses PR de code. Chaque PR ouverte sur la période compte une
+                  fois pour chaque relecteur distinct, quel que soit le nombre de reviews ou de commentaires, et
+                  quelle que soit la date de ces interventions. L’auteur ne compte jamais comme son propre relecteur.
+                </dd>
+                <dt>Dépendance au relecteur principal</dt>
+                <dd>
+                  Part des PR relues d’un auteur sur lesquelles intervient son relecteur le plus fréquent. Proche de
+                  100 % avec plusieurs PR, elle signale un binôme figé : le code de l’auteur n’est connu que d’une autre
+                  personne. Ces indicateurs servent à repérer des risques d’équipe, pas à classer des personnes.
                 </dd>
                 <dt>PR en attente de review</dt>
                 <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
