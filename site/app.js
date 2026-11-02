@@ -424,6 +424,8 @@ const PERSON_CIRCULATION = [
 ]
 // People and repositories listed in the dialog, the busiest first.
 const PERSON_TOP = 3
+// Fewest people of a stack to compare a person with: under it, the dialog compares with the whole team.
+const MIN_PEERS = 3
 // How far the open card leans towards the pointer, at its edges.
 const PERSON_TILT_DEG = 6
 
@@ -1772,19 +1774,32 @@ function stackLine(stack) {
 }
 
 // Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint.
-function statList(definitions, source) {
+// Given the sources of peers, each figure also shows their median.
+function statList(definitions, source, peers = null) {
   return el(
     'dl',
     { className: 'person-stats' },
-    ...definitions.map((stat) =>
-      el(
+    ...definitions.map((stat) => {
+      const read = (item) => (stat.value ? stat.value(item) : item[stat.key])
+      const format = stat.format ?? formatNumber
+
+      return el(
         'div',
         {},
         el('dt', { textContent: stat.label, title: stat.hint ?? '' }),
-        el('dd', { textContent: (stat.format ?? formatNumber)(stat.value ? stat.value(source) : source[stat.key]) }),
-      ),
-    ),
+        el('dd', { textContent: format(read(source)) }),
+        ...(peers ? [peerMedian(peers.map(read).filter((value) => !isMissing(value)), format)] : []),
+      )
+    }),
   )
+}
+
+// The median of the peers, under a figure. A median of counts stays a whole number.
+function peerMedian(values, format) {
+  const middle = median(values)
+  const shown = !isMissing(middle) && values.every(Number.isInteger) ? Math.round(middle) : middle
+
+  return el('span', { className: 'person-stats-peer', textContent: `méd. ${format(shown)}` })
 }
 
 const nameLines = (name, login) => [
@@ -1846,18 +1861,32 @@ function topList(title, items, withAvatar) {
   return el('div', {}, el('p', { className: 'person-dialog-list-title', textContent: title }), list)
 }
 
-// The details of a person over the period and the repositories selected on the team page.
+// The details of a person over the period and the repositories selected on the team page, with those of their peers:
+// the people of the same stack, or the whole team when the stack has too few people to compare with.
 function personDetails(row) {
   const { login } = row
-  const network = reviewNetwork(currentPeriod(), state.repos.team)
-  const author = currentPeriod().authors.find((person) => person.login === login)
+  const period = currentPeriod()
+  const network = reviewNetwork(period, state.repos.team)
+  const byLogin = (rows) => new Map(rows.map((other) => [other.login, other]))
+  const authors = byLogin(authorRows('team'))
+  const reviewers = byLogin(reviewerRows('team'))
+  const networkAuthors = byLogin(network.authors)
+  const detailsOf = (other) => ({
+    row: other,
+    author: authors.get(other.login),
+    reviewer: reviewers.get(other.login),
+    network: networkAuthors.get(other.login),
+  })
+  const team = teamRows()
+  const type = stackType(row.stack.counts)
+  const sameStack = team.filter((other) => stackType(other.stack.counts)?.key === type?.key)
+  const peers = type && sameStack.length >= MIN_PEERS ? sameStack : team
+  const author = period.authors.find((person) => person.login === login)
   const top = (pairs, key) => pairs.slice(0, PERSON_TOP).map((pair) => [pair[key], pair.prs])
 
   return {
-    row,
-    author: authorRows('team').find((other) => other.login === login),
-    reviewer: reviewerRows('team').find((other) => other.login === login),
-    network: network.authors.find((other) => other.login === login),
+    ...detailsOf(row),
+    peers: { label: peers === team ? 'de l’équipe' : type.label, details: peers.map(detailsOf) },
     reviewedBy: top(network.pairs.filter((pair) => pair.author === login), 'reviewer'),
     reviews: top(network.pairs.filter((pair) => pair.reviewer === login), 'author'),
     codeRepos: author
@@ -1876,6 +1905,10 @@ function openPersonDialog(row, opener) {
   const name = displayName(row.login)
   const technologies = topTechnologies(row.stack.technologies)
   const scope = state.repos.team ? `${periodTitle()} · ${repoFilterLabel('team', repoOptions('team'))}` : periodTitle()
+  // Each figure is set against the median of the peers it applies to: those who wrote code, or those who reviewed.
+  const peers = (keep) => details.peers.details.filter(keep)
+  const writers = peers(({ row: other }) => other.code > 0)
+  const reviewers = peers(({ row: other }) => other.reviewed > 0)
   const close = el(
     'button',
     { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
@@ -1905,12 +1938,15 @@ function openPersonDialog(row, opener) {
         el('a', { className: 'person-dialog-link', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener', textContent: 'Profil GitHub ↗' }),
       ),
     ),
-    el('p', { className: 'person-dialog-scope', textContent: scope }),
-    section('Ce que la personne écrit', statList(PERSON_WRITTEN, details)),
-    section('Ce que la personne relit', statList(PERSON_REVIEWED, details)),
+    el('p', {
+      className: 'person-dialog-scope',
+      textContent: `${scope} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(details.peers.details.length)} personnes ${details.peers.label}`,
+    }),
+    section('Ce que la personne écrit', statList(PERSON_WRITTEN, details, writers)),
+    section('Ce que la personne relit', statList(PERSON_REVIEWED, details, reviewers)),
     section(
       'Avec qui, et où',
-      statList(PERSON_CIRCULATION, details),
+      statList(PERSON_CIRCULATION, details, writers),
       el(
         'div',
         { className: 'person-dialog-columns' },

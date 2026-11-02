@@ -29,7 +29,9 @@ la recherche s'appliquent à toutes :
   et filtrables par dépôt : sa photo, sa stack et ses technologies principales, ses PR de code, mergées et leur délai
   de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
   ouvre la fiche de la personne, une carte qui s'incline vers la souris : taux de merge, attente de la première
-  review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts.
+  review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts. Sous chaque
+  chiffre, la médiane des personnes de la même stack (de toute l'équipe si la stack compte moins de trois personnes) :
+  de quoi situer la personne parmi celles qui font le même travail, sans score ni classement.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par

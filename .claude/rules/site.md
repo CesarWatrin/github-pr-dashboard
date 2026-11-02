@@ -42,6 +42,9 @@ paths:
     `reviewNetwork()`. The card leans towards a mouse (`tiltPersonCard()`, measured on its scene, which does not turn)
     and catches the light (`--glare`, `--sheen-*`); never for touch, nor under `prefers-reduced-motion`. No chart or
     tooltip in the dialog: the tooltip would sit under it.
+  - Each figure of the dialog shows the median of the person's peers (`statList()` given their details): the people
+    of the same stack, or the whole team under `MIN_PEERS`; writing figures among those who wrote code, review figures
+    among those who reviewed. A comparison with people doing the same work, never a score or a ranking.
 - The "Méthode" page keeps the rules shared by the whole dashboard; what a single column counts goes in its `hint`.
 
 ## Look and feel

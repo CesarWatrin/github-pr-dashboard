@@ -1513,13 +1513,19 @@ main.is-loading {
   border-top: 0;
 }
 
-/* A label may take two lines in the dialog: the values of a row stay aligned at the bottom. */
+/* A label may take two lines in the dialog: the values of a row, and the medians under them, stay aligned. */
 .person-dialog-section .person-stats div {
-  align-content: space-between;
+  grid-template-rows: 1fr auto auto;
 }
 
 .person-dialog-section .person-stats dt {
   white-space: normal;
+}
+
+.person-stats-peer {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .person-dialog-columns {
