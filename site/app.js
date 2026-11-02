@@ -24,7 +24,7 @@ const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
 const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
-const UNLOCK_DURATION_MS = 7 * 24 * 60 * 60_000
+const UNLOCK_DURATION_MS = 30 * 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const CUSTOM_PERIOD = 'custom'
 // Picked dates are shown by day up to a month, then by week up to four months, then by month.
@@ -2572,7 +2572,7 @@ async function refresh() {
     return
   }
   if (Date.now() > state.keyExpiresAt) {
-    lock('L’accès dure sept jours : saisis à nouveau le mot de passe.')
+    lock('L’accès dure 30 jours : saisis à nouveau le mot de passe.')
 
     return
   }
