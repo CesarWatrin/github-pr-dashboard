@@ -46,14 +46,18 @@ la recherche s'appliquent à toutes :
   un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
   seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité. Ses
   PR restent comptées dans les totaux, les graphiques et les dépôts.
+- **Dépôts** : une carte par dépôt avec des PR de code sur la période, filtrables par dépôt : son type, ses
+  technologies, les personnes de l'équipe qui l'écrivent le plus, son bus factor (le plus petit nombre de personnes
+  qui écrivent à elles seules la moitié de ses PR), son volume, ses délais de review et de merge, ses déploiements et
+  sa CI. En tête, les dépôts actifs qui reposent sur une seule personne, ou sur des personnes parties.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/equipe`, `#/tma`, `#/devops`,
-`#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/equipe`, `#/depots`, `#/tma`,
+`#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.

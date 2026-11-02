@@ -1363,6 +1363,149 @@ main.is-loading {
   line-height: 1.2;
 }
 
+/* Repositories page: one card per repository, wider than those of people for their nine figures. Not clickable: they
+   do not move on hover. */
+.repo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+}
+
+.repo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.repo-card > .person-stats {
+  margin-top: auto;
+}
+
+.repo-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.repo-card-name {
+  overflow: hidden;
+  color: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-card-head .stack-logos {
+  margin-left: auto;
+}
+
+.repo-card-people {
+  display: grid;
+  gap: 8px;
+}
+
+.repo-card-people-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.repo-card-people ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repo-card-people li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.repo-card-people p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.repo-card-share,
+.fragile-share {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The bus factor of a repository: quiet, unless the repository rests on a single person or on people who left. */
+.bus-factor {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bus-factor.is-fragile {
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+  color: var(--text-primary);
+}
+
+/* The repositories that rest on a single person: the repository, the person, the share they wrote. */
+.fragile-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fragile-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
+}
+
+.fragile-repo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fragile-repo a {
+  overflow: hidden;
+  color: inherit;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .fragile-list li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fragile-share {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Badges, like GitHub achievements: a round medal of its tier's metal, its icon in the middle, the length of its run of
    months on a tab. On a card they sit in a row under the stack; in the dialog, larger, on the right of the head. */
 .person-badges,
@@ -2591,7 +2734,8 @@ tbody td.person {
   animation-delay: calc(var(--delay, 0ms) + 120ms);
 }
 
-.is-entering .person-card {
+.is-entering .person-card,
+.is-entering .repo-card {
   animation: rise-in 420ms var(--ease-out) both;
   animation-delay: calc(var(--delay, 0ms) + 60ms);
 }

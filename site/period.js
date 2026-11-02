@@ -575,6 +575,24 @@ function dependencyStats(repositories, ecosystems) {
   }
 }
 
+// The bus factor of a repository: the fewest people who together wrote at least half of its code pull requests. counts
+// holds the pull requests of each person still in the team, total those of everyone, people who left included: 0 when
+// those still in the team wrote less than half of them, null without any pull request.
+export function busFactor(counts, total) {
+  if (total === 0) {
+    return null
+  }
+  let written = 0
+  for (const [index, count] of counts.toSorted((a, b) => b - a).entries()) {
+    written += count
+    if (2 * written >= total) {
+      return index + 1
+    }
+  }
+
+  return 0
+}
+
 // When each person first and last shows in the records, whatever the range: a pull request opened, a review or a
 // comment, or a merge, as { first, last } in minutes since the epoch. Bot pull requests do not count for their author,
 // but the people who review or merge them do. The records only cover the rolling window: a person already active at its

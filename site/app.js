@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -76,6 +76,7 @@ const ROUTES = {
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
+  repositories: { hash: '#/depots', title: 'Dépôts', subtitle: 'Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -451,6 +452,53 @@ const SENIORITY_LEGEND = {
   label: 'Ancienneté',
   hint: `Depuis la première PR, review ou commentaire de la personne. Les données couvrent un an : une première activité dans ses ${SENIORITY_START_DAYS} premiers jours compte pour plus d’un an.`,
 }
+// The figures of each repository's card, over the period. The hints make the legend under the cards.
+const REPOSITORY_STATS = [
+  { key: 'code', label: 'PR de code', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  { key: 'authors', label: 'Auteurs', hint: 'Personnes qui ont ouvert ces PR, parties comprises.' },
+  { key: 'reviewers', label: 'Relecteurs', hint: 'Personnes intervenues sur des PR de code du dépôt sur la période.' },
+  {
+    key: 'medianTimeToFirstReviewHours',
+    label: '1re review',
+    format: formatDuration,
+    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
+  },
+  { key: 'medianTimeToMergeHours', label: 'Merge en', format: formatDuration, hint: 'Médiane, de la création au merge.' },
+  {
+    key: 'unreviewedRate',
+    label: 'Sans review',
+    format: formatShare,
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+  {
+    key: 'deployments',
+    label: 'Déploiements',
+    hint: 'PR mergées dans master ou main sur la période : releases, hotfix et merges directs.',
+  },
+  {
+    key: 'medianLeadTimeHours',
+    label: 'Jusqu’en prod',
+    format: formatDuration,
+    hint: 'Médiane, de l’ouverture d’une PR de code à son arrivée en prod, pour celles arrivées sur la période.',
+  },
+  {
+    key: 'ciFailureRate',
+    label: 'CI en échec',
+    format: formatShare,
+    hint: 'Part des exécutions GitHub Actions en échec, sur des PR ou des push.',
+  },
+]
+// Explained in the legend under the cards, with the figures.
+const BUS_FACTOR_LEGEND = {
+  label: 'Bus factor',
+  hint: 'Le plus petit nombre de personnes de l’équipe qui ont écrit à elles seules au moins la moitié des PR de code du dépôt sur la période : à 1, le dépôt repose sur une seule personne. « Auteurs partis » : celles encore là en ont écrit moins de la moitié.',
+}
+// Fewest code pull requests for a repository to be listed among those that rest on a single person: under it, one
+// author is no sign of anything.
+const FRAGILE_MIN_PRS = 10
+// The people listed on a repository's card, those who wrote the most first.
+const REPOSITORY_TOP_AUTHORS = 3
+
 // How far the open card leans towards the pointer, at its edges.
 const PERSON_TILT_DEG = 4
 
@@ -716,7 +764,7 @@ const state = {
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, collaboration: null, team: null },
+  repos: { authors: null, reviewers: null, collaboration: null, team: null, repositories: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -2075,6 +2123,182 @@ function renderTeam() {
   container.replaceChildren(...rows.map(personCard))
 }
 
+// Repositories page
+
+// The CI of the period per repository: its runs, the share of them that failed.
+function ciPerRepository() {
+  const range = periodRange()
+  const workflows = new Map()
+  for (const workflow of state.stats.ci ?? []) {
+    if (!workflows.has(workflow.repo)) {
+      workflows.set(workflow.repo, [])
+    }
+    workflows.get(workflow.repo).push(workflow)
+  }
+
+  return new Map([...workflows].map(([repo, list]) => [repo, computeCi(list, range).totals]))
+}
+
+// Each repository with code pull requests opened over the period, on the repositories selected on its page: its
+// figures, the people still in the team who wrote them, the most first, and its bus factor. The figures count everyone,
+// people who left included, as the other figures of repositories do.
+function repositoryRows() {
+  const period = currentPeriod()
+  const rows = new Map()
+  for (const person of period.authors) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      if (stats.code === 0 || !inSelection(state.repos.repositories, repo)) {
+        continue
+      }
+      if (!rows.has(repo)) {
+        rows.set(repo, { repo, code: 0, merged: 0, unreviewed: 0, timesToFirstReview: [], timesToMerge: [], authors: [], reviewers: 0 })
+      }
+      const row = rows.get(repo)
+      row.code += stats.code
+      row.merged += stats.merged
+      row.unreviewed += stats.unreviewed
+      row.timesToFirstReview.push(...stats.timesToFirstReviewHours)
+      row.timesToMerge.push(...stats.timesToMergeHours)
+      row.authors.push([person.login, stats.code])
+    }
+  }
+  for (const person of period.reviewers) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      if (stats.prs > 0 && rows.has(repo)) {
+        rows.get(repo).reviewers++
+      }
+    }
+  }
+  const delivery = new Map(period.delivery.repositories.map((row) => [row.repo, row]))
+  const ci = ciPerRepository()
+
+  return [...rows.values()]
+    .map((row) => {
+      const writers = row.authors.filter(([login]) => isCurrent(login)).sort((a, b) => b[1] - a[1])
+
+      return {
+        repo: row.repo,
+        category: repoInfo(row.repo).category,
+        technologies: repoInfo(row.repo).technologies,
+        code: row.code,
+        authors: row.authors.length,
+        reviewers: row.reviewers,
+        medianTimeToFirstReviewHours: median(row.timesToFirstReview),
+        medianTimeToMergeHours: median(row.timesToMerge),
+        unreviewedRate: row.merged ? row.unreviewed / row.merged : null,
+        deployments: delivery.get(row.repo)?.deployments ?? 0,
+        medianLeadTimeHours: delivery.get(row.repo)?.medianLeadTimeHours ?? null,
+        ciFailureRate: ci.get(row.repo)?.failureRate ?? null,
+        writers,
+        busFactor: busFactor(writers.map(([, code]) => code), row.code),
+      }
+    })
+    .sort((a, b) => b.code - a.code || a.repo.localeCompare(b.repo))
+}
+
+const repoLink = (repo, className = '') =>
+  el('a', { className, href: githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}`), target: '_blank', rel: 'noopener', textContent: repo })
+
+// The share of a repository's code pull requests written by the people still in the team.
+const writtenShare = (row, writers = row.writers) => writers.reduce((total, [, code]) => total + code, 0) / row.code
+
+function busFactorTag(value) {
+  return el('span', {
+    className: value <= 1 ? 'bus-factor is-fragile' : 'bus-factor',
+    textContent: value === 0 ? 'Auteurs partis' : `Bus factor ${value}`,
+    title: BUS_FACTOR_LEGEND.hint,
+  })
+}
+
+function technologyLogos(technologies) {
+  const names = technologies.slice(0, STACK_TECHNOLOGIES).map(([name]) => name)
+  const logos = el('span', { className: 'stack-logos', title: names.join(', ') }, ...names.map((name) => technologyIcon(name)))
+  if (names.length) {
+    logos.setAttribute('role', 'img')
+    logos.setAttribute('aria-label', `Technos : ${names.join(', ')}`)
+  }
+
+  return logos
+}
+
+function repositoryCard(row, index) {
+  const writers = row.writers.slice(0, REPOSITORY_TOP_AUTHORS)
+  const people = writers.length
+    ? el(
+        'ul',
+        {},
+        ...writers.map(([login, code]) =>
+          el(
+            'li',
+            {},
+            personLink(login),
+            el('span', {
+              className: 'repo-card-share',
+              textContent: formatShare(code / row.code),
+              title: `${formatNumber(code)} PR de code sur ${formatNumber(row.code)}`,
+            }),
+          ),
+        ),
+      )
+    : el('p', { className: 'muted', textContent: 'Plus personne de l’équipe' })
+  const card = el(
+    'article',
+    { className: 'repo-card' },
+    el('div', { className: 'repo-card-head' }, repoLink(row.repo, 'repo-card-name'), repoTypeTag(row.category), technologyLogos(row.technologies)),
+    el(
+      'div',
+      { className: 'repo-card-people' },
+      el('div', { className: 'repo-card-people-head' }, el('span', { textContent: 'Qui l’écrit' }), busFactorTag(row.busFactor)),
+      people,
+    ),
+    statList(REPOSITORY_STATS, row),
+  )
+  card.setAttribute('aria-label', row.repo)
+  card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
+
+  return card
+}
+
+// The busy repositories that rest on a single person of the team, or on people who left, the busiest first.
+function renderFragile(rows) {
+  const fragile = rows.filter((row) => row.busFactor <= 1 && row.code >= FRAGILE_MIN_PRS)
+  $('[data-repositories-fragile-card]').hidden = fragile.length === 0
+  $('[data-repositories-fragile-sub]').textContent =
+    `Au moins ${FRAGILE_MIN_PRS} PR de code sur la période, dont au moins la moitié écrites par une seule personne de l’équipe, ou plus de la moitié par des personnes parties`
+  $('[data-repositories-fragile]').replaceChildren(
+    ...fragile.map((row) =>
+      el(
+        'li',
+        {},
+        el('span', { className: 'fragile-repo' }, repoLink(row.repo), repoTypeTag(row.category)),
+        row.busFactor === 1 ? personLink(row.writers[0][0]) : el('span', { className: 'muted', textContent: 'Auteurs partis' }),
+        el('span', {
+          className: 'fragile-share',
+          textContent:
+            row.busFactor === 1
+              ? `${formatShare(writtenShare(row, row.writers.slice(0, 1)))} des ${formatNumber(row.code)} PR de code`
+              : `${formatShare(writtenShare(row))} des ${formatNumber(row.code)} PR de code par l’équipe actuelle`,
+        }),
+      ),
+    ),
+  )
+}
+
+function renderRepositories() {
+  const rows = repositoryRows().filter((row) => matchesQuery(row.repo, ...row.technologies.map(([name]) => name)))
+  renderFragile(rows)
+  const container = $('[data-repositories]')
+  if (rows.length === 0) {
+    const filtered = state.query || state.repos.repositories
+    container.replaceChildren(
+      el('p', { className: 'feed-empty', textContent: filtered ? 'Aucun dépôt ne correspond à ces filtres' : 'Aucun dépôt sur la période' }),
+    )
+
+    return
+  }
+  container.replaceChildren(...rows.map(repositoryCard))
+}
+
 // The busiest people or repositories of a person, each with its count of pull requests.
 function topList(title, items, withAvatar) {
   const list = items.length
@@ -2283,6 +2507,7 @@ function renderTableLegends() {
     $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
   $('[data-table-legend="team"]').replaceChildren(...legend([SENIORITY_LEGEND, BADGES_LEGEND, ...TEAM_STATS, DEPENDENCY_STAT]))
+  $('[data-table-legend="repositories"]').replaceChildren(...legend([BUS_FACTOR_LEGEND, ...REPOSITORY_STATS]))
 }
 
 function renderStackLegends() {
@@ -2560,7 +2785,7 @@ const TABLES = {
     searchTexts: (row) => [row.repo],
   },
 }
-// The repository filters: those of the tables, and the one of the team page, which has no table.
+// The repository filters: those of the tables, and those of the team and repositories pages, which have no table.
 const REPO_FILTERS = {
   ...Object.fromEntries(Object.entries(TABLES).filter(([, table]) => table.repoCounts)),
   team: {
@@ -2568,6 +2793,12 @@ const REPO_FILTERS = {
     repoCounts: () => TABLES.collaboration.repoCounts(),
     repoCountsLabel: 'PR de code ouvertes sur la période',
     onFilter: () => renderTeam(),
+  },
+  repositories: {
+    source: 'authors',
+    repoCounts: () => TABLES.collaboration.repoCounts(),
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+    onFilter: () => renderRepositories(),
   },
 }
 const REPO_FILTER_NAMES = Object.keys(REPO_FILTERS)
@@ -2693,21 +2924,14 @@ function stackCell({ counts, technologies }) {
   return el('td', {}, cell)
 }
 
-function repoCell({ repo, category }) {
+function repoTypeTag(category) {
   const type = CATEGORIES.find((item) => item.key === category) ?? CATEGORIES.at(-1)
-  const link = el('a', {
-    href: githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}`),
-    target: '_blank',
-    rel: 'noopener',
-    textContent: repo,
-  })
 
-  return el(
-    'td',
-    { className: 'person repo-cell' },
-    link,
-    el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() }),
-  )
+  return el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() })
+}
+
+function repoCell({ repo, category }) {
+  return el('td', { className: 'person repo-cell' }, repoLink(repo), repoTypeTag(category))
 }
 
 function technologiesCell(technologies) {
@@ -3414,6 +3638,7 @@ function render(animate) {
   }
   renderTables(animate)
   renderTeam()
+  renderRepositories()
   renderFeed(animate)
   renderWaiting(animate)
   renderUnapproved(animate)
@@ -3682,6 +3907,7 @@ $('[data-search]').addEventListener('input', (event) => {
     renderTables(false)
     renderCollaboration()
     renderTeam()
+    renderRepositories()
     renderFeed(false)
     renderWaiting(false)
     renderUnapproved(false)
