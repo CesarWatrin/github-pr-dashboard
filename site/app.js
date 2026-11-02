@@ -1635,8 +1635,18 @@ function renderPairs(network) {
 
 // Team page
 
-// Everyone who wrote or reviewed code over the period, in alphabetical order rather than ranked: what each person wrote,
-// then what they reviewed. The stack comes from their code pull requests, else from the ones they reviewed.
+// The groups of the team page, in this order. People whose pull requests all went to docs, infrastructure or tooling
+// repositories have no stack: they come last.
+const TEAM_GROUPS = [
+  { key: 'back', label: 'Back' },
+  { key: 'front', label: 'Front' },
+  { key: 'full-stack', label: 'Full-stack' },
+  { key: 'mobile', label: 'Mobile' },
+  { key: null, label: 'Autres' },
+]
+
+// Everyone who wrote or reviewed code over the period, most code pull requests first, then by name: what each person
+// wrote, then what they reviewed. The stack comes from their code pull requests, else from the ones they reviewed.
 function teamRows() {
   const period = currentPeriod()
   const rows = new Map()
@@ -1675,17 +1685,22 @@ function teamRows() {
   const reviewersOf = new Map(reviewNetwork(period).authors.map((author) => [author.login, author.reviewers]))
 
   return [...rows.values()]
-    .map((totals) => ({
-      login: totals.login,
-      code: totals.code,
-      merged: totals.code ? totals.merged : null,
-      medianTimeToMergeHours: median(totals.timesToMerge),
-      reviewed: totals.reviewed,
-      commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
-      reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
-      stack: stackOf(totals.code ? totals.codeRepos : totals.reviewedRepos),
-    }))
-    .sort((a, b) => displayName(a.login).localeCompare(displayName(b.login), 'fr'))
+    .map((totals) => {
+      const stack = stackOf(totals.code ? totals.codeRepos : totals.reviewedRepos)
+
+      return {
+        login: totals.login,
+        code: totals.code,
+        merged: totals.code ? totals.merged : null,
+        medianTimeToMergeHours: median(totals.timesToMerge),
+        reviewed: totals.reviewed,
+        commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
+        reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
+        stack,
+        type: stackType(stack.counts)?.key ?? null,
+      }
+    })
+    .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
 }
 
 function personCard(row, index) {
@@ -1747,7 +1762,29 @@ function renderTeam() {
 
     return
   }
-  container.replaceChildren(...rows.map(personCard))
+  let index = 0
+  container.replaceChildren(
+    ...TEAM_GROUPS.flatMap((group) => {
+      const members = rows.filter((row) => row.type === group.key)
+      if (members.length === 0) {
+        return []
+      }
+
+      return [
+        el(
+          'section',
+          { className: 'person-group' },
+          el(
+            'h2',
+            { className: 'person-group-title' },
+            el('span', { className: `stack-type is-${group.key ?? 'other'}`, textContent: group.label }),
+            el('span', { className: 'person-group-count', textContent: `${formatNumber(members.length)} ${members.length > 1 ? 'personnes' : 'personne'}` }),
+          ),
+          el('div', { className: 'person-cards' }, ...members.map((row) => personCard(row, index++))),
+        ),
+      ]
+    }),
+  )
 }
 
 function renderCharts() {
