@@ -46,9 +46,9 @@ paths:
     whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
     synced year, which only covers a year, else the months since then.
 - **Badges** (team cards and dialog): `BADGES` names each one after a monthly figure of `monthlyActivity()` in
-  `site/period.js`. `badgesOf()` gives them to the top of the whole team for each whole Paris month of the synced year
-  (`badgeMonths()`), ties sharing, the people who left included in the race; the tier comes from the longest run of
-  months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the charts would
+  `site/period.js`. `badgesOf()` gives them to the top of the whole team for each month of the history the sync
+  publishes (`stats.monthly`, since the first sync; without it, the whole months of the window), ties sharing, the
+  people who left included in the race; the tier comes from the longest run of calendar months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the charts would
   sit under the dialog. In the dialog it opens below the medals, clear of the close button.
 - **Names of people**: always `personLink(login)` (with or without the avatar), never a GitHub link. Wherever it
   shows, a table, a feed, the pairs, the former people or the dialog itself, it opens the person's dialog

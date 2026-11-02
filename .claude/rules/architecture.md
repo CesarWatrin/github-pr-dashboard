@@ -9,15 +9,18 @@
    never cancelled), 45 minutes at most.
 2. **Snapshot** (`.cache/snapshot.json`, never published, kept in the Actions cache): the raw pull requests created
    over the rolling window (365 days), the Actions runs of the window, display names, bot accounts, the languages and
-   frameworks of each repository. `SNAPSHOT_VERSION` in the sync: bumping it makes the next run read everything again.
+   frameworks of each repository, and the monthly history of each person's figures (`monthly`), which outlasts the
+   window: it goes back to the first sync. `SNAPSHOT_VERSION` in the sync: bumping it makes the next run read everything
+   again, the monthly history aside, read back from the published stats.
 3. **Published data** (`site/data/`, written by the sync, never committed):
    - `stats.enc.json`: `{ iterations, salt, iv, data }`. The JSON is gzipped then encrypted with AES-256-GCM; the key
      is derived from `DASHBOARD_PASSWORD` with PBKDF2-SHA256 (600 000 iterations) and a salt made of the first 16
      bytes of `sha256("github-pr-dashboard:" + ORG)`, so it stays the same from one sync to the next.
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
      today's counters, the 7-day activity feed, the pull requests waiting for a review, the sync trigger (with
-     `DISPATCH_TOKEN`), and above all `pullRequests` (one compact record per pull request, no title or content) and
-     `ci` (Actions runs per repository, workflow and Paris day).
+     `DISPATCH_TOKEN`), and above all `pullRequests` (one compact record per pull request, no title or content),
+     `ci` (Actions runs per repository, workflow and Paris day) and `monthly` (each person's monthly figures since the
+     first sync, for the badges).
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
    only when `generatedAt` changes, reloads itself when `build` changes. It decrypts with Web Crypto and keeps the
@@ -44,6 +47,7 @@ deploy to: no workflow of another branch can read them.
 | `FULL_SYNC` / `--full` | workflow input / CLI | Full sync instead of an incremental one |
 | `BUILD_ID` | workflow | Commit of the deployed page, published in `version.json` |
 | `SNAPSHOT_PATH`, `STATS_PATH` | anywhere | Where the snapshot and the stats go, to run a sync outside the repository |
+| `PUBLISHED_STATS_URL` | anywhere | Where the sync reads back the monthly history when the snapshot has none; by default the GitHub Pages address of `GITHUB_REPOSITORY` in CI |
 
 Changing `DASHBOARD_PASSWORD` locks every open page until the new password is typed. The sync button only shows when
 `DISPATCH_TOKEN` is set: that token travels inside the encrypted stats, so anyone with the password can start a

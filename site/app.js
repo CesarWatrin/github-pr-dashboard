@@ -432,9 +432,9 @@ const SENIORITY_START_DAYS = 14
 // A person without any pull request, review, comment or merge for this long has left the team.
 const FORMER_AFTER_DAYS = 30
 const MONTH_MS = (365.25 / 12) * DAY_MS
-// Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month of the synced year,
-// ties sharing it. Their tier comes from the longest run of months in a row: bronze for one, silver for two, gold for
-// three or more. The key is one of the monthly figures of monthlyActivity().
+// Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month since the first
+// sync (the monthly history it keeps), ties sharing it. Their tier comes from the longest run of months in a row: bronze
+// for one, silver for two, gold for three or more. The key is one of the monthly figures of monthlyActivity().
 const BADGES = [
   { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes' },
   { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues' },
@@ -444,7 +444,7 @@ const BADGES = [
 const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
 const BADGES_LEGEND = {
   label: 'Badges',
-  hint: `${BADGES.map((badge) => `${badge.icon} ${badge.name} : ${badge.what}`).join(' · ')}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus ; sur l’année synchronisée, quels que soient la période et le filtre.`,
+  hint: `${BADGES.map((badge) => `${badge.icon} ${badge.name} : ${badge.what}`).join(' · ')}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus. Ils se gagnent depuis la première synchro et restent acquis, quels que soient la période et le filtre.`,
 }
 // Explained in the legend under the cards, with the figures.
 const SENIORITY_LEGEND = {
@@ -1891,44 +1891,70 @@ function badgeMonths() {
   return months
 }
 
+// The monthly figures the badges are won over, as { 'YYYY-MM': { login: figures } }: the history the sync keeps since
+// its first run, whole months only, so that badges outlast the window. Stats published before it come without one:
+// the whole months of the window are then worked out from its pull requests.
+function badgeHistory() {
+  if (state.stats.monthly) {
+    return state.stats.monthly
+  }
+  const activity = monthlyActivity(state.stats.pullRequests)
+
+  return Object.fromEntries(
+    badgeMonths().map((month) => [
+      month,
+      Object.fromEntries([...activity].filter(([, perMonth]) => perMonth.has(month)).map(([person, perMonth]) => [person, perMonth.get(month)])),
+    ]),
+  )
+}
+
+// The rank of a month: months in a row follow each other even across a gap in the history.
+function monthRank(month) {
+  const [year, number] = month.split('-').map(Number)
+
+  return year * 12 + number
+}
+
 // Each person's badges, worked out once per stats over everyone, the people who left included: a month someone who left
 // was the top of, nobody else was. For each badge won: the months won, the longest run of them in a row and its tier.
 function badgesOf(login) {
   if (state.badges?.stats !== state.stats) {
-    const activity = monthlyActivity(state.stats.pullRequests)
-    const months = badgeMonths()
+    const history = badgeHistory()
+    const months = Object.keys(history).sort()
     const byLogin = new Map()
     for (const badge of BADGES) {
       const won = new Map()
-      months.forEach((month, index) => {
-        const values = [...activity].map(([person, perMonth]) => [person, perMonth.get(month)?.[badge.key] ?? 0])
+      for (const month of months) {
+        const values = Object.entries(history[month]).map(([person, figures]) => [person, figures[badge.key] ?? 0])
         const best = Math.max(0, ...values.map(([, value]) => value))
         for (const [person, value] of values) {
           if (best > 0 && value === best) {
-            won.set(person, [...(won.get(person) ?? []), index])
+            won.set(person, [...(won.get(person) ?? []), month])
           }
         }
-      })
-      for (const [person, indexes] of won) {
+      }
+      for (const [person, wonMonths] of won) {
         // The longest run of months in a row, the latest one on a tie.
-        let run = { start: indexes[0], end: indexes[0] }
+        let run = { from: wonMonths[0], to: wonMonths[0], length: 1 }
         let longest = run
-        for (const index of indexes.slice(1)) {
-          run = index === run.end + 1 ? { start: run.start, end: index } : { start: index, end: index }
-          if (run.end - run.start >= longest.end - longest.start) {
+        for (const month of wonMonths.slice(1)) {
+          run =
+            monthRank(month) === monthRank(run.to) + 1
+              ? { from: run.from, to: month, length: run.length + 1 }
+              : { from: month, to: month, length: 1 }
+          if (run.length >= longest.length) {
             longest = run
           }
         }
-        const streak = longest.end - longest.start + 1
         byLogin.set(person, [
           ...(byLogin.get(person) ?? []),
           {
             ...badge,
-            total: indexes.length,
-            streak,
-            from: months[longest.start],
-            to: months[longest.end],
-            tier: streak >= 3 ? 'gold' : streak === 2 ? 'silver' : 'bronze',
+            total: wonMonths.length,
+            streak: longest.length,
+            from: longest.from,
+            to: longest.to,
+            tier: longest.length >= 3 ? 'gold' : longest.length === 2 ? 'silver' : 'bronze',
           },
         ])
       }
