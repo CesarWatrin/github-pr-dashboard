@@ -1522,6 +1522,21 @@ main.is-loading {
   white-space: normal;
 }
 
+/* A figure explained under its value takes more room; its row aligns at the top. */
+.person-stats .is-wide {
+  grid-column: span 4;
+}
+
+.person-stats:has(.is-wide) div {
+  align-content: start;
+}
+
+.person-stats-note {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .person-dialog-columns {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1532,6 +1547,10 @@ main.is-loading {
 @media (max-width: 760px) {
   .person-dialog-section .person-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .person-stats .is-wide {
+    grid-column: span 2;
   }
 
   .person-dialog-columns {
