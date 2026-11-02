@@ -1985,7 +1985,7 @@ main.is-loading {
   visibility: visible;
 }
 
-/* The medals a card leaves out: "+N" in a plain disc the size of a medal, their names in its tooltip. */
+/* The medals left out: "+N" in a plain disc the size of a medal, their names in its tooltip. */
 .badge-more {
   position: relative;
   display: inline-grid;
@@ -2000,6 +2000,12 @@ main.is-loading {
   font-size: 12px;
   font-weight: 600;
   cursor: default;
+}
+
+.badge-more.is-large {
+  width: 58px;
+  height: 58px;
+  font-size: 16px;
 }
 
 /* In the dialog the medals sit at the top right, near the close button, which comes forward as the card leans: their

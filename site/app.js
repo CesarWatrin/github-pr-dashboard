@@ -653,8 +653,8 @@ const BADGES = [
   },
 ]
 const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
-// The medals a person's card shows, the best ones: the others gather under a "+N", so that the card does not grow.
-const CARD_BADGES = 3
+// The medals a person's card and dialog show, the best ones: the others gather under a "+N", so that neither grows.
+const SHOWN_BADGES = 3
 const TIER_ORDER = ['gold', 'silver', 'bronze']
 const BADGES_LEGEND = {
   label: 'Badges',
@@ -2578,17 +2578,17 @@ function badgeRow(login, className, size, limit = Infinity) {
           'div',
           { className },
           ...won.slice(0, limit).map((badge) => badgeMedal(badge, size)),
-          ...(others.length ? [moreBadges(others)] : []),
+          ...(others.length ? [moreBadges(others, size)] : []),
         ),
       ]
     : []
 }
 
-// The medals a card leaves out, as "+N" the size of a medal: on hover or focus, their names and tiers.
-function moreBadges(badges) {
+// The medals left out, as "+N" the size of a medal: on hover or focus, their names and tiers.
+function moreBadges(badges, size) {
   const more = el(
     'span',
-    { className: 'badge-more', tabIndex: 0 },
+    { className: `badge-more is-${size}`, tabIndex: 0 },
     el('span', { textContent: `+${badges.length}` }),
     el(
       'span',
@@ -2648,7 +2648,7 @@ function personCard(row, index) {
   )
   open.setAttribute('aria-haspopup', 'dialog')
   open.addEventListener('click', () => openPersonDialog(row, open))
-  const badges = badgeRow(row.login, 'person-badges', 'small', CARD_BADGES)
+  const badges = badgeRow(row.login, 'person-badges', 'small', SHOWN_BADGES)
   // Above the button of the card for their hover, the badges still open the dialog.
   badges[0]?.addEventListener('click', () => open.click())
   const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...badges, statList(TEAM_STATS, row))
@@ -3437,7 +3437,7 @@ function openPersonDialog(row, opener) {
             textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
           }),
         ),
-        ...badgeRow(row.login, 'person-dialog-badges', 'large'),
+        ...badgeRow(row.login, 'person-dialog-badges', 'large', SHOWN_BADGES),
       ),
       el('p', {
         className: 'person-dialog-scope',

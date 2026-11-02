@@ -81,9 +81,9 @@ paths:
   publishes (`stats.monthly`, since the first sync; without it, the whole months of the window), ties sharing, the
   people who left included in the race; `badgesOf()` gives each person's badges, the tier coming from the longest run
   of calendar months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the
-  charts would sit under the dialog. In the dialog it opens below the medals, clear of the close button. A card shows
-  its `CARD_BADGES` best medals, the others under a « +N » (`moreBadges()`) whose tooltip names them; the dialog shows
-  them all.
+  charts would sit under the dialog. In the dialog it opens below the medals, clear of the close button. A card and
+  the dialog show the `SHOWN_BADGES` best medals, the others under a « +N » (`moreBadges()`) whose tooltip names
+  them.
   - The awards page (`renderAwards()`) shows the leaders of the last whole month and of the current one so far, the
     holders of each badge still in the team, and the leaders of every month of the history. Each badge's holders
     scroll past five or so, so that the page does not grow as months go by: there, the medals take the tooltip of the

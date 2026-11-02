@@ -56,7 +56,7 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur et 🧹 Coup de balai, pour le plus de PR de code, de PR relues, de commentaires de
   review, de hotfix, de lignes ajoutées ou de lignes supprimées de toute l'équipe sur un mois complet (les lignes au
   mois du merge). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
-  s'affiche au survol. Une carte en montre trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
+  s'affiche au survol. Une carte et une fiche en montrent trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
   mensuel de chacun au-delà de la fenêtre de 12 mois, dans son snapshot, et le relit dans les stats déjà publiées si
   le cache d'Actions s'est perdu.
 - **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
