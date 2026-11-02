@@ -39,7 +39,11 @@ paths:
 
 - `toPeriodRecord()`: one compact record per pull request, times in **minutes since the epoch**, interventions of
   other people as `[login, at, state, comments]`, plus optional fields (`deployment`, `revert`, `deployedAt`,
-  `checksFailed`, `dependency`, `draft` for an open draft). `site/period.js` documents the shape and is the only consumer.
+  `checksFailed`, `dependency`, `draft` for an open draft, `codeOwners` for an open pull request GitHub does not let
+  merge while code owners are still asked to review it). The snapshot keeps for each pull request GitHub's
+  `reviewDecision` and its pending `codeOwnerRequests`: optional fields, no `SNAPSHOT_VERSION` bump, filled for the
+  pull requests the sync reads again (a full sync reads them all). `graphql()` lets through the errors on a
+  `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/period.js` documents the shape and is the only consumer.
 - `computeCi()`: per repository, workflow and Paris day, `[runs, failed, rerun, durations in seconds]`, for runs on pull
   requests and pushes that reached a verdict (cancelled and skipped ones left out).
 - `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first

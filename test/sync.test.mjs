@@ -180,6 +180,9 @@ describe('toPeriodRecord', () => {
     botChore: pullRequest({ number: 8, author: 'robot', head: 'chore/update', mergedAt: '2026-03-08T10:00:00Z' }),
     failedChecks: pullRequest({ number: 9, checks: 'FAILURE' }),
     draft: pullRequest({ number: 10, draft: true }),
+    ownersWaited: pullRequest({ number: 12, reviewDecision: 'REVIEW_REQUIRED', codeOwnerRequests: ['carol', '@backend', null] }),
+    ownersApproved: pullRequest({ number: 13, reviewDecision: 'APPROVED', codeOwnerRequests: ['carol'] }),
+    ownersMerged: pullRequest({ number: 14, mergedAt: '2026-03-02T15:00:00Z', reviewDecision: 'REVIEW_REQUIRED', codeOwnerRequests: ['carol'] }),
     closedDraft: pullRequest({ number: 11, draft: true, state: 'CLOSED', closedAt: '2026-03-02T09:00:00Z' }),
   }
   const index = deliveryIndex(Object.values(PULL_REQUESTS))
@@ -231,6 +234,13 @@ describe('toPeriodRecord', () => {
     assert.equal(recordOf('draft').draft, true)
     assert.equal(recordOf('closedDraft').draft, undefined)
     assert.equal(recordOf('feature').draft, undefined)
+  })
+
+  test('code owners still asked to review an open pull request GitHub does not let merge yet', () => {
+    assert.deepEqual(recordOf('ownersWaited').codeOwners, ['carol', '@backend', null])
+    assert.equal(recordOf('ownersApproved').codeOwners, undefined)
+    assert.equal(recordOf('ownersMerged').codeOwners, undefined)
+    assert.equal(recordOf('feature').codeOwners, undefined)
   })
 
   test('nothing but what the stats need: no title, no branch', () => {

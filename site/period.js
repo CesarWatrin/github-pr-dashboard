@@ -5,7 +5,9 @@
 // { repo, number, author, bot, kind, hotfix, production, createdAt, mergedAt, closed, lines, mergedBy, interventions }
 // with interventions as [login, at, state, comments], oldest first, bots and the author left out. Optional fields:
 // deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
-// checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update) and draft (still open as one).
+// checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update), draft (still open as one) and
+// codeOwners (the code owners still asked to review it while GitHub does not let it merge: logins, teams as @slug, null
+// for one the sync could not read).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -47,9 +49,49 @@ export function parisMidnight(day) {
   return time
 }
 
+// Working time, the only time every delay of the dashboard counts: Monday to Friday, from 9 to 18, Paris time. A pull
+// request opened on Friday evening and reviewed on Monday morning has not waited the weekend.
+export const WORK_DAY_HOURS = 9
+const WORK_START_HOUR = 9
+const WORK_DAYS_A_WEEK = 5
+
+const isWorkDay = (day) => ![0, 6].includes(new Date(`${day}T12:00:00Z`).getUTCDay())
+const dayNumber = (day) => Date.parse(`${day}T00:00:00Z`) / DAY_MS
+
+// The working minutes of a Paris day between two instants, in minutes since the epoch. Clocks only change on Sundays:
+// a working day always starts nine hours after its midnight.
+function workMinutesOf(day, from, to) {
+  if (!isWorkDay(day)) {
+    return 0
+  }
+  const start = parisMidnight(day) / MINUTE_MS + WORK_START_HOUR * 60
+
+  return Math.max(0, Math.min(to, start + WORK_DAY_HOURS * 60) - Math.max(from, start))
+}
+
+// The working hours between two instants, in minutes since the epoch.
+export function workHoursBetween(from, to) {
+  if (to <= from) {
+    return 0
+  }
+  const first = parisDay(from * MINUTE_MS)
+  const last = parisDay(to * MINUTE_MS)
+  if (first === last) {
+    return workMinutesOf(first, from, to) / 60
+  }
+  let minutes = workMinutesOf(first, from, to) + workMinutesOf(last, from, to)
+  // The days in between are whole: seven of them in a row always hold five working days.
+  const weeks = Math.floor((dayNumber(last) - dayNumber(first) - 1) / 7)
+  minutes += weeks * WORK_DAYS_A_WEEK * WORK_DAY_HOURS * 60
+  for (let day = addDays(first, 1 + weeks * 7); day < last; day = addDays(day, 1)) {
+    minutes += isWorkDay(day) ? WORK_DAY_HOURS * 60 : 0
+  }
+
+  return minutes / 60
+}
+
 export const round = (value, digits = 0) => (value === null ? null : Number(value.toFixed(digits)))
 const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0)
-const hoursBetween = (from, to) => (to - from) / 60
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
 const sizeOf = (lines) => SIZE_BUCKETS.findIndex((max) => lines < max)
 
@@ -214,7 +256,7 @@ export function computePeriod(records, { start, end, bucket }) {
     if (pr.hotfix || pr.revert) {
       stats.corrective++
       cell[1]++
-      stats.restoreTimes.push(hoursBetween(pr.createdAt, pr.mergedAt))
+      stats.restoreTimes.push(workHoursBetween(pr.createdAt, pr.mergedAt))
       bump(pr.mergedAt, 'corrective')
     }
   }
@@ -244,7 +286,7 @@ export function computePeriod(records, { start, end, bucket }) {
     if (pr.mergedAt !== null) {
       stats.merged++
       ecosystem.merged++
-      stats.timesToMerge.push(hoursBetween(pr.createdAt, pr.mergedAt))
+      stats.timesToMerge.push(workHoursBetween(pr.createdAt, pr.mergedAt))
     } else if (pr.closed) {
       stats.closed++
     }
@@ -266,10 +308,10 @@ export function computePeriod(records, { start, end, bucket }) {
     hotfixes.repositories.set(pr.repo, (hotfixes.repositories.get(pr.repo) ?? 0) + 1)
     bump(pr.createdAt, 'hotfixes')
     if (pr.interventions.length > 0) {
-      hotfixes.timesToFirstReview.push(hoursBetween(pr.createdAt, pr.interventions[0][1]))
+      hotfixes.timesToFirstReview.push(workHoursBetween(pr.createdAt, pr.interventions[0][1]))
     }
     if (pr.mergedAt !== null) {
-      const timeToMerge = hoursBetween(pr.createdAt, pr.mergedAt)
+      const timeToMerge = workHoursBetween(pr.createdAt, pr.mergedAt)
       hotfixes.merged++
       hotfixes.timesToMerge.push(timeToMerge)
       person.timesToMerge.push(timeToMerge)
@@ -304,7 +346,7 @@ export function computePeriod(records, { start, end, bucket }) {
       continue
     }
     if (inRange(pr.deployedAt ?? null)) {
-      deliveryOf(pr.repo).leadTimes.push(hoursBetween(pr.createdAt, pr.deployedAt))
+      deliveryOf(pr.repo).leadTimes.push(workHoursBetween(pr.createdAt, pr.deployedAt))
     }
 
     if (opened) {
@@ -315,7 +357,7 @@ export function computePeriod(records, { start, end, bucket }) {
         addHotfix(pr)
       }
       if (pr.interventions.length > 0) {
-        stats.timesToFirstReview.push(hoursBetween(pr.createdAt, pr.interventions[0][1]))
+        stats.timesToFirstReview.push(workHoursBetween(pr.createdAt, pr.interventions[0][1]))
       }
       // The sync already leaves the author out of the interventions: checked again, an author never reviews itself.
       const prReviewers = new Set(pr.interventions.map(([login]) => login).filter((login) => login !== pr.author))
@@ -326,7 +368,7 @@ export function computePeriod(records, { start, end, bucket }) {
         addPair(pr.author, login, pr.repo)
       }
       if (pr.mergedAt !== null) {
-        const timeToMerge = hoursBetween(pr.createdAt, pr.mergedAt)
+        const timeToMerge = workHoursBetween(pr.createdAt, pr.mergedAt)
         stats.merged++
         stats.timesToMerge.push(timeToMerge)
         stats.sizes.push(pr.lines)
@@ -515,7 +557,7 @@ function cycleOf(pr) {
   const firstAt = before[0]?.[1] ?? null
   const approvedAt = before.findLast(([, , state]) => state === 'APPROVED')?.[1] ?? null
   const deployed = merged && !isMissing(pr.deployedAt)
-  const hours = (from, to) => round(hoursBetween(from, to), 1)
+  const hours = (from, to) => round(workHoursBetween(from, to), 1)
 
   return {
     pickup: firstAt === null ? null : hours(pr.createdAt, firstAt),
@@ -706,11 +748,12 @@ export function monthlyLeaders(history, key) {
 }
 
 // The open code pull requests of people, drafts aside, and where each one stands after the latest decision of each
-// reviewer, as GitHub reckons it: changes requested by someone (changes), else approved by as many people as merging
-// needs (approved), else approved by fewer (approving), else reviewed or commented without a decision (discussed), else
-// waiting for a first look (waiting). since: when it got there, in minutes since the epoch (the latest of these
-// decisions, the latest intervention, or the opening); by: who decided; lastAt: its latest review or comment, else its
-// opening.
+// reviewer, as GitHub reckons it: changes requested by someone (changes), else blocked by code owners who have not
+// reviewed it yet (owners), else approved by as many people as merging needs (approved), else approved by fewer
+// (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
+// since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
+// the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
+// or comment, else its opening.
 export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
   return records
     .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
@@ -724,10 +767,13 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
       const decided = (state) => [...decisions].filter(([, decision]) => decision.state === state)
       const requested = decided('CHANGES_REQUESTED')
       const approved = decided('APPROVED')
-      const deciders = requested.length ? requested : approved
+      const owners = !requested.length && pr.codeOwners?.length > 0
+      const deciders = requested.length ? requested : owners ? [] : approved
       const stance = requested.length
         ? 'changes'
-        : approved.length >= requiredApprovals
+        : owners
+          ? 'owners'
+          : approved.length >= requiredApprovals
           ? 'approved'
           : approved.length
             ? 'approving'
@@ -742,8 +788,12 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
         createdAt: pr.createdAt,
         lines: pr.lines,
         stance,
-        since: deciders.length ? Math.max(...deciders.map(([, decision]) => decision.at)) : (pr.interventions.at(-1)?.[1] ?? pr.createdAt),
-        by: deciders.map(([login]) => login).sort(),
+        since: owners
+          ? pr.createdAt
+          : deciders.length
+            ? Math.max(...deciders.map(([, decision]) => decision.at))
+            : (pr.interventions.at(-1)?.[1] ?? pr.createdAt),
+        by: owners ? pr.codeOwners : deciders.map(([login]) => login).sort(),
         lastAt: pr.interventions.at(-1)?.[1] ?? pr.createdAt,
       }
     })
