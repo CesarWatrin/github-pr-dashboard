@@ -1379,11 +1379,15 @@ main.is-loading {
 }
 
 /* On a card, the badges sit above the button that covers it: they show what they mean on hover, and a click on them
-   still opens the dialog. */
+   still opens the dialog. Over a medal the pointer stays the classic arrow. */
 .person-card .person-badges {
   position: relative;
   z-index: 1;
   cursor: pointer;
+}
+
+.badge-medal {
+  cursor: default;
 }
 
 .person-card:hover,
