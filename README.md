@@ -18,6 +18,10 @@ la recherche s'appliquent à toutes :
   avec son logo (les langages d'un dépôt sont regroupés sous le framework que déclarent ses fichiers de
   dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
   de merge, PR mergées sans review, PR relues).
+- **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des mois complets de l'année :
+  livraison, revue, intégration continue et équipe, chaque évolution en vert ou en orange quand elle a un bon sens ;
+  les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
+  comparaison.
 - **Auteurs** : le tableau par auteur, filtrable par dépôt ou par type de dépôt (front, back, mobile, autres), avec
   la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) ; l'effet de la
   taille des PR sur le délai de merge et la profondeur de review.
@@ -69,8 +73,8 @@ la recherche s'appliquent à toutes :
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`, `#/palmares`,
-`#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`,
+`#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.

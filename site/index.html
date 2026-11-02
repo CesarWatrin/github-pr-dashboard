@@ -54,6 +54,12 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H9.5V10h-3v3.5H3a.5.5 0 0 1-.5-.5Z" /></svg>
             Vue d’ensemble
           </a>
+          <a class="nav-link" href="#/bilan" data-route-link="report">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="2.5" y="3" width="11" height="10.5" rx="1.5" /><path d="M2.5 6.5h11M5.5 2v2M10.5 2v2M5.5 9.5h5M5.5 11.5h3" />
+            </svg>
+            Bilan du mois
+          </a>
           <a class="nav-link" href="#/auteurs" data-route-link="authors">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5 13.5 5.5 6 13H3v-3Z" /><path d="M9 4l3 3" /></svg>
             Auteurs
@@ -256,6 +262,45 @@
               <div class="table-wrap" data-repos></div>
               <dl class="table-legend" data-table-legend="repos"></dl>
             </section>
+          </div>
+
+          <!-- Bilan du mois -->
+          <div class="route" data-route="report" hidden>
+            <section class="card" aria-labelledby="report-title">
+              <div class="card-toolbar">
+                <h2 id="report-title">Les chiffres du mois</h2>
+                <select class="search" name="month" aria-label="Mois du bilan" data-report-month></select>
+              </div>
+              <p class="card-sub" data-report-sub></p>
+              <div class="table-wrap" data-report-table></div>
+              <p class="card-note">
+                Chaque mois compte les PR ouvertes ce mois-là, et les reviews, merges, déploiements et exécutions de CI
+                de ce mois-là, comme une période choisie sur les autres pages. Une évolution en vert va dans le bon sens,
+                en orange dans le mauvais ; les autres sont neutres.
+              </p>
+            </section>
+
+            <div class="grid-2 grid-even">
+              <section class="card" aria-labelledby="report-champions-title">
+                <h2 id="report-champions-title">Champions du mois</h2>
+                <p class="card-sub">Les badges du Palmarès</p>
+                <ul class="report-list report-champions" data-report-champions></ul>
+              </section>
+
+              <section class="card" aria-labelledby="report-repos-title">
+                <h2 id="report-repos-title">Dépôts les plus actifs</h2>
+                <div class="minis">
+                  <div class="mini"><h3>PR de code ouvertes</h3><ol class="report-list" data-report-repos="code"></ol></div>
+                  <div class="mini"><h3>Déploiements</h3><ol class="report-list" data-report-repos="deployments"></ol></div>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="report-arrivals-title">
+                <h2 id="report-arrivals-title">Arrivées</h2>
+                <p class="card-sub">Premières PR, reviews ou commentaires de l’année synchronisée</p>
+                <ul class="report-list" data-report-arrivals></ul>
+              </section>
+            </div>
           </div>
 
           <!-- Auteurs -->
@@ -593,6 +638,14 @@
                   approbation au merge ; la mise en prod, du merge à l’arrivée en prod, comme pour les indicateurs DORA.
                   Chaque PR ouverte sur la période ne compte que dans les étapes qu’elle a franchies, et ce qui suit son
                   merge n’y compte pas. Chaque étape a sa médiane : elles ne s’additionnent pas.
+                </dd>
+                <dt>Bilan du mois</dt>
+                <dd>
+                  Un mois compte, comme une période choisie, les PR ouvertes ce mois-là et les reviews, merges,
+                  déploiements et exécutions de CI de ce mois-là. Il se compare au mois précédent (en pourcentage, ou en
+                  points pour les parts) et à la médiane des mois complets de l’année synchronisée. Une évolution est en
+                  vert quand elle va dans le bon sens (délais, hotfix, reprises, PR sans review, échecs de CI en baisse),
+                  en orange sinon ; les volumes restent neutres. Le mois en cours, incomplet, ne se compare pas.
                 </dd>
                 <dt>Mises en production</dt>
                 <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
