@@ -438,7 +438,7 @@ const SENIORITY_LEGEND = {
   hint: `Depuis la première PR, review ou commentaire de la personne. Les données couvrent un an : une première activité dans ses ${SENIORITY_START_DAYS} premiers jours compte pour plus d’un an.`,
 }
 // How far the open card leans towards the pointer, at its edges.
-const PERSON_TILT_DEG = 6
+const PERSON_TILT_DEG = 4
 
 const REPO_COLUMNS = [
   { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },

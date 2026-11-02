@@ -1448,11 +1448,11 @@ main.is-loading {
 }
 
 .person-dialog-card.is-tilting .person-dialog-head {
-  transform: translateZ(28px);
+  transform: translateZ(18px);
 }
 
 .person-dialog-card.is-tilting .person-dialog-section {
-  transform: translateZ(12px);
+  transform: translateZ(8px);
 }
 
 .person-dialog-close {
@@ -1465,7 +1465,7 @@ main.is-loading {
 
 /* The head comes forward as the card leans: the close button comes further still, or the head would take its clicks. */
 .person-dialog-card.is-tilting .person-dialog-close {
-  transform: translateZ(40px);
+  transform: translateZ(26px);
 }
 
 /* It takes clicks well around what it shows: as the card leans, it drifts a little under the pointer. */
