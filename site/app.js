@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, addDays, computeCi, computePeriod, parisDay, parisMidnight } = await import(
+const { DAY_MS, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -33,6 +33,11 @@ const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_ECOSYSTEMS = 8
+// The review matrix keeps the busiest authors and reviewers, the others grouped together, and gives way to a list of
+// the most frequent pairs when its card is too narrow for it.
+const MATRIX_PEOPLE = 12
+const MATRIX_MIN_WIDTH = 560
+const TOP_PAIRS = 20
 // Pull requests their author merged without approval: over a fixed month, like the activity feed over a week, on the
 // main repositories, the front, back and mobile ones. Docs, infrastructure and tooling are left out.
 const UNAPPROVED_DAYS = 30
@@ -65,6 +70,7 @@ const ROUTES = {
   overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
+  collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -290,6 +296,39 @@ const REVIEWER_COLUMNS = [
     value: (row) => row.topRepos[0]?.[0] ?? '',
     cell: (row) => topReposCell(row.topRepos, 'PR relues'),
     hint: 'Dépôts où la personne a relu le plus de PR.',
+  },
+]
+
+const COLLABORATION_COLUMNS = [
+  { key: 'login', label: 'Auteur', kind: 'person', value: (row) => displayName(row.login) },
+  { key: 'code', label: 'PR de code', hint: 'PR de code ouvertes sur la période.' },
+  {
+    key: 'reviewed',
+    label: 'PR relues',
+    hint: 'Parmi ces PR, celles qui ont reçu au moins une review ou un commentaire d’une autre personne, à n’importe quelle date.',
+  },
+  {
+    key: 'reviewers',
+    label: 'Relecteurs distincts',
+    hint: 'Personnes différentes intervenues sur ces PR relues. Peu de relecteurs : le code de la personne circule peu.',
+  },
+  {
+    key: 'topReviewer',
+    label: 'Relecteur principal',
+    kind: 'text',
+    value: (row) => (row.topReviewer ? displayName(row.topReviewer) : null),
+    cell: (row) =>
+      row.topReviewer
+        ? el('td', { className: 'person-secondary' }, personLink(row.topReviewer))
+        : el('td', { className: 'text muted', textContent: '–' }),
+    hint: 'La personne intervenue sur le plus de PR relues de l’auteur.',
+  },
+  {
+    key: 'topReviewerShare',
+    label: 'Dépendance au relecteur principal',
+    kind: 'bar',
+    format: (row) => formatShare(row.topReviewerShare),
+    hint: 'Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.',
   },
 ]
 
@@ -551,13 +590,16 @@ const state = {
   // The stats of the period shown, computed once per period and data.
   periodCache: null,
   ciCache: null,
+  networkCache: null,
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null },
+  repos: { authors: null, reviewers: null, collaboration: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
+    // Sorted on the pairs rather than on the people: the most frozen pairs first.
+    collaboration: { key: 'topReviewerShare', direction: -1 },
     tma: { key: 'hotfixes', direction: -1 },
     repos: { key: 'code', direction: -1 },
     deployments: { key: 'deployments', direction: -1 },
@@ -565,7 +607,10 @@ const state = {
     dependencies: { key: 'opened', direction: -1 },
   },
   previousRows: Object.fromEntries(
-    ['authors', 'reviewers', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [name, new Map()]),
+    ['authors', 'reviewers', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [
+      name,
+      new Map(),
+    ]),
   ),
   // The kind of sync the page is starting, until GitHub answers.
   syncStarting: null,
@@ -1119,6 +1164,100 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
   container.replaceChildren(root)
 }
 
+// Grid of intensities, one cell per row and column, darker as the value grows. rows and columns are { key, label },
+// flagged grouped when they add up several entries: these stay out of the color scale, which they would flatten.
+// value(row, column) is a count, tooltip(row, column, value) the content of the tooltip of a cell. Labels of columns
+// too wide for their cell are tilted.
+function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, format = formatNumber }) {
+  const width = container.clientWidth
+  if (width === 0) {
+    return
+  }
+  if (rows.length === 0 || columns.length === 0) {
+    container.replaceChildren(el('p', { className: 'chart-empty', textContent: 'Aucune donnée sur la période' }))
+
+    return
+  }
+  const maxLabel = 120
+  const rowLabels = rows.map((row) => truncateText(row.label, maxLabel))
+  const columnLabels = columns.map((column) => truncateText(column.label, maxLabel))
+  const labelWidth = Math.max(...rowLabels.map(measureText)) + 10
+  const columnLabelWidth = Math.max(...columnLabels.map(measureText))
+  const fit = (right) => Math.min(52, (width - labelWidth - right) / columns.length)
+  let cell = fit(0)
+  const tilted = columnLabelWidth > cell - 6
+  if (tilted) {
+    // A label tilted by 45° reaches past the right of its column: the last one needs room.
+    cell = fit(Math.max(0, columnLabelWidth * Math.SQRT1_2 - cell / 2))
+  }
+  const header = tilted ? Math.ceil(columnLabelWidth * Math.SQRT1_2) + 14 : 22
+  const height = header + rows.length * cell
+  const values = rows.map((row) => columns.map((column) => value(row, column)))
+  const max = Math.max(
+    1,
+    ...values.flatMap((cells, rowIndex) => (rows[rowIndex].grouped ? [] : cells.filter((_, index) => !columns[index].grouped))),
+  )
+
+  const root = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel })
+  columns.forEach((column, index) => {
+    const x = labelWidth + cell * index + cell / 2
+    const label = tilted
+      ? svg('text', { class: 'axis-label', x, y: header - 8, transform: `rotate(-45 ${x} ${header - 8})` })
+      : svg('text', { class: 'axis-label', x, y: header - 8, 'text-anchor': 'middle' })
+    label.textContent = columnLabels[index]
+    root.append(label)
+  })
+  rows.forEach((row, rowIndex) => {
+    const y = header + cell * rowIndex
+    const label = svg('text', { class: 'axis-label', x: labelWidth - 10, y: y + cell / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
+    label.textContent = rowLabels[rowIndex]
+    root.append(label)
+    columns.forEach((column, columnIndex) => {
+      const amount = values[rowIndex][columnIndex]
+      const x = labelWidth + cell * columnIndex
+      const group = svg('g', { class: 'heat-group' })
+      group.style.setProperty('--delay', `${Math.round(((rowIndex + columnIndex) / (rows.length + columns.length)) * STAGGER_SPREAD_MS)}ms`)
+      const share = Math.min(1, amount / max)
+      const rect = svg('rect', { class: amount ? 'heat-cell' : 'heat-cell is-empty', x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4 })
+      if (amount) {
+        rect.style.fill = `color-mix(in srgb, var(--series-1) ${Math.round(18 + 82 * share)}%, var(--surface))`
+      }
+      group.append(rect)
+      if (amount && cell >= 22) {
+        const text = svg('text', {
+          class: share > 0.5 ? 'heat-label is-strong' : 'heat-label',
+          x: x + cell / 2,
+          y: y + cell / 2,
+          'text-anchor': 'middle',
+          'dominant-baseline': 'central',
+        })
+        text.textContent = format(amount)
+        group.append(text)
+      }
+      root.append(group)
+      // Only the cells with a value take the keyboard focus: an empty grid would take dozens of tab stops.
+      if (amount) {
+        const content = tooltip(row, column, amount)
+        group.setAttribute('tabindex', 0)
+        group.setAttribute('aria-label', content.title)
+        bindTooltip(
+          group,
+          (pointerX, pointerY) => {
+            group.classList.add('is-active')
+            showTooltip(content, pointerX, pointerY)
+          },
+          () => {
+            group.classList.remove('is-active')
+            hideTooltip()
+          },
+        )
+      }
+    })
+  })
+
+  container.replaceChildren(root)
+}
+
 function dataTable(container, headers, rows) {
   container.replaceChildren(
     el(
@@ -1300,6 +1439,144 @@ function renderDevopsCharts() {
   })
 }
 
+// Collaboration page
+
+// The review network of the period over the repositories selected on the page.
+function currentNetwork() {
+  const period = currentPeriod()
+  const selection = state.repos.collaboration
+  if (state.networkCache?.period !== period || state.networkCache.selection !== selection) {
+    state.networkCache = { period, selection, network: reviewNetwork(period, selection) }
+  }
+
+  return state.networkCache.network
+}
+
+const OTHERS = '\u0000others'
+const personName = (login, count) => (login === OTHERS ? `${formatNumber(count)} autres personnes` : displayName(login))
+
+// The busiest people of a list, the others grouped in a last entry.
+function keepBusiest(people) {
+  if (people.length <= MATRIX_PEOPLE) {
+    return { kept: people, others: [] }
+  }
+
+  return { kept: people.slice(0, MATRIX_PEOPLE - 1), others: people.slice(MATRIX_PEOPLE - 1) }
+}
+
+// Rows and columns of the matrix. A search keeps the people it finds, with everyone they review or are reviewed by.
+function matrixPeople(network) {
+  const found = (login) => matchesQuery(login, displayName(login))
+  const side = (own, other) => {
+    const people = new Map()
+    for (const pair of network.pairs) {
+      const person = getOrCreatePerson(people, pair[own])
+      person.prs += pair.prs
+      person.found ||= found(pair[own]) || found(pair[other])
+    }
+
+    return [...people]
+      .filter(([, person]) => person.found)
+      .sort((a, b) => b[1].prs - a[1].prs || a[0].localeCompare(b[0]))
+      .map(([login]) => login)
+  }
+
+  return { authors: keepBusiest(side('author', 'reviewer')), reviewers: keepBusiest(side('reviewer', 'author')) }
+}
+
+function getOrCreatePerson(people, login) {
+  if (!people.has(login)) {
+    people.set(login, { prs: 0, found: false })
+  }
+
+  return people.get(login)
+}
+
+// French elision: « d’Ana », « de Ben ».
+const ofPrefix = (name) => (/^[aeiouyàâéèêëîïôöùûü]/i.test(name) ? 'd’' : 'de ')
+const ofName = (name) => `${ofPrefix(name)}${name}`
+
+function renderCollaboration() {
+  const card = $('[data-collaboration-matrix-card]')
+  if (!state.stats || card.clientWidth === 0) {
+    return
+  }
+  const network = currentNetwork()
+  const { authors, reviewers } = matrixPeople(network)
+  const reviewedOf = new Map(network.authors.map((row) => [row.login, row.reviewed]))
+  const counts = new Map(network.pairs.map((pair) => [`${pair.author}\n${pair.reviewer}`, pair.prs]))
+  const members = (side, key) => (key === OTHERS ? side.others : [key])
+  const value = (row, column) =>
+    members(authors, row.key).reduce(
+      (total, author) =>
+        total + members(reviewers, column.key).reduce((sum, reviewer) => sum + (counts.get(`${author}\n${reviewer}`) ?? 0), 0),
+      0,
+    )
+  const entries = (side) => [
+    ...side.kept.map((login) => ({ key: login, label: displayName(login) })),
+    ...(side.others.length ? [{ key: OTHERS, label: 'Autres', grouped: true }] : []),
+  ]
+
+  const wide = card.clientWidth >= MATRIX_MIN_WIDTH
+  $('[data-collaboration-matrix]').hidden = !wide
+  $('[data-collaboration-pairs]').hidden = wide
+  $('[data-collaboration-matrix-sub]').textContent = wide
+    ? 'PR de code ouvertes sur la période : auteurs en lignes, relecteurs en colonnes'
+    : 'PR de code ouvertes sur la période : les binômes les plus fréquents'
+  if (wide) {
+    heatmapChart($('[data-collaboration-matrix]'), {
+      rows: entries(authors),
+      columns: entries(reviewers),
+      value,
+      ariaLabel: `PR relues par auteur et par relecteur, ${periodTitle()}`,
+      tooltip: (row, column, prs) => {
+        const author = personName(row.key, authors.others.length)
+        const reviewer = personName(column.key, reviewers.others.length)
+        const reviewed = row.key === OTHERS ? null : reviewedOf.get(row.key)
+
+        return {
+          title: `${formatNumber(prs)} PR ${ofName(author)} relue${prs > 1 ? 's' : ''} par ${reviewer}`,
+          rows: reviewed ? [{ value: formatShare(prs / reviewed), label: `des PR relues ${ofName(author)}` }] : [],
+        }
+      },
+    })
+  } else {
+    renderPairs(network)
+  }
+
+  dataTable(
+    $('[data-collaboration-table]'),
+    ['Auteur', 'Relecteur', 'PR relues'],
+    network.pairs
+      .filter((pair) => matchesQuery(pair.author, displayName(pair.author), pair.reviewer, displayName(pair.reviewer)))
+      .map((pair) => [displayName(pair.author), displayName(pair.reviewer), formatNumber(pair.prs)]),
+  )
+}
+
+// On a narrow screen, the most frequent pairs in place of the matrix.
+function renderPairs(network) {
+  const items = network.pairs
+    .filter((pair) => matchesQuery(pair.author, displayName(pair.author), pair.reviewer, displayName(pair.reviewer)))
+    .slice(0, TOP_PAIRS)
+    .map((pair) =>
+      el(
+        'li',
+        { className: 'pair-item' },
+        el('span', { className: 'pair-avatars' }, avatar(pair.author), avatar(pair.reviewer)),
+        el(
+          'p',
+          { className: 'feed-text' },
+          document.createTextNode(`PR ${ofPrefix(displayName(pair.author))}`),
+          el('strong', { textContent: displayName(pair.author) }),
+          document.createTextNode(' relues par '),
+          el('strong', { textContent: displayName(pair.reviewer) }),
+        ),
+        el('span', { className: 'pair-count', textContent: `${formatNumber(pair.prs)} PR` }),
+      ),
+    )
+  renderList($('[data-collaboration-pairs]'), items, 'Aucun binôme sur la période')
+}
+
 function renderCharts() {
   if (!state.stats) {
     return
@@ -1309,6 +1586,7 @@ function renderCharts() {
   renderTechnologiesChart()
   renderTmaCharts()
   renderDevopsCharts()
+  renderCollaboration()
   if (state.person) {
     renderMiniCharts()
   }
@@ -1559,6 +1837,25 @@ const TABLES = {
     // Counted once per pull request, however many people reviewed it.
     repoCounts: () => new Map(currentPeriod().repositories.map((row) => [row.repo, row.prs])),
     repoCountsLabel: 'PR relues sur la période',
+  },
+  collaboration: {
+    columns: COLLABORATION_COLUMNS,
+    rows: () => currentNetwork().authors,
+    searchTexts: (row) => [row.login, displayName(row.login), ...(row.topReviewer ? [row.topReviewer, displayName(row.topReviewer)] : [])],
+    // The filter lists the repositories of the authors, and applies to the whole page.
+    source: 'authors',
+    repoCounts: () => {
+      const counts = new Map()
+      for (const person of currentPeriod().authors) {
+        for (const [repo, stats] of Object.entries(person.repos)) {
+          counts.set(repo, (counts.get(repo) ?? 0) + stats.code)
+        }
+      }
+
+      return counts
+    },
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+    onFilter: () => renderCollaboration(),
   },
   repos: {
     columns: REPO_COLUMNS,
@@ -1848,7 +2145,7 @@ function renderTables(highlight) {
 // Repositories with activity in the table over the period, busiest first.
 function repoOptions(name) {
   const counts = TABLES[name].repoCounts()
-  const repos = new Set(currentPeriod()[name].flatMap((person) => Object.keys(person.repos)))
+  const repos = new Set(currentPeriod()[TABLES[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
 
   return [...repos]
     .map((repo) => [repo, counts.get(repo) ?? 0])
@@ -1994,6 +2291,7 @@ function setupRepoFilter(name) {
     state.repos[name] = selection
     renderRepoFilterState(name)
     renderTable(name, false)
+    TABLES[name].onFilter?.()
   }
   presets.addEventListener('click', (event) => {
     const button = event.target.closest('[data-preset]')
@@ -2658,6 +2956,7 @@ $('[data-search]').addEventListener('input', (event) => {
   state.query = event.target.value.trim().toLowerCase()
   if (state.stats) {
     renderTables(false)
+    renderCollaboration()
     renderFeed(false)
     renderWaiting(false)
     renderUnapproved(false)

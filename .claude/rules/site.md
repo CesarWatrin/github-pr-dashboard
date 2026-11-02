@@ -12,8 +12,8 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, authors, reviewers, tma, devops, method). The period selector and the search
-  apply to every page but the method one.
+  page of the hash (`ROUTES`: overview, authors, reviewers, collaboration, tma, devops, method). The period selector
+  and the search apply to every page but the method one.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -29,7 +29,8 @@ paths:
   - A text column needs a `format`: the default one formats numbers.
   - Every column whose meaning is not obvious has a `hint`: the legend under the table is built from these.
 - **Charts**: `columnChart()` over time buckets (series side by side, partial buckets lighter, tooltip on hover),
-  `barChart()` for rankings, `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
+  `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows × columns, `color-mix` on `--series-1`),
+  `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
 - The "Méthode" page keeps the rules shared by the whole dashboard; what a single column counts goes in its `hint`.
 
