@@ -248,6 +248,83 @@ describe('computePeriod', () => {
     assert.deepEqual(ecosystems, [{ ecosystem: 'npm_and_yarn', opened: 2, merged: 1 }])
   })
 
+  test('cycles: each code pull request of people opened in the range, in the stages it went through', () => {
+    const cycle = (repo, bucket, size, pickup, review, merge, deploy, toMerge, toProduction) => ({
+      repo,
+      bucket,
+      size,
+      pickup,
+      review,
+      merge,
+      deploy,
+      toMerge,
+      toProduction,
+    })
+    assert.deepEqual(period.cycles, [
+      // Approved at its first review: no time in review.
+      cycle('web', '2026-03-02', 1, 1, 0, 5, 45, 6, 51),
+      // Merged without any review: only the way to production.
+      cycle('web', '2026-03-03', 2, null, null, null, 3, 24, 27),
+      // Closed without a merge: only its pickup.
+      cycle('api', '2026-03-05', 1, 1, null, null, null, null, null),
+      // Changes requested, then merged without an approval: the review lasts until the merge.
+      cycle('api', '2026-03-06', 0, 1, 1, null, 0, 2, 2),
+      cycle('api', '2026-03-07', 1, null, null, null, 0, 1, 1),
+    ])
+  })
+
+  test('cycles: the last approval before the merge counts, what comes after the merge does not', () => {
+    const { cycles } = computePeriod(
+      [
+        record({
+          repo: 'web',
+          number: 20,
+          author: 'alice',
+          createdAt: at('2026-03-02T09:00:00Z'),
+          mergedAt: at('2026-03-03T09:00:00Z'),
+          interventions: [
+            ['bob', at('2026-03-02T11:00:00Z'), 'COMMENTED', 1],
+            ['bob', at('2026-03-02T15:00:00Z'), 'APPROVED', 0],
+            ['carol', at('2026-03-02T17:00:00Z'), 'APPROVED', 0],
+            ['dave', at('2026-03-04T09:00:00Z'), 'COMMENTED', 1],
+          ],
+          deployedAt: null,
+        }),
+        // Only commented once merged: never reviewed.
+        record({
+          repo: 'web',
+          number: 21,
+          author: 'alice',
+          createdAt: at('2026-03-02T09:00:00Z'),
+          mergedAt: at('2026-03-02T10:00:00Z'),
+          interventions: [['bob', at('2026-03-02T12:00:00Z'), 'COMMENTED', 1]],
+        }),
+        // Approved, still open: its review is not over.
+        record({
+          repo: 'web',
+          number: 22,
+          author: 'alice',
+          createdAt: at('2026-03-02T09:00:00Z'),
+          interventions: [['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]],
+        }),
+      ],
+      WEEK,
+    )
+    const stages = cycles.map(({ pickup, review, merge, deploy, toMerge, toProduction }) => [
+      pickup,
+      review,
+      merge,
+      deploy,
+      toMerge,
+      toProduction,
+    ])
+    assert.deepEqual(stages, [
+      [2, 6, 16, null, 24, null],
+      [null, null, null, null, 1, null],
+      [1, null, null, null, null, null],
+    ])
+  })
+
   test('a range stops at its end, excluded', () => {
     const monday = computePeriod(RECORDS, { ...WEEK, end: parisMidnight('2026-03-03') })
     assert.equal(monday.totals.opened, 1)
