@@ -36,6 +36,8 @@ const RUNS_QUERY_LIMIT = 1000
 const RUNS_PAGE_SIZE = 100
 // At most this many REST calls at once, across repositories and pages: a page of 100 runs weighs about 1 MB.
 const REST_CONCURRENCY = 8
+// A call to GitHub is made at most this many times before the sync gives up.
+const REQUEST_ATTEMPTS = 6
 // Runs created this long before the last sync are fetched again, to get the outcome of those still running.
 const RUNS_OVERLAP_MS = DAY_MS
 // Runs that check code, on pull requests and pushes: scheduled, manual and Dependabot runs are left out.
@@ -247,27 +249,36 @@ function resolveToken() {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function request(url, init, attempt = 1) {
-  const response = await fetch(url, {
-    ...init,
-    headers: { authorization: `bearer ${token}`, 'user-agent': 'github-pr-dashboard', ...init.headers },
-  })
-
-  const retryable = response.status >= 500 || response.status === 403 || response.status === 429
-  if (retryable && attempt < 6) {
-    const retryAfter = Number(response.headers.get('retry-after'))
+// A call to GitHub, its answer read whole: { ok, status, body }, the body parsed when the call succeeded, else as text.
+// Made again on a 5xx, 403 or 429 answer (after its retry-after, if any), on a connection that fails, and on a body that
+// comes back empty or cut short, as GitHub sometimes sends: one bad answer must not end a full sync.
+async function request(url, init) {
+  for (let attempt = 1; ; attempt++) {
+    const last = attempt === REQUEST_ATTEMPTS
+    let retryAfter = 0
+    try {
+      const response = await fetch(url, {
+        ...init,
+        headers: { authorization: `bearer ${token}`, 'user-agent': 'github-pr-dashboard', ...init.headers },
+      })
+      const retryable = response.status >= 500 || response.status === 403 || response.status === 429
+      if (!retryable || last) {
+        return { ok: response.ok, status: response.status, body: await (response.ok ? response.json() : response.text()) }
+      }
+      retryAfter = Number(response.headers.get('retry-after'))
+    } catch (error) {
+      if (last) {
+        throw error
+      }
+    }
     await wait(retryAfter > 0 ? retryAfter * 1000 : attempt * 3000)
-
-    return request(url, init, attempt + 1)
   }
-
-  return response
 }
 
 // What GitHub answered, for an error: in CI only its status, since its messages name the organization's repositories
 // and the logs of a public repository are public.
-async function responseDetail(response) {
-  return process.env.CI ? '' : `: ${await response.text()}`
+function responseDetail(response) {
+  return process.env.CI ? '' : `: ${response.body}`
 }
 
 async function graphql(query, variables) {
@@ -277,10 +288,10 @@ async function graphql(query, variables) {
     body: JSON.stringify({ query, variables }),
   })
   if (!response.ok) {
-    throw new Error(`GitHub API responded ${response.status}${await responseDetail(response)}`)
+    throw new Error(`GitHub API responded ${response.status}${responseDetail(response)}`)
   }
 
-  const body = await response.json()
+  const { body } = response
   // A reviewer the token may not read, such as a team when it cannot read the organization's teams, comes back null
   // with an error of its own: the rest of the answer stands.
   const errors = (body.errors ?? []).filter((error) => !error.path?.includes('requestedReviewer'))
@@ -321,10 +332,10 @@ async function rest(path) {
       return null
     }
     if (!response.ok) {
-      throw new Error(`GitHub API responded ${response.status}${await responseDetail(response)}`)
+      throw new Error(`GitHub API responded ${response.status}${responseDetail(response)}`)
     }
 
-    return response.json()
+    return response.body
   })
 }
 
@@ -1061,7 +1072,7 @@ async function sync({ full }) {
   console.log(`[${now.toISOString()}] ${mode} sync${counts}`)
 }
 
-// The pure parts of the sync, for the tests, and the reading back of the published history.
+// The pure parts of the sync, for the tests, the reading back of the published history and the calls to GitHub.
 export {
   classify,
   computeCi,
@@ -1070,6 +1081,7 @@ export {
   mergeMonthlyHistory,
   readPublishedHistory,
   repositoryCategory,
+  request,
   requiredApprovals,
   technologyShares,
   toPeriodRecord,
