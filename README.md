@@ -22,8 +22,8 @@ la recherche s'appliquent à toutes :
   la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) ; l'effet de la
   taille des PR sur le délai de merge et la profondeur de review.
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
-- **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les binômes les plus fréquents sur un écran
-  étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
+- **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
+  regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,

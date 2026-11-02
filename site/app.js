@@ -33,9 +33,13 @@ const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_ECOSYSTEMS = 8
-// The review matrix keeps the busiest authors and reviewers, the others grouped together, and gives way to a list of
-// the most frequent pairs when its card is too narrow for it.
-const MATRIX_PEOPLE = 12
+// The review matrix gives a row or a column to the authors and reviewers who weigh at least MATRIX_MIN_SHARE of the
+// reviews of the period (stated in the card note of index.html), as many as its width holds with cells wide enough for
+// their figures, the others grouped together. It gives way to a list of the most frequent pairs when its card is too
+// narrow for it. Its labels take about MATRIX_LABELS_WIDTH: the names of the rows, and the tilted last column name.
+const MATRIX_MIN_SHARE = 0.02
+const MATRIX_MIN_CELL = 26
+const MATRIX_LABELS_WIDTH = 200
 const MATRIX_MIN_WIDTH = 560
 const TOP_PAIRS = 20
 // Pull requests their author merged without approval: over a fixed month, like the activity feed over a week, on the
@@ -1455,33 +1459,40 @@ function currentNetwork() {
 const OTHERS = '\u0000others'
 const personName = (login, count) => (login === OTHERS ? `${formatNumber(count)} autres personnes` : displayName(login))
 
-// The busiest people of a list, the others grouped in a last entry.
-function keepBusiest(people) {
-  if (people.length <= MATRIX_PEOPLE) {
-    return { kept: people, others: [] }
-  }
+// The first people of a list sorted busiest first, at most `limit` entries: the people past the first `shown` ones, or
+// past the limit, are grouped in a last entry.
+function keepBusiest(people, limit, shown) {
+  const kept = Math.min(shown, people.length <= limit ? limit : limit - 1)
 
-  return { kept: people.slice(0, MATRIX_PEOPLE - 1), others: people.slice(MATRIX_PEOPLE - 1) }
+  return { kept: people.slice(0, kept), others: people.slice(kept) }
 }
 
-// Rows and columns of the matrix. A search keeps the people it finds, with everyone they review or are reviewed by.
-function matrixPeople(network) {
+// Rows and columns of the matrix, up to `limit` each. The people who weigh less than MATRIX_MIN_SHARE of the reviews
+// join the others: their row or column would be nearly empty. A search keeps the people it finds, however few their
+// reviews, with everyone they review or are reviewed by.
+function matrixPeople(network, limit) {
   const found = (login) => matchesQuery(login, displayName(login))
   const side = (own, other) => {
     const people = new Map()
+    let total = 0
     for (const pair of network.pairs) {
       const person = getOrCreatePerson(people, pair[own])
       person.prs += pair.prs
       person.found ||= found(pair[own]) || found(pair[other])
+      total += pair.prs
     }
-
-    return [...people]
+    const sorted = [...people]
       .filter(([, person]) => person.found)
       .sort((a, b) => b[1].prs - a[1].prs || a[0].localeCompare(b[0]))
-      .map(([login]) => login)
+    const busy = state.query ? sorted.length : sorted.filter(([, person]) => person.prs >= total * MATRIX_MIN_SHARE).length
+
+    const split = keepBusiest(sorted.map(([login]) => login), limit, Math.max(1, busy))
+
+    // Crowded: the width also leaves out people with enough reviews for a row or a column of their own.
+    return { ...split, crowded: split.kept.length < busy }
   }
 
-  return { authors: keepBusiest(side('author', 'reviewer')), reviewers: keepBusiest(side('reviewer', 'author')) }
+  return { authors: side('author', 'reviewer'), reviewers: side('reviewer', 'author') }
 }
 
 function getOrCreatePerson(people, login) {
@@ -1502,29 +1513,37 @@ function renderCollaboration() {
     return
   }
   const network = currentNetwork()
-  const { authors, reviewers } = matrixPeople(network)
-  const reviewedOf = new Map(network.authors.map((row) => [row.login, row.reviewed]))
-  const counts = new Map(network.pairs.map((pair) => [`${pair.author}\n${pair.reviewer}`, pair.prs]))
-  const members = (side, key) => (key === OTHERS ? side.others : [key])
-  const value = (row, column) =>
-    members(authors, row.key).reduce(
-      (total, author) =>
-        total + members(reviewers, column.key).reduce((sum, reviewer) => sum + (counts.get(`${author}\n${reviewer}`) ?? 0), 0),
-      0,
-    )
-  const entries = (side) => [
-    ...side.kept.map((login) => ({ key: login, label: displayName(login) })),
-    ...(side.others.length ? [{ key: OTHERS, label: 'Autres', grouped: true }] : []),
-  ]
-
   const wide = card.clientWidth >= MATRIX_MIN_WIDTH
-  $('[data-collaboration-matrix]').hidden = !wide
+  const matrix = $('[data-collaboration-matrix]')
+  matrix.hidden = !wide
   $('[data-collaboration-pairs]').hidden = wide
   $('[data-collaboration-matrix-sub]').textContent = wide
     ? 'PR de code ouvertes sur la période : auteurs en lignes, relecteurs en colonnes'
     : 'PR de code ouvertes sur la période : les binômes les plus fréquents'
   if (wide) {
-    heatmapChart($('[data-collaboration-matrix]'), {
+    const limit = Math.max(2, Math.floor((matrix.clientWidth - MATRIX_LABELS_WIDTH) / MATRIX_MIN_CELL))
+    const { authors, reviewers } = matrixPeople(network, limit)
+    const reviewedOf = new Map(network.authors.map((row) => [row.login, row.reviewed]))
+    const counts = new Map(network.pairs.map((pair) => [`${pair.author}\n${pair.reviewer}`, pair.prs]))
+    const members = (side, key) => (key === OTHERS ? side.others : [key])
+    const value = (row, column) =>
+      members(authors, row.key).reduce(
+        (total, author) =>
+          total + members(reviewers, column.key).reduce((sum, reviewer) => sum + (counts.get(`${author}\n${reviewer}`) ?? 0), 0),
+        0,
+      )
+    // The grouped entry says why its people have no row or column of their own: too few reviews, or, when the width
+    // also left some out, both reasons.
+    const entries = (side) => [
+      ...side.kept.map((login) => ({ key: login, label: displayName(login) })),
+      ...(side.others.length ? [{ key: OTHERS, label: side.crowded ? 'Autres' : 'Peu de relectures', grouped: true }] : []),
+    ]
+    const minShare = formatShare(MATRIX_MIN_SHARE)
+    const groupedNote = (side, where) =>
+      side.crowded
+        ? `${where}, ${formatNumber(side.others.length)} personnes : celles sous ${minShare} des relectures de la période, et celles qui ne tiennent pas dans la largeur.`
+        : `${where}, ${formatNumber(side.others.length)} personnes qui pèsent chacune moins de ${minShare} des relectures de la période.`
+    heatmapChart(matrix, {
       rows: entries(authors),
       columns: entries(reviewers),
       value,
@@ -1534,9 +1553,15 @@ function renderCollaboration() {
         const reviewer = personName(column.key, reviewers.others.length)
         const reviewed = row.key === OTHERS ? null : reviewedOf.get(row.key)
 
+        const notes = [
+          row.key === OTHERS && groupedNote(authors, 'En ligne'),
+          column.key === OTHERS && groupedNote(reviewers, 'En colonne'),
+        ]
+
         return {
           title: `${formatNumber(prs)} PR ${ofName(author)} relue${prs > 1 ? 's' : ''} par ${reviewer}`,
           rows: reviewed ? [{ value: formatShare(prs / reviewed), label: `des PR relues ${ofName(author)}` }] : [],
+          note: notes.filter(Boolean).join(' ') || null,
         }
       },
     })
