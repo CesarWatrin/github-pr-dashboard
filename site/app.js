@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, monthlyActivity, monthlyLeaders, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -76,6 +76,7 @@ const ROUTES = {
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
+  awards: { hash: '#/palmares', title: 'Palmarès', subtitle: 'Les badges de l’équipe, mois après mois, depuis la première synchro', filters: false },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -434,14 +435,16 @@ const FORMER_AFTER_DAYS = 30
 const MONTH_MS = (365.25 / 12) * DAY_MS
 // Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month since the first
 // sync (the monthly history it keeps), ties sharing it. Their tier comes from the longest run of months in a row: bronze
-// for one, silver for two, gold for three or more. The key is one of the monthly figures of monthlyActivity().
+// for one, silver for two, gold for three or more. The key is one of the monthly figures of monthlyActivity(), counted
+// in units, singular then plural.
 const BADGES = [
-  { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes' },
-  { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues' },
-  { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review' },
-  { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix' },
+  { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes', units: ['PR de code', 'PR de code'] },
+  { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues', units: ['PR relue', 'PR relues'] },
+  { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review', units: ['commentaire', 'commentaires'] },
+  { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix', units: ['hotfix', 'hotfix'] },
 ]
 const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
+const TIER_ORDER = ['gold', 'silver', 'bronze']
 const BADGES_LEGEND = {
   label: 'Badges',
   hint: `${BADGES.map((badge) => `${badge.icon} ${badge.name} : ${badge.what}`).join(' · ')}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus. Ils se gagnent depuis la première synchro et restent acquis, quels que soient la période et le filtre.`,
@@ -1900,13 +1903,12 @@ function badgeHistory() {
   }
   const activity = monthlyActivity(state.stats.pullRequests)
 
-  return Object.fromEntries(
-    badgeMonths().map((month) => [
-      month,
-      Object.fromEntries([...activity].filter(([, perMonth]) => perMonth.has(month)).map(([person, perMonth]) => [person, perMonth.get(month)])),
-    ]),
-  )
+  return Object.fromEntries(badgeMonths().map((month) => [month, monthFigures(activity, month)]))
 }
+
+// Everyone's figures of a month, from monthlyActivity(), as the history keeps them.
+const monthFigures = (activity, month) =>
+  Object.fromEntries([...activity].filter(([, perMonth]) => perMonth.has(month)).map(([person, perMonth]) => [person, perMonth.get(month)]))
 
 // The rank of a month: months in a row follow each other even across a gap in the history.
 function monthRank(month) {
@@ -1915,22 +1917,20 @@ function monthRank(month) {
   return year * 12 + number
 }
 
-// Each person's badges, worked out once per stats over everyone, the people who left included: a month someone who left
-// was the top of, nobody else was. For each badge won: the months won, the longest run of them in a row and its tier.
-function badgesOf(login) {
+// The badges of the whole team, worked out once per stats over everyone, the people who left included: a month someone
+// who left was the top of, nobody else was. For each badge, its leaders month by month; for each person, each badge won:
+// the months won, the longest run of them in a row and its tier.
+function badgeStandings() {
   if (state.badges?.stats !== state.stats) {
     const history = badgeHistory()
-    const months = Object.keys(history).sort()
+    const leaders = new Map()
     const byLogin = new Map()
     for (const badge of BADGES) {
+      leaders.set(badge.key, monthlyLeaders(history, badge.key))
       const won = new Map()
-      for (const month of months) {
-        const values = Object.entries(history[month]).map(([person, figures]) => [person, figures[badge.key] ?? 0])
-        const best = Math.max(0, ...values.map(([, value]) => value))
-        for (const [person, value] of values) {
-          if (best > 0 && value === best) {
-            won.set(person, [...(won.get(person) ?? []), month])
-          }
+      for (const { month, people } of leaders.get(badge.key)) {
+        for (const person of people) {
+          won.set(person, [...(won.get(person) ?? []), month])
         }
       }
       for (const [person, wonMonths] of won) {
@@ -1959,11 +1959,13 @@ function badgesOf(login) {
         ])
       }
     }
-    state.badges = { stats: state.stats, byLogin }
+    state.badges = { stats: state.stats, history, leaders, byLogin }
   }
 
-  return state.badges.byLogin.get(login) ?? []
+  return state.badges
 }
+
+const badgesOf = (login) => badgeStandings().byLogin.get(login) ?? []
 
 const monthName = (month) => monthLongFormat.format(new Date(`${month}-15T12:00:00Z`))
 
@@ -2001,8 +2003,7 @@ function badgeMedal(badge, size) {
 
 // The medals of a person, gold first; nothing for someone without any badge.
 function badgeRow(login, className, size) {
-  const order = ['gold', 'silver', 'bronze']
-  const won = badgesOf(login).toSorted((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier) || b.streak - a.streak)
+  const won = badgesOf(login).toSorted((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || b.streak - a.streak)
 
   return won.length ? [el('div', { className }, ...won.map((badge) => badgeMedal(badge, size)))] : []
 }
@@ -2073,6 +2074,160 @@ function renderTeam() {
     return
   }
   container.replaceChildren(...rows.map(personCard))
+}
+
+// Hall of fame page
+
+const amountOf = (value, [one, many]) => `${formatNumber(value)} ${value > 1 ? many : one}`
+
+// The people who led a badge over a month, and how much: someone who left the team shows without a name, as everywhere.
+function leadersLine(leader, badge) {
+  if (!leader) {
+    return el('span', { className: 'muted', textContent: 'Personne' })
+  }
+
+  return el(
+    'span',
+    { className: 'award-leaders' },
+    ...leader.people.map((login) => (isCurrent(login) ? personLink(login) : el('span', { className: 'award-former', textContent: 'une personne partie' }))),
+    el('span', { className: 'award-value', textContent: amountOf(leader.value, badge.units) }),
+  )
+}
+
+function awardHead(badge) {
+  return el(
+    'div',
+    { className: 'award-head' },
+    el('span', { className: 'award-icon', textContent: badge.icon, ariaHidden: 'true' }),
+    el('span', { className: 'award-name' }, el('strong', { textContent: badge.name }), el('span', { textContent: capitalize(badge.what) })),
+  )
+}
+
+// For each badge, the leaders of the last whole month and those of the current one so far.
+function renderChampions({ history, leaders }) {
+  const last = Object.keys(history).sort().at(-1)
+  const current = parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)
+  const ongoing = { [current]: monthFigures(monthlyActivity(state.stats.pullRequests), current) }
+  const currentName = capitalize(monthName(current).replace(/ \d+$/, ''))
+  $('[data-awards-champions-sub]').textContent = last
+    ? `${capitalize(monthName(last))}, le dernier mois complet, et ${currentName.toLowerCase()} en cours, provisoire`
+    : `${currentName} en cours, provisoire : pas encore de mois complet`
+  $('[data-awards-champions]').replaceChildren(
+    ...BADGES.map((badge) =>
+      el(
+        'article',
+        { className: 'award' },
+        awardHead(badge),
+        el(
+          'dl',
+          { className: 'award-months' },
+          ...(last
+            ? [
+                el(
+                  'div',
+                  {},
+                  el('dt', { textContent: capitalize(monthName(last)) }),
+                  el('dd', {}, leadersLine(leaders.get(badge.key).find((leader) => leader.month === last), badge)),
+                ),
+              ]
+            : []),
+          el(
+            'div',
+            {},
+            el('dt', { textContent: `${currentName}, en cours` }),
+            el('dd', {}, leadersLine(monthlyLeaders(ongoing, badge.key)[0], badge)),
+          ),
+        ),
+      ),
+    ),
+  )
+}
+
+// For each badge, the people of the team who hold it, the best tier and the longest run first.
+function renderHolders({ byLogin }) {
+  $('[data-awards-holders]').replaceChildren(
+    ...BADGES.map((badge) => {
+      const holders = [...byLogin]
+        .filter(([login]) => isCurrent(login))
+        .flatMap(([login, badges]) => badges.filter((won) => won.key === badge.key).map((won) => ({ login, won })))
+        .sort(
+          (a, b) =>
+            TIER_ORDER.indexOf(a.won.tier) - TIER_ORDER.indexOf(b.won.tier) ||
+            b.won.streak - a.won.streak ||
+            b.won.total - a.won.total ||
+            displayName(a.login).localeCompare(displayName(b.login), 'fr'),
+        )
+
+      return el(
+        'article',
+        { className: 'award' },
+        awardHead(badge),
+        holders.length
+          ? el(
+              'ul',
+              { className: 'award-holders' },
+              ...holders.map(({ login, won }) =>
+                el(
+                  'li',
+                  {},
+                  badgeMedal(won, 'small'),
+                  personLink(login),
+                  el('span', {
+                    className: 'award-value',
+                    textContent: won.streak > 1 ? `${won.streak} mois d’affilée` : `${won.total} mois`,
+                  }),
+                ),
+              ),
+            )
+          : el('p', { className: 'muted', textContent: 'Personne de l’équipe pour l’instant' }),
+      )
+    }),
+  )
+}
+
+// Every whole month of the history, the latest first, with the leaders of each badge.
+function renderAwardMonths({ history, leaders }) {
+  const months = Object.keys(history).sort().toReversed()
+  $('[data-awards-months-sub]').textContent = months.length
+    ? `Les champions de chaque mois complet depuis la première synchro, en ${monthName(months.at(-1))}`
+    : 'Pas encore de mois complet'
+  $('[data-awards-months]').replaceChildren(
+    el(
+      'table',
+      { className: 'awards-table' },
+      el(
+        'thead',
+        {},
+        el(
+          'tr',
+          {},
+          el('th', { scope: 'col', className: 'text', textContent: 'Mois' }),
+          ...BADGES.map((badge) => el('th', { scope: 'col', className: 'text', textContent: `${badge.icon} ${badge.name}` })),
+        ),
+      ),
+      el(
+        'tbody',
+        {},
+        ...months.map((month) =>
+          el(
+            'tr',
+            {},
+            el('th', { scope: 'row', className: 'text', textContent: capitalize(monthName(month)) }),
+            ...BADGES.map((badge) =>
+              el('td', { className: 'text' }, leadersLine(leaders.get(badge.key).find((leader) => leader.month === month), badge)),
+            ),
+          ),
+        ),
+      ),
+    ),
+  )
+}
+
+function renderAwards() {
+  const standings = badgeStandings()
+  renderChampions(standings)
+  renderHolders(standings)
+  renderAwardMonths(standings)
 }
 
 // The busiest people or repositories of a person, each with its count of pull requests.
@@ -3414,6 +3569,7 @@ function render(animate) {
   }
   renderTables(animate)
   renderTeam()
+  renderAwards()
   renderFeed(animate)
   renderWaiting(animate)
   renderUnapproved(animate)

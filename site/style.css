@@ -1363,6 +1363,120 @@ main.is-loading {
   line-height: 1.2;
 }
 
+/* Hall of fame: one block per badge, the four in a row on a wide screen, two by two below, one by one on a phone; the
+   months in a table. */
+.awards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 32px;
+  margin-top: 16px;
+}
+
+@media (min-width: 1440px) {
+  .awards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .awards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.award {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.award-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.award-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.award-name {
+  display: grid;
+  min-width: 0;
+}
+
+.award-name span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.award-months {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.award-months dt {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.award-months dd {
+  margin: 4px 0 0;
+}
+
+.award-leaders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.award-value {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.award-former {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.award-holders {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.award-holders li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.award-holders .award-value {
+  margin-left: auto;
+}
+
+.awards-table td {
+  vertical-align: top;
+}
+
+/* In the table, each leader on a line, then how much: the same in every cell, whatever its width. */
+.awards-table .award-leaders {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 /* Badges, like GitHub achievements: a round medal of its tier's metal, its icon in the middle, the length of its run of
    months on a tab. On a card they sit in a row under the stack; in the dialog, larger, on the right of the head. */
 .person-badges,

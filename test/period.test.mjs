@@ -9,6 +9,7 @@ import {
   computeCi,
   computePeriod,
   monthlyActivity,
+  monthlyLeaders,
   parisDay,
   parisMidnight,
   reviewNetwork,
@@ -484,6 +485,29 @@ describe('monthlyActivity', () => {
 
   test('bots do not show', () => {
     assert.equal(activity.has('renovate'), false)
+  })
+})
+
+describe('monthlyLeaders', () => {
+  const history = {
+    '2026-02': { alice: { code: 4, reviewed: 1 }, bob: { code: 4, reviewed: 3 } },
+    '2026-01': { alice: { code: 2, reviewed: 0 }, carol: { code: 5, reviewed: 2 } },
+    '2026-03': { bob: { code: 0, reviewed: 0 } },
+  }
+
+  test('the top of each month, oldest first, ties sharing it', () => {
+    assert.deepEqual(monthlyLeaders(history, 'code'), [
+      { month: '2026-01', value: 5, people: ['carol'] },
+      { month: '2026-02', value: 4, people: ['alice', 'bob'] },
+    ])
+  })
+
+  test('a month nobody did any of it has no leader', () => {
+    assert.deepEqual(
+      monthlyLeaders(history, 'reviewed').map(({ month }) => month),
+      ['2026-01', '2026-02'],
+    )
+    assert.deepEqual(monthlyLeaders(history, 'hotfixes'), [])
   })
 })
 

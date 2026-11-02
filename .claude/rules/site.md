@@ -12,8 +12,8 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, authors, reviewers, collaboration, team, tma, devops, method). The period
-  selector and the search apply to every page but the method one.
+  page of the hash (`ROUTES`: overview, authors, reviewers, collaboration, team, awards, tma, devops, method). The period
+  selector and the search apply to every page but the method and awards ones (`filters: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -45,11 +45,16 @@ paths:
   - Seniority (`seniority()`, card and dialog) comes from `activityBounds()` of `site/period.js` over every record,
     whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
     synced year, which only covers a year, else the months since then.
-- **Badges** (team cards and dialog): `BADGES` names each one after a monthly figure of `monthlyActivity()` in
-  `site/period.js`. `badgesOf()` gives them to the top of the whole team for each month of the history the sync
-  publishes (`stats.monthly`, since the first sync; without it, the whole months of the window), ties sharing, the
-  people who left included in the race; the tier comes from the longest run of calendar months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the charts would
-  sit under the dialog. In the dialog it opens below the medals, clear of the close button.
+- **Badges** (team cards and dialog, awards page): `BADGES` names each one after a monthly figure of
+  `monthlyActivity()` in `site/period.js`, with its units. `badgeStandings()` works out, once per stats, the leaders of
+  each month with `monthlyLeaders()` of `site/period.js` over the history the sync publishes (`stats.monthly`, since
+  the first sync; without it, the whole months of the window), ties sharing, the people who left included in the race;
+  `badgesOf()` gives each person's badges, the tier coming from the longest run of calendar months in a row.
+  `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the charts would sit under the
+  dialog. In the dialog it opens below the medals, clear of the close button.
+  - The awards page (`renderAwards()`) shows the leaders of the last whole month and of the current one so far, the
+    holders of each badge still in the team, and the leaders of every month of the history. A leader who left shows as
+    « une personne partie », never by name.
 - **Names of people**: always `personLink(login)` (with or without the avatar), never a GitHub link. Wherever it
   shows, a table, a feed, the pairs, the former people or the dialog itself, it opens the person's dialog
   (`openPersonOf()`); the dialog links to the GitHub profile. A person without any figure over the period opens their

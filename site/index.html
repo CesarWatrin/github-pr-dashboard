@@ -76,6 +76,12 @@
             </svg>
             Équipe
           </a>
+          <a class="nav-link" href="#/palmares" data-route-link="awards">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5 2.5h6V6a3 3 0 0 1-6 0Z" /><path d="M5 3.5H3a2 2 0 0 0 2 3M11 3.5h2a2 2 0 0 1-2 3M8 9v2.5M5.5 13.5h5" />
+            </svg>
+            Palmarès
+          </a>
           <a class="nav-link" href="#/tma" data-route-link="tma">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.5a3.5 3.5 0 0 0-3.2 4.9L2.5 11.7l1.8 1.8 4.3-4.3A3.5 3.5 0 0 0 13.5 6l-2 .5-1.5-1.5.5-2Z" /></svg>
             TMA
@@ -344,6 +350,35 @@
                 tous ses dépôts : le filtre de dépôts ne restreint que les chiffres.
               </p>
               <dl class="table-legend" data-table-legend="team"></dl>
+            </section>
+          </div>
+
+          <!-- Palmarès -->
+          <div class="route" data-route="awards" hidden>
+            <section class="card" aria-labelledby="awards-champions-title">
+              <h2 id="awards-champions-title">Champions du mois</h2>
+              <p class="card-sub" data-awards-champions-sub></p>
+              <div class="awards" data-awards-champions></div>
+            </section>
+
+            <section class="card" aria-labelledby="awards-holders-title">
+              <h2 id="awards-holders-title">Tableau d’honneur</h2>
+              <p class="card-sub">
+                Les badges de chaque personne de l’équipe : bronze pour un mois en tête, argent pour deux d’affilée, or
+                pour trois ou plus
+              </p>
+              <div class="awards" data-awards-holders></div>
+            </section>
+
+            <section class="card" aria-labelledby="awards-months-title">
+              <h2 id="awards-months-title">Mois après mois</h2>
+              <p class="card-sub" data-awards-months-sub></p>
+              <div class="table-wrap" data-awards-months></div>
+              <p class="card-note">
+                Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris. Un mois
+                reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs.
+                Les personnes parties comptent dans la course, mais n’apparaissent pas sous leur nom.
+              </p>
             </section>
           </div>
 

@@ -637,6 +637,21 @@ export function monthlyActivity(records) {
   return people
 }
 
+// The top of the team for one figure of a monthly history ({ 'YYYY-MM': { login: figures } }), month by month, oldest
+// first: how much, and who did that much, ties sharing it. A month nobody did any of it has no leader.
+export function monthlyLeaders(history, key) {
+  return Object.keys(history)
+    .sort()
+    .flatMap((month) => {
+      const values = Object.entries(history[month]).map(([login, figures]) => [login, figures[key] ?? 0])
+      const best = Math.max(0, ...values.map(([, value]) => value))
+
+      return best > 0
+        ? [{ month, value: best, people: values.filter(([, value]) => value === best).map(([login]) => login).sort() }]
+        : []
+    })
+}
+
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.
 export function computeCi(workflows, { start, end, bucket }) {
   const firstDay = parisDay(start)
