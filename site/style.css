@@ -1416,11 +1416,11 @@ main.is-loading {
 }
 
 .person-dialog-card.is-tilting .person-dialog-head {
-  transform: translateZ(40px);
+  transform: translateZ(28px);
 }
 
 .person-dialog-card.is-tilting .person-dialog-section {
-  transform: translateZ(18px);
+  transform: translateZ(12px);
 }
 
 .person-dialog-close {

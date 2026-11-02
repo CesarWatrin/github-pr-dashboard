@@ -422,7 +422,7 @@ const PERSON_CIRCULATION = [
 // People and repositories listed in the dialog, the busiest first.
 const PERSON_TOP = 3
 // How far the open card leans towards the pointer, at its edges.
-const PERSON_TILT_DEG = 8
+const PERSON_TILT_DEG = 6
 
 const REPO_COLUMNS = [
   { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
