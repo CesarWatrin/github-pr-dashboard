@@ -54,4 +54,6 @@ workflow run, and nothing else.
 - Incremental (the cron, the "quick" button): about 15 seconds.
 - Full (the "full" button, `npm run sync:full`): about 15 to 20 minutes, mostly reading the pull requests again; the
   Actions runs already read are kept. The page asks for confirmation and presents it as exceptional.
-- First run after a `SNAPSHOT_VERSION` bump: everything, about 25 minutes. Keep it under the 45-minute timeout.
+- Everything, Actions runs included: without a snapshot, or with one older than `SNAPSHOT_VERSION` (the first run
+  after a bump, a new `SNAPSHOT_PATH`, a stale `.cache/snapshot.json`). Reading every Actions run of the window again
+  is what makes it so long: about 25 minutes in CI, up to about an hour locally. Keep it under the 45-minute timeout.
