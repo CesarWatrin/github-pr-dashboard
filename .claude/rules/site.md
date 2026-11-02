@@ -47,6 +47,6 @@ paths:
 
 ## Security
 
-- The key derived from the password stays in `localStorage` for 24 hours; locking asks for confirmation and forgets
+- The key derived from the password stays in `localStorage` for 7 days; locking asks for confirmation and forgets
   it. Never log it or print it.
 - The sync button uses `DISPATCH_TOKEN` from the decrypted stats; a full sync asks for confirmation first.

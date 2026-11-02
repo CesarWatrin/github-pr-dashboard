@@ -44,8 +44,11 @@ pour un visiteur comme pour un robot.
 - La synchro dérive une clé AES-256 du mot de passe (PBKDF2-SHA256, 600 000 itérations), compresse les stats puis
   les chiffre en AES-GCM dans `site/data/stats.enc.json`. Sans mot de passe, elle refuse de tourner : rien n'est
   jamais publié en clair.
-- La page demande le mot de passe et déchiffre les stats dans le navigateur. La clé reste un jour sur l'appareil,
+- La page demande le mot de passe et déchiffre les stats dans le navigateur. La clé reste sept jours sur l'appareil,
   puis le mot de passe est redemandé. Le cadenas en haut à droite reverrouille tout de suite.
+- Une fois le mot de passe accepté, la page demande au navigateur de l'enregistrer sous le nom « Stats PR » (Chrome
+  et Edge ; les autres navigateurs le proposent selon leurs propres règles). Le gestionnaire de mots de passe le
+  remplit ensuite tout seul.
 
 ### Bouton de synchro
 

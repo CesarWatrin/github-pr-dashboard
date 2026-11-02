@@ -30,8 +30,10 @@
       <form class="lock-card" data-lock-form>
         <div>
           <h1>Stats PR</h1>
-          <p class="subtitle">Accès réservé à l’équipe. L’accès reste ouvert un jour sur cet appareil.</p>
+          <p class="subtitle">Accès réservé à l’équipe. L’accès reste ouvert sept jours sur cet appareil.</p>
         </div>
+        <!-- Password managers file a password under a username: the dashboard has none, so this field names it. -->
+        <input type="text" name="username" autocomplete="username" value="Stats PR" hidden />
         <label class="lock-field">
           Mot de passe
           <input class="search" type="password" name="password" autocomplete="current-password" required data-lock-password />
