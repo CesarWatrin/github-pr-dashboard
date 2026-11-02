@@ -1104,6 +1104,23 @@ main.is-loading {
   min-width: 0;
 }
 
+/* Four small charts: in a row on a wide screen, two by two below, one by one on a phone. */
+.minis.minis-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 1440px) {
+  .minis.minis-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .minis.minis-four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .chart-data {
   margin-top: 8px;
   color: var(--text-secondary);
@@ -1162,6 +1179,15 @@ main.is-loading {
 
 .heat-label.is-strong {
   fill: #fff;
+}
+
+/* The median of a stage, inside its part of the bar: dark on every series color, in both themes. */
+.stage-label {
+  fill: #141413;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
 .card-note {

@@ -62,6 +62,10 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" /><circle cx="8" cy="8" r="2" /></svg>
             Relecteurs
           </a>
+          <a class="nav-link" href="#/cycle" data-route-link="cycle">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8.5" r="5.5" /><path d="M8 5.5v3l2 1.5M6.5 1.5h3" /></svg>
+            Cycle de vie
+          </a>
           <a class="nav-link" href="#/collaboration" data-route-link="collaboration">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <circle cx="5.5" cy="5.5" r="2" /><circle cx="11" cy="6.5" r="1.7" />
@@ -297,6 +301,64 @@
             </section>
           </div>
 
+          <!-- Cycle de vie -->
+          <div class="route" data-route="cycle" hidden>
+            <section class="card" aria-labelledby="cycle-title">
+              <div class="card-toolbar">
+                <h2 id="cycle-title" data-cycle-title>Sur la période</h2>
+                <details class="repo-filter" data-repo-filter="cycle"></details>
+              </div>
+              <h3 class="tile-group">Chaque étape, en médiane</h3>
+              <div class="tiles" data-cycle-stage-tiles></div>
+              <h3 class="tile-group">De bout en bout</h3>
+              <div class="tiles" data-cycle-end-tiles></div>
+              <p class="card-note">
+                PR de code ouvertes sur la période. Chacune ne compte que dans les étapes qu’elle a franchies : mergée
+                sans review, elle n’a ni prise en charge ni relecture ; pas encore mergée, elle n’a que sa prise en
+                charge. Un brouillon compte dès son ouverture. Le filtre de dépôts s’applique à toute la page.
+              </p>
+            </section>
+
+            <section class="card" aria-labelledby="cycle-stages-title">
+              <h2 id="cycle-stages-title">Où passe le temps</h2>
+              <p class="card-sub">
+                Part de chaque étape dans le temps d’une PR relue, de son ouverture à son arrivée en prod, en moyenne
+              </p>
+              <div class="legend" data-cycle-legend></div>
+              <div class="minis">
+                <div class="mini"><h3>Par type de dépôt</h3><div class="bar-chart" data-cycle-types></div></div>
+                <div class="mini"><h3>Par taille de PR</h3><div class="bar-chart" data-cycle-sizes></div></div>
+              </div>
+              <p class="card-note">
+                Chaque PR pèse autant, qu’elle ait pris une heure ou un mois. Au survol, la médiane de chaque étape.
+              </p>
+            </section>
+
+            <section class="card" aria-labelledby="cycle-charts-title">
+              <h2 id="cycle-charts-title" data-cycle-charts-title>Médiane de chaque étape</h2>
+              <p class="card-sub">
+                Selon la date d’ouverture des PR : les plus récentes n’ont pas encore toutes franchi chaque étape
+              </p>
+              <div class="minis minis-four">
+                <div class="mini"><h3 data-cycle-chart-title="pickup"></h3><div class="chart chart-sm" data-cycle-chart="pickup"></div></div>
+                <div class="mini"><h3 data-cycle-chart-title="review"></h3><div class="chart chart-sm" data-cycle-chart="review"></div></div>
+                <div class="mini"><h3 data-cycle-chart-title="merge"></h3><div class="chart chart-sm" data-cycle-chart="merge"></div></div>
+                <div class="mini"><h3 data-cycle-chart-title="deploy"></h3><div class="chart chart-sm" data-cycle-chart="deploy"></div></div>
+              </div>
+              <details class="chart-data">
+                <summary>Voir les données du graphique</summary>
+                <div class="table-wrap" data-cycle-chart-table></div>
+              </details>
+            </section>
+
+            <section class="card" aria-labelledby="cycle-repos-title">
+              <h2 id="cycle-repos-title">Par dépôt</h2>
+              <p class="card-sub">Dépôts avec des PR de code ouvertes sur la période</p>
+              <div class="table-wrap scroll-table" data-cycle></div>
+              <dl class="table-legend" data-table-legend="cycle"></dl>
+            </section>
+          </div>
+
           <!-- Collaboration -->
           <div class="route" data-route="collaboration" hidden>
             <section class="card" aria-labelledby="collaboration-matrix-title" data-collaboration-matrix-card>
@@ -486,6 +548,15 @@
                   Laravel, Vue et TypeScript sous Nuxt, Dart sous Flutter, TypeScript sous NestJS… Chaque PR de code est
                   répartie entre les technologies de son dépôt, au prorata de leur part dans le code (moins de 2 % :
                   ignorée). Logos : Simple Icons.
+                </dd>
+                <dt>Cycle de vie</dt>
+                <dd>
+                  Le temps d’une PR de code, de son ouverture à la prod, découpé en quatre étapes : la prise en charge,
+                  jusqu’à la première review ou au premier commentaire d’une autre personne ; la relecture, jusqu’à la
+                  dernière approbation avant le merge, ou jusqu’au merge sans approbation ; le merge, de cette
+                  approbation au merge ; la mise en prod, du merge à l’arrivée en prod, comme pour les indicateurs DORA.
+                  Chaque PR ouverte sur la période ne compte que dans les étapes qu’elle a franchies, et ce qui suit son
+                  merge n’y compte pas. Chaque étape a sa médiane : elles ne s’additionnent pas.
                 </dd>
                 <dt>Mises en production</dt>
                 <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
