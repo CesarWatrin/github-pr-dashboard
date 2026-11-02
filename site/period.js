@@ -51,6 +51,7 @@ export const round = (value, digits = 0) => (value === null ? null : Number(valu
 const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0)
 const hoursBetween = (from, to) => (to - from) / 60
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
+const sizeOf = (lines) => SIZE_BUCKETS.findIndex((max) => lines < max)
 
 function median(values) {
   if (values.length === 0) {
@@ -72,6 +73,7 @@ function percentile(values, share) {
   return sorted[Math.max(0, Math.ceil(share * sorted.length) - 1)]
 }
 
+const isMissing = (value) => value === null || value === undefined
 const rate = (part, total) => (total ? round(part / total, 3) : null)
 
 function getOrCreate(map, key, create) {
@@ -149,6 +151,7 @@ export function computePeriod(records, { start, end, bucket }) {
   const reviewerSeries = new Map()
   const repositories = new Map()
   const reviewedPullRequests = new Set()
+  const cycles = []
   const sizes = SIZE_BUCKETS.map((max) => ({ max, prs: 0, comments: 0, timesToMerge: [] }))
   let releases = 0
   let mergedWithFailedChecks = 0
@@ -300,6 +303,7 @@ export function computePeriod(records, { start, end, bucket }) {
     }
 
     if (opened) {
+      cycles.push({ repo: pr.repo, bucket: bucketKey(pr.createdAt), size: sizeOf(pr.lines), ...cycleOf(pr) })
       const stats = author(pr.author, pr.repo)
       if (pr.hotfix) {
         stats.hotfix++
@@ -327,7 +331,7 @@ export function computePeriod(records, { start, end, bucket }) {
         if (pr.checksFailed) {
           mergedWithFailedChecks++
         }
-        const size = sizes.find((bucket) => pr.lines < bucket.max)
+        const size = sizes[sizeOf(pr.lines)]
         size.prs++
         size.timesToMerge.push(timeToMerge)
         size.comments += pr.interventions.reduce((total, [, , , comments]) => total + comments, 0)
@@ -484,11 +488,35 @@ export function computePeriod(records, { start, end, bucket }) {
     repositories: [...repositories.values()]
       .map((stats) => ({ repo: stats.repo, prs: stats.reviewed.size, comments: stats.comments }))
       .sort((a, b) => b.prs - a.prs),
+    // One entry per code pull request opened in the range, for the cycle page to add up over any repositories.
+    cycles,
     delivery: deliveryStats([...delivery].map(([repo, stats]) => ({ repo, ...stats }))),
     dependencies: dependencyStats(
       [...dependencies].map(([repo, stats]) => ({ repo, ...stats })),
       [...ecosystems].map(([ecosystem, stats]) => ({ ecosystem, ...stats })),
     ),
+  }
+}
+
+// Where the time of a code pull request goes, in hours, each stage null when it did not go through it: waiting for a
+// first look (pickup), from that first review or comment to the last approval before the merge, or to the merge
+// without any (review), from that approval to the merge (merge), from the merge to production (deploy), and from the
+// opening to the merge and to production. What comes after the merge does not count: the pull request was already in.
+function cycleOf(pr) {
+  const merged = pr.mergedAt !== null
+  const before = merged ? pr.interventions.filter(([, at]) => at <= pr.mergedAt) : pr.interventions
+  const firstAt = before[0]?.[1] ?? null
+  const approvedAt = before.findLast(([, , state]) => state === 'APPROVED')?.[1] ?? null
+  const deployed = merged && !isMissing(pr.deployedAt)
+  const hours = (from, to) => round(hoursBetween(from, to), 1)
+
+  return {
+    pickup: firstAt === null ? null : hours(pr.createdAt, firstAt),
+    review: merged && firstAt !== null ? hours(firstAt, approvedAt ?? pr.mergedAt) : null,
+    merge: merged && approvedAt !== null ? hours(approvedAt, pr.mergedAt) : null,
+    deploy: deployed ? hours(pr.mergedAt, pr.deployedAt) : null,
+    toMerge: merged ? hours(pr.createdAt, pr.mergedAt) : null,
+    toProduction: deployed ? hours(pr.createdAt, pr.deployedAt) : null,
   }
 }
 
