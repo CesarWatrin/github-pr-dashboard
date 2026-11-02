@@ -1436,6 +1436,14 @@ main.is-loading {
   transform: translateZ(40px);
 }
 
+/* It takes clicks well around what it shows: as the card leans, it drifts a little under the pointer. */
+.person-dialog-close::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+}
+
 .person-dialog-close svg {
   width: 14px;
   height: 14px;
