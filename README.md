@@ -53,7 +53,8 @@ la recherche s'appliquent à toutes :
   un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
   seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité, et
   son nom parmi les champions de chaque mois du Palmarès. Sa fiche dit qu'elle ne fait plus partie de l'équipe. Ses
-  PR restent comptées dans les totaux, les graphiques et les dépôts.
+  PR restent comptées dans les totaux, les graphiques et les dépôts. Dans les dépôts portés par une seule personne,
+  celle qui en a écrit le plus reste nommée même partie, marquée « hors équipe » : son code est toujours là.
 - **Dépôts** : une carte par dépôt avec des PR de code sur la période, filtrables par dépôt : son type, ses
   technologies, les personnes de l'équipe qui l'écrivent le plus, son bus factor (le plus petit nombre de personnes
   qui écrivent à elles seules la moitié de ses PR), son volume, ses délais de review et de merge, ses déploiements et

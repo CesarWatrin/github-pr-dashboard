@@ -63,12 +63,13 @@ paths:
     holders of each badge still in the team, and the leaders of every month of the history. A leader who left shows as
     « une personne partie », but in the leaders of every month, a record of the history, where they show by name.
 - **Repository cards** (repositories page): `repositoryRows()` gathers each repository's figures from the period
-  stats, its CI from `computeCi()` per repository, and the people still in the team who write and review it;
+  stats, its CI from `computeCi()` per repository, the people who write it (those who left included, for the list of
+  the repositories that rest on a single person) and those still in the team who review it;
   `repositoryCard()` draws one card with the figures of `REPOSITORY_STATS`, all of `REPOSITORY_FIGURES` making the
   legend (`data-table-legend="repositories"`). Cards come most code pull requests first, filtered by the page's
   repository filter (`REPO_FILTERS.repositories`) and the search. The bus factor comes from `busFactor()` of
-  `site/period.js`; the repositories that rest on a single person, or on people who left, with at least
-  `FRAGILE_MIN_PRS` code pull requests, are listed above the cards.
+  `site/period.js`, over the people still in the team only; the repositories that rest on a single person, or on
+  people who left, with at least `FRAGILE_MIN_PRS` code pull requests, are listed above the cards.
   - A click on a card opens `openRepoDialog()`, in the dialog of people (`showCardDialog()`, shared): the figures of
     `REPOSITORY_WRITTEN`, `REPOSITORY_REVIEWED` and `REPOSITORY_DELIVERED`, each with the median of the repositories of
     the same type (or of all of them under `MIN_PEERS`), and who writes and reviews it. `repositoryRows({ all: true })`
@@ -84,9 +85,10 @@ paths:
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
   waiting pull requests, and the review networks through `withoutFormer()`. They only show in the former people of the
-  team page, and among the leaders of every month of the awards page; their dialog says they left the team and when
-  they were last active, in place of their seniority (`formerText()`). Totals, charts and repository figures still
-  count their pull requests.
+  team page, among the leaders of every month of the awards page, and in the repositories that rest on a single
+  person, as the one who wrote the most when its authors left, marked « hors équipe » (`formerMark()`): their code is
+  still there. Their dialog says they left the team and when they were last active, in place of their seniority
+  (`formerText()`). Totals, charts and repository figures still count their pull requests.
   - In the dialog, the head comes forward as the card leans: anything clickable at its level, such as the close
     button, must come further forward still, or the head takes its clicks.
   - Each figure of the dialog shows the median of the person's peers (`statList()` given their details): the people
