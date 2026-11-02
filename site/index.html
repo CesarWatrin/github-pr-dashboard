@@ -66,6 +66,10 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8.5" r="5.5" /><path d="M8 5.5v3l2 1.5M6.5 1.5h3" /></svg>
             Cycle de vie
           </a>
+          <a class="nav-link" href="#/explorer" data-route-link="explorer">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
+            Explorateur
+          </a>
           <a class="nav-link" href="#/collaboration" data-route-link="collaboration">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <circle cx="5.5" cy="5.5" r="2" /><circle cx="11" cy="6.5" r="1.7" />
@@ -362,6 +366,22 @@
               <p class="card-sub">Dépôts avec des PR de code ouvertes sur la période</p>
               <div class="table-wrap scroll-table" data-cycle></div>
               <dl class="table-legend" data-table-legend="cycle"></dl>
+            </section>
+          </div>
+
+          <!-- Explorateur -->
+          <div class="route" data-route="explorer" hidden>
+            <section class="card" aria-labelledby="explorer-title">
+              <div class="card-toolbar">
+                <h2 id="explorer-title">PR de code ouvertes sur la période</h2>
+                <div class="explorer-tools">
+                  <div class="segmented" role="radiogroup" aria-label="PR montrées" data-explorer-views></div>
+                  <details class="repo-filter" data-repo-filter="explorer"></details>
+                </div>
+              </div>
+              <p class="card-sub" data-table-note="explorer"></p>
+              <div class="table-wrap scroll-table" data-explorer></div>
+              <dl class="table-legend" data-table-legend="explorer"></dl>
             </section>
           </div>
 

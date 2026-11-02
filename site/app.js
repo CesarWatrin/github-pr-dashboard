@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, explorePullRequests, monthlyActivity, monthlyLeaders, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -79,6 +79,7 @@ const ROUTES = {
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
   awards: { hash: '#/palmares', title: 'Palmarès', subtitle: 'Les badges de l’équipe, mois après mois, depuis la première synchro', filters: false },
   repositories: { hash: '#/depots', title: 'Dépôts', subtitle: 'Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit' },
+  explorer: { hash: '#/explorer', title: 'Explorateur', subtitle: 'Toutes les PR de code de la période, à trier et filtrer' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -614,6 +615,52 @@ const CYCLE_COLUMNS = [
   },
 ]
 
+const EXPLORER_STATES = { open: 'ouverte', merged: 'mergée', closed: 'fermée' }
+// The quick views of the explorer, each keeping some of its pull requests.
+const EXPLORER_VIEWS = [
+  { key: 'all', label: 'Toutes', keep: () => true },
+  { key: 'open', label: 'Ouvertes', keep: (row) => row.state === 'open' },
+  { key: 'unreviewed', label: 'Mergées sans review', keep: (row) => row.unreviewed },
+  { key: 'hotfix', label: 'Hotfix', keep: (row) => row.hotfix },
+  { key: 'checks', label: 'Check rouge', keep: (row) => row.checksFailed },
+]
+// The rows the explorer shows at most, after sorting: the search and the filters narrow the rest.
+const EXPLORER_LIMIT = 200
+
+const EXPLORER_COLUMNS = [
+  {
+    key: 'pr',
+    label: 'PR',
+    kind: 'text',
+    // Numbers sort as numbers within a repository.
+    value: (row) => `${row.repo}#${String(row.number).padStart(7, '0')}`,
+    cell: (row) => explorerPullRequestCell(row),
+  },
+  { key: 'author', label: 'Auteur', kind: 'text', value: (row) => displayName(row.author), cell: (row) => explorerAuthorCell(row) },
+  {
+    key: 'createdAt',
+    label: 'Ouverte le',
+    format: (row) => rangeShortFormat.format(dayDate(parisDay(row.createdAt * 60_000))),
+    hint: 'Jour d’ouverture de la PR.',
+  },
+  { key: 'state', label: 'État', kind: 'text', value: (row) => EXPLORER_STATES[row.state], format: (row) => EXPLORER_STATES[row.state] },
+  { key: 'lines', label: 'Lignes', kind: 'bar', hint: 'Lignes ajoutées et supprimées.' },
+  { key: 'reviewers', label: 'Relecteurs', hint: 'Personnes différentes intervenues sur la PR, par une review ou un commentaire.' },
+  {
+    key: 'pickup',
+    label: '1re review',
+    format: (row) => formatDuration(row.pickup),
+    hint: 'De l’ouverture à la première review ou au premier commentaire d’une autre personne, avant le merge.',
+  },
+  { key: 'toMerge', label: 'Merge en', format: (row) => formatDuration(row.toMerge), hint: 'De l’ouverture au merge.' },
+  {
+    key: 'toProduction',
+    label: 'Jusqu’en prod',
+    format: (row) => formatDuration(row.toProduction),
+    hint: 'De l’ouverture à l’arrivée en prod, avec le déploiement suivant du dépôt.',
+  },
+]
+
 const TMA_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
   {
@@ -845,11 +892,14 @@ const state = {
   // The stats of the period shown, computed once per period and data.
   periodCache: null,
   ciCache: null,
+  explorerCache: null,
+  // The quick view of the explorer.
+  explorerView: 'all',
   networkCache: null,
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null, repositories: null },
+  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null, repositories: null, explorer: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -861,9 +911,10 @@ const state = {
     deployments: { key: 'deployments', direction: -1 },
     workflows: { key: 'runs', direction: -1 },
     dependencies: { key: 'opened', direction: -1 },
+    explorer: { key: 'createdAt', direction: -1 },
   },
   previousRows: Object.fromEntries(
-    ['authors', 'reviewers', 'cycle', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [
+    ['authors', 'reviewers', 'cycle', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies', 'explorer'].map((name) => [
       name,
       new Map(),
     ]),
@@ -973,6 +1024,17 @@ function currentPeriod() {
   }
 
   return state.periodCache.period
+}
+
+// The pull requests of the explorer over the period, worked out once per data and range.
+function currentExplorer() {
+  const range = periodRange()
+  const key = `${range.start}:${range.end}`
+  if (state.explorerCache?.stats !== state.stats || state.explorerCache.key !== key) {
+    state.explorerCache = { stats: state.stats, key, rows: explorePullRequests(state.stats.pullRequests, range) }
+  }
+
+  return state.explorerCache.rows
 }
 
 function currentCi() {
@@ -3342,6 +3404,24 @@ const TABLES = {
       renderCycleCharts()
     },
   },
+  explorer: {
+    columns: EXPLORER_COLUMNS,
+    rows: () => {
+      const view = EXPLORER_VIEWS.find((other) => other.key === state.explorerView)
+
+      return currentExplorer().filter((row) => inSelection(state.repos.explorer, row.repo) && view.keep(row))
+    },
+    rowKey: (row) => `${row.repo}#${row.number}`,
+    searchTexts: (row) => [row.repo, `${row.repo}#${row.number}`, row.author, displayName(row.author)],
+    limit: EXPLORER_LIMIT,
+    countNote: (shown, total) =>
+      shown < total
+        ? `Les ${formatNumber(shown)} premières PR sur ${formatNumber(total)}, selon le tri : la recherche et les filtres affinent la liste.`
+        : `${formatNumber(total)} PR de code.`,
+    source: 'authors',
+    repoCounts: () => TABLES.collaboration.repoCounts(),
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+  },
   collaboration: {
     columns: COLLABORATION_COLUMNS,
     rows: () => currentNetwork().authors,
@@ -3536,6 +3616,34 @@ function repoTypeTag(category) {
   return el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() })
 }
 
+// A pull request of the explorer: its link, then what stands out about it.
+function explorerPullRequestCell(row) {
+  const tags = [row.hotfix ? 'hotfix' : null, row.unreviewed ? 'sans review' : null, row.checksFailed ? 'check rouge' : null].filter(Boolean)
+
+  return el('td', { className: 'text explorer-pr' }, pullRequestLink(row.repo, row.number), ...tags.map((tag) => el('span', { className: 'feed-tag', textContent: tag })))
+}
+
+// The quick views of the explorer, as a segmented control.
+function renderExplorerViews() {
+  $('[data-explorer-views]').replaceChildren(
+    ...EXPLORER_VIEWS.map((view) => {
+      const button = el('button', { type: 'button', textContent: view.label })
+      button.setAttribute('role', 'radio')
+      button.setAttribute('aria-checked', String(view.key === state.explorerView))
+      button.dataset.view = view.key
+
+      return button
+    }),
+  )
+}
+
+// The author of a pull request of the explorer, without a name once they left the team, as in every list of people.
+function explorerAuthorCell(row) {
+  return isCurrent(row.author)
+    ? el('td', { className: 'text explorer-author' }, personLink(row.author))
+    : el('td', { className: 'text muted', textContent: 'une personne partie' })
+}
+
 function repoCell({ repo, category }) {
   return el('td', { className: 'person repo-cell' }, repoLink(repo), repoTypeTag(category))
 }
@@ -3629,7 +3737,7 @@ function renderCell(column, row, barMax) {
 }
 
 function renderTable(name, highlight) {
-  const { columns, searchTexts, rowKey = (row) => row.login } = TABLES[name]
+  const { columns, searchTexts, rowKey = (row) => row.login, limit = Infinity, countNote } = TABLES[name]
   const rows = TABLES[name].rows()
   const sort = state.sort[name]
   const sortColumn = columns.find((column) => column.key === sort.key)
@@ -3639,7 +3747,12 @@ function renderTable(name, highlight) {
   const visible = rows
     .filter((row) => matchesQuery(...searchTexts(row)))
     .sort((a, b) => {
-      const order = compareValues(columnValue(sortColumn, a), columnValue(sortColumn, b))
+      const [first, second] = [columnValue(sortColumn, a), columnValue(sortColumn, b)]
+      // Missing values stay last, whichever way the column sorts.
+      if (isMissing(first) !== isMissing(second)) {
+        return isMissing(first) ? 1 : -1
+      }
+      const order = compareValues(first, second)
 
       return order === 0 ? rowKey(a).localeCompare(rowKey(b)) : order * sort.direction
     })
@@ -3665,7 +3778,8 @@ function renderTable(name, highlight) {
     return cell
   })
 
-  const bodyRows = visible.map((row, index) => {
+  // A long table only shows its first rows, after sorting; its note says how many there are.
+  const bodyRows = visible.slice(0, limit).map((row, index) => {
     const tr = el('tr', {}, ...columns.map((column) => renderCell(column, row, barMax)))
     tr.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
     if (highlight && previous.size > 0 && previous.get(rowKey(row)) !== JSON.stringify(row)) {
@@ -3678,6 +3792,9 @@ function renderTable(name, highlight) {
     bodyRows.push(el('tr', {}, el('td', { colSpan: columns.length, className: 'muted', textContent: 'Aucun résultat' })))
   }
 
+  if (countNote) {
+    $(`[data-table-note="${name}"]`).textContent = countNote(Math.min(limit, visible.length), visible.length)
+  }
   state.previousRows[name] = new Map(rows.map((row) => [rowKey(row), JSON.stringify(row)]))
   $(`[data-${name}]`).replaceChildren(
     el('table', {}, el('thead', {}, el('tr', {}, ...headCells)), el('tbody', {}, ...bodyRows)),
@@ -4567,6 +4684,16 @@ $('[data-lock-dialog]').addEventListener('close', (event) => {
   }
 })
 
+$('[data-explorer-views]').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-view]')
+  if (button) {
+    state.explorerView = button.dataset.view
+    renderExplorerViews()
+    if (state.stats) {
+      renderTable('explorer', false)
+    }
+  }
+})
 $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
@@ -4611,6 +4738,7 @@ renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
 renderStackLegends()
 renderTableLegends()
+renderExplorerViews()
 setInterval(refresh, POLL_INTERVAL_MS)
 setInterval(() => state.syncRequest && refresh(), SYNC_POLL_INTERVAL_MS)
 setInterval(refreshClock, CLOCK_INTERVAL_MS)

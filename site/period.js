@@ -520,6 +520,39 @@ function cycleOf(pr) {
   }
 }
 
+// The code pull requests of people opened in the range [start, end), in milliseconds, one row each for the explorer: who
+// opened it and when, where it is (open, merged or closed), its size, how many other people reviewed or commented it,
+// its comments, whether it was merged without any review or with a failed check, and the times of its cycle.
+export function explorePullRequests(records, { start, end }) {
+  const startAt = Math.floor(start / MINUTE_MS)
+  const endAt = Math.ceil(end / MINUTE_MS)
+
+  return records
+    .filter((pr) => !pr.bot && pr.kind === 'code' && pr.createdAt >= startAt && pr.createdAt < endAt)
+    .map((pr) => {
+      const merged = pr.mergedAt !== null
+      const before = merged ? pr.interventions.filter(([, at]) => at <= pr.mergedAt) : pr.interventions
+      const { pickup, toMerge, toProduction } = cycleOf(pr)
+
+      return {
+        repo: pr.repo,
+        number: pr.number,
+        author: pr.author,
+        createdAt: pr.createdAt,
+        state: merged ? 'merged' : pr.closed ? 'closed' : 'open',
+        hotfix: pr.hotfix,
+        lines: pr.lines,
+        reviewers: new Set(pr.interventions.map(([login]) => login)).size,
+        comments: pr.interventions.reduce((total, [, , , comments]) => total + comments, 0),
+        unreviewed: merged && before.length === 0,
+        checksFailed: Boolean(pr.checksFailed),
+        pickup,
+        toMerge,
+        toProduction,
+      }
+    })
+}
+
 // Who reviews whom over a selection of repositories (a Set, or null for all of them), from the stats of a period.
 // pairs: how many pull requests of an author each reviewer intervened on, busiest first. authors: for each author of
 // code pull requests, how many were reviewed, by how many distinct reviewers, and the share of them the main reviewer

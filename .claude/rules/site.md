@@ -12,8 +12,8 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, authors, reviewers, cycle, collaboration, team, awards, repositories, tma,
-  devops, method). The period selector and the search apply to every page but the method and awards ones
+  page of the hash (`ROUTES`: overview, authors, reviewers, cycle, explorer, collaboration, team, awards, repositories,
+  tma, devops, method). The period selector and the search apply to every page but the method and awards ones
   (`filters: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
@@ -27,6 +27,9 @@ paths:
   repository filter), a `[data-<name>]` container, a `<dl data-table-legend="<name>">` under it, and entries in
   `state.sort` and `state.previousRows`.
   - Each table needs exactly one `kind: 'bar'` column.
+  - Missing values sort last, whichever way. A long table shows its first `limit` rows after sorting, its
+    `countNote` saying how many there are (`[data-table-note="<name>"]`), as the explorer does with
+    `explorePullRequests()` of `site/period.js`, one row per code pull request of the period.
   - A text column needs a `format`: the default one formats numbers.
   - Every column whose meaning is not obvious has a `hint`: the legend under the table is built from these.
 - **Charts**: `columnChart()` over time buckets (series side by side, partial buckets lighter, tooltip on hover, an

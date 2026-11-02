@@ -2423,6 +2423,53 @@ main.is-loading {
   --type-color: var(--text-muted);
 }
 
+/* Explorer: its quick views and its repository filter, side by side, wrapping on narrow screens. */
+.explorer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.explorer-tools .repo-filter {
+  margin-left: 0;
+}
+
+/* On a phone, the quick views scroll sideways in their own bar rather than widening the page. */
+.explorer-tools {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.explorer-tools .segmented {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.explorer-tools .segmented button {
+  white-space: nowrap;
+}
+
+/* The link of a pull request, its tags wrapping under it, and its author's name on two lines if need be: the table
+   fits from 1080 px without scrolling sideways. */
+.explorer-pr,
+.explorer-author {
+  white-space: normal;
+}
+
+.explorer-pr a {
+  white-space: nowrap;
+}
+
+.explorer-pr .feed-tag {
+  margin: 2px 0 2px 6px;
+}
+
+.explorer-author .person-link {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
 /* Repository filter */
 .repo-filter {
   position: relative;

@@ -9,6 +9,7 @@ import {
   busFactor,
   computeCi,
   computePeriod,
+  explorePullRequests,
   monthlyActivity,
   monthlyLeaders,
   parisDay,
@@ -349,6 +350,42 @@ describe('computePeriod', () => {
     )
     const midday = computePeriod(RECORDS, { ...WEEK, start: WEEK.start + DAY_MS / 2 })
     assert.equal(midday.series[0].partial, true)
+  })
+})
+
+describe('explorePullRequests', () => {
+  const rows = explorePullRequests(RECORDS, WEEK)
+
+  test('one row per code pull request of people opened in the range', () => {
+    assert.deepEqual(
+      rows.map((row) => `${row.repo}#${row.number}`),
+      ['web#1', 'web#2', 'api#3', 'api#4', 'api#10'],
+    )
+  })
+
+  test('where each one is, what it got and how long it took', () => {
+    const byNumber = Object.fromEntries(rows.map((row) => [row.number, row]))
+    assert.deepEqual(byNumber[1], {
+      repo: 'web',
+      number: 1,
+      author: 'alice',
+      createdAt: at('2026-03-02T09:00:00Z'),
+      state: 'merged',
+      hotfix: false,
+      lines: 50,
+      reviewers: 1,
+      comments: 0,
+      unreviewed: false,
+      checksFailed: false,
+      pickup: 1,
+      toMerge: 6,
+      toProduction: 51,
+    })
+    assert.equal(byNumber[2].unreviewed, true)
+    assert.equal(byNumber[2].checksFailed, true)
+    assert.equal(byNumber[3].state, 'closed')
+    assert.equal(byNumber[3].comments, 2)
+    assert.equal(byNumber[4].hotfix, true)
   })
 })
 

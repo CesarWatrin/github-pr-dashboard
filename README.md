@@ -26,6 +26,10 @@ la recherche s'appliquent à toutes :
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
   dépôt, avec un filtre de dépôts pour toute la page.
+- **Explorateur** : toutes les PR de code ouvertes sur la période, une ligne chacune, à trier par date, taille,
+  relecteurs, attente de la première review, délai de merge ou délai jusqu'en prod, avec des vues rapides (ouvertes,
+  mergées sans review, hotfix, check rouge), le filtre de dépôts et la recherche. Les 200 premières selon le tri
+  s'affichent, chacune menant à sa PR sur GitHub.
 - **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
@@ -69,8 +73,8 @@ la recherche s'appliquent à toutes :
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`, `#/palmares`,
-`#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/cycle`, `#/explorer`, `#/collaboration`, `#/equipe`,
+`#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
