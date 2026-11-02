@@ -237,6 +237,19 @@ describe('computePeriod', () => {
     )
   })
 
+  test('the calendar of deployments: per repository and bucket, corrective ones apart', () => {
+    const days = Object.fromEntries(
+      period.deploymentCalendar.map(({ repo, buckets }) => [
+        repo,
+        Object.fromEntries(buckets.map((cell, index) => [period.series[index].key, cell]).filter(([, [count]]) => count > 0)),
+      ]),
+    )
+    assert.deepEqual(days, {
+      web: { '2026-03-04': [1, 0] },
+      api: { '2026-03-06': [1, 1], '2026-03-07': [1, 1] },
+    })
+  })
+
   test('Dependabot: opened over the range, waiting whatever the range', () => {
     const { repositories, ecosystems, ...totals } = period.dependencies
     assert.deepEqual(totals, {

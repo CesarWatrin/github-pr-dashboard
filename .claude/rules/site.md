@@ -34,6 +34,9 @@ paths:
   columns, `color-mix` on `--series-1`), `shareChart()` for bars cut into shares that fill the width,
   `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
+- **Calendar of deployments** (DevOps page): `renderDeploymentCalendar()` draws the `deploymentCalendar` of
+  `computePeriod()` (per repository, `[deployments, corrective]` per bucket) in a `heatmapChart()`: the
+  `CALENDAR_REPOS` repositories that deploy the most, then the others on a grouped row.
 - **Cycle page**: `CYCLE_STAGES` (pickup, review, merge, deploy) cut the time of each code pull request, from the
   `cycles` of `computePeriod()`, one entry per code pull request opened in the range. `cycleSummary()` gives the
   median of each stage over the pull requests that went through it, and the average share of each stage in the time

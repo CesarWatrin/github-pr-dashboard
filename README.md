@@ -65,7 +65,8 @@ la recherche s'appliquent à toutes :
   qui mène au dépôt sur GitHub.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
-  rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par
+  rétablissement), au total et par dépôt ; le calendrier des mises en production, quand chaque dépôt déploie, par
+  jour, semaine ou mois selon la période ; la durée, les échecs et les relances de la CI GitHub Actions, par
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
