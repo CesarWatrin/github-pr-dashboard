@@ -1392,6 +1392,156 @@ main.is-loading {
   line-height: 1.2;
 }
 
+/* Hall of fame: one block per badge, the four in a row on a wide screen, two by two below, one by one on a phone; the
+   months in a table. */
+.awards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 32px;
+  margin-top: 16px;
+}
+
+@media (min-width: 1440px) {
+  .awards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .awards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.award {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.award-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.award-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.award-name {
+  display: grid;
+  min-width: 0;
+}
+
+.award-name span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.award-months {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+/* The champions of the four badges line up month by month, whatever the length of their names: each block spans three
+   rows of the grid, shared with the blocks beside it. */
+.awards.is-aligned > .award {
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+}
+
+.awards.is-aligned .award-months {
+  display: contents;
+}
+
+.award-months dt {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.award-months dd {
+  margin: 4px 0 0;
+}
+
+/* Each leader on a line, then how much: the same everywhere, whatever the width. */
+.award-leaders {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.award-value {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.award-former {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.award-holders {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.award-holders li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* The person, then how long: a long name gets the whole width, cut short rather than over the figure. */
+.award-holder {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.award-holder .person-link,
+.award-leaders .person-link {
+  max-width: 100%;
+}
+
+.award-holder .person-link-name,
+.award-leaders .person-link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.awards-table td {
+  vertical-align: top;
+}
+
+/* Its heads are plain text, not the sort buttons of the other tables: they take the padding of the cells. */
+.awards-table thead th {
+  padding: 8px 6px;
+}
+
+.awards-table tbody th {
+  font-weight: 600;
+}
+
+/* The month stays visible while the table scrolls sideways: its cell is opaque, so it takes the row's hover too, and
+   its transition. */
+.awards-table tbody tr:hover th {
+  background: var(--surface-hover);
+}
+
 /* Repositories page: one card per repository, like those of people but wider, for their nine figures. The whole card
    opens the repository's dialog: the button of its head stretches over it, under the people, who open their own. */
 .repo-cards {
@@ -1921,6 +2071,23 @@ main.is-loading {
   margin: 0;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+/* Someone who left the team: said on a tag of its own, then when they were last active. */
+.person-dialog-former {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.former-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* In the dialog of a repository, its main technology stands where a person's photo would. */
@@ -2698,7 +2865,8 @@ th button,
 .button-secondary,
 .lock-submit,
 tbody tr,
-tbody td.person {
+tbody td.person,
+tbody th {
   transition:
     background-color 160ms ease,
     color 160ms ease,

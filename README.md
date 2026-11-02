@@ -44,11 +44,15 @@ la recherche s'appliquent à toutes :
   s'affiche au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
   mensuel de chacun au-delà de la fenêtre de 12 mois, dans son snapshot, et le relit dans les stats déjà publiées si
   le cache d'Actions s'est perdu.
+- **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
+  le tableau d'honneur, qui détient quel badge et à quel niveau ; les champions de chaque mois depuis la première
+  synchro. Les personnes parties comptent dans la course, et n'apparaissent sous leur nom que dans ce dernier tableau.
 - **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, PR en attente,
   binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
   un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
-  seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité. Ses
+  seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité, et
+  son nom parmi les champions de chaque mois du Palmarès. Sa fiche dit qu'elle ne fait plus partie de l'équipe. Ses
   PR restent comptées dans les totaux, les graphiques et les dépôts.
 - **Dépôts** : une carte par dépôt avec des PR de code sur la période, filtrables par dépôt : son type, ses
   technologies, les personnes de l'équipe qui l'écrivent le plus, son bus factor (le plus petit nombre de personnes
@@ -64,8 +68,8 @@ la recherche s'appliquent à toutes :
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`, `#/depots`,
-`#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`, `#/palmares`,
+`#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
