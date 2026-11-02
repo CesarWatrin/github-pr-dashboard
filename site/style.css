@@ -649,7 +649,9 @@ h3 {
   font-size: 13px;
 }
 
+/* A dot that stays round when the label beside it takes two lines. */
 .sync-dot {
+  flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -861,13 +863,6 @@ main.is-loading {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-}
-
-/* The forgotten pull requests, below the other lists: across both columns when these are four. The pull requests
-   merged without approval, last, always across them. */
-.unblock-forgotten.is-wide,
-.unblock-wide {
-  grid-column: 1 / -1;
 }
 
 @media (max-width: 900px) {

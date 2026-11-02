@@ -48,12 +48,11 @@ paths:
   days. Only the durations of CI runs stay in real time; dates and ages (« il y a 3 jours ») stay on the calendar.
 - **Unblock page**: `openPullRequests()` of `site/period.js` tells where each open code pull request stands, after the
   latest decision of each reviewer, as GitHub does, the code owners it still waits for (`codeOwners` of the records),
-  and the approvals merging needs (`requiredApprovals` of the stats,
-  from `REQUIRED_APPROVALS`, 1 without it: the list of the partly approved ones then hides). `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`,
-  those of the people still in the team that have stood there for longer than its delay (`afterDays`, in working
-  days), and
-  apart those without any review or comment for `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of
-  the records.
+  and the approvals merging needs (`requiredApprovals` of the stats, from `REQUIRED_APPROVALS`, 1 without it).
+  `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`, those of the people still in the team that have stood
+  there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
+  `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
+  by two, the forgotten pull requests beside those merged without approval.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
   and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the
