@@ -203,12 +203,17 @@ export function computePeriod(records, { start, end, bucket }) {
   // rework rate) and their own delay (the time to restore).
   const delivery = new Map()
   const deliveryOf = (repo) => getOrCreate(delivery, repo, () => ({ deployments: 0, corrective: 0, leadTimes: [], restoreTimes: [] }))
+  // The deployments of each repository per bucket, as [deployments, corrective ones], for the calendar of deployments.
+  const calendar = new Map()
   const addDeployment = (pr) => {
     const stats = deliveryOf(pr.repo)
+    const cell = getOrCreate(getOrCreate(calendar, pr.repo, () => new Map()), bucketKey(pr.mergedAt), () => [0, 0])
     stats.deployments++
+    cell[0]++
     bump(pr.mergedAt, 'deployments')
     if (pr.hotfix || pr.revert) {
       stats.corrective++
+      cell[1]++
       stats.restoreTimes.push(hoursBetween(pr.createdAt, pr.mergedAt))
       bump(pr.mergedAt, 'corrective')
     }
@@ -491,6 +496,8 @@ export function computePeriod(records, { start, end, bucket }) {
     // One entry per code pull request opened in the range, for the cycle page to add up over any repositories.
     cycles,
     delivery: deliveryStats([...delivery].map(([repo, stats]) => ({ repo, ...stats }))),
+    // Per repository with deployments, one [deployments, corrective ones] per bucket of the series.
+    deploymentCalendar: [...calendar].map(([repo, perBucket]) => ({ repo, buckets: keys.map(({ key }) => perBucket.get(key) ?? [0, 0]) })),
     dependencies: dependencyStats(
       [...dependencies].map(([repo, stats]) => ({ repo, ...stats })),
       [...ecosystems].map(([ecosystem, stats]) => ({ ecosystem, ...stats })),

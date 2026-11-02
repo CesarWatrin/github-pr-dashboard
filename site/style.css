@@ -1418,6 +1418,84 @@ main.is-loading {
   line-height: 1.2;
 }
 
+/* Monthly report: the figures of a month in a table, by group, each change on a tag colored by whether it goes the
+   right way; then short lists. */
+.report-table thead th {
+  padding: 8px 6px;
+}
+
+.report-table tbody th {
+  font-weight: 500;
+}
+
+.report-table tbody tr:hover th {
+  background: var(--surface-hover);
+}
+
+.report-group th {
+  padding-top: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-value {
+  font-weight: 600;
+}
+
+.report-change {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.report-change.is-better {
+  background: color-mix(in srgb, var(--series-3) 26%, var(--surface));
+}
+
+.report-change.is-worse {
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+}
+
+.report-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.report-champions li {
+  align-items: flex-start;
+}
+
+.report-champions .award-leaders {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.report-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* Hall of fame: one block per badge, the four in a row on a wide screen, two by two below, one by one on a phone; the
    months in a table. */
 .awards {

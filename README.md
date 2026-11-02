@@ -24,6 +24,10 @@ la recherche s'appliquent à toutes :
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
+- **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des mois complets de l'année :
+  livraison, revue, intégration continue et équipe, chaque évolution en vert ou en orange quand elle a un bon sens ;
+  les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
+  comparaison.
 - **Auteurs** : le tableau par auteur, filtrable par dépôt ou par type de dépôt (front, back, mobile, autres), avec
   la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) ; l'effet de la
   taille des PR sur le délai de merge et la profondeur de review.
@@ -71,12 +75,13 @@ la recherche s'appliquent à toutes :
   qui mène au dépôt sur GitHub.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
-  rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par
+  rétablissement), au total et par dépôt ; le calendrier des mises en production, quand chaque dépôt déploie, par
+  jour, semaine ou mois selon la période ; la durée, les échecs et les relances de la CI GitHub Actions, par
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/a-debloquer`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`,
-`#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/a-debloquer`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
+`#/equipe`, `#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.

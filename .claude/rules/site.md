@@ -12,9 +12,10 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, unblock, authors, reviewers, cycle, collaboration, team, awards, repositories,
-  tma, devops, method). The period selector and the search apply to every page but the method and awards ones
-  (`filters: false`); the unblock page, about what stands now, keeps the search only (`period: false`).
+  page of the hash (`ROUTES`: overview, unblock, report, authors, reviewers, cycle, collaboration, team, awards,
+  repositories, tma, devops, method). The period selector and the search apply to every page but the method, report
+  and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what stands
+  now, keeps the search only (`period: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -34,6 +35,9 @@ paths:
   columns, `color-mix` on `--series-1`), `shareChart()` for bars cut into shares that fill the width,
   `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
+- **Calendar of deployments** (DevOps page): `renderDeploymentCalendar()` draws the `deploymentCalendar` of
+  `computePeriod()` (per repository, `[deployments, corrective]` per bucket) in a `heatmapChart()`: the
+  `CALENDAR_REPOS` repositories that deploy the most, then the others on a grouped row.
 - **Cycle page**: `CYCLE_STAGES` (pickup, review, merge, deploy) cut the time of each code pull request, from the
   `cycles` of `computePeriod()`, one entry per code pull request opened in the range. `cycleSummary()` gives the
   median of each stage over the pull requests that went through it, and the average share of each stage in the time
@@ -45,6 +49,10 @@ paths:
   those of the people still in the team that have stood there for longer than its delay (`after`, in hours), and
   apart those without any review or comment for `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of
   the records.
+- **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
+  `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
+  and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the
+  median of the whole months of the synced year (`reportMonths()`); the current month, unfinished, shows no change.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not

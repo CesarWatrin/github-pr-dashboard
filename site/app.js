@@ -33,6 +33,8 @@ const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_ECOSYSTEMS = 8
+// The repositories that deploy the most get a row of their own in the calendar of deployments; the others share one.
+const CALENDAR_REPOS = 15
 // The review matrix gives a row or a column to the authors and reviewers who weigh at least MATRIX_MIN_SHARE of the
 // reviews of the period (stated in the card note of index.html), as many as its width holds with cells wide enough for
 // their figures, the others grouped together. It gives way to a list of the most frequent pairs when its card is too
@@ -78,6 +80,7 @@ const ROUTES = {
   cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
+  report: { hash: '#/bilan', title: 'Bilan du mois', subtitle: 'Un mois comparé au précédent et au reste de l’année', filters: false },
   awards: { hash: '#/palmares', title: 'Palmarès', subtitle: 'Les badges de l’équipe, mois après mois, depuis la première synchro', filters: false },
   repositories: { hash: '#/depots', title: 'Dépôts', subtitle: 'Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
@@ -327,6 +330,56 @@ const TMA_TILES = [
   { key: 'medianTimeToFirstReviewHours', label: 'Attente médiane 1re review', format: formatDuration },
   { key: 'contributors', label: 'Contributeurs TMA' },
 ]
+
+// The figures of the monthly report, read from { period, ci } of a month, in groups. kind tells how two months compare:
+// counts and durations by how much they changed, shares by how many points. better tells which way is good, when one
+// is: the change then takes its color.
+const REPORT_GROUPS = [
+  {
+    label: 'Livraison',
+    figures: [
+      { label: 'PR ouvertes', value: ({ period }) => period.totals.opened, kind: 'count' },
+      { label: 'PR de code mergées', value: ({ period }) => period.totals.merged, kind: 'count' },
+      { label: 'Délai médian de merge', value: ({ period }) => period.totals.medianTimeToMergeHours, kind: 'duration', better: 'down' },
+      { label: 'Déploiements', value: ({ period }) => period.delivery.deployments, kind: 'count' },
+      { label: 'Délai médian jusqu’en prod', value: ({ period }) => period.delivery.medianLeadTimeHours, kind: 'duration', better: 'down' },
+      { label: 'Part de hotfix', value: ({ period }) => period.totals.hotfixShare, kind: 'share', better: 'down' },
+      { label: 'Taux de reprise', value: ({ period }) => period.delivery.reworkRate, kind: 'share', better: 'down' },
+    ],
+  },
+  {
+    label: 'Revue',
+    figures: [
+      { label: 'PR relues', value: ({ period }) => period.totals.reviewed, kind: 'count' },
+      {
+        label: 'Attente médiane de la 1re review',
+        value: ({ period }) => median(period.authors.flatMap((person) => Object.values(person.repos).flatMap((stats) => stats.timesToFirstReviewHours))),
+        kind: 'duration',
+        better: 'down',
+      },
+      { label: 'Commentaires par PR relue', value: ({ period }) => period.totals.commentsPerPr, kind: 'decimal' },
+      { label: 'Mergées sans review', value: ({ period }) => period.totals.unreviewedShare, kind: 'share', better: 'down' },
+    ],
+  },
+  {
+    label: 'Intégration continue',
+    figures: [
+      { label: 'Exécutions', value: ({ ci }) => ci.totals.runs, kind: 'count' },
+      { label: 'En échec', value: ({ ci }) => ci.totals.failureRate, kind: 'share', better: 'down' },
+      { label: 'PR mergées avec un check rouge', value: ({ period }) => period.totals.checksFailedShare, kind: 'share', better: 'down' },
+    ],
+  },
+  {
+    label: 'Équipe',
+    figures: [
+      { label: 'Auteurs de PR de code', value: ({ period }) => period.authors.filter((person) => Object.values(person.repos).some((stats) => stats.code > 0)).length, kind: 'count' },
+      { label: 'Relecteurs', value: ({ period }) => period.reviewers.filter((person) => Object.values(person.repos).some((stats) => stats.prs > 0)).length, kind: 'count' },
+    ],
+  },
+]
+const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: formatShare, decimal: formatDecimal }
+// The busiest repositories of a month, on the report.
+const REPORT_TOP_REPOS = 5
 
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
@@ -948,6 +1001,9 @@ const state = {
   activity: null,
   // The badges of each person, worked out once per stats.
   badges: null,
+  // The month of the report, and the stats of each month, worked out once per stats.
+  reportMonth: null,
+  reportCache: null,
   seenEvents: null,
   seenUnapproved: null,
   fetchFailed: false,
@@ -1804,6 +1860,44 @@ function renderMiniCharts() {
   }
 }
 
+// When each repository deploys: its deployments per bucket of the period, the busiest repositories first, the others
+// together on a last row, which stays out of the color scale.
+function renderDeploymentCalendar() {
+  const { series, bucket, deploymentCalendar } = currentPeriod()
+  const total = (buckets) => buckets.reduce((sum, [count]) => sum + count, 0)
+  const sorted = deploymentCalendar.toSorted((a, b) => total(b.buckets) - total(a.buckets) || a.repo.localeCompare(b.repo))
+  const shown = sorted.slice(0, CALENDAR_REPOS)
+  const others = sorted.slice(CALENDAR_REPOS)
+  const rows = shown.map(({ repo, buckets }) => ({ key: repo, label: repo, buckets }))
+  if (others.length) {
+    rows.push({
+      key: 'others',
+      label: `${formatNumber(others.length)} autres dépôts`,
+      grouped: true,
+      buckets: series.map((_, index) => others.reduce(([count, corrective], other) => [count + other.buckets[index][0], corrective + other.buckets[index][1]], [0, 0])),
+    })
+  }
+  const columns = series.map((point, index) => ({ key: point.key, label: axisLabel(point.key, bucket), index, partial: point.partial }))
+  $('[data-deploy-calendar-title]').textContent = `Calendrier des mises en production ${BUCKET_TITLES[bucket]}`
+  $('[data-deploy-calendar-sub]').textContent = others.length
+    ? `Déploiements de chaque dépôt : les ${formatNumber(CALENDAR_REPOS)} qui déploient le plus, puis les autres ensemble`
+    : 'Déploiements de chaque dépôt, ceux qui déploient le plus en haut'
+  heatmapChart($('[data-deploy-calendar]'), {
+    rows,
+    columns,
+    value: (row, column) => row.buckets[column.index][0],
+    ariaLabel: `Déploiements de chaque dépôt ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    tooltip: (row, column, count) => ({
+      title: `${row.label} · ${bucketTitle(column.key, bucket)}`,
+      rows: [
+        { label: count > 1 ? 'déploiements' : 'déploiement', value: formatNumber(count) },
+        { label: 'dont correctifs', value: formatNumber(row.buckets[column.index][1]) },
+      ],
+      note: column.partial ? 'Période incomplète' : null,
+    }),
+  })
+}
+
 function renderDevopsCharts() {
   const { series, bucket, dependencies } = currentPeriod()
   $('[data-deployments-chart-title]').textContent = `Déploiements ${BUCKET_TITLES[bucket]}`
@@ -1813,6 +1907,8 @@ function renderDevopsCharts() {
     series: DEPLOYMENT_SERIES,
     ariaLabel: `Déploiements ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
   })
+
+  renderDeploymentCalendar()
 
   const ci = currentCi()
   $('[data-ci-charts-title]').textContent = `Exécutions ${BUCKET_TITLES[bucket]}`
@@ -2644,6 +2740,185 @@ function renderAwards() {
   renderChampions(standings)
   renderHolders(standings)
   renderAwardMonths(standings)
+}
+
+// Monthly report page
+
+const nextMonthOf = (month) => {
+  const [year, number] = month.split('-').map(Number)
+
+  return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
+}
+
+// The months a report can cover: the whole months of the synced year, then the current one, unfinished.
+function reportMonths() {
+  return [...badgeMonths(), parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)]
+}
+
+// The stats of a month, worked out once per stats: those of a period and of the CI over its Paris days, up to the last
+// sync for the current month.
+function monthStats(month) {
+  if (state.reportCache?.stats !== state.stats) {
+    state.reportCache = { stats: state.stats, months: new Map() }
+  }
+  const { months } = state.reportCache
+  if (!months.has(month)) {
+    const range = {
+      start: parisMidnight(`${month}-01`),
+      end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(state.stats.generatedAt)),
+      bucket: 'week',
+    }
+    months.set(month, { period: computePeriod(state.stats.pullRequests, range), ci: computeCi(state.stats.ci ?? [], range) })
+  }
+
+  return months.get(month)
+}
+
+// How a figure changed from one month to the next: by how much for counts and durations, by how many points for
+// shares; and whether that is for the better, when the figure has a better way.
+function reportChange(figure, value, previous) {
+  if (isMissing(value) || isMissing(previous)) {
+    return null
+  }
+  const sign = (amount) => (amount > 0 ? '+' : amount < 0 ? '−' : '')
+  let text
+  if (figure.kind === 'share') {
+    const points = Math.round((value - previous) * 100)
+    text = `${sign(points)}${Math.abs(points)} pt${Math.abs(points) > 1 ? 's' : ''}`
+  } else if (previous === 0) {
+    return null
+  } else {
+    const percent = Math.round(((value - previous) / previous) * 100)
+    text = `${sign(percent)}${formatNumber(Math.abs(percent))} %`
+  }
+  const direction = Math.sign(value - previous)
+  const tone = !figure.better || direction === 0 ? 'neutral' : (direction < 0) === (figure.better === 'down') ? 'better' : 'worse'
+
+  return { text, tone }
+}
+
+function renderReport() {
+  const months = reportMonths()
+  if (!months.includes(state.reportMonth)) {
+    // The last whole month, unless the synced year has none yet.
+    state.reportMonth = months.at(-2) ?? months.at(-1)
+  }
+  const month = state.reportMonth
+  const current = month === months.at(-1)
+  const previous = months[months.indexOf(month) - 1] ?? null
+  const whole = months.slice(0, -1)
+  const picker = $('[data-report-month]')
+  picker.replaceChildren(
+    ...months.toReversed().map((option) => new Option(`${capitalize(monthName(option))}${option === months.at(-1) ? ', en cours' : ''}`, option)),
+  )
+  picker.value = month
+  const against = `la médiane des ${formatNumber(whole.length)} mois complets de l’année`
+  $('[data-report-sub]').textContent = current
+    ? 'Mois en cours, jusqu’à la dernière synchro : provisoire, trop tôt pour le comparer au mois précédent'
+    : previous
+      ? `Comparé à ${monthName(previous)}, et à ${against}`
+      : `Premier mois complet de l’année synchronisée : comparé à ${against} seulement`
+
+  const stats = monthStats(month)
+  const before = previous ? monthStats(previous) : null
+  const head = el(
+    'thead',
+    {},
+    el(
+      'tr',
+      {},
+      el('th', { scope: 'col', className: 'text', textContent: 'Indicateur' }),
+      el('th', { scope: 'col', textContent: capitalize(monthName(month)) }),
+      el('th', { scope: 'col', textContent: previous ? capitalize(monthName(previous)) : 'Mois précédent' }),
+      el('th', { scope: 'col', textContent: 'Évolution' }),
+      el('th', { scope: 'col', textContent: 'Médiane de l’année' }),
+    ),
+  )
+  const body = el(
+    'tbody',
+    {},
+    ...REPORT_GROUPS.flatMap((group) => [
+      el('tr', { className: 'report-group' }, el('th', { scope: 'rowgroup', colSpan: 5, className: 'text', textContent: group.label })),
+      ...group.figures.map((figure) => {
+        const format = REPORT_FORMATS[figure.kind]
+        const value = figure.value(stats)
+        const earlier = before ? figure.value(before) : null
+        // An unfinished month rests on too few pull requests to compare with a whole one.
+        const change = current ? null : reportChange(figure, value, earlier)
+        const yearly = median(whole.map((other) => figure.value(monthStats(other))).filter((other) => !isMissing(other)))
+
+        return el(
+          'tr',
+          {},
+          el('th', { scope: 'row', className: 'text', textContent: figure.label }),
+          el('td', { className: 'report-value', textContent: format(value) }),
+          el('td', { className: isMissing(earlier) ? 'muted' : '', textContent: format(earlier) }),
+          el('td', {}, change ? el('span', { className: `report-change is-${change.tone}`, textContent: change.text }) : el('span', { className: 'muted', textContent: '–' })),
+          el('td', { textContent: format(yearly) }),
+        )
+      }),
+    ]),
+  )
+  $('[data-report-table]').replaceChildren(el('table', { className: 'report-table' }, head, body))
+
+  renderReportChampions(month, current)
+  renderReportRepositories(stats.period)
+  renderReportArrivals(month)
+}
+
+// The champions of each badge for the month: from the history, or so far for the current month.
+function renderReportChampions(month, current) {
+  const { leaders } = badgeStandings()
+  const ongoing = current ? { [month]: monthFigures(monthlyActivity(state.stats.pullRequests), month) } : null
+  $('[data-report-champions]').replaceChildren(
+    ...BADGES.map((badge) =>
+      el(
+        'li',
+        {},
+        el('span', { className: 'report-badge' }, el('span', { textContent: badge.icon, ariaHidden: 'true' }), document.createTextNode(badge.name)),
+        leadersLine(current ? monthlyLeaders(ongoing, badge.key)[0] : leaders.get(badge.key).find((leader) => leader.month === month), badge),
+      ),
+    ),
+  )
+}
+
+// The busiest repositories of the month, by code pull requests opened, and by deployments.
+function renderReportRepositories(period) {
+  const code = new Map()
+  for (const person of period.authors) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      code.set(repo, (code.get(repo) ?? 0) + stats.code)
+    }
+  }
+  const top = (pairs) => pairs.filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, REPORT_TOP_REPOS)
+  const list = (target, pairs, unit) =>
+    renderList(
+      $(target),
+      pairs.map(([repo, count]) => el('li', {}, repoLink(repo), el('span', { className: 'pair-count', textContent: amountOf(count, unit) }))),
+      'Aucun',
+    )
+  list('[data-report-repos="code"]', top([...code]), ['PR de code', 'PR de code'])
+  list('[data-report-repos="deployments"]', top(period.delivery.repositories.map((row) => [row.repo, row.deployments])), ['déploiement', 'déploiements'])
+}
+
+// The people of the team whose first contribution of the synced year falls in the month, those already there when it
+// starts aside.
+function renderReportArrivals(month) {
+  const windowStart = Date.parse(state.stats.windowStart)
+  const arrivals = [...activities()]
+    .filter(([login, { first }]) => {
+      const at = first * 60_000
+
+      return isCurrent(login) && parisDay(at).slice(0, 7) === month && at - windowStart >= SENIORITY_START_DAYS * DAY_MS
+    })
+    .sort((a, b) => a[1].first - b[1].first)
+  renderList(
+    $('[data-report-arrivals]'),
+    arrivals.map(([login, { first }]) =>
+      el('li', {}, personLink(login), el('span', { className: 'pair-count', textContent: `le ${dayMonthFormat.format(dayDate(parisDay(first * 60_000)))}` })),
+    ),
+    'Aucune arrivée ce mois-ci',
+  )
 }
 
 // Repositories page
@@ -4371,6 +4646,7 @@ function render(animate) {
   renderTables(animate)
   renderTeam()
   renderAwards()
+  renderReport()
   renderRepositories()
   renderFeed(animate)
   renderUnblock(tileMode)
@@ -4695,6 +4971,10 @@ $('[data-lock-dialog]').addEventListener('close', (event) => {
 $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
+})
+$('[data-report-month]').addEventListener('change', (event) => {
+  state.reportMonth = event.target.value
+  renderReport()
 })
 // The dialog of a person closes from its button, with Escape, or with a click beside the card. The path of the click is
 // the one it had when made: a name in the card replaces the card's content, and its button with it, before the click
