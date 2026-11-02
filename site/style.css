@@ -1418,10 +1418,9 @@ main.is-loading {
   );
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.12),
-    0 4px 10px -4px rgba(0, 0, 0, 0.22);
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 18px -8px rgba(0, 0, 0, 0.3);
   outline-offset: 3px;
-  transition: box-shadow 260ms var(--ease-out);
 }
 
 .badge-medal.is-silver {
@@ -1439,16 +1438,6 @@ main.is-loading {
 .badge-medal.is-large {
   --size: 58px;
   padding: 4px;
-}
-
-/* Hovered or focused, a medal does not move: its shadow softly deepens and it takes a glow of its own metal. */
-.badge-medal:hover,
-.badge-medal:focus-visible {
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.12),
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 10px 22px -8px rgba(0, 0, 0, 0.3),
-    0 0 16px -2px color-mix(in srgb, var(--metal) 60%, transparent);
 }
 
 .badge-face {
