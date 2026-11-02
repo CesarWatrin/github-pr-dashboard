@@ -1916,6 +1916,23 @@ main.is-loading {
   font-size: 13px;
 }
 
+/* Someone who left the team: said on a tag of its own, then when they were last active. */
+.person-dialog-former {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.former-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .person-dialog-github {
   display: inline-flex;
   flex: none;

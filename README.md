@@ -51,7 +51,8 @@ la recherche s'appliquent à toutes :
   binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
   un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
-  seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité. Ses
+  seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité, et
+  son nom parmi les champions de chaque mois du Palmarès. Sa fiche dit qu'elle ne fait plus partie de l'équipe. Ses
   PR restent comptées dans les totaux, les graphiques et les dépôts.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,

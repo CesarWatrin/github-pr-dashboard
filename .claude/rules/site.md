@@ -69,7 +69,9 @@ paths:
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
   waiting pull requests, and the review networks through `withoutFormer()`. They only show in the former people of the
-  team page, and among the leaders of every month of the awards page. Totals, charts and repository figures still count their pull requests.
+  team page, and among the leaders of every month of the awards page; their dialog says they left the team and when
+  they were last active, in place of their seniority (`formerText()`). Totals, charts and repository figures still
+  count their pull requests.
   - In the dialog, the head comes forward as the card leans: anything clickable at its level, such as the close
     button, must come further forward still, or the head takes its clicks.
   - Each figure of the dialog shows the median of the person's peers (`statList()` given their details): the people

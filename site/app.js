@@ -2253,6 +2253,19 @@ function seniorityText(tag, className, login) {
   return value ? [el(tag, { className, textContent: `${value.label} d’ancienneté`, title: value.title })] : []
 }
 
+// In the dialog of someone who left the team, opened from the former people or the record of every month: that they
+// left, and when they were last active, in place of a seniority that no longer means anything.
+function formerText(login) {
+  return [
+    el(
+      'p',
+      { className: 'person-dialog-meta person-dialog-former' },
+      el('span', { className: 'former-tag', textContent: 'Ne fait plus partie de l’équipe' }),
+      document.createTextNode(`Dernière activité le ${dateFormat.format(activities().get(login).last * 60_000)}`),
+    ),
+  ]
+}
+
 const nameLines = (name, login) => [
   el('strong', { textContent: name, title: name }),
   // The login is only worth showing when the display name differs from it.
@@ -2577,7 +2590,7 @@ function openPersonDialog(row, opener) {
         el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: name, title: name }), github),
         // The login is only worth showing when the display name differs from it.
         ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
-        ...seniorityText('p', 'person-dialog-meta', row.login),
+        ...(isFormer(row.login) ? formerText(row.login) : seniorityText('p', 'person-dialog-meta', row.login)),
         stackLine(row.stack),
         el('p', {
           className: 'person-dialog-meta',
