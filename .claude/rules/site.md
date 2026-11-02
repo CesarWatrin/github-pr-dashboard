@@ -12,9 +12,9 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, authors, reviewers, cycle, collaboration, team, awards, repositories, tma,
-  devops, method). The period selector and the search apply to every page but the method and awards ones
-  (`filters: false`).
+  page of the hash (`ROUTES`: overview, unblock, authors, reviewers, cycle, collaboration, team, awards, repositories,
+  tma, devops, method). The period selector and the search apply to every page but the method and awards ones
+  (`filters: false`); the unblock page, about what stands now, keeps the search only (`period: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -39,6 +39,11 @@ paths:
   median of each stage over the pull requests that went through it, and the average share of each stage in the time
   of the reviewed ones that reached production, each weighing the same: stage medians never add up, so no chart
   stacks them. The repository filter of its table (`REPO_FILTERS.cycle`) applies to the whole page.
+- **Unblock page**: `openPullRequests()` of `site/period.js` tells where each open code pull request stands, after the
+  latest decision of each reviewer, as GitHub does. `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`,
+  those of the people still in the team that have stood there for longer than its delay (`after`, in hours), and
+  apart those without any review or comment for `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of
+  the records.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not

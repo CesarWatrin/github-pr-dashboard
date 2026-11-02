@@ -819,6 +819,8 @@ function toPeriodRecord(pr, index) {
     ...(kind === 'code' && !bot && { deployedAt: minutes(deployedAt(pr, index)) }),
     ...(['FAILURE', 'ERROR'].includes(pr.checks) && { checksFailed: true }),
     ...(dependency && { dependency }),
+    // An open draft is not waiting for anyone yet.
+    ...(pr.state === 'OPEN' && pr.draft && { draft: true }),
   }
 }
 

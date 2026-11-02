@@ -11,6 +11,7 @@ import {
   computePeriod,
   monthlyActivity,
   monthlyLeaders,
+  openPullRequests,
   parisDay,
   parisMidnight,
   reviewNetwork,
@@ -603,6 +604,44 @@ describe('monthlyLeaders', () => {
       ['2026-01', '2026-02'],
     )
     assert.deepEqual(monthlyLeaders(history, 'hotfixes'), [])
+  })
+})
+
+describe('openPullRequests', () => {
+  const open = (number, fields) => record({ repo: 'web', number, author: 'alice', createdAt: at('2026-03-02T09:00:00Z'), ...fields })
+  const stances = openPullRequests([
+    open(1),
+    open(2, { interventions: [['bob', at('2026-03-02T10:00:00Z'), 'COMMENTED', 2]] }),
+    // Approved by one, then changes requested by another: changes are requested.
+    open(3, {
+      interventions: [
+        ['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0],
+        ['carol', at('2026-03-02T11:00:00Z'), 'CHANGES_REQUESTED', 1],
+      ],
+    }),
+    // Changes requested, then approved by the same person, who commented afterwards: approved.
+    open(4, {
+      interventions: [
+        ['bob', at('2026-03-02T10:00:00Z'), 'CHANGES_REQUESTED', 1],
+        ['bob', at('2026-03-03T10:00:00Z'), 'APPROVED', 0],
+        ['carol', at('2026-03-03T12:00:00Z'), 'APPROVED', 0],
+        ['bob', at('2026-03-04T10:00:00Z'), 'COMMENTED', 1],
+      ],
+    }),
+    open(5, { draft: true }),
+    open(6, { mergedAt: at('2026-03-03T09:00:00Z') }),
+    open(7, { closed: true }),
+    open(8, { bot: true }),
+    open(9, { kind: 'release' }),
+  ]).map(({ number, stance, since, by, lastAt }) => [number, stance, iso(since), by, iso(lastAt)])
+
+  test('where each open pull request stands, after the latest decision of each reviewer', () => {
+    assert.deepEqual(stances, [
+      [1, 'waiting', '2026-03-02T09:00:00.000Z', [], '2026-03-02T09:00:00.000Z'],
+      [2, 'discussed', '2026-03-02T10:00:00.000Z', [], '2026-03-02T10:00:00.000Z'],
+      [3, 'changes', '2026-03-02T11:00:00.000Z', ['carol'], '2026-03-02T11:00:00.000Z'],
+      [4, 'approved', '2026-03-03T12:00:00.000Z', ['bob', 'carol'], '2026-03-04T10:00:00.000Z'],
+    ])
   })
 })
 

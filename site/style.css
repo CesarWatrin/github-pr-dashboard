@@ -693,6 +693,11 @@ h3 {
   margin-bottom: 20px;
 }
 
+/* Hidden on the pages about what stands now: its display would otherwise win over the hidden attribute. */
+.segmented[hidden] {
+  display: none;
+}
+
 .segmented {
   display: inline-flex;
   padding: 3px;
@@ -861,6 +866,24 @@ main.is-loading {
 .grid-even {
   container-type: inline-size;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+}
+
+/* The four lists of the unblock page, two by two, one by one on narrow screens. */
+.unblock-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* The forgotten pull requests, below the four lists, across both columns. */
+.unblock-forgotten {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .unblock-lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Three cards on two columns: the last one takes the whole second row rather than half of it. */
@@ -2348,6 +2371,11 @@ main.is-loading {
 
 .feed-text a {
   font-variant-numeric: tabular-nums;
+}
+
+/* Who approved a pull request, or asked for changes, after its author. */
+.feed-by {
+  color: var(--text-secondary);
 }
 
 /* What a pull request merged without approval got instead: quiet, next to its link. */

@@ -164,6 +164,8 @@ describe('toPeriodRecord', () => {
     dependency: pullRequest({ number: 7, author: 'dependabot', head: 'dependabot/npm_and_yarn/vite-6.0.0' }),
     botChore: pullRequest({ number: 8, author: 'robot', head: 'chore/update', mergedAt: '2026-03-08T10:00:00Z' }),
     failedChecks: pullRequest({ number: 9, checks: 'FAILURE' }),
+    draft: pullRequest({ number: 10, draft: true }),
+    closedDraft: pullRequest({ number: 11, draft: true, state: 'CLOSED', closedAt: '2026-03-02T09:00:00Z' }),
   }
   const index = deliveryIndex(Object.values(PULL_REQUESTS))
   const recordOf = (name) => toPeriodRecord(PULL_REQUESTS[name], index)
@@ -208,6 +210,12 @@ describe('toPeriodRecord', () => {
   test('failed checks are flagged, passing ones are not', () => {
     assert.equal(recordOf('failedChecks').checksFailed, true)
     assert.equal(recordOf('feature').checksFailed, undefined)
+  })
+
+  test('open drafts are flagged, closed ones and ready pull requests are not', () => {
+    assert.equal(recordOf('draft').draft, true)
+    assert.equal(recordOf('closedDraft').draft, undefined)
+    assert.equal(recordOf('feature').draft, undefined)
   })
 
   test('nothing but what the stats need: no title, no branch', () => {
