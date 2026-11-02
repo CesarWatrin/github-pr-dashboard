@@ -575,14 +575,19 @@ function dependencyStats(repositories, ecosystems) {
   }
 }
 
-// When each person first shows in the records, whatever the range: their first pull request or their first review or
-// comment, in minutes since the epoch. Bot pull requests do not count for their author, but the people who review them
-// do. The records only cover the rolling window: a person already active at its start has been around for longer.
-export function firstActivity(records) {
-  const first = new Map()
+// When each person first and last shows in the records, whatever the range: a pull request opened, a review or a
+// comment, or a merge, as { first, last } in minutes since the epoch. Bot pull requests do not count for their author,
+// but the people who review or merge them do. The records only cover the rolling window: a person already active at its
+// start has been around for longer.
+export function activityBounds(records) {
+  const bounds = new Map()
   const seen = (login, at) => {
-    if (!first.has(login) || at < first.get(login)) {
-      first.set(login, at)
+    const known = bounds.get(login)
+    if (!known) {
+      bounds.set(login, { first: at, last: at })
+    } else {
+      known.first = Math.min(known.first, at)
+      known.last = Math.max(known.last, at)
     }
   }
   for (const pr of records) {
@@ -592,9 +597,12 @@ export function firstActivity(records) {
     for (const [login, at] of pr.interventions) {
       seen(login, at)
     }
+    if (pr.mergedBy && pr.mergedAt !== null) {
+      seen(pr.mergedBy, pr.mergedAt)
+    }
   }
 
-  return first
+  return bounds
 }
 
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.

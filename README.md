@@ -32,7 +32,12 @@ la recherche s'appliquent à toutes :
   ouvre la fiche de la personne, une carte qui s'incline vers la souris : taux de merge, attente de la première
   review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts. Sous chaque
   chiffre, la médiane des personnes de la même stack (de toute l'équipe si la stack compte moins de trois personnes) :
-  de quoi situer la personne parmi celles qui font le même travail, sans score ni classement.
+  de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
+  collaborateurs.
+- **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
+  un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
+  seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité. Ses
+  PR restent comptées dans les totaux, les graphiques et les dépôts.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par

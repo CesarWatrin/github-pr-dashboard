@@ -1191,6 +1191,38 @@ main.is-loading {
   white-space: nowrap;
 }
 
+/* Team page: the people who left, with their last activity. */
+.former-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px 24px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.former-list li {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.former-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: inherit;
+}
+
+/* Under the name, past the avatar. */
+.former-last {
+  padding-left: 32px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 /* Team page: the repository filter, then one card per person, as many columns as fit. */
 .team-toolbar {
   display: flex;

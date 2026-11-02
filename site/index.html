@@ -328,6 +328,14 @@
               <details class="repo-filter" data-repo-filter="team"></details>
             </div>
             <div class="person-cards" data-team></div>
+            <section class="card" aria-labelledby="team-former-title" data-team-former-card hidden>
+              <h2 id="team-former-title">Anciens collaborateurs</h2>
+              <p class="card-sub">
+                Plus aucune PR, review, commentaire ni merge depuis un mois : ces personnes n’apparaissent plus dans les
+                tableaux, les listes et les cartes du tableau de bord. Leurs PR restent comptées dans les totaux.
+              </p>
+              <ul class="former-list" data-team-former></ul>
+            </section>
             <section class="card" aria-labelledby="team-legend-title">
               <h2 id="team-legend-title">Les chiffres des cartes</h2>
               <p class="card-sub">
@@ -506,6 +514,13 @@
                 <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>
+                <dt>Anciens collaborateurs</dt>
+                <dd>
+                  Une personne sans aucune PR, review, commentaire ni merge depuis un mois est considérée comme partie :
+                  plus de ligne, de carte ni de place dans les listes et la matrice à son nom, seulement une mention dans
+                  la partie « Anciens collaborateurs » de la page Équipe. Ses PR restent comptées dans les totaux, les
+                  graphiques et les dépôts.
+                </dd>
               </dl>
             </section>
           </div>

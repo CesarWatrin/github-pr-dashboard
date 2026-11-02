@@ -42,9 +42,14 @@ paths:
     `reviewNetwork()`. The card leans towards a mouse (`tiltPersonCard()`, measured on its scene, which does not turn)
     and catches the light (`--glare`, `--sheen-*`); never for touch, nor under `prefers-reduced-motion`. No chart or
     tooltip in the dialog: the tooltip would sit under it.
-  - Seniority (`seniority()`, card and dialog) comes from `firstActivity()` of `site/period.js` over every record,
+  - Seniority (`seniority()`, card and dialog) comes from `activityBounds()` of `site/period.js` over every record,
     whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
     synced year, which only covers a year, else the months since then.
+- **Former people**, on every page: a person without any pull request, review, comment or merge for
+  `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
+  people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
+  waiting pull requests, and the review networks through `withoutFormer()`. They only show in the former people of the
+  team page. Totals, charts and repository figures still count their pull requests.
   - In the dialog, the head comes forward as the card leans: anything clickable at its level, such as the close
     button, must come further forward still, or the head takes its clicks.
   - Each figure of the dialog shows the median of the person's peers (`statList()` given their details): the people

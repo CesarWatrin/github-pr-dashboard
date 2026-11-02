@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, addDays, computeCi, computePeriod, firstActivity, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -429,6 +429,8 @@ const PERSON_TOP = 3
 const MIN_PEERS = 3
 // A person first seen this close to the start of the synced year was already there before it: more than a year.
 const SENIORITY_START_DAYS = 14
+// A person without any pull request, review, comment or merge for this long has left the team.
+const FORMER_AFTER_DAYS = 30
 const MONTH_MS = (365.25 / 12) * DAY_MS
 // Explained in the legend under the cards, with the figures.
 const SENIORITY_LEGEND = {
@@ -722,8 +724,8 @@ const state = {
   syncStarting: null,
   // The sync started from the page, until new data arrives.
   syncRequest: null,
-  // When each person first shows in the stats, worked out once per stats for their seniority.
-  firstActivity: null,
+  // When each person first and last shows in the stats, worked out once per stats: seniority, and who left the team.
+  activity: null,
   seenEvents: null,
   seenWaiting: null,
   seenUnapproved: null,
@@ -1555,7 +1557,7 @@ function currentNetwork() {
   const period = currentPeriod()
   const selection = state.repos.collaboration
   if (state.networkCache?.period !== period || state.networkCache.selection !== selection) {
-    state.networkCache = { period, selection, network: reviewNetwork(period, selection) }
+    state.networkCache = { period, selection, network: reviewNetwork(withoutFormer(period), selection) }
   }
 
   return state.networkCache.network
@@ -1722,7 +1724,7 @@ function teamRows() {
 
     return rows.get(login)
   }
-  for (const person of period.authors) {
+  for (const person of period.authors.filter(({ login }) => isCurrent(login))) {
     const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
     const code = sumOf(parts, 'code')
     if (code > 0) {
@@ -1733,14 +1735,14 @@ function teamRows() {
       })
     }
   }
-  for (const person of period.reviewers) {
+  for (const person of period.reviewers.filter(({ login }) => isCurrent(login))) {
     const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
     const reviewed = sumOf(parts, 'prs')
     if (reviewed > 0) {
       Object.assign(row(person.login), { reviewed, comments: sumOf(parts, 'comments') })
     }
   }
-  const reviewersOf = new Map(reviewNetwork(period, state.repos.team).authors.map((author) => [author.login, author.reviewers]))
+  const reviewersOf = new Map(reviewNetwork(withoutFormer(period), state.repos.team).authors.map((author) => [author.login, author.reviewers]))
   // The stack is the person's own, over every repository: the selection only narrows the figures.
   const perRepo = (people, key) =>
     new Map(people.map((person) => [person.login, Object.entries(person.repos).map(([repo, stats]) => [repo, stats[key]])]))
@@ -1813,17 +1815,39 @@ function peerMedian(values, format) {
   return el('span', { className: 'person-stats-peer', textContent: `méd. ${format(shown)}` })
 }
 
-// How long a person has been around, whatever the period: more than a year when already active in the first days of the
-// synced year, else the months since their first pull request, review or comment.
-function seniority(login) {
-  if (state.firstActivity?.stats !== state.stats) {
-    state.firstActivity = { stats: state.stats, first: firstActivity(state.stats.pullRequests) }
+// Each person's first and last activity in the stats, whatever the period, worked out once per stats.
+function activities() {
+  if (state.activity?.stats !== state.stats) {
+    state.activity = { stats: state.stats, bounds: activityBounds(state.stats.pullRequests) }
   }
-  const minutes = state.firstActivity.first.get(login)
-  if (minutes === undefined) {
+
+  return state.activity.bounds
+}
+
+// A person without any activity for FORMER_AFTER_DAYS has left the team: no row, card, list or matrix of people shows
+// them any more, only the former people of the team page. Their pull requests still count in the totals.
+function isFormer(login) {
+  const activity = activities().get(login)
+
+  return Boolean(activity) && Date.parse(state.stats.generatedAt) - activity.last * 60_000 > FORMER_AFTER_DAYS * DAY_MS
+}
+
+const isCurrent = (login) => !isFormer(login)
+
+// A period without the people who left, for a network of reviews: main reviewers are then picked among those still here.
+const withoutFormer = ({ authors, reviewPairs }) => ({
+  authors: authors.filter((person) => isCurrent(person.login)),
+  reviewPairs: reviewPairs.filter((pair) => isCurrent(pair.author) && isCurrent(pair.reviewer)),
+})
+
+// How long a person has been around, whatever the period: more than a year when already active in the first days of the
+// synced year, else the months since their first pull request, review, comment or merge.
+function seniority(login) {
+  const activity = activities().get(login)
+  if (!activity) {
     return null
   }
-  const first = minutes * 60_000
+  const first = activity.first * 60_000
   if (first - Date.parse(state.stats.windowStart) < SENIORITY_START_DAYS * DAY_MS) {
     return { label: 'plus d’un an', title: 'Première activité dès les premiers jours de l’année synchronisée' }
   }
@@ -1863,7 +1887,27 @@ function personCard(row, index) {
   return card
 }
 
+// The people who left the team, the latest to leave first, whatever the period: when they were last active, and nothing
+// else.
+function renderFormer() {
+  const former = [...activities()]
+    .filter(([login]) => isFormer(login) && matchesQuery(login, displayName(login)))
+    .sort((a, b) => b[1].last - a[1].last)
+  $('[data-team-former-card]').hidden = former.length === 0
+  $('[data-team-former]').replaceChildren(
+    ...former.map(([login, { last }]) =>
+      el(
+        'li',
+        {},
+        personLink(login),
+        el('span', { className: 'former-last', textContent: `dernière activité le ${dateFormat.format(last * 60_000)}` }),
+      ),
+    ),
+  )
+}
+
 function renderTeam() {
+  renderFormer()
   const rows = teamRows().filter((row) => matchesQuery(row.login, displayName(row.login)))
   const container = $('[data-team]')
   if (rows.length === 0) {
@@ -1903,7 +1947,7 @@ function topList(title, items, withAvatar) {
 function personDetails(row) {
   const { login } = row
   const period = currentPeriod()
-  const network = reviewNetwork(period, state.repos.team)
+  const network = reviewNetwork(withoutFormer(period), state.repos.team)
   const byLogin = (rows) => new Map(rows.map((other) => [other.login, other]))
   const authors = byLogin(authorRows('team'))
   const reviewers = byLogin(reviewerRows('team'))
@@ -2109,6 +2153,7 @@ function renderLegend(container, series) {
 
 function renderPersonPicker() {
   const reviewers = Object.entries(currentPeriod().reviewerSeries)
+    .filter(([login]) => isCurrent(login))
     .map(([login, points]) => ({ login, prs: points.reduce((total, [prs]) => total + prs, 0) }))
     .sort((a, b) => b.prs - a.prs)
   if (!reviewers.some((row) => row.login === state.person)) {
@@ -2140,9 +2185,13 @@ function selectedEntries(person, name) {
   return Object.entries(person.repos).filter(([repo]) => inSelection(state.repos[name], repo))
 }
 
-// The rows of the authors table, over the repositories selected on a page: the table's own by default.
+// The rows of the authors table, over the repositories selected on a page: the table's own by default. Like every list
+// of people, it leaves out those who left the team.
 function authorRows(name = 'authors') {
   return currentPeriod().authors.flatMap((person) => {
+    if (isFormer(person.login)) {
+      return []
+    }
     const entries = selectedEntries(person, name)
     const parts = entries.map(([, stats]) => stats)
     if (parts.length === 0) {
@@ -2170,6 +2219,9 @@ function authorRows(name = 'authors') {
 
 function reviewerRows(name = 'reviewers') {
   return currentPeriod().reviewers.flatMap((person) => {
+    if (isFormer(person.login)) {
+      return []
+    }
     const entries = selectedEntries(person, name)
     const parts = entries.map(([, stats]) => stats)
     const prs = sumOf(parts, 'prs')
@@ -2324,7 +2376,7 @@ const TABLES = {
   },
   tma: {
     columns: TMA_COLUMNS,
-    rows: () => currentPeriod().tma.people,
+    rows: () => currentPeriod().tma.people.filter((row) => isCurrent(row.login)),
     searchTexts: (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
   },
   deployments: {
@@ -2934,7 +2986,8 @@ function renderUnapproved(highlight) {
 }
 
 function renderWaiting(highlight) {
-  const { waiting } = state.stats
+  // The pull requests left open by people who left the team are no longer waited for.
+  const waiting = state.stats.waiting.filter((pr) => isCurrent(pr.author))
   const previous = state.seenWaiting
   $('[data-waiting-title]').textContent = `PR en attente de review (${formatNumber(waiting.length)})`
   const items = waiting
