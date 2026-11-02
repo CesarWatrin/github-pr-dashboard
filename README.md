@@ -19,7 +19,8 @@ la recherche s'appliquent à toutes :
   dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
   de merge, PR mergées sans review, PR relues).
 - **À débloquer** : les PR de code ouvertes qui attendent quelqu'un, hors brouillons, les plus anciennes d'abord :
-  approuvées mais pas mergées depuis plus d'un jour, avec des changements demandés ou en discussion depuis plus de
+  approuvées mais pas mergées depuis plus d'un jour, approuvées par moins de personnes qu'il n'en faut pour merger
+  (`REQUIRED_APPROVALS`), avec des changements demandés ou en discussion depuis plus de
   trois jours, sans review depuis plus d'un jour, chacune avec qui l'a approuvée ou a demandé des changements ; à part,
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro.
@@ -173,13 +174,14 @@ Prérequis :
    - `DASHBOARD_PASSWORD` : le mot de passe de la page ;
    - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
    - `BOT_USERS` (facultatif) : les comptes utilisateurs de l'org qui agissent en bots, séparés par des virgules ;
+   - `REQUIRED_APPROVALS` (facultatif) : le nombre d'approbations qu'il faut pour merger une PR, 1 par défaut ;
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées) et la vérification de syntaxe (`npm run check`) tournent sur
 chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
 
-Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`, `DISPATCH_TOKEN`
-(avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL`
-(facultatives ; la dernière indique où relire l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en
-CI).
+Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
+`REQUIRED_APPROVALS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH`,
+`STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire l'historique des badges, par défaut
+l'adresse GitHub Pages du dépôt en CI).

@@ -699,11 +699,12 @@ export function monthlyLeaders(history, key) {
 }
 
 // The open code pull requests of people, drafts aside, and where each one stands after the latest decision of each
-// reviewer, as GitHub reckons it: changes requested by someone (changes), else approved by someone (approved), else
-// reviewed or commented without a decision (discussed), else waiting for a first look (waiting). since: when it got
-// there, in minutes since the epoch (the latest of these decisions, the latest intervention, or the opening); by: who
-// decided; lastAt: its latest review or comment, else its opening.
-export function openPullRequests(records) {
+// reviewer, as GitHub reckons it: changes requested by someone (changes), else approved by as many people as merging
+// needs (approved), else approved by fewer (approving), else reviewed or commented without a decision (discussed), else
+// waiting for a first look (waiting). since: when it got there, in minutes since the epoch (the latest of these
+// decisions, the latest intervention, or the opening); by: who decided; lastAt: its latest review or comment, else its
+// opening.
+export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
   return records
     .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
     .map((pr) => {
@@ -717,7 +718,15 @@ export function openPullRequests(records) {
       const requested = decided('CHANGES_REQUESTED')
       const approved = decided('APPROVED')
       const deciders = requested.length ? requested : approved
-      const stance = requested.length ? 'changes' : approved.length ? 'approved' : pr.interventions.length ? 'discussed' : 'waiting'
+      const stance = requested.length
+        ? 'changes'
+        : approved.length >= requiredApprovals
+          ? 'approved'
+          : approved.length
+            ? 'approving'
+            : pr.interventions.length
+              ? 'discussed'
+              : 'waiting'
 
       return {
         repo: pr.repo,

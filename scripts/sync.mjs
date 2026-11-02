@@ -116,6 +116,22 @@ const SYNC_TRIGGER = process.env.DISPATCH_TOKEN
     }
   : null
 
+// How many approvals a pull request needs before it can be merged, a rule of the organization: from REQUIRED_APPROVALS,
+// 1 without it. It only travels inside the encrypted stats, for the page to tell the pull requests ready to merge.
+function requiredApprovals(value = '') {
+  if (value.trim() === '') {
+    return 1
+  }
+  const count = Number(value)
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error('REQUIRED_APPROVALS should be a whole number, 1 or more')
+  }
+
+  return count
+}
+
+const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
+
 // GitHub Apps are detected from their actor type: these are user accounts acting as bots. The organization's own
 // come from BOT_USERS (logins separated by commas), so that its account names stay out of this public code.
 const BOT_USERS = new Set([
@@ -999,6 +1015,7 @@ async function sync({ full }) {
       ...version,
       timezone: TIMEZONE,
       syncTrigger: SYNC_TRIGGER?.repository ? SYNC_TRIGGER : null,
+      requiredApprovals: REQUIRED_APPROVALS,
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
       repos: Object.fromEntries(
         repositories.map((repo) => [
@@ -1041,6 +1058,7 @@ export {
   mergeMonthlyHistory,
   readPublishedHistory,
   repositoryCategory,
+  requiredApprovals,
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,

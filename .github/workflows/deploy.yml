@@ -55,6 +55,7 @@ jobs:
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
           REPO_CATEGORIES: ${{ secrets.REPO_CATEGORIES }}
           BOT_USERS: ${{ secrets.BOT_USERS }}
+          REQUIRED_APPROVALS: ${{ secrets.REQUIRED_APPROVALS }}
           DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
           BUILD_ID: ${{ github.sha }}

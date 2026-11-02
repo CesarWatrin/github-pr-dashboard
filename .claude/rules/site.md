@@ -40,7 +40,8 @@ paths:
   of the reviewed ones that reached production, each weighing the same: stage medians never add up, so no chart
   stacks them. The repository filter of its table (`REPO_FILTERS.cycle`) applies to the whole page.
 - **Unblock page**: `openPullRequests()` of `site/period.js` tells where each open code pull request stands, after the
-  latest decision of each reviewer, as GitHub does. `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`,
+  latest decision of each reviewer, as GitHub does, and the approvals merging needs (`requiredApprovals` of the stats,
+  from `REQUIRED_APPROVALS`, 1 without it: the list of the partly approved ones then hides). `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`,
   those of the people still in the team that have stood there for longer than its delay (`after`, in hours), and
   apart those without any review or comment for `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of
   the records.

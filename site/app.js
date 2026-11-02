@@ -250,7 +250,8 @@ const CYCLE_END_TO_END_TILES = [
 ]
 
 // Where an open code pull request may stand, and how long it may stay there, in hours, before it shows as waiting for
-// someone: what it waits for, on its list and in the legend of the page.
+// someone: what it waits for, on its list and in the legend of the page. The hints take the approvals merging needs.
+const approvers = (required) => (required > 1 ? `${formatNumber(required)} personnes` : 'quelqu’un')
 const UNBLOCK_STANCES = [
   {
     key: 'approved',
@@ -259,8 +260,21 @@ const UNBLOCK_STANCES = [
     since: 'approuvée',
     by: 'approuvée par',
     tag: 'approuvée',
-    hint: 'Approuvées depuis plus d’un jour, sans demande de changements en cours : il ne reste qu’à merger.',
+    hint: (required) =>
+      `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)} depuis plus d’un jour, sans demande de changements en cours : il ne reste qu’à merger.`,
     empty: 'Aucune PR approuvée qui attend son merge',
+  },
+  // Only where merging needs more than one approval.
+  {
+    key: 'approving',
+    label: 'Approbation incomplète',
+    after: 24,
+    since: 'approuvée',
+    by: 'approuvée par',
+    tag: 'approbation incomplète',
+    hint: (required) =>
+      `Approuvées depuis plus d’un jour par moins de ${approvers(required)}, alors qu’il en faut ${formatNumber(required)} pour merger : il manque une relecture.`,
+    empty: 'Aucune PR qui attend une approbation de plus',
   },
   {
     key: 'changes',
@@ -4085,7 +4099,7 @@ function renderWaiting(highlight) {
 // long for someone, by where they stand, the oldest first, those forgotten apart, and how many are open.
 function blockedPullRequests() {
   const now = Date.now() / 60_000
-  const open = openPullRequests(state.stats.pullRequests).filter((pr) => isCurrent(pr.author))
+  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author))
   const forgotten = (pr) => now - pr.lastAt >= FORGOTTEN_AFTER_DAYS * 24 * 60
   const recent = open.filter((pr) => !forgotten(pr))
 
@@ -4101,18 +4115,26 @@ function blockedPullRequests() {
   }
 }
 
+// The approvals a pull request needs before it can be merged, as the sync publishes them: 1 when it does not.
+const requiredApprovals = () => state.stats.requiredApprovals ?? 1
+
 function renderUnblock(mode) {
   const blocked = blockedPullRequests()
+  const required = requiredApprovals()
   renderTiles(
     $('[data-unblock-tiles]'),
     UNBLOCK_TILES,
     Object.fromEntries(UNBLOCK_TILES.map(({ key }) => [key, Array.isArray(blocked[key]) ? blocked[key].length : blocked[key]])),
     mode,
   )
+  // A single approval merges: no pull request is ever partly approved.
+  $('[data-unblock-tiles] [data-key="approving"]').hidden = required === 1
+  $('[data-unblock-card="approving"]').hidden = required === 1
+  $('.unblock-forgotten').classList.toggle('is-wide', required === 1)
   for (const stance of [...UNBLOCK_STANCES, FORGOTTEN]) {
     const prs = blocked[stance.key]
     $(`[data-unblock-title="${stance.key}"]`).textContent = `${stance.label} (${formatNumber(prs.length)})`
-    $(`[data-unblock-sub="${stance.key}"]`).textContent = stance.hint
+    $(`[data-unblock-sub="${stance.key}"]`).textContent = typeof stance.hint === 'function' ? stance.hint(required) : stance.hint
     const items = prs
       .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo, ...pr.by.flatMap((login) => [login, displayName(login)])))
       .map((pr) => {

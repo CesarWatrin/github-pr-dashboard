@@ -271,8 +271,9 @@
               <div class="tiles" data-unblock-tiles></div>
               <p class="card-note">
                 PR de code ouvertes, hors brouillons et PR des personnes parties, d’après la dernière synchro. Chaque PR
-                n’apparaît que dans une liste, selon la dernière décision de chaque relecteur, et seulement après un
-                délai : un jour approuvée ou sans review, trois jours avec des changements demandés ou en discussion.
+                n’apparaît que dans une liste, selon la dernière décision de chaque relecteur et le nombre d’approbations
+                qu’il faut pour merger, et seulement après un délai : un jour approuvée ou sans review, trois jours avec
+                des changements demandés ou en discussion.
                 Celles sans aucune review ni commentaire depuis plus d’un mois sont à part, oubliées.
               </p>
             </section>
@@ -282,6 +283,12 @@
                 <h2 id="unblock-approved-title" data-unblock-title="approved">Approuvées, pas mergées</h2>
                 <p class="card-sub" data-unblock-sub="approved"></p>
                 <ol class="feed" data-unblock="approved"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="unblock-approving-title" data-unblock-card="approving" hidden>
+                <h2 id="unblock-approving-title" data-unblock-title="approving">Approbation incomplète</h2>
+                <p class="card-sub" data-unblock-sub="approving"></p>
+                <ol class="feed" data-unblock="approving"></ol>
               </section>
 
               <section class="card" aria-labelledby="unblock-changes-title">
@@ -706,8 +713,9 @@
                 <dt>À débloquer</dt>
                 <dd>
                   PR de code ouvertes, hors brouillons et PR des personnes parties, classées comme GitHub selon la
-                  dernière décision de chaque relecteur : des changements demandés par quelqu’un, sinon une approbation,
-                  sinon des reviews ou commentaires sans décision, sinon rien. Une PR n’y apparaît qu’après un jour
+                  dernière décision de chaque relecteur : des changements demandés par quelqu’un, sinon autant
+                  d’approbations qu’il en faut pour merger, sinon moins, sinon des reviews ou commentaires sans décision,
+                  sinon rien. Une PR n’y apparaît qu’après un jour
                   approuvée ou sans review, trois jours avec des changements demandés ou en discussion, comptés depuis
                   cette décision, le dernier échange ou l’ouverture. Sans aucune review ni commentaire depuis plus d’un
                   mois, elle est rangée à part, parmi les oubliées.

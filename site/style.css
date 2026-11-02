@@ -875,8 +875,8 @@ main.is-loading {
   gap: 16px;
 }
 
-/* The forgotten pull requests, below the four lists, across both columns. */
-.unblock-forgotten {
+/* The forgotten pull requests, below the other lists: across both columns when these are four. */
+.unblock-forgotten.is-wide {
   grid-column: 1 / -1;
 }
 

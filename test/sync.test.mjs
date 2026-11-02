@@ -30,6 +30,7 @@ const {
   mergeMonthlyHistory,
   readPublishedHistory,
   repositoryCategory,
+  requiredApprovals,
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,
@@ -106,6 +107,20 @@ describe('bots and repositories', () => {
       ['Shell', 0.02],
     ])
     assert.deepEqual(technologyShares([['Vue', 50], ['TypeScript', 940], ['CSS', 10]], ['Nuxt', 'Vue']), [['Nuxt', 1]])
+  })
+})
+
+describe('requiredApprovals', () => {
+  test('1 by default, else the number given', () => {
+    assert.equal(requiredApprovals(), 1)
+    assert.equal(requiredApprovals(' '), 1)
+    assert.equal(requiredApprovals('2'), 2)
+  })
+
+  test('anything but a whole number of 1 or more is refused', () => {
+    for (const value of ['0', '-1', '1.5', 'two']) {
+      assert.throws(() => requiredApprovals(value), /REQUIRED_APPROVALS/)
+    }
   })
 })
 

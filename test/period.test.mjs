@@ -635,6 +635,28 @@ describe('openPullRequests', () => {
     open(9, { kind: 'release' }),
   ]).map(({ number, stance, since, by, lastAt }) => [number, stance, iso(since), by, iso(lastAt)])
 
+  test('approved by fewer people than merging needs, it is still being approved', () => {
+    const twoNeeded = openPullRequests(
+      [
+        open(1, { interventions: [['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]] }),
+        open(2, {
+          interventions: [
+            ['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0],
+            ['carol', at('2026-03-02T11:00:00Z'), 'APPROVED', 0],
+          ],
+        }),
+      ],
+      { requiredApprovals: 2 },
+    )
+    assert.deepEqual(
+      twoNeeded.map(({ number, stance, by }) => [number, stance, by]),
+      [
+        [1, 'approving', ['bob']],
+        [2, 'approved', ['bob', 'carol']],
+      ],
+    )
+  })
+
   test('where each open pull request stands, after the latest decision of each reviewer', () => {
     assert.deepEqual(stances, [
       [1, 'waiting', '2026-03-02T09:00:00.000Z', [], '2026-03-02T09:00:00.000Z'],

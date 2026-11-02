@@ -41,6 +41,7 @@ deploy to: no workflow of another branch can read them.
 | `GITHUB_TOKEN` | `.env` (else `gh auth token`), secret `ORG_STATS_TOKEN` | Reads pull requests, checks, Actions runs and repository details |
 | `DASHBOARD_PASSWORD` | `.env`, secret | Password of the page, source of the encryption key (required: no password, no publication) |
 | `REPO_CATEGORIES` | `.env`, secret | `repo:front\|back\|mobile\|other` overrides when the languages misjudge a repository |
+| `REQUIRED_APPROVALS` | `.env`, secret | Approvals a pull request needs before it can be merged, 1 by default: the unblock page tells those ready to merge |
 | `BOT_USERS` | `.env`, secret | Organization user accounts acting as bots, logins separated by commas |
 | `DISPATCH_TOKEN` | `.env`, secret | Fine-grained token, this repository only, Actions read and write: the sync button of the page |
 | `DISPATCH_REPOSITORY` | `.env` | `owner/repo` of the dashboard, for `DISPATCH_TOKEN` outside CI |
