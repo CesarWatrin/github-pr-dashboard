@@ -516,6 +516,16 @@
               <dl class="table-legend" data-table-legend="deployments"></dl>
             </section>
 
+            <section class="card" aria-labelledby="deploy-calendar-title">
+              <h2 id="deploy-calendar-title" data-deploy-calendar-title>Calendrier des mises en production</h2>
+              <p class="card-sub" data-deploy-calendar-sub></p>
+              <div class="heatmap" data-deploy-calendar></div>
+              <p class="card-note">
+                Chaque case compte les PR mergées dans master ou main de ce dépôt sur cette période, plus foncée quand il y
+                en a davantage ; au survol, combien sont des correctifs (hotfix et reverts).
+              </p>
+            </section>
+
             <section class="card" aria-labelledby="ci-title">
               <h2 id="ci-title">Intégration continue</h2>
               <p class="card-sub">Exécutions GitHub Actions déclenchées par une PR ou un push</p>

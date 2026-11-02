@@ -33,6 +33,8 @@ const WEEK_BUCKET_MAX_DAYS = 120
 const TOP_REPOS_PER_REVIEWER = 3
 const TOP_HOTFIX_REPOSITORIES = 8
 const TOP_ECOSYSTEMS = 8
+// The repositories that deploy the most get a row of their own in the calendar of deployments; the others share one.
+const CALENDAR_REPOS = 15
 // The review matrix gives a row or a column to the authors and reviewers who weigh at least MATRIX_MIN_SHARE of the
 // reviews of the period (stated in the card note of index.html), as many as its width holds with cells wide enough for
 // their figures, the others grouped together. It gives way to a list of the most frequent pairs when its card is too
@@ -1733,6 +1735,44 @@ function renderMiniCharts() {
   }
 }
 
+// When each repository deploys: its deployments per bucket of the period, the busiest repositories first, the others
+// together on a last row, which stays out of the color scale.
+function renderDeploymentCalendar() {
+  const { series, bucket, deploymentCalendar } = currentPeriod()
+  const total = (buckets) => buckets.reduce((sum, [count]) => sum + count, 0)
+  const sorted = deploymentCalendar.toSorted((a, b) => total(b.buckets) - total(a.buckets) || a.repo.localeCompare(b.repo))
+  const shown = sorted.slice(0, CALENDAR_REPOS)
+  const others = sorted.slice(CALENDAR_REPOS)
+  const rows = shown.map(({ repo, buckets }) => ({ key: repo, label: repo, buckets }))
+  if (others.length) {
+    rows.push({
+      key: 'others',
+      label: `${formatNumber(others.length)} autres dépôts`,
+      grouped: true,
+      buckets: series.map((_, index) => others.reduce(([count, corrective], other) => [count + other.buckets[index][0], corrective + other.buckets[index][1]], [0, 0])),
+    })
+  }
+  const columns = series.map((point, index) => ({ key: point.key, label: axisLabel(point.key, bucket), index, partial: point.partial }))
+  $('[data-deploy-calendar-title]').textContent = `Calendrier des mises en production ${BUCKET_TITLES[bucket]}`
+  $('[data-deploy-calendar-sub]').textContent = others.length
+    ? `Déploiements de chaque dépôt : les ${formatNumber(CALENDAR_REPOS)} qui déploient le plus, puis les autres ensemble`
+    : 'Déploiements de chaque dépôt, ceux qui déploient le plus en haut'
+  heatmapChart($('[data-deploy-calendar]'), {
+    rows,
+    columns,
+    value: (row, column) => row.buckets[column.index][0],
+    ariaLabel: `Déploiements de chaque dépôt ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    tooltip: (row, column, count) => ({
+      title: `${row.label} · ${bucketTitle(column.key, bucket)}`,
+      rows: [
+        { label: count > 1 ? 'déploiements' : 'déploiement', value: formatNumber(count) },
+        { label: 'dont correctifs', value: formatNumber(row.buckets[column.index][1]) },
+      ],
+      note: column.partial ? 'Période incomplète' : null,
+    }),
+  })
+}
+
 function renderDevopsCharts() {
   const { series, bucket, dependencies } = currentPeriod()
   $('[data-deployments-chart-title]').textContent = `Déploiements ${BUCKET_TITLES[bucket]}`
@@ -1742,6 +1782,8 @@ function renderDevopsCharts() {
     series: DEPLOYMENT_SERIES,
     ariaLabel: `Déploiements ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
   })
+
+  renderDeploymentCalendar()
 
   const ci = currentCi()
   $('[data-ci-charts-title]').textContent = `Exécutions ${BUCKET_TITLES[bucket]}`
