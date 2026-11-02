@@ -33,9 +33,10 @@ paths:
   `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
-  `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards are grouped by
-  stack (`TEAM_GROUPS`: back, front, full-stack, mobile, then the people without a stack), most code pull requests
-  first. `stackType()` and `topTechnologies()` are shared with the stack column of the tables.
+  `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
+  pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not
+  the stack: that one is the person's own, over every repository. `stackType()` and `topTechnologies()` are shared
+  with the stack column of the tables.
 - The "Méthode" page keeps the rules shared by the whole dashboard; what a single column counts goes in its `hint`.
 
 ## Look and feel

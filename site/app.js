@@ -628,7 +628,7 @@ const state = {
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, collaboration: null },
+  repos: { authors: null, reviewers: null, collaboration: null, team: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -1635,71 +1635,60 @@ function renderPairs(network) {
 
 // Team page
 
-// The groups of the team page, in this order. People whose pull requests all went to docs, infrastructure or tooling
-// repositories have no stack: they come last.
-const TEAM_GROUPS = [
-  { key: 'back', label: 'Back' },
-  { key: 'front', label: 'Front' },
-  { key: 'full-stack', label: 'Full-stack' },
-  { key: 'mobile', label: 'Mobile' },
-  { key: null, label: 'Autres' },
-]
-
-// Everyone who wrote or reviewed code over the period, most code pull requests first, then by name: what each person
-// wrote, then what they reviewed. The stack comes from their code pull requests, else from the ones they reviewed.
+// Everyone who wrote or reviewed code over the period in the repositories selected on the page, most code pull requests
+// first, then by name: what each person wrote, then what they reviewed. The stack comes from their code pull requests,
+// else from the ones they reviewed.
 function teamRows() {
   const period = currentPeriod()
   const rows = new Map()
   const row = (login) => {
     if (!rows.has(login)) {
-      rows.set(login, { login, code: 0, merged: 0, timesToMerge: [], codeRepos: [], reviewed: 0, comments: 0, reviewedRepos: [] })
+      rows.set(login, { login, code: 0, merged: 0, timesToMerge: [], reviewed: 0, comments: 0 })
     }
 
     return rows.get(login)
   }
   for (const person of period.authors) {
-    const entries = Object.entries(person.repos)
-    const parts = entries.map(([, stats]) => stats)
+    const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
     const code = sumOf(parts, 'code')
     if (code > 0) {
       Object.assign(row(person.login), {
         code,
         merged: sumOf(parts, 'merged'),
         timesToMerge: parts.flatMap((stats) => stats.timesToMergeHours),
-        codeRepos: entries.map(([repo, stats]) => [repo, stats.code]),
       })
     }
   }
   for (const person of period.reviewers) {
-    const entries = Object.entries(person.repos)
-    const parts = entries.map(([, stats]) => stats)
+    const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
     const reviewed = sumOf(parts, 'prs')
     if (reviewed > 0) {
-      Object.assign(row(person.login), {
-        reviewed,
-        comments: sumOf(parts, 'comments'),
-        reviewedRepos: entries.map(([repo, stats]) => [repo, stats.prs]),
-      })
+      Object.assign(row(person.login), { reviewed, comments: sumOf(parts, 'comments') })
     }
   }
-  const reviewersOf = new Map(reviewNetwork(period).authors.map((author) => [author.login, author.reviewers]))
+  const reviewersOf = new Map(reviewNetwork(period, state.repos.team).authors.map((author) => [author.login, author.reviewers]))
+  // The stack is the person's own, over every repository: the selection only narrows the figures.
+  const perRepo = (people, key) =>
+    new Map(people.map((person) => [person.login, Object.entries(person.repos).map(([repo, stats]) => [repo, stats[key]])]))
+  const codeRepos = perRepo(period.authors, 'code')
+  const reviewedRepos = perRepo(period.reviewers, 'prs')
+  const stackFor = (login) => {
+    const code = codeRepos.get(login) ?? []
+
+    return stackOf(code.some(([, prs]) => prs > 0) ? code : (reviewedRepos.get(login) ?? []))
+  }
 
   return [...rows.values()]
-    .map((totals) => {
-      const stack = stackOf(totals.code ? totals.codeRepos : totals.reviewedRepos)
-
-      return {
-        login: totals.login,
-        code: totals.code,
-        merged: totals.code ? totals.merged : null,
-        medianTimeToMergeHours: median(totals.timesToMerge),
-        reviewed: totals.reviewed,
-        commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
-        reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
-        stack,
-        type: stackType(stack.counts)?.key ?? null,
-      }
-    })
+    .map((totals) => ({
+      login: totals.login,
+      code: totals.code,
+      merged: totals.code ? totals.merged : null,
+      medianTimeToMergeHours: median(totals.timesToMerge),
+      reviewed: totals.reviewed,
+      commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
+      reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
+      stack: stackFor(totals.login),
+    }))
     .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
 }
 
@@ -1756,35 +1745,14 @@ function renderTeam() {
   const rows = teamRows().filter((row) => matchesQuery(row.login, displayName(row.login)))
   const container = $('[data-team]')
   if (rows.length === 0) {
+    const filtered = state.query || state.repos.team
     container.replaceChildren(
-      el('p', { className: 'feed-empty', textContent: state.query ? 'Personne ne correspond à la recherche' : 'Personne sur la période' }),
+      el('p', { className: 'feed-empty', textContent: filtered ? 'Personne ne correspond à ces filtres' : 'Personne sur la période' }),
     )
 
     return
   }
-  let index = 0
-  container.replaceChildren(
-    ...TEAM_GROUPS.flatMap((group) => {
-      const members = rows.filter((row) => row.type === group.key)
-      if (members.length === 0) {
-        return []
-      }
-
-      return [
-        el(
-          'section',
-          { className: 'person-group' },
-          el(
-            'h2',
-            { className: 'person-group-title' },
-            el('span', { className: `stack-type is-${group.key ?? 'other'}`, textContent: group.label }),
-            el('span', { className: 'person-group-count', textContent: `${formatNumber(members.length)} ${members.length > 1 ? 'personnes' : 'personne'}` }),
-          ),
-          el('div', { className: 'person-cards' }, ...members.map((row) => personCard(row, index++))),
-        ),
-      ]
-    }),
-  )
+  container.replaceChildren(...rows.map(personCard))
 }
 
 function renderCharts() {
@@ -2096,7 +2064,17 @@ const TABLES = {
     searchTexts: (row) => [row.repo],
   },
 }
-const FILTERED_TABLES = Object.keys(TABLES).filter((name) => TABLES[name].repoCounts)
+// The repository filters: those of the tables, and the one of the team page, which has no table.
+const REPO_FILTERS = {
+  ...Object.fromEntries(Object.entries(TABLES).filter(([, table]) => table.repoCounts)),
+  team: {
+    source: 'authors',
+    repoCounts: () => TABLES.collaboration.repoCounts(),
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+    onFilter: () => renderTeam(),
+  },
+}
+const REPO_FILTER_NAMES = Object.keys(REPO_FILTERS)
 
 const columnValue = (column, row) => (column.value ? column.value(row) : row[column.key])
 
@@ -2373,8 +2351,8 @@ function renderTables(highlight) {
 
 // Repositories with activity in the table over the period, busiest first.
 function repoOptions(name) {
-  const counts = TABLES[name].repoCounts()
-  const repos = new Set(currentPeriod()[TABLES[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
+  const counts = REPO_FILTERS[name].repoCounts()
+  const repos = new Set(currentPeriod()[REPO_FILTERS[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
 
   return [...repos]
     .map((repo) => [repo, counts.get(repo) ?? 0])
@@ -2511,7 +2489,7 @@ function setupRepoFilter(name) {
       'div',
       { className: 'repo-filter-panel' },
       presets,
-      el('p', { className: 'repo-filter-note', textContent: TABLES[name].repoCountsLabel }),
+      el('p', { className: 'repo-filter-note', textContent: REPO_FILTERS[name].repoCountsLabel }),
       list,
     ),
   )
@@ -2519,8 +2497,10 @@ function setupRepoFilter(name) {
   const apply = (selection) => {
     state.repos[name] = selection
     renderRepoFilterState(name)
-    renderTable(name, false)
-    TABLES[name].onFilter?.()
+    if (name in TABLES) {
+      renderTable(name, false)
+    }
+    REPO_FILTERS[name].onFilter?.()
   }
   presets.addEventListener('click', (event) => {
     const button = event.target.closest('[data-preset]')
@@ -2915,7 +2895,7 @@ function render(animate) {
   renderPersonPicker()
   renderCharts()
   renderChartTable()
-  for (const name of FILTERED_TABLES) {
+  for (const name of REPO_FILTER_NAMES) {
     renderRepoFilter(name)
   }
   renderTables(animate)
@@ -3261,7 +3241,7 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
-for (const name of FILTERED_TABLES) {
+for (const name of REPO_FILTER_NAMES) {
   setupRepoFilter(name)
 }
 renderThemeToggle()

@@ -1181,29 +1181,9 @@ main.is-loading {
   white-space: nowrap;
 }
 
-/* Team page: the people grouped by stack, one card per person, as many columns as fit. */
-.person-groups {
-  display: grid;
-  gap: 28px;
-}
-
-.person-group-title {
+/* Team page: the repository filter, then one card per person, as many columns as fit. */
+.team-toolbar {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 12px;
-  font-size: 15px;
-}
-
-.person-group-title .stack-type {
-  padding: 2px 10px;
-  font-size: 14px;
-}
-
-.person-group-count {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 400;
 }
 
 .person-cards {

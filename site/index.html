@@ -324,13 +324,16 @@
 
           <!-- Équipe -->
           <div class="route" data-route="team" hidden>
-            <div class="person-groups" data-team></div>
+            <div class="team-toolbar">
+              <details class="repo-filter" data-repo-filter="team"></details>
+            </div>
+            <div class="person-cards" data-team></div>
             <section class="card" aria-labelledby="team-legend-title">
               <h2 id="team-legend-title">Les chiffres des cartes</h2>
               <p class="card-sub">
-                Sur la période choisie, pour chaque personne qui a écrit ou relu du code. Les cartes sont groupées par
-                stack (la même que dans les tableaux), puis triées par nombre de PR de code : celles qui en ont le
-                moins en bas. « Autres » : des PR uniquement dans des dépôts de doc, d’infra ou d’outillage.
+                Sur la période et les dépôts choisis, pour chaque personne qui a écrit ou relu du code, triées par
+                nombre de PR de code : celles qui en ont le moins en bas. La stack de chaque personne se calcule sur
+                tous ses dépôts : le filtre de dépôts ne restreint que les chiffres.
               </p>
               <dl class="table-legend" data-table-legend="team"></dl>
             </section>
