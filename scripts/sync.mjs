@@ -12,7 +12,16 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { gunzipSync, gzipSync } from 'node:zlib'
 
-import { DAY_MS, TIMEZONE, addDays, monthlyActivity, parisDay, parisMidnight, round } from '../site/period.js'
+import {
+  DAY_MS,
+  MONTHLY_FIGURES,
+  TIMEZONE,
+  addDays,
+  monthlyActivity,
+  parisDay,
+  parisMidnight,
+  round,
+} from '../site/period.js'
 
 const ORG = process.env.ORG
 // 4: the checks of each pull request and the Actions runs. The monthly history (monthly) came later as an optional
@@ -691,23 +700,37 @@ function wholeMonthsWithin(start, end) {
   return months
 }
 
+// A month of the history kept before some of the figures of monthlyActivity() existed: none of its people has them all.
+const isOutdated = (kept) =>
+  Object.keys(kept).length > 0 &&
+  Object.values(kept).every((figures) => MONTHLY_FIGURES.some((key) => !(key in figures)))
+
 // The monthly history of each person's figures, as { 'YYYY-MM': { login: figures } } (see monthlyActivity()), for the
 // badges, back to the first sync. A whole month of the window is worked out from its records until it has been over for
 // MONTH_FINAL_AFTER_MS, for the data synced late; from then on it is final and stays as kept. Worked out again later, it
-// would lose the reviews of pull requests created before the window as the window moves on.
+// would lose the reviews of pull requests created before the window as the window moves on. A final month kept before
+// some of the figures existed, such as the lines added and deleted, gets them once from its records, still within the
+// window: the figures it kept stay, and the people only those new figures name join it.
 function mergeMonthlyHistory(history, records, { windowStart, now }) {
   const activity = monthlyActivity(records)
   const merged = { ...history }
   for (const month of wholeMonthsWithin(windowStart, now)) {
-    if (month in history && parisMidnight(`${nextMonth(month)}-01`) <= now - MONTH_FINAL_AFTER_MS) {
-      continue
-    }
-    merged[month] = Object.fromEntries(
+    const worked = Object.fromEntries(
       [...activity]
         .filter(([, perMonth]) => perMonth.has(month))
         .map(([login, perMonth]) => [login, perMonth.get(month)])
         .sort(([a], [b]) => a.localeCompare(b)),
     )
+    if (!(month in history) || parisMidnight(`${nextMonth(month)}-01`) > now - MONTH_FINAL_AFTER_MS) {
+      merged[month] = worked
+    } else if (isOutdated(history[month])) {
+      const kept = history[month]
+      merged[month] = Object.fromEntries(
+        [...new Set([...Object.keys(kept), ...Object.keys(worked)])]
+          .sort((a, b) => a.localeCompare(b))
+          .map((login) => [login, { ...worked[login], ...kept[login] }]),
+      )
+    }
   }
 
   return Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)))

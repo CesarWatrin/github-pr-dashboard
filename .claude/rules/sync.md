@@ -53,7 +53,10 @@ paths:
 - `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first
   sync, published as `monthly` for the badges. A whole month of the window is worked out until a week after its end
   (`MONTH_FINAL_AFTER_MS`), then it is final: worked out again, it would lose the reviews of pull requests created
-  before the window as the window moves on. The history lives in the snapshot; without one (a lost Actions cache, a
+  before the window as the window moves on. A final month kept before some figure of `MONTHLY_FIGURES` existed (the
+  lines added and deleted came later) gets the missing figures once, from its records still within the window: what
+  it kept stays. A new monthly figure goes into `MONTHLY_FIGURES`, and the history fills itself. The history lives in
+  the snapshot; without one (a lost Actions cache, a
   `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
   the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.
 - Never publish titles, bodies, branch names or anything not needed by a stat: what is published must stay minimal,

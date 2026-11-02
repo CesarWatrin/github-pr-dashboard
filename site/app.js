@@ -629,14 +629,32 @@ const MONTH_MS = (365.25 / 12) * DAY_MS
 // Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month since the first
 // sync (the monthly history it keeps), ties sharing it. Their tier comes from the longest run of months in a row: bronze
 // for one, silver for two, gold for three or more. The key is one of the monthly figures of monthlyActivity(), counted
-// in units, singular then plural.
+// in units, singular then plural, and shown with format when given.
 const BADGES = [
   { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes', units: ['PR de code', 'PR de code'] },
   { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues', units: ['PR relue', 'PR relues'] },
   { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review', units: ['commentaire', 'commentaires'] },
   { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix', units: ['hotfix', 'hotfix'] },
+  {
+    key: 'added',
+    icon: '🏗️',
+    name: 'Bâtisseur',
+    what: 'le plus de lignes ajoutées',
+    units: ['ligne ajoutée', 'lignes ajoutées'],
+    format: formatLines,
+  },
+  {
+    key: 'deleted',
+    icon: '🧹',
+    name: 'Coup de balai',
+    what: 'le plus de lignes supprimées',
+    units: ['ligne supprimée', 'lignes supprimées'],
+    format: formatLines,
+  },
 ]
 const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
+// The medals a person's card shows, the best ones: the others gather under a "+N", so that the card does not grow.
+const CARD_BADGES = 3
 const TIER_ORDER = ['gold', 'silver', 'bronze']
 const BADGES_LEGEND = {
   label: 'Badges',
@@ -2548,11 +2566,49 @@ function badgeMedal(badge, size) {
   return medal
 }
 
-// The medals of a person, gold first; nothing for someone without any badge.
-function badgeRow(login, className, size) {
+// The medals of a person, gold first; nothing for someone without any badge. Past the limit, the others gather under
+// a "+N" whose tooltip names them.
+function badgeRow(login, className, size, limit = Infinity) {
   const won = badgesOf(login).toSorted((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || b.streak - a.streak)
+  const others = won.slice(limit)
 
-  return won.length ? [el('div', { className }, ...won.map((badge) => badgeMedal(badge, size)))] : []
+  return won.length
+    ? [
+        el(
+          'div',
+          { className },
+          ...won.slice(0, limit).map((badge) => badgeMedal(badge, size)),
+          ...(others.length ? [moreBadges(others)] : []),
+        ),
+      ]
+    : []
+}
+
+// The medals a card leaves out, as "+N" the size of a medal: on hover or focus, their names and tiers.
+function moreBadges(badges) {
+  const more = el(
+    'span',
+    { className: 'badge-more', tabIndex: 0 },
+    el('span', { textContent: `+${badges.length}` }),
+    el(
+      'span',
+      { className: 'badge-tip' },
+      ...badges.map((badge) =>
+        el(
+          'span',
+          { className: 'badge-tip-head' },
+          el('strong', { textContent: `${badge.icon} ${badge.name}` }),
+          el('span', { className: 'badge-tier', textContent: BADGE_TIERS[badge.tier] }),
+        ),
+      ),
+    ),
+  )
+  more.setAttribute('role', 'img')
+  const names = badges.map((badge) => `${badge.name}, ${BADGE_TIERS[badge.tier]}`)
+  more.setAttribute('aria-label', `Et aussi : ${names.join(' ; ')}`)
+  more.lastChild.setAttribute('aria-hidden', 'true')
+
+  return more
 }
 
 // "7 mois d’ancienneté", with the date it counts from on hover; nothing for someone the stats do not know.
@@ -2592,7 +2648,7 @@ function personCard(row, index) {
   )
   open.setAttribute('aria-haspopup', 'dialog')
   open.addEventListener('click', () => openPersonDialog(row, open))
-  const badges = badgeRow(row.login, 'person-badges', 'small')
+  const badges = badgeRow(row.login, 'person-badges', 'small', CARD_BADGES)
   // Above the button of the card for their hover, the badges still open the dialog.
   badges[0]?.addEventListener('click', () => open.click())
   const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...badges, statList(TEAM_STATS, row))
@@ -2638,7 +2694,7 @@ function renderTeam() {
 
 // Hall of fame page
 
-const amountOf = (value, [one, many]) => `${formatNumber(value)} ${value > 1 ? many : one}`
+const amountOf = (value, [one, many], format = formatNumber) => `${format(value)} ${value > 1 ? many : one}`
 
 // The people who led a badge over a month, and how much. Someone who left the team shows without a name, as everywhere,
 // but in the record of every month (withFormer), where their name opens their dialog, as among the former people.
@@ -2653,7 +2709,7 @@ function leadersLine(leader, badge, { withFormer = false } = {}) {
     ...leader.people.map((login) =>
       withFormer || isCurrent(login) ? personLink(login) : el('span', { className: 'award-former', textContent: 'une personne partie' }),
     ),
-    el('span', { className: 'award-value', textContent: amountOf(leader.value, badge.units) }),
+    el('span', { className: 'award-value', textContent: amountOf(leader.value, badge.units, badge.format) }),
   )
 }
 
@@ -2721,33 +2777,40 @@ function renderHolders({ byLogin }) {
             displayName(a.login).localeCompare(displayName(b.login), 'fr'),
         )
 
-      return el(
-        'article',
-        { className: 'award' },
-        awardHead(badge),
-        holders.length
-          ? el(
-              'ul',
-              { className: 'award-holders' },
-              ...holders.map(({ login, won }) =>
+      // The list scrolls once long: the tooltip of each medal would be cut by its edges, so the medals take the
+      // tooltip of the charts, over the page.
+      const medal = (won) => {
+        const node = badgeMedal(won, 'small')
+        const tip = { title: `${won.icon} ${won.name} · ${BADGE_TIERS[won.tier]}`, rows: [], note: badgeWhy(won) }
+        bindTooltip(node, (x, y) => showTooltip(tip, x, y), hideTooltip)
+
+        return node
+      }
+      const list = holders.length
+        ? el(
+            'ul',
+            { className: 'award-holders' },
+            ...holders.map(({ login, won }) =>
+              el(
+                'li',
+                {},
+                medal(won),
                 el(
-                  'li',
-                  {},
-                  badgeMedal(won, 'small'),
-                  el(
-                    'span',
-                    { className: 'award-holder' },
-                    personLink(login),
-                    el('span', {
-                      className: 'award-value',
-                      textContent: won.streak > 1 ? `${won.streak} mois d’affilée` : `${won.total} mois`,
-                    }),
-                  ),
+                  'span',
+                  { className: 'award-holder' },
+                  personLink(login),
+                  el('span', {
+                    className: 'award-value',
+                    textContent: won.streak > 1 ? `${won.streak} mois d’affilée` : `${won.total} mois`,
+                  }),
                 ),
               ),
-            )
-          : el('p', { className: 'muted', textContent: 'Personne de l’équipe pour l’instant' }),
-      )
+            ),
+          )
+        : el('p', { className: 'muted', textContent: 'Personne de l’équipe pour l’instant' })
+      list.addEventListener('scroll', hideTooltip)
+
+      return el('article', { className: 'award' }, awardHead(badge), list)
     }),
   )
 }

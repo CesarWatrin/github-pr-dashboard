@@ -305,7 +305,9 @@ describe('computeCi', () => {
 
 describe('monthly history', () => {
   // A period record of the sync, reduced to what the monthly figures read.
-  const record = (fields) => ({ bot: false, kind: 'code', hotfix: false, interventions: [], ...fields })
+  const record = (fields) => ({ bot: false, kind: 'code', hotfix: false, mergedAt: null, interventions: [], ...fields })
+  // A person's figures of a month, those not given at zero.
+  const figures = (fields) => ({ code: 0, hotfixes: 0, reviewed: 0, comments: 0, added: 0, deleted: 0, ...fields })
 
   test('only the Paris months lying whole within the window count', () => {
     // From the 10th of January to the 15th of April: February and March only.
@@ -322,13 +324,13 @@ describe('monthly history', () => {
   test('a month is worked out until a week after its end, then stays as kept', () => {
     const history = {
       // Long gone from the window: kept as it is.
-      '2025-06': { ana: { code: 9, hotfixes: 0, reviewed: 0, comments: 0 } },
+      '2025-06': { ana: figures({ code: 9 }) },
       // Cut by the start of the window now: its records are only partial, the history keeps the whole month.
-      '2026-01': { ben: { code: 4, hotfixes: 1, reviewed: 2, comments: 3 } },
+      '2026-01': { ben: figures({ code: 4, hotfixes: 1, reviewed: 2, comments: 3 }) },
       // Whole within the window but over for long: final, even if its records have moved since.
-      '2026-02': { ana: { code: 5, hotfixes: 0, reviewed: 0, comments: 0 } },
+      '2026-02': { ana: figures({ code: 5 }) },
       // Over for 4 days only: worked out again, for the data synced late.
-      '2026-03': { ana: { code: 1, hotfixes: 0, reviewed: 0, comments: 0 } },
+      '2026-03': { ana: figures({ code: 1 }) },
     }
     const records = [
       record({ author: 'ben', createdAt: minutes('2026-01-20T09:00:00Z') }),
@@ -352,9 +354,53 @@ describe('monthly history', () => {
     assert.deepEqual(merged['2026-01'], history['2026-01'])
     assert.deepEqual(merged['2026-02'], history['2026-02'])
     assert.deepEqual(merged['2026-03'], {
-      ana: { code: 2, hotfixes: 0, reviewed: 0, comments: 0 },
-      ben: { code: 0, hotfixes: 0, reviewed: 1, comments: 2 },
+      ana: figures({ code: 2 }),
+      ben: figures({ reviewed: 1, comments: 2 }),
     })
+  })
+
+  test('a final month kept before the lines were counted gets them once from its records, the rest as kept', () => {
+    const history = {
+      // Kept before the lines were counted.
+      '2026-02': { ana: { code: 5, hotfixes: 0, reviewed: 1, comments: 2 } },
+      // Kept with every figure: it stays as it is.
+      '2026-03': { ana: figures({ code: 3, added: 7 }) },
+    }
+    const records = [
+      // Ana's figures of February have moved since it was kept: those kept stay, the lines join them.
+      record({
+        author: 'ana',
+        createdAt: minutes('2026-02-02T09:00:00Z'),
+        mergedAt: minutes('2026-02-03T09:00:00Z'),
+        lines: 30,
+        deleted: 10,
+      }),
+      // Ben only merged in February, a pull request opened in January: the lines bring him in.
+      record({
+        author: 'ben',
+        createdAt: minutes('2026-01-20T09:00:00Z'),
+        mergedAt: minutes('2026-02-05T09:00:00Z'),
+        lines: 8,
+        deleted: 8,
+      }),
+      record({
+        author: 'ana',
+        createdAt: minutes('2026-03-02T09:00:00Z'),
+        mergedAt: minutes('2026-03-03T09:00:00Z'),
+        lines: 50,
+        deleted: 0,
+      }),
+    ]
+    const range = { windowStart: Date.parse('2026-01-10T12:00:00Z'), now: Date.parse('2026-05-05T12:00:00Z') }
+    const merged = mergeMonthlyHistory(history, records, range)
+
+    assert.deepEqual(merged['2026-02'], {
+      ana: { code: 5, hotfixes: 0, reviewed: 1, comments: 2, added: 20, deleted: 10 },
+      ben: figures({ deleted: 8 }),
+    })
+    assert.deepEqual(merged['2026-03'], history['2026-03'])
+    // Once filled, February is final again.
+    assert.deepEqual(mergeMonthlyHistory(merged, [], range), merged)
   })
 
   test('a whole month the history lacks is worked out, even an empty one', () => {
@@ -371,7 +417,7 @@ describe('monthly history', () => {
       windowStart: Date.parse('2026-01-10T12:00:00Z'),
       now: Date.parse('2026-03-05T12:00:00Z'),
     })
-    assert.deepEqual(merged, { '2026-02': { ana: { code: 1, hotfixes: 0, reviewed: 0, comments: 0 } } })
+    assert.deepEqual(merged, { '2026-02': { ana: figures({ code: 1 }) } })
   })
 })
 

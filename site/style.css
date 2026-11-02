@@ -1486,7 +1486,7 @@ main.is-loading {
   white-space: nowrap;
 }
 
-/* Hall of fame: one block per badge, the four in a row on a wide screen, two by two below, one by one on a phone; the
+/* Hall of fame: one block per badge, three by three on a wide screen, two by two below, one by one on a phone; the
    months in a table. */
 .awards {
   display: grid;
@@ -1497,7 +1497,7 @@ main.is-loading {
 
 @media (min-width: 1440px) {
   .awards {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1542,7 +1542,7 @@ main.is-loading {
   margin: 0;
 }
 
-/* The champions of the four badges line up month by month, whatever the length of their names: each block spans three
+/* The champions of the badges line up month by month, whatever the length of their names: each block spans three
    rows of the grid, shared with the blocks beside it. */
 .awards.is-aligned > .award {
   grid-row: span 3;
@@ -1582,12 +1582,22 @@ main.is-loading {
   font-style: italic;
 }
 
+/* Each badge's holders scroll past five and a half of them, so that the page does not grow as months go by; the
+   padding keeps focus rings inside, and the medals take the tooltip of the charts (theirs would be cut). */
 .award-holders {
   display: grid;
   gap: 12px;
-  margin: 0;
-  padding: 0;
+  max-height: 320px;
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   list-style: none;
+}
+
+.award-holders .badge-tip {
+  display: none;
 }
 
 .award-holders li {
@@ -1617,8 +1627,23 @@ main.is-loading {
   white-space: nowrap;
 }
 
+/* A column per badge, all as wide, the month a little narrower: long names are cut short and amounts take two lines
+   when they must, so that the table fits from 1080 px; narrower, it scrolls sideways. */
+.awards-table {
+  table-layout: fixed;
+  min-width: 840px;
+}
+
+.awards-table thead th:first-child {
+  width: 120px;
+}
+
 .awards-table td {
   vertical-align: top;
+}
+
+.awards-table .award-value {
+  white-space: normal;
 }
 
 /* Its heads are plain text, not the sort buttons of the other tables: they take the padding of the cells. */
@@ -1954,8 +1979,27 @@ main.is-loading {
 }
 
 .badge-medal:hover .badge-tip,
-.badge-medal:focus-visible .badge-tip {
+.badge-medal:focus-visible .badge-tip,
+.badge-more:hover .badge-tip,
+.badge-more:focus-visible .badge-tip {
   visibility: visible;
+}
+
+/* The medals a card leaves out: "+N" in a plain disc the size of a medal, their names in its tooltip. */
+.badge-more {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
 }
 
 /* In the dialog the medals sit at the top right, near the close button, which comes forward as the card leans: their

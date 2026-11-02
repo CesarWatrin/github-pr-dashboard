@@ -76,14 +76,18 @@ paths:
     whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
     synced year, which only covers a year, else the months since then.
 - **Badges** (team cards and dialog, awards page): `BADGES` names each one after a monthly figure of
-  `monthlyActivity()` in `site/period.js`, with its units. `badgeStandings()` works out, once per stats, the leaders of
-  each month with `monthlyLeaders()` of `site/period.js` over the history the sync publishes (`stats.monthly`, since
-  the first sync; without it, the whole months of the window), ties sharing, the people who left included in the race;
-  `badgesOf()` gives each person's badges, the tier coming from the longest run of calendar months in a row.
-  `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the charts would sit under the
-  dialog. In the dialog it opens below the medals, clear of the close button.
+  `monthlyActivity()` in `site/period.js`, with its units and, for the lines, a `format`. `badgeStandings()` works
+  out, once per stats, the leaders of each month with `monthlyLeaders()` of `site/period.js` over the history the sync
+  publishes (`stats.monthly`, since the first sync; without it, the whole months of the window), ties sharing, the
+  people who left included in the race; `badgesOf()` gives each person's badges, the tier coming from the longest run
+  of calendar months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the
+  charts would sit under the dialog. In the dialog it opens below the medals, clear of the close button. A card shows
+  its `CARD_BADGES` best medals, the others under a « +N » (`moreBadges()`) whose tooltip names them; the dialog shows
+  them all.
   - The awards page (`renderAwards()`) shows the leaders of the last whole month and of the current one so far, the
-    holders of each badge still in the team, and the leaders of every month of the history. A leader who left shows as
+    holders of each badge still in the team, and the leaders of every month of the history. Each badge's holders
+    scroll past five or so, so that the page does not grow as months go by: there, the medals take the tooltip of the
+    charts, which their list would not cut. The table of every month gives each badge a column of the same width. A leader who left shows as
     « une personne partie », but in the leaders of every month, a record of the history, where they show by name.
 - **Repository cards** (repositories page): `repositoryRows()` gathers each repository's figures from the period
   stats, its CI from `computeCi()` per repository, the people who write it (those who left included, for the list of
