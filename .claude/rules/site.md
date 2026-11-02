@@ -56,7 +56,7 @@ paths:
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added
-  over deleted), sorted on the lines added. The technologies chart weighs, at the viewer's choice
+  over deleted, in the colors of a diff on GitHub: `--diff-added`, `--diff-deleted`), sorted on the lines added. The technologies chart weighs, at the viewer's choice
   (`TECHNOLOGY_MEASURES`), the code pull requests or these lines added.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
