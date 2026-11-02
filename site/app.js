@@ -949,7 +949,6 @@ const state = {
   // The badges of each person, worked out once per stats.
   badges: null,
   seenEvents: null,
-  seenWaiting: null,
   seenUnapproved: null,
   fetchFailed: false,
 }
@@ -3953,10 +3952,10 @@ document.addEventListener('click', (event) => {
   }
 })
 
-// Activity feed and waiting list
+// Activity feed and pull requests merged without approval
 
 const eventId = (event) => `${event.type}:${event.repo}#${event.number}:${event.actor}:${event.at}`
-const waitingId = (pr) => `${pr.repo}#${pr.number}`
+const pullRequestId = (pr) => `${pr.repo}#${pr.number}`
 
 function pullRequestLink(repo, number) {
   return el('a', {
@@ -4055,42 +4054,15 @@ function renderUnapproved(highlight) {
           .map((tag) => el('span', { className: 'feed-tag', textContent: tag })),
       )
       const item = listItem(pr.author, text, new Date(pr.mergedAt * 60_000).toISOString(), 'mergée ')
-      if (highlight && previous && !previous.has(waitingId(pr))) {
+      if (highlight && previous && !previous.has(pullRequestId(pr))) {
         item.classList.add('is-new')
       }
 
       return item
     })
 
-  state.seenUnapproved = new Set(prs.map(waitingId))
+  state.seenUnapproved = new Set(prs.map(pullRequestId))
   renderList($('[data-unapproved]'), items, 'Aucune PR mergée sans approbation')
-}
-
-function renderWaiting(highlight) {
-  // The pull requests left open by people who left the team are no longer waited for.
-  const waiting = state.stats.waiting.filter((pr) => isCurrent(pr.author))
-  const previous = state.seenWaiting
-  $('[data-waiting-title]').textContent = `PR en attente de review (${formatNumber(waiting.length)})`
-  const items = waiting
-    .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo))
-    .map((pr) => {
-      const text = el(
-        'p',
-        { className: 'feed-text' },
-        pullRequestLink(pr.repo, pr.number),
-        document.createTextNode(' de '),
-        personLink(pr.author, { withAvatar: false }),
-      )
-      const item = listItem(pr.author, text, pr.createdAt, 'ouverte ')
-      if (highlight && previous && !previous.has(waitingId(pr))) {
-        item.classList.add('is-new')
-      }
-
-      return item
-    })
-
-  state.seenWaiting = new Set(waiting.map(waitingId))
-  renderList($('[data-waiting]'), items, 'Aucune PR en attente')
 }
 
 // Unblock page
@@ -4401,7 +4373,6 @@ function render(animate) {
   renderAwards()
   renderRepositories()
   renderFeed(animate)
-  renderWaiting(animate)
   renderUnblock(tileMode)
   renderUnapproved(animate)
   renderSyncMenu()
@@ -4671,8 +4642,7 @@ $('[data-search]').addEventListener('input', (event) => {
     renderTeam()
     renderRepositories()
     renderFeed(false)
-    renderWaiting(false)
-  renderUnblock('enter')
+    renderUnblock('enter')
     renderUnapproved(false)
   }
 })

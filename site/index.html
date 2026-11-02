@@ -236,25 +236,11 @@
               </section>
             </div>
 
-            <div class="grid-2 grid-even">
-              <section class="card" aria-labelledby="waiting-title">
-                <h2 id="waiting-title" data-waiting-title>PR en attente de review</h2>
-                <p class="card-sub">Les plus anciennes d’abord</p>
-                <ol class="feed" data-waiting></ol>
-              </section>
-
-              <section class="card" aria-labelledby="unapproved-title">
-                <h2 id="unapproved-title" data-unapproved-title>Mergées par leur auteur sans approbation</h2>
-                <p class="card-sub">PR de code des 30 derniers jours, dépôts front, back et mobile</p>
-                <ol class="feed" data-unapproved></ol>
-              </section>
-
-              <section class="card" aria-labelledby="technologies-title">
-                <h2 id="technologies-title">Technologies</h2>
-                <p class="card-sub" data-technologies-sub></p>
-                <div class="bar-chart" data-technologies-chart></div>
-              </section>
-            </div>
+            <section class="card" aria-labelledby="technologies-title">
+              <h2 id="technologies-title">Technologies</h2>
+              <p class="card-sub" data-technologies-sub></p>
+              <div class="bar-chart" data-technologies-chart></div>
+            </section>
 
             <section class="card" aria-labelledby="repos-title">
               <h2 id="repos-title">Dépôts</h2>
@@ -313,6 +299,14 @@
                 <h2 id="unblock-forgotten-title" data-unblock-title="forgotten">Oubliées</h2>
                 <p class="card-sub" data-unblock-sub="forgotten"></p>
                 <ol class="feed" data-unblock="forgotten"></ol>
+              </section>
+
+              <section class="card unblock-wide" aria-labelledby="unapproved-title">
+                <h2 id="unapproved-title" data-unapproved-title>Mergées par leur auteur sans approbation</h2>
+                <p class="card-sub">
+                  PR de code des 30 derniers jours, dépôts front, back et mobile : déjà mergées, à relire après coup
+                </p>
+                <ol class="feed" data-unapproved></ol>
               </section>
             </div>
           </div>
@@ -720,8 +714,6 @@
                   cette décision, le dernier échange ou l’ouverture. Sans aucune review ni commentaire depuis plus d’un
                   mois, elle est rangée à part, parmi les oubliées.
                 </dd>
-                <dt>PR en attente de review</dt>
-                <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>
                 <dt>Anciens collaborateurs</dt>

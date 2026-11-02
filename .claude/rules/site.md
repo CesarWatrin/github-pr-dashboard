@@ -90,7 +90,7 @@ paths:
 - **Former people**, on every page: a person without any pull request, review, comment or merge for
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
-  waiting pull requests, and the review networks through `withoutFormer()`. They only show in the former people of the
+  unblock page, and the review networks through `withoutFormer()`. They only show in the former people of the
   team page, among the leaders of every month of the awards page, and in the repositories that rest on a single
   person, as the one who wrote the most when its authors left, marked « hors équipe » (`formerMark()`): their code is
   still there. Their dialog says they left the team and when they were last active, in place of their seniority

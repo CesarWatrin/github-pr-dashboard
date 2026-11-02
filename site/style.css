@@ -875,8 +875,10 @@ main.is-loading {
   gap: 16px;
 }
 
-/* The forgotten pull requests, below the other lists: across both columns when these are four. */
-.unblock-forgotten.is-wide {
+/* The forgotten pull requests, below the other lists: across both columns when these are four. The pull requests
+   merged without approval, last, always across them. */
+.unblock-forgotten.is-wide,
+.unblock-wide {
   grid-column: 1 / -1;
 }
 
@@ -945,9 +947,10 @@ main.is-loading {
   margin-top: 8px;
 }
 
+/* The label on top, the value at the bottom: values line up across a row whatever the lines of their labels. */
 .tile {
   display: grid;
-  align-content: start;
+  grid-template-rows: 1fr auto;
   gap: 2px;
 }
 

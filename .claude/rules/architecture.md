@@ -17,10 +17,9 @@
      is derived from `DASHBOARD_PASSWORD` with PBKDF2-SHA256 (600 000 iterations) and a salt made of the first 16
      bytes of `sha256("github-pr-dashboard:" + ORG)`, so it stays the same from one sync to the next.
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
-     today's counters, the 7-day activity feed, the pull requests waiting for a review, the sync trigger (with
-     `DISPATCH_TOKEN`), and above all `pullRequests` (one compact record per pull request, no title or content),
-     `ci` (Actions runs per repository, workflow and Paris day) and `monthly` (each person's monthly figures since the
-     first sync, for the badges).
+     today's counters, the 7-day activity feed, the sync trigger (with `DISPATCH_TOKEN`), and above all `pullRequests`
+     (one compact record per pull request, no title or content), `ci` (Actions runs per repository, workflow and Paris
+     day) and `monthly` (each person's monthly figures since the first sync, for the badges).
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
    only when `generatedAt` changes, reloads itself when `build` changes. It decrypts with Web Crypto and keeps the

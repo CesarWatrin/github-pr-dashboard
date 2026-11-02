@@ -862,15 +862,6 @@ function computeCi(runs) {
   return [...workflows.values()]
 }
 
-// Open code pull requests nobody has looked at yet, oldest first.
-function computeWaiting(pullRequests) {
-  return pullRequests
-    .filter((pr) => pr.state === 'OPEN' && !pr.draft && !isBot(pr.author) && classify(pr) === 'code')
-    .filter((pr) => reviewInterventions(pr).length === 0)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map((pr) => ({ repo: pr.repo, number: pr.number, author: pr.author, createdAt: pr.createdAt }))
-}
-
 function computeToday(pullRequests, now) {
   const today = parisDay(now.toISOString())
   const totals = { date: today, opened: 0, merged: 0, reviews: 0 }
@@ -1034,7 +1025,6 @@ async function sync({ full }) {
       monthly: history,
       ci: computeCi(runsInWindow),
       events: computeEvents(inWindow, now),
-      waiting: computeWaiting(inWindow),
     }),
   )
   // Written last: the page polls this small file and only downloads the stats once it changes.
