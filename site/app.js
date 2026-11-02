@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -75,6 +75,7 @@ const ROUTES = {
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
+  team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -105,6 +106,7 @@ const monthLongFormat = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 
 const dayMonthFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 const dateTimeFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
+const dateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const rangeShortFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 const rangeLongFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -335,6 +337,122 @@ const COLLABORATION_COLUMNS = [
     hint: 'Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.',
   },
 ]
+
+// The figures of each person's card on the team page, over the period: what the person wrote, then what they reviewed.
+// The hints make the legend under the cards.
+const TEAM_STATS = [
+  { key: 'code', label: 'PR de code', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  { key: 'merged', label: 'Mergées', hint: 'Parmi ces PR, celles qui ont été mergées.' },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Merge en',
+    format: formatDuration,
+    hint: 'Délai médian de ces PR mergées, de la création au merge.',
+  },
+  {
+    key: 'reviewed',
+    label: 'PR relues',
+    hint: 'PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.',
+  },
+  {
+    key: 'commentsPerPr',
+    label: 'Comm. / PR',
+    format: formatDecimal,
+    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+  },
+  {
+    key: 'reviewers',
+    label: 'Relecteurs',
+    hint: 'Personnes différentes intervenues sur ses PR de code. Peu de relecteurs : son code circule peu.',
+  },
+]
+
+// The figures of the dialog that opens from a person's card, read from { row, author, reviewer, network }: the row of
+// the card, the person's rows of the authors and reviewers tables and their place in the review network, all over the
+// repositories selected on the team page. The hints are those of the tables' columns.
+const PERSON_WRITTEN = [
+  { label: 'PR de code', value: ({ row }) => row.code, hint: TEAM_STATS[0].hint },
+  { label: 'Mergées', value: ({ row }) => row.merged, hint: TEAM_STATS[1].hint },
+  { label: 'Taux de merge', value: ({ author }) => author?.mergeRate, format: formatPercent, hint: 'Mergées / (mergées + fermées sans merge).' },
+  { label: 'Merge en', value: ({ row }) => row.medianTimeToMergeHours, format: formatDuration, hint: TEAM_STATS[2].hint },
+  {
+    label: 'Attente 1re review',
+    value: ({ author }) => author?.medianTimeToFirstReviewHours,
+    format: formatDuration,
+    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
+  },
+  {
+    label: 'Mergées sans review',
+    value: ({ author }) => author?.unreviewedRate,
+    format: formatShare,
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+]
+
+const PERSON_REVIEWED = [
+  { label: 'PR relues', value: ({ reviewer }) => reviewer?.prs ?? 0, hint: TEAM_STATS[3].hint },
+  { label: 'Comm. / PR', value: ({ reviewer }) => reviewer?.commentsPerPr, format: formatDecimal, hint: TEAM_STATS[4].hint },
+  {
+    label: 'Approb. sans comm.',
+    value: ({ reviewer }) => reviewer?.silentApprovalRate,
+    format: formatShare,
+    hint: 'Part des PR approuvées sans y laisser de commentaire.',
+  },
+  { label: 'Modif. demandées', value: ({ reviewer }) => reviewer?.changesRequested, hint: 'Reviews « changements demandés ».' },
+  {
+    label: 'Merges effectués',
+    value: ({ reviewer }) => reviewer?.merges,
+    hint: 'PR de code mergées par la personne, les siennes comprises.',
+  },
+  {
+    label: 'Taille relue',
+    value: ({ reviewer }) => reviewer?.medianSize,
+    hint: 'Taille médiane des PR relues, en lignes ajoutées et supprimées.',
+  },
+]
+
+// Only in the dialog, but explained in the legend under the cards, "Les chiffres des cartes".
+const DEPENDENCY_STAT = {
+  label: 'Dépendance au relecteur principal',
+  value: ({ network }) => network?.topReviewerShare,
+  format: formatShare,
+  hint: 'Dans la fiche d’une personne : part de ses PR relues sur lesquelles intervient son relecteur principal, la personne qui relit le plus son code. Proche de 100 % : son code ne circule qu’entre deux personnes.',
+}
+
+const PERSON_CIRCULATION = [
+  { label: 'Relecteurs distincts', value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
+  DEPENDENCY_STAT,
+]
+// People and repositories listed in the dialog, the busiest first.
+const PERSON_TOP = 3
+// Fewest people of a stack to compare a person with: under it, the dialog compares with the whole team.
+const MIN_PEERS = 3
+// A person first seen this close to the start of the synced year was already there before it: more than a year.
+const SENIORITY_START_DAYS = 14
+// A person without any pull request, review, comment or merge for this long has left the team.
+const FORMER_AFTER_DAYS = 30
+const MONTH_MS = (365.25 / 12) * DAY_MS
+// Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month of the synced year,
+// ties sharing it. Their tier comes from the longest run of months in a row: bronze for one, silver for two, gold for
+// three or more. The key is one of the monthly figures of monthlyActivity().
+const BADGES = [
+  { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes' },
+  { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues' },
+  { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review' },
+  { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix' },
+]
+const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
+const BADGES_LEGEND = {
+  label: 'Badges',
+  hint: `${BADGES.map((badge) => `${badge.icon} ${badge.name} : ${badge.what}`).join(' · ')}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus ; sur l’année synchronisée, quels que soient la période et le filtre.`,
+}
+// Explained in the legend under the cards, with the figures.
+const SENIORITY_LEGEND = {
+  label: 'Ancienneté',
+  hint: `Depuis la première PR, review ou commentaire de la personne. Les données couvrent un an : une première activité dans ses ${SENIORITY_START_DAYS} premiers jours compte pour plus d’un an.`,
+}
+// How far the open card leans towards the pointer, at its edges.
+const PERSON_TILT_DEG = 4
 
 const REPO_COLUMNS = [
   { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
@@ -598,7 +716,7 @@ const state = {
   query: '',
   person: null,
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, collaboration: null },
+  repos: { authors: null, reviewers: null, collaboration: null, team: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -620,6 +738,10 @@ const state = {
   syncStarting: null,
   // The sync started from the page, until new data arrives.
   syncRequest: null,
+  // When each person first and last shows in the stats, worked out once per stats: seniority, and who left the team.
+  activity: null,
+  // The badges of each person, worked out once per stats.
+  badges: null,
   seenEvents: null,
   seenWaiting: null,
   seenUnapproved: null,
@@ -740,7 +862,8 @@ function periodTitle() {
 const displayName = (login) => state.stats?.people?.[login] ?? login
 const matchesQuery = (...texts) => !state.query || texts.some((text) => text.toLowerCase().includes(state.query))
 const githubUrl = (path) => `https://github.com/${path}`
-const avatarUrl = (login) => githubUrl(`${encodeURIComponent(login)}.png?size=48`)
+// GitHub serves the avatar at twice its displayed size, for sharp high-density screens.
+const avatarUrl = (login, size = 48) => githubUrl(`${encodeURIComponent(login)}.png?size=${size}`)
 
 function avatar(login) {
   return el('img', { className: 'avatar', src: avatarUrl(login), alt: '', loading: 'lazy', width: 24, height: 24 })
@@ -1450,7 +1573,7 @@ function currentNetwork() {
   const period = currentPeriod()
   const selection = state.repos.collaboration
   if (state.networkCache?.period !== period || state.networkCache.selection !== selection) {
-    state.networkCache = { period, selection, network: reviewNetwork(period, selection) }
+    state.networkCache = { period, selection, network: reviewNetwork(withoutFormer(period), selection) }
   }
 
   return state.networkCache.network
@@ -1592,14 +1715,505 @@ function renderPairs(network) {
           'p',
           { className: 'feed-text' },
           document.createTextNode(`PR ${ofPrefix(displayName(pair.author))}`),
-          el('strong', { textContent: displayName(pair.author) }),
+          personLink(pair.author, { withAvatar: false }),
           document.createTextNode(' relues par '),
-          el('strong', { textContent: displayName(pair.reviewer) }),
+          personLink(pair.reviewer, { withAvatar: false }),
         ),
         el('span', { className: 'pair-count', textContent: `${formatNumber(pair.prs)} PR` }),
       ),
     )
   renderList($('[data-collaboration-pairs]'), items, 'Aucun binôme sur la période')
+}
+
+// Team page
+
+// Everyone who wrote or reviewed code over the period in the repositories selected on the page, most code pull requests
+// first, then by name: what each person wrote, then what they reviewed. The stack comes from their code pull requests,
+// else from the ones they reviewed.
+function teamRows({ withFormer = false } = {}) {
+  const period = currentPeriod()
+  // The people who left only have a row for their own dialog, opened from the former people of the team page.
+  const kept = ({ login }) => withFormer || isCurrent(login)
+  const rows = new Map()
+  const row = (login) => {
+    if (!rows.has(login)) {
+      rows.set(login, { login, code: 0, merged: 0, timesToMerge: [], reviewed: 0, comments: 0 })
+    }
+
+    return rows.get(login)
+  }
+  for (const person of period.authors.filter(kept)) {
+    const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
+    const code = sumOf(parts, 'code')
+    if (code > 0) {
+      Object.assign(row(person.login), {
+        code,
+        merged: sumOf(parts, 'merged'),
+        timesToMerge: parts.flatMap((stats) => stats.timesToMergeHours),
+      })
+    }
+  }
+  for (const person of period.reviewers.filter(kept)) {
+    const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
+    const reviewed = sumOf(parts, 'prs')
+    if (reviewed > 0) {
+      Object.assign(row(person.login), { reviewed, comments: sumOf(parts, 'comments') })
+    }
+  }
+  const reviewersOf = new Map(reviewNetwork(withoutFormer(period), state.repos.team).authors.map((author) => [author.login, author.reviewers]))
+  // The stack is the person's own, over every repository: the selection only narrows the figures.
+  const perRepo = (people, key) =>
+    new Map(people.map((person) => [person.login, Object.entries(person.repos).map(([repo, stats]) => [repo, stats[key]])]))
+  const codeRepos = perRepo(period.authors, 'code')
+  const reviewedRepos = perRepo(period.reviewers, 'prs')
+  const stackFor = (login) => {
+    const code = codeRepos.get(login) ?? []
+
+    return stackOf(code.some(([, prs]) => prs > 0) ? code : (reviewedRepos.get(login) ?? []))
+  }
+
+  return [...rows.values()]
+    .map((totals) => ({
+      login: totals.login,
+      code: totals.code,
+      merged: totals.code ? totals.merged : null,
+      medianTimeToMergeHours: median(totals.timesToMerge),
+      reviewed: totals.reviewed,
+      commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
+      reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
+      stack: stackFor(totals.login),
+    }))
+    .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
+}
+
+// The stack badge of a person and the logos of their main technologies.
+function stackLine(stack) {
+  const type = stackType(stack.counts)
+  const technologies = topTechnologies(stack.technologies).map(([technology]) => technology)
+  const logos = el('span', { className: 'stack-logos', title: technologies.join(', ') }, ...technologies.map((technology) => technologyIcon(technology)))
+  if (technologies.length) {
+    logos.setAttribute('role', 'img')
+    logos.setAttribute('aria-label', `Technos : ${technologies.join(', ')}`)
+  }
+
+  return el(
+    'div',
+    { className: 'person-card-stack' },
+    type ? el('span', { className: `stack-type is-${type.key}`, textContent: type.label }) : el('span', { className: 'muted', textContent: '–' }),
+    logos,
+  )
+}
+
+// Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint.
+// Given the sources of peers, each figure also shows their median.
+function statList(definitions, source, peers = null) {
+  return el(
+    'dl',
+    { className: 'person-stats' },
+    ...definitions.map((stat) => {
+      const read = (item) => (stat.value ? stat.value(item) : item[stat.key])
+      const format = stat.format ?? formatNumber
+
+      return el(
+        'div',
+        {},
+        el('dt', { textContent: stat.label, title: stat.hint ?? '' }),
+        el('dd', { textContent: format(read(source)) }),
+        ...(peers ? [peerMedian(peers.map(read).filter((value) => !isMissing(value)), format)] : []),
+      )
+    }),
+  )
+}
+
+// The median of the peers, under a figure. A median of counts stays a whole number.
+function peerMedian(values, format) {
+  const middle = median(values)
+  const shown = !isMissing(middle) && values.every(Number.isInteger) ? Math.round(middle) : middle
+
+  return el('span', { className: 'person-stats-peer', textContent: `méd. ${format(shown)}` })
+}
+
+// Each person's first and last activity in the stats, whatever the period, worked out once per stats.
+function activities() {
+  if (state.activity?.stats !== state.stats) {
+    state.activity = { stats: state.stats, bounds: activityBounds(state.stats.pullRequests) }
+  }
+
+  return state.activity.bounds
+}
+
+// A person without any activity for FORMER_AFTER_DAYS has left the team: no row, card, list or matrix of people shows
+// them any more, only the former people of the team page. Their pull requests still count in the totals.
+function isFormer(login) {
+  const activity = activities().get(login)
+
+  return Boolean(activity) && Date.parse(state.stats.generatedAt) - activity.last * 60_000 > FORMER_AFTER_DAYS * DAY_MS
+}
+
+const isCurrent = (login) => !isFormer(login)
+
+// A period without the people who left, for a network of reviews: main reviewers are then picked among those still here.
+const withoutFormer = ({ authors, reviewPairs }) => ({
+  authors: authors.filter((person) => isCurrent(person.login)),
+  reviewPairs: reviewPairs.filter((pair) => isCurrent(pair.author) && isCurrent(pair.reviewer)),
+})
+
+// How long a person has been around, whatever the period: more than a year when already active in the first days of the
+// synced year, else the months since their first pull request, review, comment or merge.
+function seniority(login) {
+  const activity = activities().get(login)
+  if (!activity) {
+    return null
+  }
+  const first = activity.first * 60_000
+  if (first - Date.parse(state.stats.windowStart) < SENIORITY_START_DAYS * DAY_MS) {
+    return { label: 'plus d’un an', title: 'Première activité dès les premiers jours de l’année synchronisée' }
+  }
+  const months = Math.floor((Date.parse(state.stats.generatedAt) - first) / MONTH_MS)
+
+  return { label: months < 1 ? 'moins d’un mois' : `${months} mois`, title: `Première activité le ${dateFormat.format(first)}` }
+}
+
+// The whole Paris months of the synced year, oldest first: the first one, cut by the start of the window, and the
+// current one are left out.
+function badgeMonths() {
+  const next = (month) => {
+    const [year, number] = month.split('-').map(Number)
+
+    return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
+  }
+  const current = parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)
+  const months = []
+  for (let month = next(parisDay(Date.parse(state.stats.windowStart)).slice(0, 7)); month < current; month = next(month)) {
+    months.push(month)
+  }
+
+  return months
+}
+
+// Each person's badges, worked out once per stats over everyone, the people who left included: a month someone who left
+// was the top of, nobody else was. For each badge won: the months won, the longest run of them in a row and its tier.
+function badgesOf(login) {
+  if (state.badges?.stats !== state.stats) {
+    const activity = monthlyActivity(state.stats.pullRequests)
+    const months = badgeMonths()
+    const byLogin = new Map()
+    for (const badge of BADGES) {
+      const won = new Map()
+      months.forEach((month, index) => {
+        const values = [...activity].map(([person, perMonth]) => [person, perMonth.get(month)?.[badge.key] ?? 0])
+        const best = Math.max(0, ...values.map(([, value]) => value))
+        for (const [person, value] of values) {
+          if (best > 0 && value === best) {
+            won.set(person, [...(won.get(person) ?? []), index])
+          }
+        }
+      })
+      for (const [person, indexes] of won) {
+        // The longest run of months in a row, the latest one on a tie.
+        let run = { start: indexes[0], end: indexes[0] }
+        let longest = run
+        for (const index of indexes.slice(1)) {
+          run = index === run.end + 1 ? { start: run.start, end: index } : { start: index, end: index }
+          if (run.end - run.start >= longest.end - longest.start) {
+            longest = run
+          }
+        }
+        const streak = longest.end - longest.start + 1
+        byLogin.set(person, [
+          ...(byLogin.get(person) ?? []),
+          {
+            ...badge,
+            total: indexes.length,
+            streak,
+            from: months[longest.start],
+            to: months[longest.end],
+            tier: streak >= 3 ? 'gold' : streak === 2 ? 'silver' : 'bronze',
+          },
+        ])
+      }
+    }
+    state.badges = { stats: state.stats, byLogin }
+  }
+
+  return state.badges.byLogin.get(login) ?? []
+}
+
+const monthName = (month) => monthLongFormat.format(new Date(`${month}-15T12:00:00Z`))
+
+// What a badge was won for: the longest run of months, and the total when there were more.
+function badgeWhy(badge) {
+  const run = badge.streak > 1 ? `${badge.streak} mois d’affilée, de ${monthName(badge.from)} à ${monthName(badge.to)}` : `en ${monthName(badge.to)}`
+  const total = badge.total > badge.streak ? `, ${badge.total} mois en tout` : ''
+
+  return `${capitalize(badge.what)} de l’équipe ${run}${total}.`
+}
+
+// A badge as a medal of its tier's metal, a face with its icon inside a brushed ring, the length of its run of months on
+// a tab. What it means shows over it on hover or keyboard focus, in a tooltip of its own: the one of the charts would
+// sit under the dialog.
+function badgeMedal(badge, size) {
+  const tier = BADGE_TIERS[badge.tier]
+  const medal = el(
+    'span',
+    { className: `badge-medal is-${badge.tier} is-${size}`, tabIndex: 0 },
+    el('span', { className: 'badge-face' }, el('span', { className: 'badge-icon', textContent: badge.icon })),
+    ...(badge.streak > 1 ? [el('span', { className: 'badge-streak', textContent: `×${badge.streak}` })] : []),
+    el(
+      'span',
+      { className: 'badge-tip' },
+      el('span', { className: 'badge-tip-head' }, el('strong', { textContent: `${badge.icon} ${badge.name}` }), el('span', { className: 'badge-tier', textContent: tier })),
+      el('span', { className: 'badge-tip-text', textContent: badgeWhy(badge) }),
+    ),
+  )
+  medal.setAttribute('role', 'img')
+  medal.setAttribute('aria-label', `${badge.name}, ${tier} : ${badgeWhy(badge)}`)
+  medal.lastChild.setAttribute('aria-hidden', 'true')
+
+  return medal
+}
+
+// The medals of a person, gold first; nothing for someone without any badge.
+function badgeRow(login, className, size) {
+  const order = ['gold', 'silver', 'bronze']
+  const won = badgesOf(login).toSorted((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier) || b.streak - a.streak)
+
+  return won.length ? [el('div', { className }, ...won.map((badge) => badgeMedal(badge, size)))] : []
+}
+
+// "7 mois d’ancienneté", with the date it counts from on hover; nothing for someone the stats do not know.
+function seniorityText(tag, className, login) {
+  const value = seniority(login)
+
+  return value ? [el(tag, { className, textContent: `${value.label} d’ancienneté`, title: value.title })] : []
+}
+
+const nameLines = (name, login) => [
+  el('strong', { textContent: name, title: name }),
+  // The login is only worth showing when the display name differs from it.
+  ...(name === login ? [] : [el('span', { textContent: login })]),
+]
+
+function personCard(row, index) {
+  const name = displayName(row.login)
+  // The whole card opens the person's details: the button of its head stretches over it.
+  const open = el(
+    'button',
+    { type: 'button', className: 'person-card-head' },
+    el('img', { className: 'person-card-avatar', src: avatarUrl(row.login, 112), alt: '', loading: 'lazy', width: 56, height: 56 }),
+    el('span', { className: 'person-card-name' }, ...nameLines(name, row.login), ...seniorityText('span', 'person-seniority', row.login)),
+  )
+  open.setAttribute('aria-haspopup', 'dialog')
+  open.addEventListener('click', () => openPersonDialog(row, open))
+  const badges = badgeRow(row.login, 'person-badges', 'small')
+  // Above the button of the card for their hover, the badges still open the dialog.
+  badges[0]?.addEventListener('click', () => open.click())
+  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...badges, statList(TEAM_STATS, row))
+  card.setAttribute('aria-label', name)
+  card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
+
+  return card
+}
+
+// The people who left the team, the latest to leave first, whatever the period: when they were last active, and nothing
+// else.
+function renderFormer() {
+  const former = [...activities()]
+    .filter(([login]) => isFormer(login) && matchesQuery(login, displayName(login)))
+    .sort((a, b) => b[1].last - a[1].last)
+  $('[data-team-former-card]').hidden = former.length === 0
+  $('[data-team-former]').replaceChildren(
+    ...former.map(([login, { last }]) =>
+      el(
+        'li',
+        {},
+        personLink(login),
+        el('span', { className: 'former-last', textContent: `dernière activité le ${dateFormat.format(last * 60_000)}` }),
+      ),
+    ),
+  )
+}
+
+function renderTeam() {
+  renderFormer()
+  const rows = teamRows().filter((row) => matchesQuery(row.login, displayName(row.login)))
+  const container = $('[data-team]')
+  if (rows.length === 0) {
+    const filtered = state.query || state.repos.team
+    container.replaceChildren(
+      el('p', { className: 'feed-empty', textContent: filtered ? 'Personne ne correspond à ces filtres' : 'Personne sur la période' }),
+    )
+
+    return
+  }
+  container.replaceChildren(...rows.map(personCard))
+}
+
+// The busiest people or repositories of a person, each with its count of pull requests.
+function topList(title, items, withAvatar) {
+  const list = items.length
+    ? el(
+        'ul',
+        { className: 'person-dialog-list' },
+        ...items.map(([key, prs]) =>
+          el(
+            'li',
+            {},
+            // A person opens their own dialog in place of this one.
+            withAvatar ? personLink(key) : el('span', { className: 'person-dialog-list-name', textContent: key, title: key }),
+            el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
+          ),
+        ),
+      )
+    : el('p', { className: 'muted', textContent: '–' })
+
+  return el('div', {}, el('p', { className: 'person-dialog-list-title', textContent: title }), list)
+}
+
+// The details of a person over the period and the repositories selected on the team page, with those of their peers:
+// the people of the same stack, or the whole team when the stack has too few people to compare with.
+function personDetails(row) {
+  const { login } = row
+  const period = currentPeriod()
+  const network = reviewNetwork(withoutFormer(period), state.repos.team)
+  const byLogin = (rows) => new Map(rows.map((other) => [other.login, other]))
+  const authors = byLogin(authorRows('team'))
+  const reviewers = byLogin(reviewerRows('team'))
+  const networkAuthors = byLogin(network.authors)
+  const detailsOf = (other) => ({
+    row: other,
+    author: authors.get(other.login),
+    reviewer: reviewers.get(other.login),
+    network: networkAuthors.get(other.login),
+  })
+  const team = teamRows()
+  const type = stackType(row.stack.counts)
+  const sameStack = team.filter((other) => stackType(other.stack.counts)?.key === type?.key)
+  const peers = type && sameStack.length >= MIN_PEERS ? sameStack : team
+  const author = period.authors.find((person) => person.login === login)
+  const top = (pairs, key) => pairs.slice(0, PERSON_TOP).map((pair) => [pair[key], pair.prs])
+
+  return {
+    ...detailsOf(row),
+    peers: { label: peers === team ? 'de l’équipe' : type.label, details: peers.map(detailsOf) },
+    reviewedBy: top(network.pairs.filter((pair) => pair.author === login), 'reviewer'),
+    reviews: top(network.pairs.filter((pair) => pair.reviewer === login), 'author'),
+    codeRepos: author
+      ? selectedEntries(author, 'team')
+          .filter(([, stats]) => stats.code > 0)
+          .map(([repo, stats]) => [repo, stats.code])
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, PERSON_TOP)
+      : [],
+  }
+}
+
+// Closing gives the focus back to the card that opened the dialog, even where a click does not focus a button.
+function openPersonDialog(row, opener) {
+  const details = personDetails(row)
+  const name = displayName(row.login)
+  const technologies = topTechnologies(row.stack.technologies)
+  const scope = state.repos.team ? `${periodTitle()} · ${repoFilterLabel('team', repoOptions('team'))}` : periodTitle()
+  // Each figure is set against the median of the peers it applies to: those who wrote code, or those who reviewed.
+  const peers = (keep) => details.peers.details.filter(keep)
+  const writers = peers(({ row: other }) => other.code > 0)
+  const reviewers = peers(({ row: other }) => other.reviewed > 0)
+  const close = el(
+    'button',
+    { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
+    svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
+  )
+  close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
+  close.setAttribute('aria-label', 'Fermer')
+  close.addEventListener('click', () => $('[data-person-dialog]').close())
+  // The GitHub profile, at the right of the name, with the GitHub mark of the icon sprite.
+  const mark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, 'aria-hidden': 'true' })
+  mark.append(svg('use', { href: `${ICONS_URL}#github` }))
+  const github = el(
+    'a',
+    { className: 'person-dialog-github', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener' },
+    mark,
+    document.createTextNode('Profil GitHub'),
+  )
+  const section = (title, ...children) => el('section', { className: 'person-dialog-section' }, el('h3', { textContent: title }), ...children)
+
+  $('[data-person-dialog-card]').replaceChildren(
+    close,
+    el(
+      'header',
+      { className: 'person-dialog-head' },
+      el('img', { className: 'person-dialog-avatar', src: avatarUrl(row.login, 176), alt: '', width: 88, height: 88 }),
+      el(
+        'div',
+        { className: 'person-dialog-identity' },
+        el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: name, title: name }), github),
+        // The login is only worth showing when the display name differs from it.
+        ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
+        ...seniorityText('p', 'person-dialog-meta', row.login),
+        stackLine(row.stack),
+        el('p', {
+          className: 'person-dialog-meta',
+          textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
+        }),
+      ),
+      ...badgeRow(row.login, 'person-dialog-badges', 'large'),
+    ),
+    el('p', {
+      className: 'person-dialog-scope',
+      textContent: `${scope} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(details.peers.details.length)} personnes ${details.peers.label}`,
+    }),
+    section('Ce que la personne écrit', statList(PERSON_WRITTEN, details, writers)),
+    section('Ce que la personne relit', statList(PERSON_REVIEWED, details, reviewers)),
+    section(
+      'Avec qui, et où',
+      statList(PERSON_CIRCULATION, details, writers),
+      el(
+        'div',
+        { className: 'person-dialog-columns' },
+        topList('Son code est relu par', details.reviewedBy, true),
+        topList('Relit le code de', details.reviews, true),
+        topList('Ses dépôts', details.codeRepos, false),
+        topList('Dépôts relus', details.reviewer?.topRepos ?? [], false),
+      ),
+    ),
+  )
+  resetPersonTilt()
+  const dialog = $('[data-person-dialog]')
+  // From a name inside the dialog, the next person replaces the one shown; the focus goes back to the first opener.
+  if (dialog.open) {
+    dialog.scrollTop = 0
+    dialog.querySelector('.person-dialog-close').focus()
+
+    return
+  }
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
+  dialog.showModal()
+}
+
+// The open card leans towards the pointer, its layers apart, and catches the light where the pointer is, like a printed
+// card held in the hand. Only for a mouse, and never for those who ask their system to reduce motion.
+function tiltPersonCard(event) {
+  if (event.pointerType !== 'mouse' || reducedMotion.matches) {
+    return
+  }
+  // Measured on the scene, which does not turn: the card's own box changes as it leans.
+  const box = $('[data-person-dialog-scene]').getBoundingClientRect()
+  const x = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width))
+  const y = Math.min(1, Math.max(0, (event.clientY - box.top) / box.height))
+  const card = $('[data-person-dialog-card]')
+  card.classList.add('is-tilting')
+  card.style.setProperty('--tilt-x', `${((0.5 - y) * 2 * PERSON_TILT_DEG).toFixed(2)}deg`)
+  card.style.setProperty('--tilt-y', `${((x - 0.5) * 2 * PERSON_TILT_DEG).toFixed(2)}deg`)
+  card.style.setProperty('--glare-x', `${(x * 100).toFixed(1)}%`)
+  card.style.setProperty('--glare-y', `${(y * 100).toFixed(1)}%`)
+}
+
+function resetPersonTilt() {
+  const card = $('[data-person-dialog-card]')
+  card.classList.remove('is-tilting')
+  for (const property of ['--tilt-x', '--tilt-y', '--glare-x', '--glare-y']) {
+    card.style.removeProperty(property)
+  }
 }
 
 function renderCharts() {
@@ -1637,13 +2251,12 @@ function renderChartTable() {
 
 // Under each table, what its columns count: the method page only keeps the rules they share.
 function renderTableLegends() {
+  const legend = (items) =>
+    items.filter((item) => item.hint).map((item) => el('div', {}, el('dt', { textContent: item.label }), el('dd', { textContent: item.hint })))
   for (const [name, table] of Object.entries(TABLES)) {
-    $(`[data-table-legend="${name}"]`).replaceChildren(
-      ...table.columns
-        .filter((column) => column.hint)
-        .map((column) => el('div', {}, el('dt', { textContent: column.label }), el('dd', { textContent: column.hint }))),
-    )
+    $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
+  $('[data-table-legend="team"]').replaceChildren(...legend([SENIORITY_LEGEND, BADGES_LEGEND, ...TEAM_STATS, DEPENDENCY_STAT]))
 }
 
 function renderStackLegends() {
@@ -1676,6 +2289,7 @@ function renderLegend(container, series) {
 
 function renderPersonPicker() {
   const reviewers = Object.entries(currentPeriod().reviewerSeries)
+    .filter(([login]) => isCurrent(login))
     .map(([login, points]) => ({ login, prs: points.reduce((total, [prs]) => total + prs, 0) }))
     .sort((a, b) => b.prs - a.prs)
   if (!reviewers.some((row) => row.login === state.person)) {
@@ -1707,9 +2321,14 @@ function selectedEntries(person, name) {
   return Object.entries(person.repos).filter(([repo]) => inSelection(state.repos[name], repo))
 }
 
-function authorRows() {
+// The rows of the authors table, over the repositories selected on a page: the table's own by default. Like every list
+// of people, it leaves out those who left the team.
+function authorRows(name = 'authors') {
   return currentPeriod().authors.flatMap((person) => {
-    const entries = selectedEntries(person, 'authors')
+    if (isFormer(person.login)) {
+      return []
+    }
+    const entries = selectedEntries(person, name)
     const parts = entries.map(([, stats]) => stats)
     if (parts.length === 0) {
       return []
@@ -1734,9 +2353,12 @@ function authorRows() {
   })
 }
 
-function reviewerRows() {
+function reviewerRows(name = 'reviewers') {
   return currentPeriod().reviewers.flatMap((person) => {
-    const entries = selectedEntries(person, 'reviewers')
+    if (isFormer(person.login)) {
+      return []
+    }
+    const entries = selectedEntries(person, name)
     const parts = entries.map(([, stats]) => stats)
     const prs = sumOf(parts, 'prs')
     const merges = sumOf(parts, 'merges')
@@ -1890,7 +2512,7 @@ const TABLES = {
   },
   tma: {
     columns: TMA_COLUMNS,
-    rows: () => currentPeriod().tma.people,
+    rows: () => currentPeriod().tma.people.filter((row) => isCurrent(row.login)),
     searchTexts: (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
   },
   deployments: {
@@ -1912,7 +2534,17 @@ const TABLES = {
     searchTexts: (row) => [row.repo],
   },
 }
-const FILTERED_TABLES = Object.keys(TABLES).filter((name) => TABLES[name].repoCounts)
+// The repository filters: those of the tables, and the one of the team page, which has no table.
+const REPO_FILTERS = {
+  ...Object.fromEntries(Object.entries(TABLES).filter(([, table]) => table.repoCounts)),
+  team: {
+    source: 'authors',
+    repoCounts: () => TABLES.collaboration.repoCounts(),
+    repoCountsLabel: 'PR de code ouvertes sur la période',
+    onFilter: () => renderTeam(),
+  },
+}
+const REPO_FILTER_NAMES = Object.keys(REPO_FILTERS)
 
 const columnValue = (column, row) => (column.value ? column.value(row) : row[column.key])
 
@@ -1930,28 +2562,68 @@ function compareValues(a, b) {
   return typeof a === 'string' ? a.localeCompare(b, 'fr') : a - b
 }
 
-function personLink(login) {
-  return el(
-    'a',
-    { href: githubUrl(encodeURIComponent(login)), target: '_blank', rel: 'noopener', title: login },
-    avatar(login),
-    document.createTextNode(displayName(login)),
+// A person's name, with their avatar or not. Wherever it shows, it opens their dialog, the one of the team page, whose
+// head links to their GitHub profile.
+function personLink(login, { withAvatar = true } = {}) {
+  const button = el(
+    'button',
+    { type: 'button', className: 'person-link', title: login },
+    ...(withAvatar ? [avatar(login)] : []),
+    el('span', { className: 'person-link-name', textContent: displayName(login) }),
   )
+  button.setAttribute('aria-haspopup', 'dialog')
+  button.addEventListener('click', () => openPersonOf(login, button))
+
+  return button
+}
+
+// The dialog of a person, from anywhere. Someone without any figure over the period, such as an author of release pull
+// requests only, has no dialog: their GitHub profile opens instead.
+function openPersonOf(login, opener) {
+  const row = teamRows({ withFormer: true }).find((other) => other.login === login)
+  if (row) {
+    openPersonDialog(row, opener)
+  } else {
+    window.open(githubUrl(encodeURIComponent(login)), '_blank', 'noopener')
+  }
+}
+
+// The type of a person's work: full-stack with enough of both sides, else the category of most of their pull requests.
+function stackType(counts) {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  if (total === 0) {
+    return null
+  }
+  if (counts.back / total >= FULL_STACK_MIN_SHARE && (counts.front + counts.mobile) / total >= FULL_STACK_MIN_SHARE) {
+    return { key: 'full-stack', label: 'full-stack' }
+  }
+  const parts = STACK_CATEGORIES.filter((category) => counts[category.key] > 0)
+  const main = parts.reduce((best, category) => (counts[category.key] > counts[best.key] ? category : best))
+
+  return { key: main.key, label: main.label.toLowerCase() }
+}
+
+// The main technologies of a stack, with their share of it.
+function topTechnologies(technologies) {
+  const total = technologies.reduce((sum, [, weight]) => sum + weight, 0)
+
+  return technologies
+    .filter(([, weight]) => weight / total >= MIN_STACK_TECHNOLOGY_SHARE)
+    .slice(0, STACK_TECHNOLOGIES)
+    .map(([name, weight]) => [name, weight / total])
 }
 
 function stackCell({ counts, technologies }) {
-  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
-  if (total === 0) {
+  const type = stackType(counts)
+  if (!type) {
     return el('td', { className: 'muted', textContent: '–' })
   }
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
   const parts = STACK_CATEGORIES.filter((category) => counts[category.key] > 0)
   const share = (category) => Math.round((100 * counts[category.key]) / total)
-  const main = parts.reduce((best, category) => (counts[category.key] > counts[best.key] ? category : best))
-  const fullStack =
-    counts.back / total >= FULL_STACK_MIN_SHARE && (counts.front + counts.mobile) / total >= FULL_STACK_MIN_SHARE
-  const technologyTotal = technologies.reduce((sum, [, weight]) => sum + weight, 0)
-  const top = technologies.filter(([, weight]) => weight / technologyTotal >= MIN_STACK_TECHNOLOGY_SHARE).slice(0, STACK_TECHNOLOGIES)
-  const technologyText = top.map(([name, weight]) => `${name} ${Math.round((100 * weight) / technologyTotal)} %`).join(', ')
+  const fullStack = type.key === 'full-stack'
+  const top = topTechnologies(technologies)
+  const technologyText = top.map(([name, part]) => `${name} ${Math.round(100 * part)} %`).join(', ')
 
   const bar = el(
     'span',
@@ -1967,10 +2639,7 @@ function stackCell({ counts, technologies }) {
   const cell = el(
     'span',
     { className: 'stack-cell', tabIndex: 0 },
-    el('span', {
-      className: `stack-type is-${fullStack ? 'full-stack' : main.key}`,
-      textContent: fullStack ? 'full-stack' : main.label.toLowerCase(),
-    }),
+    el('span', { className: `stack-type is-${type.key}`, textContent: type.label }),
     bar,
     el('span', { className: 'stack-logos' }, ...top.map(([name]) => technologyIcon(name))),
   )
@@ -2169,8 +2838,8 @@ function renderTables(highlight) {
 
 // Repositories with activity in the table over the period, busiest first.
 function repoOptions(name) {
-  const counts = TABLES[name].repoCounts()
-  const repos = new Set(currentPeriod()[TABLES[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
+  const counts = REPO_FILTERS[name].repoCounts()
+  const repos = new Set(currentPeriod()[REPO_FILTERS[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
 
   return [...repos]
     .map((repo) => [repo, counts.get(repo) ?? 0])
@@ -2307,7 +2976,7 @@ function setupRepoFilter(name) {
       'div',
       { className: 'repo-filter-panel' },
       presets,
-      el('p', { className: 'repo-filter-note', textContent: TABLES[name].repoCountsLabel }),
+      el('p', { className: 'repo-filter-note', textContent: REPO_FILTERS[name].repoCountsLabel }),
       list,
     ),
   )
@@ -2315,8 +2984,10 @@ function setupRepoFilter(name) {
   const apply = (selection) => {
     state.repos[name] = selection
     renderRepoFilterState(name)
-    renderTable(name, false)
-    TABLES[name].onFilter?.()
+    if (name in TABLES) {
+      renderTable(name, false)
+    }
+    REPO_FILTERS[name].onFilter?.()
   }
   presets.addEventListener('click', (event) => {
     const button = event.target.closest('[data-preset]')
@@ -2395,12 +3066,12 @@ function renderFeed(highlight) {
       const text = el(
         'p',
         { className: 'feed-text' },
-        el('strong', { textContent: displayName(event.actor) }),
+        personLink(event.actor, { withAvatar: false }),
         document.createTextNode(` ${EVENT_VERBS[event.type]} `),
         pullRequestLink(event.repo, event.number),
       )
       if (event.type !== 'opened' && event.author !== event.actor) {
-        text.append(document.createTextNode(` de ${displayName(event.author)}`))
+        text.append(document.createTextNode(' de '), personLink(event.author, { withAvatar: false }))
       }
       const item = listItem(event.actor, text, event.at)
       if (highlight && previous && !previous.has(eventId(event))) {
@@ -2448,7 +3119,7 @@ function renderUnapproved(highlight) {
       const text = el(
         'p',
         { className: 'feed-text' },
-        el('strong', { textContent: displayName(pr.author) }),
+        personLink(pr.author, { withAvatar: false }),
         document.createTextNode(' a mergé sa PR '),
         pullRequestLink(pr.repo, pr.number),
         ...[unapprovedTag(pr), pr.hotfix ? 'hotfix' : null]
@@ -2468,7 +3139,8 @@ function renderUnapproved(highlight) {
 }
 
 function renderWaiting(highlight) {
-  const { waiting } = state.stats
+  // The pull requests left open by people who left the team are no longer waited for.
+  const waiting = state.stats.waiting.filter((pr) => isCurrent(pr.author))
   const previous = state.seenWaiting
   $('[data-waiting-title]').textContent = `PR en attente de review (${formatNumber(waiting.length)})`
   const items = waiting
@@ -2479,7 +3151,7 @@ function renderWaiting(highlight) {
         { className: 'feed-text' },
         pullRequestLink(pr.repo, pr.number),
         document.createTextNode(' de '),
-        el('strong', { textContent: displayName(pr.author) }),
+        personLink(pr.author, { withAvatar: false }),
       )
       const item = listItem(pr.author, text, pr.createdAt, 'ouverte ')
       if (highlight && previous && !previous.has(waitingId(pr))) {
@@ -2711,10 +3383,11 @@ function render(animate) {
   renderPersonPicker()
   renderCharts()
   renderChartTable()
-  for (const name of FILTERED_TABLES) {
+  for (const name of REPO_FILTER_NAMES) {
     renderRepoFilter(name)
   }
   renderTables(animate)
+  renderTeam()
   renderFeed(animate)
   renderWaiting(animate)
   renderUnapproved(animate)
@@ -2982,6 +3655,7 @@ $('[data-search]').addEventListener('input', (event) => {
   if (state.stats) {
     renderTables(false)
     renderCollaboration()
+    renderTeam()
     renderFeed(false)
     renderWaiting(false)
     renderUnapproved(false)
@@ -3037,6 +3711,17 @@ $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
 })
+// The dialog of a person closes from its button, with Escape, or with a click beside the card. The path of the click is
+// the one it had when made: a name in the card replaces the card's content, and its button with it, before the click
+// gets here.
+$('[data-person-dialog]').addEventListener('click', (event) => {
+  if (!event.composedPath().includes($('[data-person-dialog-card]'))) {
+    event.currentTarget.close()
+  }
+})
+$('[data-person-dialog]').addEventListener('close', resetPersonTilt)
+$('[data-person-dialog-scene]').addEventListener('pointermove', tiltPersonCard)
+$('[data-person-dialog-scene]').addEventListener('pointerleave', resetPersonTilt)
 
 let resizeFrame = 0
 let observedWidth = 0
@@ -3055,7 +3740,7 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
-for (const name of FILTERED_TABLES) {
+for (const name of REPO_FILTER_NAMES) {
   setupRepoFilter(name)
 }
 renderThemeToggle()

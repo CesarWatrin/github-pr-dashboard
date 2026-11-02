@@ -25,14 +25,33 @@ la recherche s'appliquent à toutes :
 - **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
+- **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code
+  et filtrables par dépôt : sa photo, son ancienneté (plus d'un an, ou les mois depuis sa première PR, review ou
+  commentaire dans l'année synchronisée), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
+  de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
+  ouvre la fiche de la personne, une carte qui s'incline vers la souris : taux de merge, attente de la première
+  review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts. Sous chaque
+  chiffre, la médiane des personnes de la même stack (de toute l'équipe si la stack compte moins de trois personnes) :
+  de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
+  collaborateurs.
+- **Badges**, sur les cartes et dans la fiche, à la façon des succès GitHub : 🦈 Requin des PR, 🔍 Œil de lynx,
+  🪶 Plume et 🚒 Pompier, pour le plus de PR de code, de PR relues, de commentaires de review ou de hotfix de toute
+  l'équipe sur un mois complet de l'année synchronisée. Bronze pour un mois, argent pour deux mois d'affilée, or pour
+  trois ou plus ; leur sens s'affiche au survol.
+- **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, PR en attente,
+  binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
+- **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
+  un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
+  seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité. Ses
+  PR restent comptées dans les totaux, les graphiques et les dépôts.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/tma`, `#/devops`, `#/methode`) : les
-liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/equipe`, `#/tma`, `#/devops`,
+`#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.

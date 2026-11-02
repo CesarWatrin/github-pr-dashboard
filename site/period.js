@@ -575,6 +575,68 @@ function dependencyStats(repositories, ecosystems) {
   }
 }
 
+// When each person first and last shows in the records, whatever the range: a pull request opened, a review or a
+// comment, or a merge, as { first, last } in minutes since the epoch. Bot pull requests do not count for their author,
+// but the people who review or merge them do. The records only cover the rolling window: a person already active at its
+// start has been around for longer.
+export function activityBounds(records) {
+  const bounds = new Map()
+  const seen = (login, at) => {
+    const known = bounds.get(login)
+    if (!known) {
+      bounds.set(login, { first: at, last: at })
+    } else {
+      known.first = Math.min(known.first, at)
+      known.last = Math.max(known.last, at)
+    }
+  }
+  for (const pr of records) {
+    if (!pr.bot) {
+      seen(pr.author, pr.createdAt)
+    }
+    for (const [login, at] of pr.interventions) {
+      seen(login, at)
+    }
+    if (pr.mergedBy && pr.mergedAt !== null) {
+      seen(pr.mergedBy, pr.mergedAt)
+    }
+  }
+
+  return bounds
+}
+
+// What each person did per Paris month ('YYYY-MM'), whatever the range, for the badges of the team page: code pull
+// requests opened and hotfixes among them, pull requests of others reviewed (once a month however many reviews) and
+// comments left. Like the stats of a range, only code pull requests written by people count.
+export function monthlyActivity(records) {
+  const people = new Map()
+  const monthOf = (at) => parisDay(at * MINUTE_MS).slice(0, 7)
+  const entry = (login, month) =>
+    getOrCreate(getOrCreate(people, login, () => new Map()), month, () => ({ code: 0, hotfixes: 0, reviewed: 0, comments: 0 }))
+  for (const pr of records) {
+    if (pr.bot || pr.kind !== 'code') {
+      continue
+    }
+    const opened = entry(pr.author, monthOf(pr.createdAt))
+    opened.code++
+    if (pr.hotfix) {
+      opened.hotfixes++
+    }
+    const reviewed = new Set()
+    for (const [login, at, , comments] of pr.interventions) {
+      const month = monthOf(at)
+      const stats = entry(login, month)
+      if (!reviewed.has(`${login}\n${month}`)) {
+        reviewed.add(`${login}\n${month}`)
+        stats.reviewed++
+      }
+      stats.comments += comments
+    }
+  }
+
+  return people
+}
+
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.
 export function computeCi(workflows, { start, end, bucket }) {
   const firstDay = parisDay(start)

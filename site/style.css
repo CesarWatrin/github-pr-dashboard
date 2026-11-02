@@ -17,6 +17,20 @@
   --status-good: #0ca30c;
   --status-serious: #ec835a;
   --shadow: 0 8px 24px rgba(11, 11, 11, 0.12);
+  /* The light a tilted person card catches, and its faint rainbow sheen */
+  --glare: rgba(255, 255, 255, 0.7);
+  --sheen-blend: multiply;
+  --sheen-opacity: 0.16;
+  /* The metals of the badges, lit from the top left; they read on both themes */
+  --bronze: #b4682e;
+  --bronze-light: #f3c79a;
+  --bronze-ring: #7d4318;
+  --silver: #9aa3ad;
+  --silver-light: #f4f6f8;
+  --silver-ring: #626b75;
+  --gold: #dda21a;
+  --gold-light: #fff1a8;
+  --gold-ring: #9c6c00;
   --radius: 12px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
@@ -39,6 +53,9 @@
     --highlight: rgba(57, 135, 229, 0.22);
     --success-text: #0ca30c;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --glare: rgba(255, 255, 255, 0.16);
+    --sheen-blend: screen;
+    --sheen-opacity: 0.15;
   }
 }
 
@@ -59,6 +76,9 @@
   --highlight: rgba(57, 135, 229, 0.22);
   --success-text: #0ca30c;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --glare: rgba(255, 255, 255, 0.16);
+  --sheen-blend: screen;
+  --sheen-opacity: 0.15;
 }
 
 * {
@@ -1181,6 +1201,679 @@ main.is-loading {
   white-space: nowrap;
 }
 
+/* Team page: the people who left, with their last activity. */
+.former-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px 24px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.former-list li {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+/* Under the name, past the avatar. */
+.former-last {
+  padding-left: 32px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Team page: the repository filter, then one card per person, as many columns as fit. */
+.team-toolbar {
+  display: flex;
+}
+
+.person-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 16px;
+}
+
+/* The whole card opens the person's details: the button of its head stretches over it. Its figures sit at its bottom,
+   in line with those of the cards beside it, with or without badges above them. */
+.person-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms var(--ease-out);
+}
+
+.person-card:hover {
+  border-color: var(--baseline);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.person-card:has(.person-card-head:focus-visible) {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+.person-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person-card-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.person-card-head:focus-visible {
+  outline: none;
+}
+
+.person-card-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gridline);
+}
+
+.person-card-name {
+  display: grid;
+  min-width: 0;
+}
+
+.person-card-name strong,
+.person-card-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-card-name strong {
+  font-size: 16px;
+}
+
+.person-card-name span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.person-card-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.person-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.person-card > .person-stats {
+  margin-top: auto;
+}
+
+.person-stats div {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.person-stats dt {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Badges, like GitHub achievements: a round medal of its tier's metal, its icon in the middle, the length of its run of
+   months on a tab. On a card they sit in a row under the stack; in the dialog, larger, on the right of the head. */
+.person-badges,
+.person-dialog-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.person-dialog-badges {
+  gap: 14px;
+  margin-left: auto;
+  padding-right: 4px;
+}
+
+/* On a card, the badges sit above the button that covers it: they show what they mean on hover, and a click on them
+   still opens the dialog. */
+.person-card .person-badges {
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+}
+
+.person-card:hover,
+.person-card:focus-within {
+  z-index: 1;
+}
+
+/* A medal: a brushed ring of its tier's metal around a domed face, lit from the top left, its icon in the middle. */
+.badge-medal {
+  --metal: var(--bronze);
+  --metal-light: var(--bronze-light);
+  --metal-ring: var(--bronze-ring);
+  --size: 34px;
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  padding: 3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 200deg,
+    var(--metal-light),
+    var(--metal) 18%,
+    var(--metal-ring) 32%,
+    var(--metal) 46%,
+    var(--metal-light) 58%,
+    var(--metal) 72%,
+    var(--metal-ring) 86%,
+    var(--metal-light)
+  );
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 18px -8px rgba(0, 0, 0, 0.3);
+  outline-offset: 3px;
+}
+
+.badge-medal.is-silver {
+  --metal: var(--silver);
+  --metal-light: var(--silver-light);
+  --metal-ring: var(--silver-ring);
+}
+
+.badge-medal.is-gold {
+  --metal: var(--gold);
+  --metal-light: var(--gold-light);
+  --metal-ring: var(--gold-ring);
+}
+
+.badge-medal.is-large {
+  --size: 58px;
+  padding: 4px;
+}
+
+.badge-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, var(--metal-light), var(--metal) 58%, var(--metal-ring));
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.35),
+    inset 0 -2px 3px rgba(255, 255, 255, 0.3);
+}
+
+/* The light on the dome */
+.badge-face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 46%);
+  pointer-events: none;
+}
+
+.badge-icon {
+  position: relative;
+  font-size: 15px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.is-large .badge-icon {
+  font-size: 26px;
+}
+
+/* The run of months, on a tab of the same metal */
+.badge-streak {
+  position: absolute;
+  right: -8px;
+  bottom: -5px;
+  padding: 0 5px;
+  border: 1px solid var(--metal-ring);
+  border-radius: 999px;
+  background: linear-gradient(var(--metal-light), var(--metal));
+  color: #1f1a12;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.is-large .badge-streak {
+  font-size: 12px;
+  line-height: 17px;
+}
+
+/* What a badge means, over it on hover or focus, at once, like the tooltips of the charts: its name and tier, then
+   what won it. */
+.badge-tip {
+  position: absolute;
+  z-index: 2;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  max-width: 250px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  box-shadow: var(--shadow);
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.badge-medal:hover .badge-tip,
+.badge-medal:focus-visible .badge-tip {
+  visibility: visible;
+}
+
+/* In the dialog the medals sit at the top right, near the close button, which comes forward as the card leans: their
+   tooltip opens below them, on their right edge. */
+.person-dialog-badges .badge-tip {
+  top: calc(100% + 12px);
+  right: -6px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+}
+
+.badge-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.badge-tier {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(var(--metal-light), var(--metal));
+  color: #1f1a12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.badge-tip-text {
+  color: var(--text-secondary);
+}
+
+/* A person's details: a larger card in a dialog. It leans towards the pointer, its layers come apart and it catches
+   the light, a spot under the pointer and a faint rainbow sheen. At rest it lies flat, its text crisp. The dialog is
+   transparent and padded so that a leaning card never touches its edges. */
+.person-dialog {
+  width: min(100% - 16px, 900px);
+  max-width: none;
+  padding: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* On a screen tall and wide enough for the whole card, nothing clips it as it leans; on a smaller one it scrolls. */
+@media (min-width: 761px) and (min-height: 761px) {
+  .person-dialog {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+.person-dialog::backdrop {
+  background: rgba(11, 11, 11, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.person-dialog-scene {
+  perspective: 1100px;
+}
+
+.person-dialog-card {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  padding: 24px 26px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow:
+    var(--shadow),
+    0 30px 60px -24px rgba(0, 0, 0, 0.35);
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 500ms var(--ease-out);
+}
+
+.person-dialog-card.is-tilting {
+  transition: transform 90ms linear;
+}
+
+.person-dialog-card::before,
+.person-dialog-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.person-dialog-card::before {
+  background: linear-gradient(
+    115deg,
+    transparent 25%,
+    #ff4fa3 38%,
+    #4fd8ff 50%,
+    #ffe14f 62%,
+    transparent 75%
+  );
+  background-position: var(--glare-x, 50%) var(--glare-y, 50%);
+  background-size: 250% 250%;
+  mix-blend-mode: var(--sheen-blend);
+}
+
+.person-dialog-card::after {
+  background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), var(--glare), transparent 55%);
+}
+
+.person-dialog-card.is-tilting::before {
+  opacity: var(--sheen-opacity);
+}
+
+.person-dialog-card.is-tilting::after {
+  opacity: 1;
+}
+
+/* The layers of the card come apart while it leans: the head nearest, the figures below it. */
+.person-dialog-head,
+.person-dialog-section {
+  transition: transform 500ms var(--ease-out);
+}
+
+.person-dialog-card.is-tilting .person-dialog-head {
+  transform: translateZ(18px);
+}
+
+.person-dialog-card.is-tilting .person-dialog-section {
+  transform: translateZ(8px);
+}
+
+.person-dialog-close {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  right: 14px;
+  transition: transform 500ms var(--ease-out);
+}
+
+/* The head comes forward as the card leans: the close button comes further still, or the head would take its clicks. */
+.person-dialog-card.is-tilting .person-dialog-close {
+  transform: translateZ(26px);
+}
+
+/* It takes clicks well around what it shows: as the card leans, it drifts a little under the pointer. */
+.person-dialog-close::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+}
+
+.person-dialog-close svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.person-dialog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding-right: 40px;
+}
+
+.person-dialog-avatar {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--gridline);
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.person-dialog-identity {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The name, and the GitHub profile at its right: under it when the name is too long for both. */
+.person-dialog-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  min-width: 0;
+}
+
+.person-dialog-identity h2 {
+  margin: 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.person-dialog-meta,
+.person-dialog-scope {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.person-dialog-github {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.person-dialog-github:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.person-dialog-github svg {
+  fill: currentColor;
+}
+
+.person-dialog-scope {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.person-dialog-section {
+  display: grid;
+  gap: 10px;
+}
+
+.person-dialog-section h3 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.person-dialog-section .person-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* A label may take two lines in the dialog: the values of a row, and the medians under them, stay aligned. */
+.person-dialog-section .person-stats div {
+  grid-template-rows: 1fr auto auto;
+}
+
+.person-dialog-section .person-stats dt {
+  white-space: normal;
+}
+
+.person-stats-peer {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.person-dialog-columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 24px;
+  margin-top: 6px;
+}
+
+@media (max-width: 760px) {
+  .person-dialog-section .person-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .person-dialog-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.person-dialog-list-title {
+  margin: 0 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.person-dialog-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person-dialog-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.person-dialog-list-name,
+.person-dialog-list .person-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.person-dialog-list-name,
+.person-dialog-list .person-link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .person-dialog {
+    padding: 8px;
+  }
+
+  .person-dialog-card {
+    padding: 20px 18px;
+  }
+
+  .person-dialog-head {
+    gap: 14px;
+  }
+
+  .person-dialog-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .person-dialog-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Tooltip */
 .tooltip {
   position: fixed;
@@ -1700,26 +2393,41 @@ tbody tr.is-updated td.person {
   }
 }
 
-.person a,
-.person-secondary a {
+/* A person's name opens their dialog wherever it shows: a button that looks like the name. */
+.person-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 150px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
   font-weight: 500;
   line-height: 1.3;
-  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person-link:hover .person-link-name {
+  text-decoration: underline;
+}
+
+.person .person-link,
+.person-secondary .person-link {
+  max-width: 150px;
   white-space: normal;
   overflow-wrap: break-word;
 }
 
-.person-secondary {
-  text-align: left;
+.feed-text .person-link {
+  display: inline;
+  font-weight: 600;
 }
 
-.person a:hover,
-.person-secondary a:hover {
-  text-decoration: underline;
+.person-secondary {
+  text-align: left;
 }
 
 .bar-cell {
@@ -1880,6 +2588,11 @@ tbody td.person {
   animation-delay: calc(var(--delay, 0ms) + 120ms);
 }
 
+.is-entering .person-card {
+  animation: rise-in 420ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 60ms);
+}
+
 .is-entering tbody tr {
   animation: fade-in 420ms ease both;
   animation-delay: calc(var(--delay, 0ms) + 120ms);
@@ -1938,6 +2651,15 @@ tbody td.person {
 
 .confirm[open] {
   animation: pop-up 220ms var(--ease-out);
+}
+
+/* The person card rises into place: the scene moves, so that the card itself stays free to lean. */
+.person-dialog[open] .person-dialog-scene {
+  animation: pop-up 320ms var(--ease-out);
+}
+
+.person-dialog[open]::backdrop {
+  animation: fade-in 220ms ease-out;
 }
 
 .confirm[open]::backdrop {
