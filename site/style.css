@@ -85,6 +85,12 @@
   box-sizing: border-box;
 }
 
+/* Hidden means hidden, whatever display the element's own rules give it: a card or a tile shown as a grid or a flex box
+   would otherwise stay visible. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: var(--page);
@@ -106,10 +112,6 @@ code {
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr);
   min-height: 100vh;
-}
-
-.app[hidden] {
-  display: none;
 }
 
 .sidebar {
@@ -288,11 +290,6 @@ code {
 .route {
   display: grid;
   gap: 16px;
-}
-
-.route[hidden],
-.filters[hidden] {
-  display: none;
 }
 
 .page-header {
@@ -542,10 +539,6 @@ h3 {
   padding: 16px;
 }
 
-.lock[hidden] {
-  display: none;
-}
-
 .lock-card {
   display: grid;
   gap: 16px;
@@ -691,11 +684,6 @@ h3 {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 20px;
-}
-
-/* Hidden on the pages about what stands now: its display would otherwise win over the hidden attribute. */
-.segmented[hidden] {
-  display: none;
 }
 
 .segmented {

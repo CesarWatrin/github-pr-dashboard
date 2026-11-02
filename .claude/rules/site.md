@@ -117,6 +117,7 @@ paths:
   takes a series color. Repository types are labelled front, back, mobile or full-stack.
 - Layout: a sidebar from 1280 px, a top bar below. Tables fit at 1080 px without horizontal scrolling. Check 1920,
   1280, 1080 and 390 px (phone), light and dark.
+- Hiding: the `hidden` attribute, which a rule of `style.css` makes win over any `display`; never a class of its own.
 - Motion: pages enter with `.is-entering` and a staggered `--delay`; everything stops under
   `prefers-reduced-motion`.
 - Text is French, with French typography: typographic apostrophes (’), « » quotes, a non-breaking space before
