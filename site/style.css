@@ -2090,6 +2090,22 @@ main.is-loading {
   font-weight: 600;
 }
 
+/* Next to a name, as an author of a repository who left the team. */
+.former-tag.is-small {
+  flex: none;
+  padding: 0 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.repo-card-person,
+.fragile-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 /* In the dialog of a repository, its main technology stands where a person's photo would. */
 .repo-dialog-logo {
   display: grid;

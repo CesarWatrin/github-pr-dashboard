@@ -2591,8 +2591,8 @@ function ciPerRepository() {
   return new Map([...workflows].map(([repo, list]) => [repo, computeCi(list, range).totals]))
 }
 
-// The repositories of the period with their figures, the people still in the team who wrote and reviewed them, the
-// most first, and their bus factor. The figures count everyone, people who left included, as the other figures of
+// The repositories of the period with their figures, the people who wrote and reviewed them, the most first, people who
+// left included: their code is still there. The bus factor only counts those still in the team. The figures count everyone, people who left included, as the other figures of
 // repositories do. By default, those with code pull requests on the repositories selected on their page, for the cards;
 // with all, every repository with anything over the period, for their dialogs.
 function repositoryRows({ all = false } = {}) {
@@ -2639,11 +2639,11 @@ function repositoryRows({ all = false } = {}) {
   }
   const reviewed = new Map(period.repositories.map((stats) => [stats.repo, stats]))
   const hotfixes = new Map(period.tma.repositories.map((stats) => [stats.repo, stats.hotfixes]))
-  const current = (people) => people.filter(([login]) => isCurrent(login)).sort((a, b) => b[1] - a[1])
+  const busiest = (people) => people.toSorted((a, b) => b[1] - a[1])
 
   return [...rows.values()]
     .map((totals) => {
-      const writers = current(totals.authors)
+      const writers = busiest(totals.authors)
       const [approved, silent] = approvals.get(totals.repo) ?? [0, 0]
       const review = reviewed.get(totals.repo)
       const deliveries = delivery.get(totals.repo)
@@ -2672,8 +2672,8 @@ function repositoryRows({ all = false } = {}) {
         ciFailureRate: runs?.failureRate ?? null,
         ciRerunRate: runs?.rerunRate ?? null,
         writers,
-        readers: current(totals.readers),
-        busFactor: busFactor(writers.map(([, code]) => code), totals.code),
+        readers: busiest(totals.readers),
+        busFactor: busFactor(writers.filter(([login]) => isCurrent(login)).map(([, code]) => code), totals.code),
       }
     })
     .sort((a, b) => b.code - a.code || a.repo.localeCompare(b.repo))
@@ -2699,8 +2699,14 @@ function openRepoOf(repo, opener) {
   }
 }
 
-// The share of a repository's code pull requests written by the people still in the team.
-const writtenShare = (row, writers = row.writers) => writers.reduce((total, [, code]) => total + code, 0) / row.code
+// The share of a repository's code pull requests written by some of its writers.
+const writtenShare = (row, writers) => writers.reduce((total, [, code]) => total + code, 0) / row.code
+
+// The mark of someone who left the team, next to their name where they still show: as an author of a repository, whose
+// code is still there.
+function formerMark(login) {
+  return isFormer(login) ? [el('span', { className: 'former-tag is-small', textContent: 'hors équipe', title: 'Ne fait plus partie de l’équipe' })] : []
+}
 
 // Nothing for a repository without any code pull request.
 function busFactorTag(value) {
@@ -2738,7 +2744,7 @@ function repositoryCard(row, index) {
           el(
             'li',
             {},
-            personLink(login),
+            el('span', { className: 'repo-card-person' }, personLink(login), ...formerMark(login)),
             el('span', {
               className: 'repo-card-share',
               textContent: formatShare(code / row.code),
@@ -2747,7 +2753,7 @@ function repositoryCard(row, index) {
           ),
         ),
       )
-    : el('p', { className: 'muted', textContent: 'Plus personne de l’équipe' })
+    : el('p', { className: 'muted', textContent: '–' })
   // The whole card opens the repository's dialog: the button of its head stretches over it, under the people.
   const open = el(
     'button',
@@ -2782,22 +2788,24 @@ function renderFragile(rows) {
   $('[data-repositories-fragile-card]').hidden = fragile.length === 0
   $('[data-repositories-fragile-sub]').textContent =
     `Au moins ${FRAGILE_MIN_PRS} PR de code sur la période, dont au moins la moitié écrites par une seule personne de l’équipe, ou plus de la moitié par des personnes parties`
+  // The person it rests on: the one of the team who wrote the most, or, when its authors left, the one who wrote the most.
   $('[data-repositories-fragile]').replaceChildren(
-    ...fragile.map((row) =>
-      el(
+    ...fragile.map((row) => {
+      const team = row.writers.filter(([login]) => isCurrent(login))
+      const [login, code] = row.busFactor === 1 ? team[0] : row.writers[0]
+      const share = `${formatShare(code / row.code)} des ${formatNumber(row.code)} PR de code`
+
+      return el(
         'li',
         {},
         el('span', { className: 'fragile-repo' }, repoLink(row.repo), repoTypeTag(row.category)),
-        row.busFactor === 1 ? personLink(row.writers[0][0]) : el('span', { className: 'muted', textContent: 'Auteurs partis' }),
+        el('span', { className: 'fragile-person' }, personLink(login), ...formerMark(login)),
         el('span', {
           className: 'fragile-share',
-          textContent:
-            row.busFactor === 1
-              ? `${formatShare(writtenShare(row, row.writers.slice(0, 1)))} des ${formatNumber(row.code)} PR de code`
-              : `${formatShare(writtenShare(row))} des ${formatNumber(row.code)} PR de code par l’équipe actuelle`,
+          textContent: row.busFactor === 1 ? share : `${share}, l’équipe actuelle ${formatShare(writtenShare(row, team))}`,
         }),
-      ),
-    ),
+      )
+    }),
   )
 }
 
@@ -2827,7 +2835,7 @@ function topList(title, items, withAvatar) {
             'li',
             {},
             // A person or a repository opens its own dialog in place of this one.
-            withAvatar ? personLink(key) : repoLink(key, 'repo-link person-dialog-list-name'),
+            ...(withAvatar ? [personLink(key), ...formerMark(key)] : [repoLink(key, 'repo-link person-dialog-list-name')]),
             el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
           ),
         ),
