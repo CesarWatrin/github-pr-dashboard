@@ -277,7 +277,9 @@ const UNBLOCK_STANCES = [
     by: 'approuvée par',
     tag: 'approbation incomplète',
     hint: (required) =>
-      `Approuvées depuis plus d’un jour ouvré par moins de ${approvers(required)}, alors qu’il en faut ${formatNumber(required)} pour merger : il manque une relecture.`,
+      required > 1
+        ? `Approuvées depuis plus d’un jour ouvré par moins de ${approvers(required)}, alors qu’il en faut ${formatNumber(required)} pour merger : il manque une relecture.`
+        : 'Une seule approbation suffit pour merger : aucune PR n’est approuvée à moitié.',
     empty: 'Aucune PR qui attend une approbation de plus',
   },
   {
@@ -4397,11 +4399,6 @@ function renderUnblock(mode) {
     Object.fromEntries(UNBLOCK_TILES.map(({ key }) => [key, Array.isArray(blocked[key]) ? blocked[key].length : blocked[key]])),
     mode,
   )
-  // A single approval merges: no pull request is ever partly approved.
-  $('[data-unblock-tiles] [data-key="approving"]').hidden = required === 1
-  $('[data-unblock-card="approving"]').hidden = required === 1
-  // The forgotten pull requests fill the last column, or the whole row when the lists above leave none.
-  $('.unblock-forgotten').classList.toggle('is-wide', [...document.querySelectorAll('[data-unblock-card]')].filter((card) => !card.hidden).length % 2 === 0)
   for (const stance of [...UNBLOCK_STANCES, FORGOTTEN]) {
     const prs = blocked[stance.key]
     $(`[data-unblock-title="${stance.key}"]`).textContent = `${stance.label} (${formatNumber(prs.length)})`
