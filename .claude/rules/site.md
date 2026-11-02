@@ -12,9 +12,10 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, report, authors, reviewers, cycle, collaboration, team, awards, repositories,
-  tma, devops, method). The period selector and the search apply to every page but the method, report and awards ones
-  (`filters: false`): the report has a month picker of its own.
+  page of the hash (`ROUTES`: overview, unblock, report, authors, reviewers, cycle, collaboration, team, awards,
+  repositories, tma, devops, method). The period selector and the search apply to every page but the method, report
+  and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what stands
+  now, keeps the search only (`period: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -42,6 +43,12 @@ paths:
   median of each stage over the pull requests that went through it, and the average share of each stage in the time
   of the reviewed ones that reached production, each weighing the same: stage medians never add up, so no chart
   stacks them. The repository filter of its table (`REPO_FILTERS.cycle`) applies to the whole page.
+- **Unblock page**: `openPullRequests()` of `site/period.js` tells where each open code pull request stands, after the
+  latest decision of each reviewer, as GitHub does, and the approvals merging needs (`requiredApprovals` of the stats,
+  from `REQUIRED_APPROVALS`, 1 without it: the list of the partly approved ones then hides). `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`,
+  those of the people still in the team that have stood there for longer than its delay (`after`, in hours), and
+  apart those without any review or comment for `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of
+  the records.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
   and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the
@@ -91,7 +98,7 @@ paths:
 - **Former people**, on every page: a person without any pull request, review, comment or merge for
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
-  waiting pull requests, and the review networks through `withoutFormer()`. They only show in the former people of the
+  unblock page, and the review networks through `withoutFormer()`. They only show in the former people of the
   team page, among the leaders of every month of the awards page, and in the repositories that rest on a single
   person, as the one who wrote the most when its authors left, marked « hors équipe » (`formerMark()`): their code is
   still there. Their dialog says they left the team and when they were last active, in place of their seniority

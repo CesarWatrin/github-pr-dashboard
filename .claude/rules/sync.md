@@ -39,7 +39,7 @@ paths:
 
 - `toPeriodRecord()`: one compact record per pull request, times in **minutes since the epoch**, interventions of
   other people as `[login, at, state, comments]`, plus optional fields (`deployment`, `revert`, `deployedAt`,
-  `checksFailed`, `dependency`). `site/period.js` documents the shape and is the only consumer.
+  `checksFailed`, `dependency`, `draft` for an open draft). `site/period.js` documents the shape and is the only consumer.
 - `computeCi()`: per repository, workflow and Paris day, `[runs, failed, rerun, durations in seconds]`, for runs on pull
   requests and pushes that reached a verdict (cancelled and skipped ones left out).
 - `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first

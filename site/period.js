@@ -5,7 +5,7 @@
 // { repo, number, author, bot, kind, hotfix, production, createdAt, mergedAt, closed, lines, mergedBy, interventions }
 // with interventions as [login, at, state, comments], oldest first, bots and the author left out. Optional fields:
 // deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
-// checksFailed (at its last commit) and dependency (the ecosystem of a Dependabot update).
+// checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update) and draft (still open as one).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -702,6 +702,50 @@ export function monthlyLeaders(history, key) {
       return best > 0
         ? [{ month, value: best, people: values.filter(([, value]) => value === best).map(([login]) => login).sort() }]
         : []
+    })
+}
+
+// The open code pull requests of people, drafts aside, and where each one stands after the latest decision of each
+// reviewer, as GitHub reckons it: changes requested by someone (changes), else approved by as many people as merging
+// needs (approved), else approved by fewer (approving), else reviewed or commented without a decision (discussed), else
+// waiting for a first look (waiting). since: when it got there, in minutes since the epoch (the latest of these
+// decisions, the latest intervention, or the opening); by: who decided; lastAt: its latest review or comment, else its
+// opening.
+export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
+  return records
+    .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
+    .map((pr) => {
+      const decisions = new Map()
+      for (const [login, at, state] of pr.interventions) {
+        if (state === 'APPROVED' || state === 'CHANGES_REQUESTED') {
+          decisions.set(login, { state, at })
+        }
+      }
+      const decided = (state) => [...decisions].filter(([, decision]) => decision.state === state)
+      const requested = decided('CHANGES_REQUESTED')
+      const approved = decided('APPROVED')
+      const deciders = requested.length ? requested : approved
+      const stance = requested.length
+        ? 'changes'
+        : approved.length >= requiredApprovals
+          ? 'approved'
+          : approved.length
+            ? 'approving'
+            : pr.interventions.length
+              ? 'discussed'
+              : 'waiting'
+
+      return {
+        repo: pr.repo,
+        number: pr.number,
+        author: pr.author,
+        createdAt: pr.createdAt,
+        lines: pr.lines,
+        stance,
+        since: deciders.length ? Math.max(...deciders.map(([, decision]) => decision.at)) : (pr.interventions.at(-1)?.[1] ?? pr.createdAt),
+        by: deciders.map(([login]) => login).sort(),
+        lastAt: pr.interventions.at(-1)?.[1] ?? pr.createdAt,
+      }
     })
 }
 

@@ -13,11 +13,17 @@ la recherche s'appliquent à toutes :
 - **Vue d'ensemble** : l'activité du jour, puis celle de la période en deux volets, livraison (PR ouvertes et
   mergées, délai de merge, mises en production, part de hotfix) et revue (PR relues, commentaires par PR,
   approbations sans commentaire, PR mergées sans review), chaque tuile menant à sa page ; l'activité par période et
-  le fil des 7 derniers jours ; les PR en attente de review ; les PR de code que leur auteur a mergées sans
-  approbation sur les 30 derniers jours, dans les dépôts front, back et mobile ; la part de chaque technologie dans les PR de code,
+  le fil des 7 derniers jours ; la part de chaque technologie dans les PR de code,
   avec son logo (les langages d'un dépôt sont regroupés sous le framework que déclarent ses fichiers de
   dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
   de merge, PR mergées sans review, PR relues).
+- **À débloquer** : les PR de code ouvertes qui attendent quelqu'un, hors brouillons, les plus anciennes d'abord :
+  approuvées mais pas mergées depuis plus d'un jour, approuvées par moins de personnes qu'il n'en faut pour merger
+  (`REQUIRED_APPROVALS`), avec des changements demandés ou en discussion depuis plus de
+  trois jours, sans review depuis plus d'un jour, chacune avec qui l'a approuvée ou a demandé des changements ; à part,
+  les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
+  dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
+  les dépôts front, back et mobile, à relire après coup.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des mois complets de l'année :
   livraison, revue, intégration continue et équipe, chaque évolution en vert ou en orange quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
@@ -51,7 +57,7 @@ la recherche s'appliquent à toutes :
 - **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
   le tableau d'honneur, qui détient quel badge et à quel niveau ; les champions de chaque mois depuis la première
   synchro. Les personnes parties comptent dans la course, et n'apparaissent sous leur nom que dans ce dernier tableau.
-- **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, PR en attente,
+- **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, À débloquer,
   binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
   un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
@@ -74,8 +80,8 @@ la recherche s'appliquent à toutes :
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`, `#/equipe`,
-`#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+Chaque page a son adresse (`#/a-debloquer`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
+`#/equipe`, `#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
@@ -173,13 +179,14 @@ Prérequis :
    - `DASHBOARD_PASSWORD` : le mot de passe de la page ;
    - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
    - `BOT_USERS` (facultatif) : les comptes utilisateurs de l'org qui agissent en bots, séparés par des virgules ;
+   - `REQUIRED_APPROVALS` (facultatif) : le nombre d'approbations qu'il faut pour merger une PR, 1 par défaut ;
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées) et la vérification de syntaxe (`npm run check`) tournent sur
 chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
 
-Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`, `DISPATCH_TOKEN`
-(avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL`
-(facultatives ; la dernière indique où relire l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en
-CI).
+Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
+`REQUIRED_APPROVALS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH`,
+`STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire l'historique des badges, par défaut
+l'adresse GitHub Pages du dépôt en CI).

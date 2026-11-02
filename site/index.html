@@ -54,6 +54,12 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H9.5V10h-3v3.5H3a.5.5 0 0 1-.5-.5Z" /></svg>
             Vue d’ensemble
           </a>
+          <a class="nav-link" href="#/a-debloquer" data-route-link="unblock">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7" />
+            </svg>
+            À débloquer
+          </a>
           <a class="nav-link" href="#/bilan" data-route-link="report">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="2.5" y="3" width="11" height="10.5" rx="1.5" /><path d="M2.5 6.5h11M5.5 2v2M10.5 2v2M5.5 9.5h5M5.5 11.5h3" />
@@ -236,25 +242,11 @@
               </section>
             </div>
 
-            <div class="grid-2 grid-even">
-              <section class="card" aria-labelledby="waiting-title">
-                <h2 id="waiting-title" data-waiting-title>PR en attente de review</h2>
-                <p class="card-sub">Les plus anciennes d’abord</p>
-                <ol class="feed" data-waiting></ol>
-              </section>
-
-              <section class="card" aria-labelledby="unapproved-title">
-                <h2 id="unapproved-title" data-unapproved-title>Mergées par leur auteur sans approbation</h2>
-                <p class="card-sub">PR de code des 30 derniers jours, dépôts front, back et mobile</p>
-                <ol class="feed" data-unapproved></ol>
-              </section>
-
-              <section class="card" aria-labelledby="technologies-title">
-                <h2 id="technologies-title">Technologies</h2>
-                <p class="card-sub" data-technologies-sub></p>
-                <div class="bar-chart" data-technologies-chart></div>
-              </section>
-            </div>
+            <section class="card" aria-labelledby="technologies-title">
+              <h2 id="technologies-title">Technologies</h2>
+              <p class="card-sub" data-technologies-sub></p>
+              <div class="bar-chart" data-technologies-chart></div>
+            </section>
 
             <section class="card" aria-labelledby="repos-title">
               <h2 id="repos-title">Dépôts</h2>
@@ -262,6 +254,67 @@
               <div class="table-wrap" data-repos></div>
               <dl class="table-legend" data-table-legend="repos"></dl>
             </section>
+          </div>
+
+          <!-- À débloquer -->
+          <div class="route" data-route="unblock" hidden>
+            <section class="card" aria-labelledby="unblock-title">
+              <h2 id="unblock-title">En ce moment</h2>
+              <div class="tiles" data-unblock-tiles></div>
+              <p class="card-note">
+                PR de code ouvertes, hors brouillons et PR des personnes parties, d’après la dernière synchro. Chaque PR
+                n’apparaît que dans une liste, selon la dernière décision de chaque relecteur et le nombre d’approbations
+                qu’il faut pour merger, et seulement après un délai : un jour approuvée ou sans review, trois jours avec
+                des changements demandés ou en discussion.
+                Celles sans aucune review ni commentaire depuis plus d’un mois sont à part, oubliées.
+              </p>
+            </section>
+
+            <div class="unblock-lists">
+              <section class="card" aria-labelledby="unblock-approved-title">
+                <h2 id="unblock-approved-title" data-unblock-title="approved">Approuvées, pas mergées</h2>
+                <p class="card-sub" data-unblock-sub="approved"></p>
+                <ol class="feed" data-unblock="approved"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="unblock-approving-title" data-unblock-card="approving" hidden>
+                <h2 id="unblock-approving-title" data-unblock-title="approving">Approbation incomplète</h2>
+                <p class="card-sub" data-unblock-sub="approving"></p>
+                <ol class="feed" data-unblock="approving"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="unblock-changes-title">
+                <h2 id="unblock-changes-title" data-unblock-title="changes">Changements demandés</h2>
+                <p class="card-sub" data-unblock-sub="changes"></p>
+                <ol class="feed" data-unblock="changes"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="unblock-discussed-title">
+                <h2 id="unblock-discussed-title" data-unblock-title="discussed">En discussion</h2>
+                <p class="card-sub" data-unblock-sub="discussed"></p>
+                <ol class="feed" data-unblock="discussed"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="unblock-waiting-title">
+                <h2 id="unblock-waiting-title" data-unblock-title="waiting">Sans review</h2>
+                <p class="card-sub" data-unblock-sub="waiting"></p>
+                <ol class="feed" data-unblock="waiting"></ol>
+              </section>
+
+              <section class="card unblock-forgotten" aria-labelledby="unblock-forgotten-title">
+                <h2 id="unblock-forgotten-title" data-unblock-title="forgotten">Oubliées</h2>
+                <p class="card-sub" data-unblock-sub="forgotten"></p>
+                <ol class="feed" data-unblock="forgotten"></ol>
+              </section>
+
+              <section class="card unblock-wide" aria-labelledby="unapproved-title">
+                <h2 id="unapproved-title" data-unapproved-title>Mergées par leur auteur sans approbation</h2>
+                <p class="card-sub">
+                  PR de code des 30 derniers jours, dépôts front, back et mobile : déjà mergées, à relire après coup
+                </p>
+                <ol class="feed" data-unapproved></ol>
+              </section>
+            </div>
           </div>
 
           <!-- Bilan du mois -->
@@ -714,8 +767,16 @@
                   personnes encore là en ont écrit moins de la moitié. Il ne dit rien de la qualité du code, seulement
                   du risque de le voir n’être connu de personne.
                 </dd>
-                <dt>PR en attente de review</dt>
-                <dd>PR de code ouvertes, hors brouillons, sans aucune review ni commentaire d’une autre personne.</dd>
+                <dt>À débloquer</dt>
+                <dd>
+                  PR de code ouvertes, hors brouillons et PR des personnes parties, classées comme GitHub selon la
+                  dernière décision de chaque relecteur : des changements demandés par quelqu’un, sinon autant
+                  d’approbations qu’il en faut pour merger, sinon moins, sinon des reviews ou commentaires sans décision,
+                  sinon rien. Une PR n’y apparaît qu’après un jour
+                  approuvée ou sans review, trois jours avec des changements demandés ou en discussion, comptés depuis
+                  cette décision, le dernier échange ou l’ouverture. Sans aucune review ni commentaire depuis plus d’un
+                  mois, elle est rangée à part, parmi les oubliées.
+                </dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>
                 <dt>Anciens collaborateurs</dt>

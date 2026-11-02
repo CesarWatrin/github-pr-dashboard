@@ -116,6 +116,22 @@ const SYNC_TRIGGER = process.env.DISPATCH_TOKEN
     }
   : null
 
+// How many approvals a pull request needs before it can be merged, a rule of the organization: from REQUIRED_APPROVALS,
+// 1 without it. It only travels inside the encrypted stats, for the page to tell the pull requests ready to merge.
+function requiredApprovals(value = '') {
+  if (value.trim() === '') {
+    return 1
+  }
+  const count = Number(value)
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error('REQUIRED_APPROVALS should be a whole number, 1 or more')
+  }
+
+  return count
+}
+
+const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
+
 // GitHub Apps are detected from their actor type: these are user accounts acting as bots. The organization's own
 // come from BOT_USERS (logins separated by commas), so that its account names stay out of this public code.
 const BOT_USERS = new Set([
@@ -819,6 +835,8 @@ function toPeriodRecord(pr, index) {
     ...(kind === 'code' && !bot && { deployedAt: minutes(deployedAt(pr, index)) }),
     ...(['FAILURE', 'ERROR'].includes(pr.checks) && { checksFailed: true }),
     ...(dependency && { dependency }),
+    // An open draft is not waiting for anyone yet.
+    ...(pr.state === 'OPEN' && pr.draft && { draft: true }),
   }
 }
 
@@ -842,15 +860,6 @@ function computeCi(runs) {
   }
 
   return [...workflows.values()]
-}
-
-// Open code pull requests nobody has looked at yet, oldest first.
-function computeWaiting(pullRequests) {
-  return pullRequests
-    .filter((pr) => pr.state === 'OPEN' && !pr.draft && !isBot(pr.author) && classify(pr) === 'code')
-    .filter((pr) => reviewInterventions(pr).length === 0)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map((pr) => ({ repo: pr.repo, number: pr.number, author: pr.author, createdAt: pr.createdAt }))
 }
 
 function computeToday(pullRequests, now) {
@@ -997,6 +1006,7 @@ async function sync({ full }) {
       ...version,
       timezone: TIMEZONE,
       syncTrigger: SYNC_TRIGGER?.repository ? SYNC_TRIGGER : null,
+      requiredApprovals: REQUIRED_APPROVALS,
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
       repos: Object.fromEntries(
         repositories.map((repo) => [
@@ -1015,7 +1025,6 @@ async function sync({ full }) {
       monthly: history,
       ci: computeCi(runsInWindow),
       events: computeEvents(inWindow, now),
-      waiting: computeWaiting(inWindow),
     }),
   )
   // Written last: the page polls this small file and only downloads the stats once it changes.
@@ -1039,6 +1048,7 @@ export {
   mergeMonthlyHistory,
   readPublishedHistory,
   repositoryCategory,
+  requiredApprovals,
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,

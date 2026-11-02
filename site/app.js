@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -74,6 +74,7 @@ const ACTIVE_RUN_STATUSES = ['requested', 'queued', 'pending', 'waiting', 'in_pr
 // apply to every page but the method.
 const ROUTES = {
   overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
+  unblock: { hash: '#/a-debloquer', title: 'À débloquer', subtitle: 'Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord', period: false },
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
@@ -249,6 +250,77 @@ const CYCLE_END_TO_END_TILES = [
   { key: 'toMerge', label: 'De l’ouverture au merge', format: formatDuration },
   { key: 'toProduction', label: 'De l’ouverture à la prod', format: formatDuration },
   { key: 'prs', label: 'PR de code ouvertes' },
+]
+
+// Where an open code pull request may stand, and how long it may stay there, in hours, before it shows as waiting for
+// someone: what it waits for, on its list and in the legend of the page. The hints take the approvals merging needs.
+const approvers = (required) => (required > 1 ? `${formatNumber(required)} personnes` : 'quelqu’un')
+const UNBLOCK_STANCES = [
+  {
+    key: 'approved',
+    label: 'Approuvées, pas mergées',
+    after: 24,
+    since: 'approuvée',
+    by: 'approuvée par',
+    tag: 'approuvée',
+    hint: (required) =>
+      `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)} depuis plus d’un jour, sans demande de changements en cours : il ne reste qu’à merger.`,
+    empty: 'Aucune PR approuvée qui attend son merge',
+  },
+  // Only where merging needs more than one approval.
+  {
+    key: 'approving',
+    label: 'Approbation incomplète',
+    after: 24,
+    since: 'approuvée',
+    by: 'approuvée par',
+    tag: 'approbation incomplète',
+    hint: (required) =>
+      `Approuvées depuis plus d’un jour par moins de ${approvers(required)}, alors qu’il en faut ${formatNumber(required)} pour merger : il manque une relecture.`,
+    empty: 'Aucune PR qui attend une approbation de plus',
+  },
+  {
+    key: 'changes',
+    label: 'Changements demandés',
+    after: 72,
+    since: 'changements demandés',
+    by: 'demandés par',
+    tag: 'changements demandés',
+    hint: 'Changements demandés il y a plus de trois jours, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.',
+    empty: 'Aucune demande de changements qui traîne',
+  },
+  {
+    key: 'discussed',
+    label: 'En discussion',
+    after: 72,
+    since: 'dernier échange',
+    tag: 'en discussion',
+    hint: 'Reviews ou commentaires sans approbation ni demande de changements, et plus rien depuis trois jours.',
+    empty: 'Aucune discussion au point mort',
+  },
+  {
+    key: 'waiting',
+    label: 'Sans review',
+    after: 24,
+    since: 'ouverte',
+    tag: 'sans review',
+    hint: 'Ouvertes depuis plus d’un jour, sans aucune review ni commentaire d’une autre personne.',
+    empty: 'Aucune PR qui attend sa première review',
+  },
+]
+// An open pull request without any review or comment for this long is forgotten rather than waiting: listed apart,
+// whatever it stands.
+const FORGOTTEN_AFTER_DAYS = 30
+const FORGOTTEN = {
+  key: 'forgotten',
+  label: 'Oubliées',
+  since: 'dernière activité',
+  hint: `Plus aucune review ni commentaire depuis plus de ${FORGOTTEN_AFTER_DAYS} jours, où qu’elles en soient : à relancer, ou à fermer.`,
+  empty: 'Aucune PR oubliée',
+}
+const UNBLOCK_TILES = [
+  ...[...UNBLOCK_STANCES, FORGOTTEN].map(({ key, label }) => ({ key, label })),
+  { key: 'open', label: 'PR de code ouvertes' },
 ]
 
 const TMA_TILES = [
@@ -933,7 +1005,6 @@ const state = {
   reportMonth: null,
   reportCache: null,
   seenEvents: null,
-  seenWaiting: null,
   seenUnapproved: null,
   fetchFailed: false,
 }
@@ -4156,10 +4227,10 @@ document.addEventListener('click', (event) => {
   }
 })
 
-// Activity feed and waiting list
+// Activity feed and pull requests merged without approval
 
 const eventId = (event) => `${event.type}:${event.repo}#${event.number}:${event.actor}:${event.at}`
-const waitingId = (pr) => `${pr.repo}#${pr.number}`
+const pullRequestId = (pr) => `${pr.repo}#${pr.number}`
 
 function pullRequestLink(repo, number) {
   return el('a', {
@@ -4258,42 +4329,93 @@ function renderUnapproved(highlight) {
           .map((tag) => el('span', { className: 'feed-tag', textContent: tag })),
       )
       const item = listItem(pr.author, text, new Date(pr.mergedAt * 60_000).toISOString(), 'mergée ')
-      if (highlight && previous && !previous.has(waitingId(pr))) {
+      if (highlight && previous && !previous.has(pullRequestId(pr))) {
         item.classList.add('is-new')
       }
 
       return item
     })
 
-  state.seenUnapproved = new Set(prs.map(waitingId))
+  state.seenUnapproved = new Set(prs.map(pullRequestId))
   renderList($('[data-unapproved]'), items, 'Aucune PR mergée sans approbation')
 }
 
-function renderWaiting(highlight) {
-  // The pull requests left open by people who left the team are no longer waited for.
-  const waiting = state.stats.waiting.filter((pr) => isCurrent(pr.author))
-  const previous = state.seenWaiting
-  $('[data-waiting-title]').textContent = `PR en attente de review (${formatNumber(waiting.length)})`
-  const items = waiting
-    .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo))
-    .map((pr) => {
-      const text = el(
-        'p',
-        { className: 'feed-text' },
-        pullRequestLink(pr.repo, pr.number),
-        document.createTextNode(' de '),
-        personLink(pr.author, { withAvatar: false }),
-      )
-      const item = listItem(pr.author, text, pr.createdAt, 'ouverte ')
-      if (highlight && previous && !previous.has(waitingId(pr))) {
-        item.classList.add('is-new')
-      }
+// Unblock page
 
-      return item
-    })
+// The open code pull requests of the people of the team, drafts aside, as of the last sync: those that have waited too
+// long for someone, by where they stand, the oldest first, those forgotten apart, and how many are open.
+function blockedPullRequests() {
+  const now = Date.now() / 60_000
+  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author))
+  const forgotten = (pr) => now - pr.lastAt >= FORGOTTEN_AFTER_DAYS * 24 * 60
+  const recent = open.filter((pr) => !forgotten(pr))
 
-  state.seenWaiting = new Set(waiting.map(waitingId))
-  renderList($('[data-waiting]'), items, 'Aucune PR en attente')
+  return {
+    open: open.length,
+    forgotten: open.filter(forgotten).sort((a, b) => a.lastAt - b.lastAt),
+    ...Object.fromEntries(
+      UNBLOCK_STANCES.map((stance) => [
+        stance.key,
+        recent.filter((pr) => pr.stance === stance.key && now - pr.since >= stance.after * 60).sort((a, b) => a.since - b.since),
+      ]),
+    ),
+  }
+}
+
+// The approvals a pull request needs before it can be merged, as the sync publishes them: 1 when it does not.
+const requiredApprovals = () => state.stats.requiredApprovals ?? 1
+
+function renderUnblock(mode) {
+  const blocked = blockedPullRequests()
+  const required = requiredApprovals()
+  renderTiles(
+    $('[data-unblock-tiles]'),
+    UNBLOCK_TILES,
+    Object.fromEntries(UNBLOCK_TILES.map(({ key }) => [key, Array.isArray(blocked[key]) ? blocked[key].length : blocked[key]])),
+    mode,
+  )
+  // A single approval merges: no pull request is ever partly approved.
+  $('[data-unblock-tiles] [data-key="approving"]').hidden = required === 1
+  $('[data-unblock-card="approving"]').hidden = required === 1
+  $('.unblock-forgotten').classList.toggle('is-wide', required === 1)
+  for (const stance of [...UNBLOCK_STANCES, FORGOTTEN]) {
+    const prs = blocked[stance.key]
+    $(`[data-unblock-title="${stance.key}"]`).textContent = `${stance.label} (${formatNumber(prs.length)})`
+    $(`[data-unblock-sub="${stance.key}"]`).textContent = typeof stance.hint === 'function' ? stance.hint(required) : stance.hint
+    const items = prs
+      .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo, ...pr.by.flatMap((login) => [login, displayName(login)])))
+      .map((pr) => {
+        const text = el(
+          'p',
+          { className: 'feed-text' },
+          pullRequestLink(pr.repo, pr.number),
+          document.createTextNode(' de '),
+          personLink(pr.author, { withAvatar: false }),
+        )
+        // A forgotten pull request says where it stood; the others are listed by it.
+        if (stance === FORGOTTEN) {
+          const where = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
+          text.append(el('span', { className: 'feed-tag', textContent: where.tag }))
+        } else if (pr.by.length) {
+          text.append(
+            el(
+              'span',
+              { className: 'feed-by' },
+              document.createTextNode(` · ${stance.by} `),
+              ...pr.by.flatMap((login, index) => [
+                ...(index ? [document.createTextNode(', ')] : []),
+                personLink(login, { withAvatar: false }),
+              ]),
+            ),
+          )
+        }
+
+        const at = stance === FORGOTTEN ? pr.lastAt : pr.since
+
+        return listItem(pr.author, text, new Date(at * 60_000).toISOString(), `${stance.since} `)
+      })
+    renderList($(`[data-unblock="${stance.key}"]`), items, stance.empty)
+  }
 }
 
 // Sync status
@@ -4435,6 +4557,9 @@ function renderRoute() {
   $('[data-route-title]').textContent = ROUTES[route].title
   $('[data-route-subtitle]').textContent = ROUTES[route].subtitle
   $('[data-filters]').hidden = ROUTES[route].filters === false
+  // A page about what stands now has the search, not the period.
+  $('[data-periods]').hidden = ROUTES[route].period === false
+  $('[data-date-range]').hidden = ROUTES[route].period === false
   document.title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
   // The charts of a hidden page cannot be measured: they are drawn when their page shows.
   renderCharts()
@@ -4524,7 +4649,7 @@ function render(animate) {
   renderReport()
   renderRepositories()
   renderFeed(animate)
-  renderWaiting(animate)
+  renderUnblock(tileMode)
   renderUnapproved(animate)
   renderSyncMenu()
 }
@@ -4793,7 +4918,7 @@ $('[data-search]').addEventListener('input', (event) => {
     renderTeam()
     renderRepositories()
     renderFeed(false)
-    renderWaiting(false)
+    renderUnblock('enter')
     renderUnapproved(false)
   }
 })
