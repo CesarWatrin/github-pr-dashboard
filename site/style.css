@@ -1510,16 +1510,19 @@ main.is-loading {
   min-width: 0;
 }
 
-.person-dialog-identity h2 {
-  display: grid;
-  margin: 0;
-  font-size: 22px;
+/* The name, and the GitHub profile at its right: under it when the name is too long for both. */
+.person-dialog-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  min-width: 0;
 }
 
-.person-dialog-identity h2 span {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 400;
+.person-dialog-identity h2 {
+  margin: 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
 }
 
 .person-dialog-meta,
@@ -1529,17 +1532,12 @@ main.is-loading {
   font-size: 13px;
 }
 
-/* The GitHub profile, at the bottom right of the head: below the close button, on the right edge of the content, over
-   the room the head keeps for that button. */
 .person-dialog-github {
   display: inline-flex;
   flex: none;
-  align-self: flex-end;
   align-items: center;
   gap: 6px;
-  margin-right: -40px;
-  margin-left: auto;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);

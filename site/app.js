@@ -1998,8 +1998,7 @@ function openPersonDialog(row, opener) {
   close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
   close.setAttribute('aria-label', 'Fermer')
   close.addEventListener('click', () => $('[data-person-dialog]').close())
-  const heading = el('h2', { id: 'person-dialog-name' }, ...nameLines(name, row.login))
-  // The GitHub profile, at the right of the head, with the GitHub mark of the icon sprite.
+  // The GitHub profile, at the right of the name, with the GitHub mark of the icon sprite.
   const mark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, 'aria-hidden': 'true' })
   mark.append(svg('use', { href: `${ICONS_URL}#github` }))
   const github = el(
@@ -2019,7 +2018,9 @@ function openPersonDialog(row, opener) {
       el(
         'div',
         { className: 'person-dialog-identity' },
-        heading,
+        el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: name, title: name }), github),
+        // The login is only worth showing when the display name differs from it.
+        ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
         ...seniorityText('p', 'person-dialog-meta', row.login),
         stackLine(row.stack),
         el('p', {
@@ -2027,7 +2028,6 @@ function openPersonDialog(row, opener) {
           textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
         }),
       ),
-      github,
     ),
     el('p', {
       className: 'person-dialog-scope',
