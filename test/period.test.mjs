@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { DAY_MS, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } from '../site/period.js'
+import { DAY_MS, addDays, computeCi, computePeriod, firstActivity, parisDay, parisMidnight, reviewNetwork } from '../site/period.js'
 
 const at = (iso) => Date.parse(iso) / 60_000
 const iso = (time) => new Date(time * 60_000).toISOString()
@@ -376,6 +376,47 @@ describe('reviewNetwork', () => {
       ['ana', 'ben'],
     )
     assert.deepEqual(reviewNetwork(period, new Set()), { pairs: [], authors: [] })
+  })
+})
+
+describe('firstActivity', () => {
+  const records = [
+    record({
+      repo: 'web',
+      number: 20,
+      author: 'ana',
+      createdAt: at('2026-03-10T09:00:00Z'),
+      interventions: [['ben', at('2026-03-10T10:00:00Z'), 'APPROVED', 0]],
+    }),
+    // Ana's earlier pull request, listed later: the order of the records does not matter.
+    record({ repo: 'api', number: 21, author: 'ana', createdAt: at('2026-02-01T09:00:00Z') }),
+    // Ben's own pull request comes after his first review.
+    record({ repo: 'web', number: 22, author: 'ben', createdAt: at('2026-03-20T09:00:00Z') }),
+    // A bot's pull request does not count for the bot, but its reviewer counts.
+    record({
+      repo: 'web',
+      number: 23,
+      author: 'renovate',
+      bot: true,
+      createdAt: at('2026-01-05T09:00:00Z'),
+      interventions: [['cyd', at('2026-01-06T09:00:00Z'), 'COMMENTED', 1]],
+    }),
+  ]
+
+  test('each person first shows with their earliest pull request or review', () => {
+    const first = firstActivity(records)
+    assert.deepEqual(
+      [...first].map(([login, time]) => [login, iso(time)]).sort(),
+      [
+        ['ana', '2026-02-01T09:00:00.000Z'],
+        ['ben', '2026-03-10T10:00:00.000Z'],
+        ['cyd', '2026-01-06T09:00:00.000Z'],
+      ],
+    )
+  })
+
+  test('no records, nobody', () => {
+    assert.equal(firstActivity([]).size, 0)
   })
 })
 

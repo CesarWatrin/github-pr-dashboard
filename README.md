@@ -26,7 +26,8 @@ la recherche s'appliquent à toutes :
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
 - **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code
-  et filtrables par dépôt : sa photo, sa stack et ses technologies principales, ses PR de code, mergées et leur délai
+  et filtrables par dépôt : sa photo, son ancienneté (plus d'un an, ou les mois depuis sa première PR, review ou
+  commentaire dans l'année synchronisée), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
   de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
   ouvre la fiche de la personne, une carte qui s'incline vers la souris : taux de merge, attente de la première
   review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts. Sous chaque

@@ -42,6 +42,11 @@ paths:
     `reviewNetwork()`. The card leans towards a mouse (`tiltPersonCard()`, measured on its scene, which does not turn)
     and catches the light (`--glare`, `--sheen-*`); never for touch, nor under `prefers-reduced-motion`. No chart or
     tooltip in the dialog: the tooltip would sit under it.
+  - Seniority (`seniority()`, card and dialog) comes from `firstActivity()` of `site/period.js` over every record,
+    whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
+    synced year, which only covers a year, else the months since then.
+  - In the dialog, the head comes forward as the card leans: anything clickable at its level, such as the close
+    button, must come further forward still, or the head takes its clicks.
   - Each figure of the dialog shows the median of the person's peers (`statList()` given their details): the people
     of the same stack, or the whole team under `MIN_PEERS`; writing figures among those who wrote code, review figures
     among those who reviewed. A comparison with people doing the same work, never a score or a ranking.

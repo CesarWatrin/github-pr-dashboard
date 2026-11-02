@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, addDays, computeCi, computePeriod, firstActivity, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -106,6 +106,7 @@ const monthLongFormat = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 
 const dayMonthFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 const dateTimeFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
+const dateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const rangeShortFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 const rangeLongFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -426,6 +427,14 @@ const PERSON_CIRCULATION = [
 const PERSON_TOP = 3
 // Fewest people of a stack to compare a person with: under it, the dialog compares with the whole team.
 const MIN_PEERS = 3
+// A person first seen this close to the start of the synced year was already there before it: more than a year.
+const SENIORITY_START_DAYS = 14
+const MONTH_MS = (365.25 / 12) * DAY_MS
+// Explained in the legend under the cards, with the figures.
+const SENIORITY_LEGEND = {
+  label: 'Ancienneté',
+  hint: `Depuis la première PR, review ou commentaire de la personne. Les données couvrent un an : une première activité dans ses ${SENIORITY_START_DAYS} premiers jours compte pour plus d’un an.`,
+}
 // How far the open card leans towards the pointer, at its edges.
 const PERSON_TILT_DEG = 6
 
@@ -713,6 +722,8 @@ const state = {
   syncStarting: null,
   // The sync started from the page, until new data arrives.
   syncRequest: null,
+  // When each person first shows in the stats, worked out once per stats for their seniority.
+  firstActivity: null,
   seenEvents: null,
   seenWaiting: null,
   seenUnapproved: null,
@@ -1802,6 +1813,32 @@ function peerMedian(values, format) {
   return el('span', { className: 'person-stats-peer', textContent: `méd. ${format(shown)}` })
 }
 
+// How long a person has been around, whatever the period: more than a year when already active in the first days of the
+// synced year, else the months since their first pull request, review or comment.
+function seniority(login) {
+  if (state.firstActivity?.stats !== state.stats) {
+    state.firstActivity = { stats: state.stats, first: firstActivity(state.stats.pullRequests) }
+  }
+  const minutes = state.firstActivity.first.get(login)
+  if (minutes === undefined) {
+    return null
+  }
+  const first = minutes * 60_000
+  if (first - Date.parse(state.stats.windowStart) < SENIORITY_START_DAYS * DAY_MS) {
+    return { label: 'plus d’un an', title: 'Première activité dès les premiers jours de l’année synchronisée' }
+  }
+  const months = Math.floor((Date.parse(state.stats.generatedAt) - first) / MONTH_MS)
+
+  return { label: months < 1 ? 'moins d’un mois' : `${months} mois`, title: `Première activité le ${dateFormat.format(first)}` }
+}
+
+// "7 mois d’ancienneté", with the date it counts from on hover; nothing for someone the stats do not know.
+function seniorityText(tag, className, login) {
+  const value = seniority(login)
+
+  return value ? [el(tag, { className, textContent: `${value.label} d’ancienneté`, title: value.title })] : []
+}
+
 const nameLines = (name, login) => [
   el('strong', { textContent: name, title: name }),
   // The login is only worth showing when the display name differs from it.
@@ -1815,7 +1852,7 @@ function personCard(row, index) {
     'button',
     { type: 'button', className: 'person-card-head' },
     el('img', { className: 'person-card-avatar', src: avatarUrl(row.login, 112), alt: '', loading: 'lazy', width: 56, height: 56 }),
-    el('span', { className: 'person-card-name' }, ...nameLines(name, row.login)),
+    el('span', { className: 'person-card-name' }, ...nameLines(name, row.login), ...seniorityText('span', 'person-seniority', row.login)),
   )
   open.setAttribute('aria-haspopup', 'dialog')
   open.addEventListener('click', () => openPersonDialog(row, open))
@@ -1930,6 +1967,7 @@ function openPersonDialog(row, opener) {
         'div',
         { className: 'person-dialog-identity' },
         heading,
+        ...seniorityText('p', 'person-dialog-meta', row.login),
         stackLine(row.stack),
         el('p', {
           className: 'person-dialog-meta',
@@ -2029,7 +2067,7 @@ function renderTableLegends() {
   for (const [name, table] of Object.entries(TABLES)) {
     $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
-  $('[data-table-legend="team"]').replaceChildren(...legend([...TEAM_STATS, DEPENDENCY_STAT]))
+  $('[data-table-legend="team"]').replaceChildren(...legend([SENIORITY_LEGEND, ...TEAM_STATS, DEPENDENCY_STAT]))
 }
 
 function renderStackLegends() {

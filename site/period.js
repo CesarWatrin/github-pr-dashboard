@@ -575,6 +575,28 @@ function dependencyStats(repositories, ecosystems) {
   }
 }
 
+// When each person first shows in the records, whatever the range: their first pull request or their first review or
+// comment, in minutes since the epoch. Bot pull requests do not count for their author, but the people who review them
+// do. The records only cover the rolling window: a person already active at its start has been around for longer.
+export function firstActivity(records) {
+  const first = new Map()
+  const seen = (login, at) => {
+    if (!first.has(login) || at < first.get(login)) {
+      first.set(login, at)
+    }
+  }
+  for (const pr of records) {
+    if (!pr.bot) {
+      seen(pr.author, pr.createdAt)
+    }
+    for (const [login, at] of pr.interventions) {
+      seen(login, at)
+    }
+  }
+
+  return first
+}
+
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.
 export function computeCi(workflows, { start, end, bucket }) {
   const firstDay = parisDay(start)
