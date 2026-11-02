@@ -27,7 +27,9 @@ la recherche s'appliquent à toutes :
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
 - **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code
   et filtrables par dépôt : sa photo, sa stack et ses technologies principales, ses PR de code, mergées et leur délai
-  de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code.
+  de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
+  ouvre la fiche de la personne, une carte qui s'incline vers la souris : taux de merge, attente de la première
+  review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par

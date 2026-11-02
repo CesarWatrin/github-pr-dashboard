@@ -366,6 +366,64 @@ const TEAM_STATS = [
   },
 ]
 
+// The figures of the dialog that opens from a person's card, read from { row, author, reviewer, network }: the row of
+// the card, the person's rows of the authors and reviewers tables and their place in the review network, all over the
+// repositories selected on the team page. The hints are those of the tables' columns.
+const PERSON_WRITTEN = [
+  { label: 'PR de code', value: ({ row }) => row.code, hint: TEAM_STATS[0].hint },
+  { label: 'Mergées', value: ({ row }) => row.merged, hint: TEAM_STATS[1].hint },
+  { label: 'Taux de merge', value: ({ author }) => author?.mergeRate, format: formatPercent, hint: 'Mergées / (mergées + fermées sans merge).' },
+  { label: 'Merge en', value: ({ row }) => row.medianTimeToMergeHours, format: formatDuration, hint: TEAM_STATS[2].hint },
+  {
+    label: 'Attente 1re review',
+    value: ({ author }) => author?.medianTimeToFirstReviewHours,
+    format: formatDuration,
+    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
+  },
+  {
+    label: 'Mergées sans review',
+    value: ({ author }) => author?.unreviewedRate,
+    format: formatShare,
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+]
+
+const PERSON_REVIEWED = [
+  { label: 'PR relues', value: ({ reviewer }) => reviewer?.prs ?? 0, hint: TEAM_STATS[3].hint },
+  { label: 'Comm. / PR', value: ({ reviewer }) => reviewer?.commentsPerPr, format: formatDecimal, hint: TEAM_STATS[4].hint },
+  {
+    label: 'Approb. sans comm.',
+    value: ({ reviewer }) => reviewer?.silentApprovalRate,
+    format: formatShare,
+    hint: 'Part des PR approuvées sans y laisser de commentaire.',
+  },
+  { label: 'Modif. demandées', value: ({ reviewer }) => reviewer?.changesRequested, hint: 'Reviews « changements demandés ».' },
+  {
+    label: 'Merges effectués',
+    value: ({ reviewer }) => reviewer?.merges,
+    hint: 'PR de code mergées par la personne, les siennes comprises.',
+  },
+  {
+    label: 'Taille relue',
+    value: ({ reviewer }) => reviewer?.medianSize,
+    hint: 'Taille médiane des PR relues, en lignes ajoutées et supprimées.',
+  },
+]
+
+const PERSON_CIRCULATION = [
+  { label: 'Relecteurs distincts', value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
+  {
+    label: 'Dépendance',
+    value: ({ network }) => network?.topReviewerShare,
+    format: formatShare,
+    hint: 'Part de ses PR relues sur lesquelles son relecteur principal est intervenu. Proche de 100 % : son code ne circule qu’entre deux personnes.',
+  },
+]
+// People and repositories listed in the dialog, the busiest first.
+const PERSON_TOP = 3
+// How far the open card leans towards the pointer, at its edges.
+const PERSON_TILT_DEG = 8
+
 const REPO_COLUMNS = [
   { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
   {
@@ -1692,49 +1750,58 @@ function teamRows() {
     .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
 }
 
-function personCard(row, index) {
-  const name = displayName(row.login)
-  const type = stackType(row.stack.counts)
-  const technologies = topTechnologies(row.stack.technologies).map(([technology]) => technology)
+// The stack badge of a person and the logos of their main technologies.
+function stackLine(stack) {
+  const type = stackType(stack.counts)
+  const technologies = topTechnologies(stack.technologies).map(([technology]) => technology)
   const logos = el('span', { className: 'stack-logos', title: technologies.join(', ') }, ...technologies.map((technology) => technologyIcon(technology)))
   if (technologies.length) {
     logos.setAttribute('role', 'img')
     logos.setAttribute('aria-label', `Technos : ${technologies.join(', ')}`)
   }
-  const card = el(
-    'article',
-    { className: 'person-card' },
-    el(
-      'a',
-      { className: 'person-card-head', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener' },
-      el('img', { className: 'person-card-avatar', src: avatarUrl(row.login, 112), alt: '', loading: 'lazy', width: 56, height: 56 }),
+
+  return el(
+    'div',
+    { className: 'person-card-stack' },
+    type ? el('span', { className: `stack-type is-${type.key}`, textContent: type.label }) : el('span', { className: 'muted', textContent: '–' }),
+    logos,
+  )
+}
+
+// Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint.
+function statList(definitions, source) {
+  return el(
+    'dl',
+    { className: 'person-stats' },
+    ...definitions.map((stat) =>
       el(
-        'span',
-        { className: 'person-card-name' },
-        el('strong', { textContent: name, title: name }),
-        // The login is only worth showing when the display name differs from it.
-        ...(name === row.login ? [] : [el('span', { textContent: row.login })]),
-      ),
-    ),
-    el(
-      'div',
-      { className: 'person-card-stack' },
-      type ? el('span', { className: `stack-type is-${type.key}`, textContent: type.label }) : el('span', { className: 'muted', textContent: '–' }),
-      logos,
-    ),
-    el(
-      'dl',
-      { className: 'person-stats' },
-      ...TEAM_STATS.map((stat) =>
-        el(
-          'div',
-          {},
-          el('dt', { textContent: stat.label }),
-          el('dd', { textContent: (stat.format ?? formatNumber)(row[stat.key]) }),
-        ),
+        'div',
+        {},
+        el('dt', { textContent: stat.label, title: stat.hint ?? '' }),
+        el('dd', { textContent: (stat.format ?? formatNumber)(stat.value ? stat.value(source) : source[stat.key]) }),
       ),
     ),
   )
+}
+
+const nameLines = (name, login) => [
+  el('strong', { textContent: name, title: name }),
+  // The login is only worth showing when the display name differs from it.
+  ...(name === login ? [] : [el('span', { textContent: login })]),
+]
+
+function personCard(row, index) {
+  const name = displayName(row.login)
+  // The whole card opens the person's details: the button of its head stretches over it.
+  const open = el(
+    'button',
+    { type: 'button', className: 'person-card-head' },
+    el('img', { className: 'person-card-avatar', src: avatarUrl(row.login, 112), alt: '', loading: 'lazy', width: 56, height: 56 }),
+    el('span', { className: 'person-card-name' }, ...nameLines(name, row.login)),
+  )
+  open.setAttribute('aria-haspopup', 'dialog')
+  open.addEventListener('click', () => openPersonDialog(row, open))
+  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), statList(TEAM_STATS, row))
   card.setAttribute('aria-label', name)
   card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
 
@@ -1753,6 +1820,134 @@ function renderTeam() {
     return
   }
   container.replaceChildren(...rows.map(personCard))
+}
+
+// The busiest people or repositories of a person, each with its count of pull requests.
+function topList(title, items, withAvatar) {
+  const list = items.length
+    ? el(
+        'ul',
+        { className: 'person-dialog-list' },
+        ...items.map(([key, prs]) =>
+          el(
+            'li',
+            {},
+            ...(withAvatar ? [avatar(key)] : []),
+            el('span', { className: 'person-dialog-list-name', textContent: withAvatar ? displayName(key) : key, title: key }),
+            el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
+          ),
+        ),
+      )
+    : el('p', { className: 'muted', textContent: '–' })
+
+  return el('div', {}, el('p', { className: 'person-dialog-list-title', textContent: title }), list)
+}
+
+// The details of a person over the period and the repositories selected on the team page.
+function personDetails(row) {
+  const { login } = row
+  const network = reviewNetwork(currentPeriod(), state.repos.team)
+  const author = currentPeriod().authors.find((person) => person.login === login)
+  const top = (pairs, key) => pairs.slice(0, PERSON_TOP).map((pair) => [pair[key], pair.prs])
+
+  return {
+    row,
+    author: authorRows('team').find((other) => other.login === login),
+    reviewer: reviewerRows('team').find((other) => other.login === login),
+    network: network.authors.find((other) => other.login === login),
+    reviewedBy: top(network.pairs.filter((pair) => pair.author === login), 'reviewer'),
+    reviews: top(network.pairs.filter((pair) => pair.reviewer === login), 'author'),
+    codeRepos: author
+      ? selectedEntries(author, 'team')
+          .filter(([, stats]) => stats.code > 0)
+          .map(([repo, stats]) => [repo, stats.code])
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, PERSON_TOP)
+      : [],
+  }
+}
+
+// Closing gives the focus back to the card that opened the dialog, even where a click does not focus a button.
+function openPersonDialog(row, opener) {
+  const details = personDetails(row)
+  const name = displayName(row.login)
+  const technologies = topTechnologies(row.stack.technologies)
+  const scope = state.repos.team ? `${periodTitle()} · ${repoFilterLabel('team', repoOptions('team'))}` : periodTitle()
+  const close = el(
+    'button',
+    { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
+    svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
+  )
+  close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
+  close.setAttribute('aria-label', 'Fermer')
+  close.addEventListener('click', () => $('[data-person-dialog]').close())
+  const heading = el('h2', { id: 'person-dialog-name' }, ...nameLines(name, row.login))
+  const section = (title, ...children) => el('section', { className: 'person-dialog-section' }, el('h3', { textContent: title }), ...children)
+
+  $('[data-person-dialog-card]').replaceChildren(
+    close,
+    el(
+      'header',
+      { className: 'person-dialog-head' },
+      el('img', { className: 'person-dialog-avatar', src: avatarUrl(row.login, 176), alt: '', width: 88, height: 88 }),
+      el(
+        'div',
+        { className: 'person-dialog-identity' },
+        heading,
+        stackLine(row.stack),
+        el('p', {
+          className: 'person-dialog-meta',
+          textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
+        }),
+        el('a', { className: 'person-dialog-link', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener', textContent: 'Profil GitHub ↗' }),
+      ),
+    ),
+    el('p', { className: 'person-dialog-scope', textContent: scope }),
+    section('Ce que la personne écrit', statList(PERSON_WRITTEN, details)),
+    section('Ce que la personne relit', statList(PERSON_REVIEWED, details)),
+    section(
+      'Avec qui, et où',
+      statList(PERSON_CIRCULATION, details),
+      el(
+        'div',
+        { className: 'person-dialog-columns' },
+        topList('Son code est relu par', details.reviewedBy, true),
+        topList('Relit le code de', details.reviews, true),
+        topList('Ses dépôts', details.codeRepos, false),
+        topList('Dépôts relus', details.reviewer?.topRepos ?? [], false),
+      ),
+    ),
+  )
+  resetPersonTilt()
+  const dialog = $('[data-person-dialog]')
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
+  dialog.showModal()
+}
+
+// The open card leans towards the pointer, its layers apart, and catches the light where the pointer is, like a printed
+// card held in the hand. Only for a mouse, and never for those who ask their system to reduce motion.
+function tiltPersonCard(event) {
+  if (event.pointerType !== 'mouse' || reducedMotion.matches) {
+    return
+  }
+  // Measured on the scene, which does not turn: the card's own box changes as it leans.
+  const box = $('[data-person-dialog-scene]').getBoundingClientRect()
+  const x = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width))
+  const y = Math.min(1, Math.max(0, (event.clientY - box.top) / box.height))
+  const card = $('[data-person-dialog-card]')
+  card.classList.add('is-tilting')
+  card.style.setProperty('--tilt-x', `${((0.5 - y) * 2 * PERSON_TILT_DEG).toFixed(2)}deg`)
+  card.style.setProperty('--tilt-y', `${((x - 0.5) * 2 * PERSON_TILT_DEG).toFixed(2)}deg`)
+  card.style.setProperty('--glare-x', `${(x * 100).toFixed(1)}%`)
+  card.style.setProperty('--glare-y', `${(y * 100).toFixed(1)}%`)
+}
+
+function resetPersonTilt() {
+  const card = $('[data-person-dialog-card]')
+  card.classList.remove('is-tilting')
+  for (const property of ['--tilt-x', '--tilt-y', '--glare-x', '--glare-y']) {
+    card.style.removeProperty(property)
+  }
 }
 
 function renderCharts() {
@@ -1859,9 +2054,10 @@ function selectedEntries(person, name) {
   return Object.entries(person.repos).filter(([repo]) => inSelection(state.repos[name], repo))
 }
 
-function authorRows() {
+// The rows of the authors table, over the repositories selected on a page: the table's own by default.
+function authorRows(name = 'authors') {
   return currentPeriod().authors.flatMap((person) => {
-    const entries = selectedEntries(person, 'authors')
+    const entries = selectedEntries(person, name)
     const parts = entries.map(([, stats]) => stats)
     if (parts.length === 0) {
       return []
@@ -1886,9 +2082,9 @@ function authorRows() {
   })
 }
 
-function reviewerRows() {
+function reviewerRows(name = 'reviewers') {
   return currentPeriod().reviewers.flatMap((person) => {
-    const entries = selectedEntries(person, 'reviewers')
+    const entries = selectedEntries(person, name)
     const parts = entries.map(([, stats]) => stats)
     const prs = sumOf(parts, 'prs')
     const merges = sumOf(parts, 'merges')
@@ -3223,6 +3419,15 @@ $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
 })
+// The dialog of a person closes from its button, with Escape, or with a click beside the card.
+$('[data-person-dialog]').addEventListener('click', (event) => {
+  if (!event.target.closest('[data-person-dialog-card]')) {
+    event.currentTarget.close()
+  }
+})
+$('[data-person-dialog]').addEventListener('close', resetPersonTilt)
+$('[data-person-dialog-scene]').addEventListener('pointermove', tiltPersonCard)
+$('[data-person-dialog-scene]').addEventListener('pointerleave', resetPersonTilt)
 
 let resizeFrame = 0
 let observedWidth = 0

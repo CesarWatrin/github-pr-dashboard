@@ -37,6 +37,11 @@ paths:
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not
   the stack: that one is the person's own, over every repository. `stackType()` and `topTechnologies()` are shared
   with the stack column of the tables.
+  - A click on a card opens `openPersonDialog()`: the figures of `PERSON_WRITTEN`, `PERSON_REVIEWED` and
+    `PERSON_CIRCULATION`, read from `personDetails()`, which reuses `authorRows('team')`, `reviewerRows('team')` and
+    `reviewNetwork()`. The card leans towards a mouse (`tiltPersonCard()`, measured on its scene, which does not turn)
+    and catches the light (`--glare`, `--sheen-*`); never for touch, nor under `prefers-reduced-motion`. No chart or
+    tooltip in the dialog: the tooltip would sit under it.
 - The "Méthode" page keeps the rules shared by the whole dashboard; what a single column counts goes in its `hint`.
 
 ## Look and feel
