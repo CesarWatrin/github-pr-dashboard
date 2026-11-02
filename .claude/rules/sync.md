@@ -17,8 +17,10 @@ paths:
   range with more is split in halves; a page of 100 runs weighs about 1 MB, so pages are fetched in parallel, at most
   `REST_CONCURRENCY` calls at once across repositories. A repository without Actions answers 404: no runs. A full
   sync keeps the runs already read: a finished run does not change.
-- `request()` retries 5xx, 403 and 429 answers, honouring `retry-after`. The token has 5000 GraphQL points and 5000
-  REST calls an hour, shared with anyone using it (a local `npm run dev` included).
+- `request()` makes a call at most six times: again on a 5xx, 403 or 429 answer (honouring `retry-after`), on a
+  connection that fails, and on a body that comes back empty or cut short, as GitHub sometimes sends. It reads the
+  answer whole, so that one bad answer does not end a full sync of twenty minutes. The token has 5000 GraphQL points
+  and 5000 REST calls an hour, shared with anyone using it (a local `npm run dev` included).
 
 ## Classification
 
