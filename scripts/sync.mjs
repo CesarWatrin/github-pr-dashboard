@@ -154,6 +154,8 @@ const PULL_REQUEST_FIELDS = `
   reviews(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${REVIEW_FIELDS} } }
   comments(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${COMMENT_FIELDS} } }
   commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+  reviewDecision
+  reviewRequests(first: 10) { nodes { asCodeOwner requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
 `
 
 const REPOSITORIES_QUERY = `
@@ -279,8 +281,11 @@ async function graphql(query, variables) {
   }
 
   const body = await response.json()
-  if (body.errors) {
-    const detail = process.env.CI ? body.errors.map((error) => error.type).join(', ') : JSON.stringify(body.errors)
+  // A reviewer the token may not read, such as a team when it cannot read the organization's teams, comes back null
+  // with an error of its own: the rest of the answer stands.
+  const errors = (body.errors ?? []).filter((error) => !error.path?.includes('requestedReviewer'))
+  if (errors.length) {
+    const detail = process.env.CI ? errors.map((error) => error.type).join(', ') : JSON.stringify(errors)
     throw new Error(`GitHub API error: ${detail}`)
   }
 
@@ -385,7 +390,22 @@ async function toRecord(node) {
     comments: await fetchAllItems(node, 'comments', toComment),
     // State of the checks of the last commit: SUCCESS, FAILURE, ERROR, PENDING or EXPECTED, null without checks.
     checks: node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
+    // GitHub's verdict on the reviews the base branch requires (APPROVED, CHANGES_REQUESTED, REVIEW_REQUIRED, null
+    // without such rules), and the code owners still asked to review.
+    reviewDecision: node.reviewDecision ?? null,
+    codeOwnerRequests: (node.reviewRequests?.nodes ?? [])
+      .filter((request) => request.asCodeOwner)
+      .map((request) => codeOwnerOf(request.requestedReviewer)),
   }
+}
+
+// A code owner asked to review: a login, a team as @slug, null when the token cannot read it.
+function codeOwnerOf(reviewer) {
+  if (reviewer?.__typename === 'Team') {
+    return `@${reviewer.slug}`
+  }
+
+  return reviewer?.login ?? null
 }
 
 function toReview(node) {
@@ -837,6 +857,8 @@ function toPeriodRecord(pr, index) {
     ...(dependency && { dependency }),
     // An open draft is not waiting for anyone yet.
     ...(pr.state === 'OPEN' && pr.draft && { draft: true }),
+    // An open pull request GitHub does not let merge yet, while code owners are still asked to review it.
+    ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && pr.codeOwnerRequests?.length > 0 && { codeOwners: pr.codeOwnerRequests }),
   }
 }
 

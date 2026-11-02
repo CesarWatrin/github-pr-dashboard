@@ -43,10 +43,15 @@ paths:
   median of each stage over the pull requests that went through it, and the average share of each stage in the time
   of the reviewed ones that reached production, each weighing the same: stage medians never add up, so no chart
   stacks them. The repository filter of its table (`REPO_FILTERS.cycle`) applies to the whole page.
+- **Working time**: every delay counts working hours only, through `workHoursBetween()` of `site/period.js` (Monday to
+  Friday, 9 to 18, Paris time; `WORK_DAY_HOURS` a day), and `formatDuration()` shows them in hours, then in working
+  days. Only the durations of CI runs stay in real time; dates and ages (« il y a 3 jours ») stay on the calendar.
 - **Unblock page**: `openPullRequests()` of `site/period.js` tells where each open code pull request stands, after the
-  latest decision of each reviewer, as GitHub does, and the approvals merging needs (`requiredApprovals` of the stats,
+  latest decision of each reviewer, as GitHub does, the code owners it still waits for (`codeOwners` of the records),
+  and the approvals merging needs (`requiredApprovals` of the stats,
   from `REQUIRED_APPROVALS`, 1 without it: the list of the partly approved ones then hides). `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`,
-  those of the people still in the team that have stood there for longer than its delay (`after`, in hours), and
+  those of the people still in the team that have stood there for longer than its delay (`afterDays`, in working
+  days), and
   apart those without any review or comment for `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of
   the records.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and

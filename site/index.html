@@ -263,15 +263,15 @@
               <div class="tiles" data-unblock-tiles></div>
               <p class="card-note">
                 PR de code ouvertes, hors brouillons et PR des personnes parties, d’après la dernière synchro. Chaque PR
-                n’apparaît que dans une liste, selon la dernière décision de chaque relecteur et le nombre d’approbations
-                qu’il faut pour merger, et seulement après un délai : un jour approuvée ou sans review, trois jours avec
-                des changements demandés ou en discussion.
-                Celles sans aucune review ni commentaire depuis plus d’un mois sont à part, oubliées.
+                n’apparaît que dans une liste, selon la dernière décision de chaque relecteur, les code owners qu’elle
+                attend et le nombre d’approbations qu’il faut pour merger, et seulement après un délai en jours ouvrés :
+                un jour approuvée, bloquée par un code owner ou sans review, trois jours avec des changements demandés ou
+                en discussion. Celles sans aucune review ni commentaire depuis plus d’un mois sont à part, oubliées.
               </p>
             </section>
 
             <div class="unblock-lists">
-              <section class="card" aria-labelledby="unblock-approved-title">
+              <section class="card" aria-labelledby="unblock-approved-title" data-unblock-card="approved">
                 <h2 id="unblock-approved-title" data-unblock-title="approved">Approuvées, pas mergées</h2>
                 <p class="card-sub" data-unblock-sub="approved"></p>
                 <ol class="feed" data-unblock="approved"></ol>
@@ -283,19 +283,25 @@
                 <ol class="feed" data-unblock="approving"></ol>
               </section>
 
-              <section class="card" aria-labelledby="unblock-changes-title">
+              <section class="card" aria-labelledby="unblock-owners-title" data-unblock-card="owners">
+                <h2 id="unblock-owners-title" data-unblock-title="owners">Bloquées par un code owner</h2>
+                <p class="card-sub" data-unblock-sub="owners"></p>
+                <ol class="feed" data-unblock="owners"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="unblock-changes-title" data-unblock-card="changes">
                 <h2 id="unblock-changes-title" data-unblock-title="changes">Changements demandés</h2>
                 <p class="card-sub" data-unblock-sub="changes"></p>
                 <ol class="feed" data-unblock="changes"></ol>
               </section>
 
-              <section class="card" aria-labelledby="unblock-discussed-title">
+              <section class="card" aria-labelledby="unblock-discussed-title" data-unblock-card="discussed">
                 <h2 id="unblock-discussed-title" data-unblock-title="discussed">En discussion</h2>
                 <p class="card-sub" data-unblock-sub="discussed"></p>
                 <ol class="feed" data-unblock="discussed"></ol>
               </section>
 
-              <section class="card" aria-labelledby="unblock-waiting-title">
+              <section class="card" aria-labelledby="unblock-waiting-title" data-unblock-card="waiting">
                 <h2 id="unblock-waiting-title" data-unblock-title="waiting">Sans review</h2>
                 <p class="card-sub" data-unblock-sub="waiting"></p>
                 <ol class="feed" data-unblock="waiting"></ol>
@@ -670,8 +676,11 @@
                 </dd>
                 <dt>Délais et tailles</dt>
                 <dd>
-                  Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Taille : lignes ajoutées plus
-                  supprimées.
+                  Médianes, moins sensibles que la moyenne aux quelques très grosses PR. Les délais ne comptent que les
+                  heures ouvrées, du lundi au vendredi de 9 h à 18 h, heure de Paris : une PR ouverte le vendredi soir et
+                  relue le lundi matin n’a pas attendu le week-end. Un jour compte 9 h ouvrées (« j ») ; les jours fériés
+                  comptent comme ouvrés. Seules les durées des exécutions de CI restent en temps réel. Taille : lignes
+                  ajoutées plus supprimées.
                 </dd>
                 <dt>Type de dépôt</dt>
                 <dd>
@@ -770,11 +779,12 @@
                 <dt>À débloquer</dt>
                 <dd>
                   PR de code ouvertes, hors brouillons et PR des personnes parties, classées comme GitHub selon la
-                  dernière décision de chaque relecteur : des changements demandés par quelqu’un, sinon autant
-                  d’approbations qu’il en faut pour merger, sinon moins, sinon des reviews ou commentaires sans décision,
-                  sinon rien. Une PR n’y apparaît qu’après un jour
-                  approuvée ou sans review, trois jours avec des changements demandés ou en discussion, comptés depuis
-                  cette décision, le dernier échange ou l’ouverture. Sans aucune review ni commentaire depuis plus d’un
+                  dernière décision de chaque relecteur : des changements demandés par quelqu’un, sinon des code owners
+                  qui ne l’ont pas encore relue alors que GitHub ne la laisse pas merger, sinon autant d’approbations
+                  qu’il en faut pour merger, sinon moins, sinon des reviews ou commentaires sans décision, sinon rien.
+                  Une PR n’y apparaît qu’après un jour ouvré approuvée, bloquée par un code owner ou sans review, trois
+                  jours ouvrés avec des changements demandés ou en discussion, comptés depuis cette décision,
+                  l’ouverture ou le dernier échange. Sans aucune review ni commentaire depuis plus d’un
                   mois, elle est rangée à part, parmi les oubliées.
                 </dd>
                 <dt>Noms</dt>

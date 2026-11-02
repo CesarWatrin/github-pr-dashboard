@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -143,6 +143,7 @@ function formatSeconds(seconds) {
   return formatDuration(seconds / 3600)
 }
 
+// Working time: in hours under two working days, beyond in working days of WORK_DAY_HOURS.
 function formatDuration(hours) {
   if (isMissing(hours)) {
     return '–'
@@ -150,11 +151,11 @@ function formatDuration(hours) {
   if (hours < 1) {
     return `${Math.round(hours * 60)} min`
   }
-  if (hours < 48) {
+  if (hours < 2 * WORK_DAY_HOURS) {
     return `${numberFormat.format(hours < 10 ? Math.round(hours * 10) / 10 : Math.round(hours))} h`
   }
 
-  return `${numberFormat.format(Math.round(hours / 2.4) / 10)} j`
+  return `${numberFormat.format(Math.round((hours / WORK_DAY_HOURS) * 10) / 10)} j`
 }
 
 function formatRelative(iso) {
@@ -252,59 +253,69 @@ const CYCLE_END_TO_END_TILES = [
   { key: 'prs', label: 'PR de code ouvertes' },
 ]
 
-// Where an open code pull request may stand, and how long it may stay there, in hours, before it shows as waiting for
-// someone: what it waits for, on its list and in the legend of the page. The hints take the approvals merging needs.
+// Where an open code pull request may stand, and how long it may stay there, in working days, before it shows as
+// waiting for someone: what it waits for, on its list and in the legend of the page. The hints take the approvals merging needs.
 const approvers = (required) => (required > 1 ? `${formatNumber(required)} personnes` : 'quelqu’un')
 const UNBLOCK_STANCES = [
   {
     key: 'approved',
     label: 'Approuvées, pas mergées',
-    after: 24,
+    afterDays: 1,
     since: 'approuvée',
     by: 'approuvée par',
     tag: 'approuvée',
     hint: (required) =>
-      `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)} depuis plus d’un jour, sans demande de changements en cours : il ne reste qu’à merger.`,
+      `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)} depuis plus d’un jour ouvré, sans demande de changements en cours : il ne reste qu’à merger.`,
     empty: 'Aucune PR approuvée qui attend son merge',
   },
   // Only where merging needs more than one approval.
   {
     key: 'approving',
     label: 'Approbation incomplète',
-    after: 24,
+    afterDays: 1,
     since: 'approuvée',
     by: 'approuvée par',
     tag: 'approbation incomplète',
     hint: (required) =>
-      `Approuvées depuis plus d’un jour par moins de ${approvers(required)}, alors qu’il en faut ${formatNumber(required)} pour merger : il manque une relecture.`,
+      `Approuvées depuis plus d’un jour ouvré par moins de ${approvers(required)}, alors qu’il en faut ${formatNumber(required)} pour merger : il manque une relecture.`,
     empty: 'Aucune PR qui attend une approbation de plus',
+  },
+  {
+    key: 'owners',
+    label: 'Bloquées par un code owner',
+    afterDays: 1,
+    since: 'ouverte',
+    by: 'en attente de',
+    tag: 'code owner',
+    hint: 'Ouvertes depuis plus d’un jour ouvré, pas encore validées, et un code owner du dépôt ne les a pas encore relues : GitHub bloque le merge.',
+    empty: 'Aucune PR bloquée par un code owner',
   },
   {
     key: 'changes',
     label: 'Changements demandés',
-    after: 72,
+    afterDays: 3,
     since: 'changements demandés',
     by: 'demandés par',
     tag: 'changements demandés',
-    hint: 'Changements demandés il y a plus de trois jours, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.',
+    hint: 'Changements demandés il y a plus de trois jours ouvrés, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.',
     empty: 'Aucune demande de changements qui traîne',
   },
   {
     key: 'discussed',
     label: 'En discussion',
-    after: 72,
+    afterDays: 3,
     since: 'dernier échange',
     tag: 'en discussion',
-    hint: 'Reviews ou commentaires sans approbation ni demande de changements, et plus rien depuis trois jours.',
+    hint: 'Reviews ou commentaires sans approbation ni demande de changements, et plus rien depuis trois jours ouvrés.',
     empty: 'Aucune discussion au point mort',
   },
   {
     key: 'waiting',
     label: 'Sans review',
-    after: 24,
+    afterDays: 1,
     since: 'ouverte',
     tag: 'sans review',
-    hint: 'Ouvertes depuis plus d’un jour, sans aucune review ni commentaire d’une autre personne.',
+    hint: 'Ouvertes depuis plus d’un jour ouvré, sans aucune review ni commentaire d’une autre personne.',
     empty: 'Aucune PR qui attend sa première review',
   },
 ]
@@ -2026,9 +2037,10 @@ function renderCycleCharts() {
   const points = series.map(({ key, partial }) => ({ key, partial, ...cycleSummary(byBucket.get(key) ?? []) }))
   $('[data-cycle-charts-title]').textContent = `Médiane de chaque étape ${BUCKET_TITLES[bucket]}`
   for (const stage of CYCLE_STAGES) {
-    // Long stages read in days, short ones in hours.
-    const hoursPerUnit = Math.max(0, ...points.map((point) => point[stage.key] ?? 0)) > 48 ? 24 : 1
-    $(`[data-cycle-chart-title="${stage.key}"]`).textContent = `${stage.label}, en ${hoursPerUnit === 24 ? 'jours' : 'heures'}`
+    // Long stages read in working days, short ones in working hours.
+    const hoursPerUnit = Math.max(0, ...points.map((point) => point[stage.key] ?? 0)) > 2 * WORK_DAY_HOURS ? WORK_DAY_HOURS : 1
+    $(`[data-cycle-chart-title="${stage.key}"]`).textContent =
+      `${stage.label}, en ${hoursPerUnit === WORK_DAY_HOURS ? 'jours ouvrés' : 'heures ouvrées'}`
     columnChart($(`[data-cycle-chart="${stage.key}"]`), {
       points,
       bucket,
@@ -4356,7 +4368,9 @@ function blockedPullRequests() {
     ...Object.fromEntries(
       UNBLOCK_STANCES.map((stance) => [
         stance.key,
-        recent.filter((pr) => pr.stance === stance.key && now - pr.since >= stance.after * 60).sort((a, b) => a.since - b.since),
+        recent
+          .filter((pr) => pr.stance === stance.key && workHoursBetween(pr.since, now) >= stance.afterDays * WORK_DAY_HOURS)
+          .sort((a, b) => a.since - b.since),
       ]),
     ),
   }
@@ -4364,6 +4378,15 @@ function blockedPullRequests() {
 
 // The approvals a pull request needs before it can be merged, as the sync publishes them: 1 when it does not.
 const requiredApprovals = () => state.stats.requiredApprovals ?? 1
+
+// Someone a pull request waits for: a person, a team of code owners (@slug), or a code owner the sync could not read.
+function reviewerName(login) {
+  if (login === null) {
+    return el('span', { textContent: 'un code owner' })
+  }
+
+  return login.startsWith('@') ? el('span', { className: 'feed-team', textContent: `l’équipe ${login.slice(1)}` }) : personLink(login, { withAvatar: false })
+}
 
 function renderUnblock(mode) {
   const blocked = blockedPullRequests()
@@ -4377,13 +4400,14 @@ function renderUnblock(mode) {
   // A single approval merges: no pull request is ever partly approved.
   $('[data-unblock-tiles] [data-key="approving"]').hidden = required === 1
   $('[data-unblock-card="approving"]').hidden = required === 1
-  $('.unblock-forgotten').classList.toggle('is-wide', required === 1)
+  // The forgotten pull requests fill the last column, or the whole row when the lists above leave none.
+  $('.unblock-forgotten').classList.toggle('is-wide', [...document.querySelectorAll('[data-unblock-card]')].filter((card) => !card.hidden).length % 2 === 0)
   for (const stance of [...UNBLOCK_STANCES, FORGOTTEN]) {
     const prs = blocked[stance.key]
     $(`[data-unblock-title="${stance.key}"]`).textContent = `${stance.label} (${formatNumber(prs.length)})`
     $(`[data-unblock-sub="${stance.key}"]`).textContent = typeof stance.hint === 'function' ? stance.hint(required) : stance.hint
     const items = prs
-      .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo, ...pr.by.flatMap((login) => [login, displayName(login)])))
+      .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo, ...pr.by.filter(Boolean).flatMap((login) => [login, displayName(login)])))
       .map((pr) => {
         const text = el(
           'p',
@@ -4402,10 +4426,7 @@ function renderUnblock(mode) {
               'span',
               { className: 'feed-by' },
               document.createTextNode(` · ${stance.by} `),
-              ...pr.by.flatMap((login, index) => [
-                ...(index ? [document.createTextNode(', ')] : []),
-                personLink(login, { withAvatar: false }),
-              ]),
+              ...pr.by.flatMap((login, index) => [...(index ? [document.createTextNode(', ')] : []), reviewerName(login)]),
             ),
           )
         }

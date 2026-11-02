@@ -2442,9 +2442,14 @@ main.is-loading {
   font-variant-numeric: tabular-nums;
 }
 
-/* Who approved a pull request, or asked for changes, after its author. */
+/* Who approved a pull request, or asked for changes, or the code owners it waits for, after its author. */
 .feed-by {
   color: var(--text-secondary);
+}
+
+.feed-team {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 /* What a pull request merged without approval got instead: quiet, next to its link. */

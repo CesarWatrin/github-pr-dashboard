@@ -15,6 +15,7 @@ import {
   parisDay,
   parisMidnight,
   reviewNetwork,
+  workHoursBetween,
 } from '../site/period.js'
 
 const at = (iso) => Date.parse(iso) / 60_000
@@ -168,6 +169,40 @@ describe('Paris days', () => {
   })
 })
 
+describe('workHoursBetween', () => {
+  // Paris is UTC+1 in winter: 09:00 in Paris is 08:00 UTC. Monday 2 March 2026 is a Monday.
+  const hours = (from, to) => workHoursBetween(at(from), at(to))
+
+  test('within a working day', () => {
+    assert.equal(hours('2026-03-02T09:00:00Z', '2026-03-02T11:30:00Z'), 2.5)
+  })
+
+  test('the hours before 9 and after 18 do not count', () => {
+    assert.equal(hours('2026-03-02T06:00:00Z', '2026-03-02T20:00:00Z'), 9)
+    assert.equal(hours('2026-03-02T16:00:00Z', '2026-03-03T09:00:00Z'), 1 + 1)
+  })
+
+  test('nor do weekends: Friday evening to Monday morning is an hour', () => {
+    assert.equal(hours('2026-03-06T16:30:00Z', '2026-03-09T08:30:00Z'), 0.5 + 0.5)
+    assert.equal(hours('2026-03-07T10:00:00Z', '2026-03-08T10:00:00Z'), 0)
+  })
+
+  test('whole weeks count five working days of nine hours', () => {
+    assert.equal(hours('2026-03-02T08:00:00Z', '2026-03-16T08:00:00Z'), 2 * 5 * 9)
+    assert.equal(hours('2026-03-02T08:00:00Z', '2026-03-26T08:00:00Z'), 3 * 5 * 9 + 3 * 9)
+  })
+
+  test('the change to summer time on a Sunday moves the working day by an hour in UTC', () => {
+    // Monday 30 March 2026, Paris is UTC+2: 09:00 in Paris is 07:00 UTC.
+    assert.equal(hours('2026-03-30T07:00:00Z', '2026-03-30T08:00:00Z'), 1)
+    assert.equal(hours('2026-03-27T16:00:00Z', '2026-03-30T08:00:00Z'), 1 + 1)
+  })
+
+  test('backwards or empty, nothing', () => {
+    assert.equal(hours('2026-03-02T10:00:00Z', '2026-03-02T09:00:00Z'), 0)
+  })
+})
+
 describe('computePeriod', () => {
   const period = computePeriod(RECORDS, WEEK)
 
@@ -198,7 +233,8 @@ describe('computePeriod', () => {
       unreviewed: 1,
       reviewed: 1,
       timesToFirstReviewHours: [1],
-      timesToMergeHours: [6, 24],
+      // Tuesday 10:00 to Wednesday 10:00 in Paris: the eight working hours of Tuesday and one of Wednesday.
+      timesToMergeHours: [6, 9],
       sizes: [50, 200],
     })
     assert.equal(authors.carol.api.closedUnmerged, 1)
@@ -228,13 +264,14 @@ describe('computePeriod', () => {
     assert.deepEqual(totals, {
       deployments: 3,
       corrective: 2,
-      medianLeadTimeHours: 14.5,
+      medianLeadTimeHours: 7,
       reworkRate: 0.667,
-      medianRestoreHours: 1.5,
+      // The revert, opened and merged on a Saturday, took no working time.
+      medianRestoreHours: 1,
     })
     assert.deepEqual(
       repositories.find((row) => row.repo === 'web'),
-      { repo: 'web', deployments: 1, corrective: 0, medianLeadTimeHours: 39, reworkRate: 0, medianRestoreHours: null },
+      { repo: 'web', deployments: 1, corrective: 0, medianLeadTimeHours: 16.5, reworkRate: 0, medianRestoreHours: null },
     )
   })
 
@@ -257,7 +294,7 @@ describe('computePeriod', () => {
       opened: 2,
       merged: 1,
       closed: 1,
-      medianTimeToMergeHours: 48,
+      medianTimeToMergeHours: 18,
       waiting: 1,
       oldestWaitingAt: iso(at('2026-01-10T06:00:00Z')),
     })
@@ -278,14 +315,15 @@ describe('computePeriod', () => {
     })
     assert.deepEqual(period.cycles, [
       // Approved at its first review: no time in review.
-      cycle('web', '2026-03-02', 1, 1, 0, 5, 45, 6, 51),
+      cycle('web', '2026-03-02', 1, 1, 0, 5, 15, 6, 21),
       // Merged without any review: only the way to production.
-      cycle('web', '2026-03-03', 2, null, null, null, 3, 24, 27),
+      cycle('web', '2026-03-03', 2, null, null, null, 3, 9, 12),
       // Closed without a merge: only its pickup.
       cycle('api', '2026-03-05', 1, 1, null, null, null, null, null),
       // Changes requested, then merged without an approval: the review lasts until the merge.
       cycle('api', '2026-03-06', 0, 1, 1, null, 0, 2, 2),
-      cycle('api', '2026-03-07', 1, null, null, null, 0, 1, 1),
+      // Opened and merged on a Saturday: no working time.
+      cycle('api', '2026-03-07', 1, null, null, null, 0, 0, 0),
     ])
   })
 
@@ -335,7 +373,8 @@ describe('computePeriod', () => {
       toProduction,
     ])
     assert.deepEqual(stages, [
-      [2, 6, 16, null, 24, null],
+      // Approved at 18:00 on Monday, merged at 10:00 on Tuesday: one working hour.
+      [2, 6, 1, null, 9, null],
       [null, null, null, null, 1, null],
       [1, null, null, null, null, null],
     ])
@@ -647,6 +686,20 @@ describe('openPullRequests', () => {
     open(8, { bot: true }),
     open(9, { kind: 'release' }),
   ]).map(({ number, stance, since, by, lastAt }) => [number, stance, iso(since), by, iso(lastAt)])
+
+  test('code owners who have not reviewed it block a pull request, unless changes are requested', () => {
+    const blocked = openPullRequests([
+      open(1, { codeOwners: ['carol', '@backend'], interventions: [['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]] }),
+      open(2, { codeOwners: ['carol'], interventions: [['bob', at('2026-03-02T10:00:00Z'), 'CHANGES_REQUESTED', 1]] }),
+    ])
+    assert.deepEqual(
+      blocked.map(({ number, stance, since, by }) => [number, stance, iso(since), by]),
+      [
+        [1, 'owners', '2026-03-02T09:00:00.000Z', ['carol', '@backend']],
+        [2, 'changes', '2026-03-02T10:00:00.000Z', ['bob']],
+      ],
+    )
+  })
 
   test('approved by fewer people than merging needs, it is still being approved', () => {
     const twoNeeded = openPullRequests(

@@ -8,7 +8,8 @@ Site statique sans build ni dépendance, déployé sur GitHub Pages par un workf
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
 
 Le dashboard est découpé en pages, dans une barre latérale (une barre en haut sur les écrans étroits). La période et
-la recherche s'appliquent à toutes :
+la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
+18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
 - **Vue d'ensemble** : l'activité du jour, puis celle de la période en deux volets, livraison (PR ouvertes et
   mergées, délai de merge, mises en production, part de hotfix) et revue (PR relues, commentaires par PR,
@@ -18,9 +19,9 @@ la recherche s'appliquent à toutes :
   dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
   de merge, PR mergées sans review, PR relues).
 - **À débloquer** : les PR de code ouvertes qui attendent quelqu'un, hors brouillons, les plus anciennes d'abord :
-  approuvées mais pas mergées depuis plus d'un jour, approuvées par moins de personnes qu'il n'en faut pour merger
-  (`REQUIRED_APPROVALS`), avec des changements demandés ou en discussion depuis plus de
-  trois jours, sans review depuis plus d'un jour, chacune avec qui l'a approuvée ou a demandé des changements ; à part,
+  approuvées mais pas mergées depuis plus d'un jour ouvré, approuvées par moins de personnes qu'il n'en faut pour
+  merger (`REQUIRED_APPROVALS`), bloquées par un code owner qui ne les a pas encore relues, avec des changements
+  demandés ou en discussion depuis plus de trois jours ouvrés, sans review depuis plus d'un jour ouvré, chacune avec qui l'a approuvée ou a demandé des changements ; à part,
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
