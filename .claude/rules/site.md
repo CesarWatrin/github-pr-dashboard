@@ -12,8 +12,8 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, authors, reviewers, collaboration, tma, devops, method). The period selector
-  and the search apply to every page but the method one.
+  page of the hash (`ROUTES`: overview, authors, reviewers, collaboration, team, tma, devops, method). The period
+  selector and the search apply to every page but the method one.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
 - `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
@@ -32,6 +32,10 @@ paths:
   `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows × columns, `color-mix` on `--series-1`),
   `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
+- **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
+  `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards follow the
+  alphabetical order: they present people, they do not rank them. `stackType()` and `topTechnologies()` are shared
+  with the stack column of the tables.
 - The "Méthode" page keeps the rules shared by the whole dashboard; what a single column counts goes in its `hint`.
 
 ## Look and feel

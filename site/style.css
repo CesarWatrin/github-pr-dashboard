@@ -1181,6 +1181,105 @@ main.is-loading {
   white-space: nowrap;
 }
 
+/* Team page: one card per person, as many columns as fit. */
+.person-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 16px;
+}
+
+.person-card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.person-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.person-card-head:hover strong {
+  text-decoration: underline;
+}
+
+.person-card-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gridline);
+}
+
+.person-card-name {
+  display: grid;
+  min-width: 0;
+}
+
+.person-card-name strong,
+.person-card-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-card-name strong {
+  font-size: 16px;
+}
+
+.person-card-name span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.person-card-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.person-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.person-stats div {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.person-stats dt {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 /* Tooltip */
 .tooltip {
   position: fixed;
@@ -1878,6 +1977,11 @@ tbody td.person {
 .is-entering .heat-group {
   animation: fade-in 420ms ease both;
   animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .person-card {
+  animation: rise-in 420ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 60ms);
 }
 
 .is-entering tbody tr {

@@ -75,6 +75,7 @@ const ROUTES = {
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
+  team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
   tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
   devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
@@ -333,6 +334,35 @@ const COLLABORATION_COLUMNS = [
     kind: 'bar',
     format: (row) => formatShare(row.topReviewerShare),
     hint: 'Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.',
+  },
+]
+
+// The figures of each person's card on the team page, over the period: what the person wrote, then what they reviewed.
+// The hints make the legend under the cards.
+const TEAM_STATS = [
+  { key: 'code', label: 'PR de code', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  { key: 'merged', label: 'Mergées', hint: 'Parmi ces PR, celles qui ont été mergées.' },
+  {
+    key: 'medianTimeToMergeHours',
+    label: 'Merge en',
+    format: formatDuration,
+    hint: 'Délai médian de ces PR mergées, de la création au merge.',
+  },
+  {
+    key: 'reviewed',
+    label: 'PR relues',
+    hint: 'PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.',
+  },
+  {
+    key: 'commentsPerPr',
+    label: 'Comm. / PR',
+    format: formatDecimal,
+    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+  },
+  {
+    key: 'reviewers',
+    label: 'Relecteurs',
+    hint: 'Personnes différentes intervenues sur ses PR de code. Peu de relecteurs : son code circule peu.',
   },
 ]
 
@@ -740,7 +770,8 @@ function periodTitle() {
 const displayName = (login) => state.stats?.people?.[login] ?? login
 const matchesQuery = (...texts) => !state.query || texts.some((text) => text.toLowerCase().includes(state.query))
 const githubUrl = (path) => `https://github.com/${path}`
-const avatarUrl = (login) => githubUrl(`${encodeURIComponent(login)}.png?size=48`)
+// GitHub serves the avatar at twice its displayed size, for sharp high-density screens.
+const avatarUrl = (login, size = 48) => githubUrl(`${encodeURIComponent(login)}.png?size=${size}`)
 
 function avatar(login) {
   return el('img', { className: 'avatar', src: avatarUrl(login), alt: '', loading: 'lazy', width: 24, height: 24 })
@@ -1602,6 +1633,123 @@ function renderPairs(network) {
   renderList($('[data-collaboration-pairs]'), items, 'Aucun binôme sur la période')
 }
 
+// Team page
+
+// Everyone who wrote or reviewed code over the period, in alphabetical order rather than ranked: what each person wrote,
+// then what they reviewed. The stack comes from their code pull requests, else from the ones they reviewed.
+function teamRows() {
+  const period = currentPeriod()
+  const rows = new Map()
+  const row = (login) => {
+    if (!rows.has(login)) {
+      rows.set(login, { login, code: 0, merged: 0, timesToMerge: [], codeRepos: [], reviewed: 0, comments: 0, reviewedRepos: [] })
+    }
+
+    return rows.get(login)
+  }
+  for (const person of period.authors) {
+    const entries = Object.entries(person.repos)
+    const parts = entries.map(([, stats]) => stats)
+    const code = sumOf(parts, 'code')
+    if (code > 0) {
+      Object.assign(row(person.login), {
+        code,
+        merged: sumOf(parts, 'merged'),
+        timesToMerge: parts.flatMap((stats) => stats.timesToMergeHours),
+        codeRepos: entries.map(([repo, stats]) => [repo, stats.code]),
+      })
+    }
+  }
+  for (const person of period.reviewers) {
+    const entries = Object.entries(person.repos)
+    const parts = entries.map(([, stats]) => stats)
+    const reviewed = sumOf(parts, 'prs')
+    if (reviewed > 0) {
+      Object.assign(row(person.login), {
+        reviewed,
+        comments: sumOf(parts, 'comments'),
+        reviewedRepos: entries.map(([repo, stats]) => [repo, stats.prs]),
+      })
+    }
+  }
+  const reviewersOf = new Map(reviewNetwork(period).authors.map((author) => [author.login, author.reviewers]))
+
+  return [...rows.values()]
+    .map((totals) => ({
+      login: totals.login,
+      code: totals.code,
+      merged: totals.code ? totals.merged : null,
+      medianTimeToMergeHours: median(totals.timesToMerge),
+      reviewed: totals.reviewed,
+      commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
+      reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
+      stack: stackOf(totals.code ? totals.codeRepos : totals.reviewedRepos),
+    }))
+    .sort((a, b) => displayName(a.login).localeCompare(displayName(b.login), 'fr'))
+}
+
+function personCard(row, index) {
+  const name = displayName(row.login)
+  const type = stackType(row.stack.counts)
+  const technologies = topTechnologies(row.stack.technologies).map(([technology]) => technology)
+  const logos = el('span', { className: 'stack-logos', title: technologies.join(', ') }, ...technologies.map((technology) => technologyIcon(technology)))
+  if (technologies.length) {
+    logos.setAttribute('role', 'img')
+    logos.setAttribute('aria-label', `Technos : ${technologies.join(', ')}`)
+  }
+  const card = el(
+    'article',
+    { className: 'person-card' },
+    el(
+      'a',
+      { className: 'person-card-head', href: githubUrl(encodeURIComponent(row.login)), target: '_blank', rel: 'noopener' },
+      el('img', { className: 'person-card-avatar', src: avatarUrl(row.login, 112), alt: '', loading: 'lazy', width: 56, height: 56 }),
+      el(
+        'span',
+        { className: 'person-card-name' },
+        el('strong', { textContent: name, title: name }),
+        // The login is only worth showing when the display name differs from it.
+        ...(name === row.login ? [] : [el('span', { textContent: row.login })]),
+      ),
+    ),
+    el(
+      'div',
+      { className: 'person-card-stack' },
+      type ? el('span', { className: `stack-type is-${type.key}`, textContent: type.label }) : el('span', { className: 'muted', textContent: '–' }),
+      logos,
+    ),
+    el(
+      'dl',
+      { className: 'person-stats' },
+      ...TEAM_STATS.map((stat) =>
+        el(
+          'div',
+          {},
+          el('dt', { textContent: stat.label }),
+          el('dd', { textContent: (stat.format ?? formatNumber)(row[stat.key]) }),
+        ),
+      ),
+    ),
+  )
+  card.setAttribute('aria-label', name)
+  card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
+
+  return card
+}
+
+function renderTeam() {
+  const rows = teamRows().filter((row) => matchesQuery(row.login, displayName(row.login)))
+  const container = $('[data-team]')
+  if (rows.length === 0) {
+    container.replaceChildren(
+      el('p', { className: 'feed-empty', textContent: state.query ? 'Personne ne correspond à la recherche' : 'Personne sur la période' }),
+    )
+
+    return
+  }
+  container.replaceChildren(...rows.map(personCard))
+}
+
 function renderCharts() {
   if (!state.stats) {
     return
@@ -1637,13 +1785,12 @@ function renderChartTable() {
 
 // Under each table, what its columns count: the method page only keeps the rules they share.
 function renderTableLegends() {
+  const legend = (items) =>
+    items.filter((item) => item.hint).map((item) => el('div', {}, el('dt', { textContent: item.label }), el('dd', { textContent: item.hint })))
   for (const [name, table] of Object.entries(TABLES)) {
-    $(`[data-table-legend="${name}"]`).replaceChildren(
-      ...table.columns
-        .filter((column) => column.hint)
-        .map((column) => el('div', {}, el('dt', { textContent: column.label }), el('dd', { textContent: column.hint }))),
-    )
+    $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
+  $('[data-table-legend="team"]').replaceChildren(...legend(TEAM_STATS))
 }
 
 function renderStackLegends() {
@@ -1939,19 +2086,42 @@ function personLink(login) {
   )
 }
 
-function stackCell({ counts, technologies }) {
+// The type of a person's work: full-stack with enough of both sides, else the category of most of their pull requests.
+function stackType(counts) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
   if (total === 0) {
-    return el('td', { className: 'muted', textContent: '–' })
+    return null
+  }
+  if (counts.back / total >= FULL_STACK_MIN_SHARE && (counts.front + counts.mobile) / total >= FULL_STACK_MIN_SHARE) {
+    return { key: 'full-stack', label: 'full-stack' }
   }
   const parts = STACK_CATEGORIES.filter((category) => counts[category.key] > 0)
-  const share = (category) => Math.round((100 * counts[category.key]) / total)
   const main = parts.reduce((best, category) => (counts[category.key] > counts[best.key] ? category : best))
-  const fullStack =
-    counts.back / total >= FULL_STACK_MIN_SHARE && (counts.front + counts.mobile) / total >= FULL_STACK_MIN_SHARE
-  const technologyTotal = technologies.reduce((sum, [, weight]) => sum + weight, 0)
-  const top = technologies.filter(([, weight]) => weight / technologyTotal >= MIN_STACK_TECHNOLOGY_SHARE).slice(0, STACK_TECHNOLOGIES)
-  const technologyText = top.map(([name, weight]) => `${name} ${Math.round((100 * weight) / technologyTotal)} %`).join(', ')
+
+  return { key: main.key, label: main.label.toLowerCase() }
+}
+
+// The main technologies of a stack, with their share of it.
+function topTechnologies(technologies) {
+  const total = technologies.reduce((sum, [, weight]) => sum + weight, 0)
+
+  return technologies
+    .filter(([, weight]) => weight / total >= MIN_STACK_TECHNOLOGY_SHARE)
+    .slice(0, STACK_TECHNOLOGIES)
+    .map(([name, weight]) => [name, weight / total])
+}
+
+function stackCell({ counts, technologies }) {
+  const type = stackType(counts)
+  if (!type) {
+    return el('td', { className: 'muted', textContent: '–' })
+  }
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  const parts = STACK_CATEGORIES.filter((category) => counts[category.key] > 0)
+  const share = (category) => Math.round((100 * counts[category.key]) / total)
+  const fullStack = type.key === 'full-stack'
+  const top = topTechnologies(technologies)
+  const technologyText = top.map(([name, part]) => `${name} ${Math.round(100 * part)} %`).join(', ')
 
   const bar = el(
     'span',
@@ -1967,10 +2137,7 @@ function stackCell({ counts, technologies }) {
   const cell = el(
     'span',
     { className: 'stack-cell', tabIndex: 0 },
-    el('span', {
-      className: `stack-type is-${fullStack ? 'full-stack' : main.key}`,
-      textContent: fullStack ? 'full-stack' : main.label.toLowerCase(),
-    }),
+    el('span', { className: `stack-type is-${type.key}`, textContent: type.label }),
     bar,
     el('span', { className: 'stack-logos' }, ...top.map(([name]) => technologyIcon(name))),
   )
@@ -2715,6 +2882,7 @@ function render(animate) {
     renderRepoFilter(name)
   }
   renderTables(animate)
+  renderTeam()
   renderFeed(animate)
   renderWaiting(animate)
   renderUnapproved(animate)
@@ -2982,6 +3150,7 @@ $('[data-search]').addEventListener('input', (event) => {
   if (state.stats) {
     renderTables(false)
     renderCollaboration()
+    renderTeam()
     renderFeed(false)
     renderWaiting(false)
     renderUnapproved(false)

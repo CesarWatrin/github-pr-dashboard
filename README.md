@@ -25,14 +25,17 @@ la recherche s'appliquent à toutes :
 - **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
+- **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, en ordre alphabétique : sa
+  photo, sa stack et ses technologies principales, ses PR de code, mergées et leur délai de merge, ses PR relues,
+  ses commentaires par PR relue et le nombre de personnes qui relisent son code.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; la durée, les échecs et les relances de la CI GitHub Actions, par
   workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/tma`, `#/devops`, `#/methode`) : les
-liens se partagent.
+Chaque page a son adresse (`#/auteurs`, `#/relecteurs`, `#/collaboration`, `#/equipe`, `#/tma`, `#/devops`,
+`#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
