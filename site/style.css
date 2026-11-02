@@ -1419,6 +1419,17 @@ main.is-loading {
   margin: 0;
 }
 
+/* The champions of the four badges line up month by month, whatever the length of their names: each block spans three
+   rows of the grid, shared with the blocks beside it. */
+.awards.is-aligned > .award {
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+}
+
+.awards.is-aligned .award-months {
+  display: contents;
+}
+
 .award-months dt {
   color: var(--text-secondary);
   font-size: 12px;
@@ -1428,11 +1439,12 @@ main.is-loading {
   margin: 4px 0 0;
 }
 
+/* Each leader on a line, then how much: the same everywhere, whatever the width. */
 .award-leaders {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .award-value {
@@ -1458,23 +1470,46 @@ main.is-loading {
 .award-holders li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
 }
 
-.award-holders .award-value {
-  margin-left: auto;
+/* The person, then how long: a long name gets the whole width, cut short rather than over the figure. */
+.award-holder {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.award-holder .person-link,
+.award-leaders .person-link {
+  max-width: 100%;
+}
+
+.award-holder .person-link-name,
+.award-leaders .person-link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .awards-table td {
   vertical-align: top;
 }
 
-/* In the table, each leader on a line, then how much: the same in every cell, whatever its width. */
-.awards-table .award-leaders {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+/* Its heads are plain text, not the sort buttons of the other tables: they take the padding of the cells. */
+.awards-table thead th {
+  padding: 8px 6px;
+}
+
+.awards-table tbody th {
+  font-weight: 600;
+}
+
+/* The month stays visible while the table scrolls sideways: its cell is opaque, so it takes the row's hover too. */
+.awards-table tbody tr:hover th {
+  background: var(--surface-hover);
 }
 
 /* Badges, like GitHub achievements: a round medal of its tier's metal, its icon in the middle, the length of its run of

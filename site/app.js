@@ -2171,11 +2171,15 @@ function renderHolders({ byLogin }) {
                   'li',
                   {},
                   badgeMedal(won, 'small'),
-                  personLink(login),
-                  el('span', {
-                    className: 'award-value',
-                    textContent: won.streak > 1 ? `${won.streak} mois d’affilée` : `${won.total} mois`,
-                  }),
+                  el(
+                    'span',
+                    { className: 'award-holder' },
+                    personLink(login),
+                    el('span', {
+                      className: 'award-value',
+                      textContent: won.streak > 1 ? `${won.streak} mois d’affilée` : `${won.total} mois`,
+                    }),
+                  ),
                 ),
               ),
             )
