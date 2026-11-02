@@ -1238,8 +1238,9 @@ main.is-loading {
 }
 
 /* The whole card opens the person's details: the button of its head stretches over it. Its figures sit at its bottom,
-   in line with those of the cards beside it, with or without badges above them. */
-.person-card {
+   in line with those of the cards beside it, with or without badges above them. The cards of repositories share it. */
+.person-card,
+.repo-card {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1255,13 +1256,15 @@ main.is-loading {
     transform 160ms var(--ease-out);
 }
 
-.person-card:hover {
+.person-card:hover,
+.repo-card:hover {
   border-color: var(--baseline);
   box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
 
-.person-card:has(.person-card-head:focus-visible) {
+.person-card:has(.person-card-head:focus-visible),
+.repo-card:has(.repo-card-head:focus-visible) {
   outline: 2px solid var(--series-1);
   outline-offset: 2px;
 }
@@ -1363,23 +1366,12 @@ main.is-loading {
   line-height: 1.2;
 }
 
-/* Repositories page: one card per repository, wider than those of people for their nine figures. Not clickable: they
-   do not move on hover. */
+/* Repositories page: one card per repository, like those of people but wider, for their nine figures. The whole card
+   opens the repository's dialog: the button of its head stretches over it, under the people, who open their own. */
 .repo-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: 16px;
-}
-
-.repo-card {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
 }
 
 .repo-card > .person-stats {
@@ -1391,15 +1383,36 @@ main.is-loading {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repo-card-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.repo-card-head:focus-visible {
+  outline: none;
 }
 
 .repo-card-name {
   overflow: hidden;
-  color: inherit;
   font-size: 16px;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.repo-card .person-link {
+  position: relative;
+  z-index: 1;
 }
 
 .repo-card-head .stack-logos {
@@ -1488,9 +1501,8 @@ main.is-loading {
   min-width: 0;
 }
 
-.fragile-repo a {
+.fragile-repo .repo-link {
   overflow: hidden;
-  color: inherit;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1534,7 +1546,9 @@ main.is-loading {
 }
 
 .person-card:hover,
-.person-card:focus-within {
+.person-card:focus-within,
+.repo-card:hover,
+.repo-card:focus-within {
   z-index: 1;
 }
 
@@ -1883,6 +1897,20 @@ main.is-loading {
   font-size: 13px;
 }
 
+/* In the dialog of a repository, its main technology stands where a person's photo would. */
+.repo-dialog-logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: var(--surface-hover);
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
 .person-dialog-github {
   display: inline-flex;
   flex: none;
@@ -1951,6 +1979,11 @@ main.is-loading {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px 24px;
   margin-top: 6px;
+}
+
+/* Two lists only, in the dialog of a repository: each takes half the width. */
+.person-dialog-columns.is-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (max-width: 760px) {
@@ -2558,6 +2591,19 @@ tbody tr.is-updated td.person {
 
 .person-link:hover .person-link-name {
   text-decoration: underline;
+}
+
+/* A repository, wherever it shows: a button that looks like the link it replaced, and opens its dialog. */
+.repo-link {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .person .person-link,
