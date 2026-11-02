@@ -34,6 +34,8 @@ la recherche s'appliquent à toutes :
   chiffre, la médiane des personnes de la même stack (de toute l'équipe si la stack compte moins de trois personnes) :
   de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
   collaborateurs.
+- **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, PR en attente,
+  binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis
   un mois est considérée comme partie : plus rien à son nom dans les tableaux, les listes, la matrice ni les cartes,
   seulement une mention dans la partie « Anciens collaborateurs » de la page Équipe, avec sa dernière activité. Ses

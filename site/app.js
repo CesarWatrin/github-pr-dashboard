@@ -1699,9 +1699,9 @@ function renderPairs(network) {
           'p',
           { className: 'feed-text' },
           document.createTextNode(`PR ${ofPrefix(displayName(pair.author))}`),
-          el('strong', { textContent: displayName(pair.author) }),
+          personLink(pair.author, { withAvatar: false }),
           document.createTextNode(' relues par '),
-          el('strong', { textContent: displayName(pair.reviewer) }),
+          personLink(pair.reviewer, { withAvatar: false }),
         ),
         el('span', { className: 'pair-count', textContent: `${formatNumber(pair.prs)} PR` }),
       ),
@@ -1714,8 +1714,10 @@ function renderPairs(network) {
 // Everyone who wrote or reviewed code over the period in the repositories selected on the page, most code pull requests
 // first, then by name: what each person wrote, then what they reviewed. The stack comes from their code pull requests,
 // else from the ones they reviewed.
-function teamRows() {
+function teamRows({ withFormer = false } = {}) {
   const period = currentPeriod()
+  // The people who left only have a row for their own dialog, opened from the former people of the team page.
+  const kept = ({ login }) => withFormer || isCurrent(login)
   const rows = new Map()
   const row = (login) => {
     if (!rows.has(login)) {
@@ -1724,7 +1726,7 @@ function teamRows() {
 
     return rows.get(login)
   }
-  for (const person of period.authors.filter(({ login }) => isCurrent(login))) {
+  for (const person of period.authors.filter(kept)) {
     const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
     const code = sumOf(parts, 'code')
     if (code > 0) {
@@ -1735,7 +1737,7 @@ function teamRows() {
       })
     }
   }
-  for (const person of period.reviewers.filter(({ login }) => isCurrent(login))) {
+  for (const person of period.reviewers.filter(kept)) {
     const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
     const reviewed = sumOf(parts, 'prs')
     if (reviewed > 0) {
@@ -1931,8 +1933,8 @@ function topList(title, items, withAvatar) {
           el(
             'li',
             {},
-            ...(withAvatar ? [avatar(key)] : []),
-            el('span', { className: 'person-dialog-list-name', textContent: withAvatar ? displayName(key) : key, title: key }),
+            // A person opens their own dialog in place of this one.
+            withAvatar ? personLink(key) : el('span', { className: 'person-dialog-list-name', textContent: key, title: key }),
             el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
           ),
         ),
@@ -2050,6 +2052,13 @@ function openPersonDialog(row, opener) {
   )
   resetPersonTilt()
   const dialog = $('[data-person-dialog]')
+  // From a name inside the dialog, the next person replaces the one shown; the focus goes back to the first opener.
+  if (dialog.open) {
+    dialog.scrollTop = 0
+    dialog.querySelector('.person-dialog-close').focus()
+
+    return
+  }
   dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
   dialog.showModal()
 }
@@ -2426,13 +2435,30 @@ function compareValues(a, b) {
   return typeof a === 'string' ? a.localeCompare(b, 'fr') : a - b
 }
 
-function personLink(login) {
-  return el(
-    'a',
-    { href: githubUrl(encodeURIComponent(login)), target: '_blank', rel: 'noopener', title: login },
-    avatar(login),
-    document.createTextNode(displayName(login)),
+// A person's name, with their avatar or not. Wherever it shows, it opens their dialog, the one of the team page, whose
+// head links to their GitHub profile.
+function personLink(login, { withAvatar = true } = {}) {
+  const button = el(
+    'button',
+    { type: 'button', className: 'person-link', title: login },
+    ...(withAvatar ? [avatar(login)] : []),
+    el('span', { className: 'person-link-name', textContent: displayName(login) }),
   )
+  button.setAttribute('aria-haspopup', 'dialog')
+  button.addEventListener('click', () => openPersonOf(login, button))
+
+  return button
+}
+
+// The dialog of a person, from anywhere. Someone without any figure over the period, such as an author of release pull
+// requests only, has no dialog: their GitHub profile opens instead.
+function openPersonOf(login, opener) {
+  const row = teamRows({ withFormer: true }).find((other) => other.login === login)
+  if (row) {
+    openPersonDialog(row, opener)
+  } else {
+    window.open(githubUrl(encodeURIComponent(login)), '_blank', 'noopener')
+  }
 }
 
 // The type of a person's work: full-stack with enough of both sides, else the category of most of their pull requests.
@@ -2913,12 +2939,12 @@ function renderFeed(highlight) {
       const text = el(
         'p',
         { className: 'feed-text' },
-        el('strong', { textContent: displayName(event.actor) }),
+        personLink(event.actor, { withAvatar: false }),
         document.createTextNode(` ${EVENT_VERBS[event.type]} `),
         pullRequestLink(event.repo, event.number),
       )
       if (event.type !== 'opened' && event.author !== event.actor) {
-        text.append(document.createTextNode(` de ${displayName(event.author)}`))
+        text.append(document.createTextNode(' de '), personLink(event.author, { withAvatar: false }))
       }
       const item = listItem(event.actor, text, event.at)
       if (highlight && previous && !previous.has(eventId(event))) {
@@ -2966,7 +2992,7 @@ function renderUnapproved(highlight) {
       const text = el(
         'p',
         { className: 'feed-text' },
-        el('strong', { textContent: displayName(pr.author) }),
+        personLink(pr.author, { withAvatar: false }),
         document.createTextNode(' a mergé sa PR '),
         pullRequestLink(pr.repo, pr.number),
         ...[unapprovedTag(pr), pr.hotfix ? 'hotfix' : null]
@@ -2998,7 +3024,7 @@ function renderWaiting(highlight) {
         { className: 'feed-text' },
         pullRequestLink(pr.repo, pr.number),
         document.createTextNode(' de '),
-        el('strong', { textContent: displayName(pr.author) }),
+        personLink(pr.author, { withAvatar: false }),
       )
       const item = listItem(pr.author, text, pr.createdAt, 'ouverte ')
       if (highlight && previous && !previous.has(waitingId(pr))) {
@@ -3558,9 +3584,11 @@ $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
 })
-// The dialog of a person closes from its button, with Escape, or with a click beside the card.
+// The dialog of a person closes from its button, with Escape, or with a click beside the card. The path of the click is
+// the one it had when made: a name in the card replaces the card's content, and its button with it, before the click
+// gets here.
 $('[data-person-dialog]').addEventListener('click', (event) => {
-  if (!event.target.closest('[data-person-dialog-card]')) {
+  if (!event.composedPath().includes($('[data-person-dialog-card]'))) {
     event.currentTarget.close()
   }
 })

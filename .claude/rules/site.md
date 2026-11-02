@@ -45,6 +45,10 @@ paths:
   - Seniority (`seniority()`, card and dialog) comes from `activityBounds()` of `site/period.js` over every record,
     whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
     synced year, which only covers a year, else the months since then.
+- **Names of people**: always `personLink(login)` (with or without the avatar), never a GitHub link. Wherever it
+  shows, a table, a feed, the pairs, the former people or the dialog itself, it opens the person's dialog
+  (`openPersonOf()`); the dialog links to the GitHub profile. A person without any figure over the period opens their
+  GitHub profile instead.
 - **Former people**, on every page: a person without any pull request, review, comment or merge for
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the

@@ -1208,13 +1208,6 @@ main.is-loading {
   min-width: 0;
 }
 
-.former-list a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: inherit;
-}
 
 /* Under the name, past the avatar. */
 .former-last {
@@ -1633,9 +1626,14 @@ main.is-loading {
   min-width: 0;
 }
 
-.person-dialog-list-name {
+.person-dialog-list-name,
+.person-dialog-list .person-link {
   flex: 1;
   min-width: 0;
+}
+
+.person-dialog-list-name,
+.person-dialog-list .person-link-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2183,26 +2181,41 @@ tbody tr.is-updated td.person {
   }
 }
 
-.person a,
-.person-secondary a {
+/* A person's name opens their dialog wherever it shows: a button that looks like the name. */
+.person-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 150px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
   font-weight: 500;
   line-height: 1.3;
-  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person-link:hover .person-link-name {
+  text-decoration: underline;
+}
+
+.person .person-link,
+.person-secondary .person-link {
+  max-width: 150px;
   white-space: normal;
   overflow-wrap: break-word;
 }
 
-.person-secondary {
-  text-align: left;
+.feed-text .person-link {
+  display: inline;
+  font-weight: 600;
 }
 
-.person a:hover,
-.person-secondary a:hover {
-  text-decoration: underline;
+.person-secondary {
+  text-align: left;
 }
 
 .bar-cell {
