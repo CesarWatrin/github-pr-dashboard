@@ -2,7 +2,17 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { DAY_MS, activityBounds, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } from '../site/period.js'
+import {
+  DAY_MS,
+  activityBounds,
+  addDays,
+  computeCi,
+  computePeriod,
+  monthlyActivity,
+  parisDay,
+  parisMidnight,
+  reviewNetwork,
+} from '../site/period.js'
 
 const at = (iso) => Date.parse(iso) / 60_000
 const iso = (time) => new Date(time * 60_000).toISOString()
@@ -425,6 +435,55 @@ describe('activityBounds', () => {
 
   test('no records, nobody', () => {
     assert.equal(activityBounds([]).size, 0)
+  })
+})
+
+describe('monthlyActivity', () => {
+  const records = [
+    // A hotfix of Ana's in March, reviewed twice by Ben in March, with comments, then once in April.
+    record({
+      repo: 'web',
+      number: 30,
+      author: 'ana',
+      hotfix: true,
+      createdAt: at('2026-03-30T09:00:00Z'),
+      interventions: [
+        ['ben', at('2026-03-30T10:00:00Z'), 'COMMENTED', 2],
+        ['ben', at('2026-03-31T10:00:00Z'), 'APPROVED', 1],
+        ['ben', at('2026-04-01T10:00:00Z'), 'COMMENTED', 1],
+      ],
+    }),
+    // Opened at 23:30 UTC on the 31st of March: already April in Paris.
+    record({ repo: 'web', number: 31, author: 'ana', createdAt: at('2026-03-31T23:30:00Z') }),
+    // Releases and bot pull requests do not count, nor do the reviews they get.
+    record({
+      repo: 'web',
+      number: 32,
+      author: 'ana',
+      kind: 'release',
+      createdAt: at('2026-03-10T09:00:00Z'),
+      interventions: [['ben', at('2026-03-10T10:00:00Z'), 'APPROVED', 0]],
+    }),
+    record({ repo: 'web', number: 33, author: 'renovate', bot: true, createdAt: at('2026-03-11T09:00:00Z') }),
+  ]
+  const activity = monthlyActivity(records)
+
+  test('code pull requests and hotfixes count in the Paris month they were opened', () => {
+    assert.deepEqual(Object.fromEntries(activity.get('ana')), {
+      '2026-03': { code: 1, hotfixes: 1, reviewed: 0, comments: 0 },
+      '2026-04': { code: 1, hotfixes: 0, reviewed: 0, comments: 0 },
+    })
+  })
+
+  test('a pull request counts once a month for its reviewer, comments all count', () => {
+    assert.deepEqual(Object.fromEntries(activity.get('ben')), {
+      '2026-03': { code: 0, hotfixes: 0, reviewed: 1, comments: 3 },
+      '2026-04': { code: 0, hotfixes: 0, reviewed: 1, comments: 1 },
+    })
+  })
+
+  test('bots do not show', () => {
+    assert.equal(activity.has('renovate'), false)
   })
 })
 

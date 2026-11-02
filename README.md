@@ -34,6 +34,10 @@ la recherche s'appliquent à toutes :
   chiffre, la médiane des personnes de la même stack (de toute l'équipe si la stack compte moins de trois personnes) :
   de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
   collaborateurs.
+- **Badges**, sur les cartes et dans la fiche, à la façon des succès GitHub : 🦈 Requin des PR, 🔍 Œil de lynx,
+  🪶 Plume et 🚒 Pompier, pour le plus de PR de code, de PR relues, de commentaires de review ou de hotfix de toute
+  l'équipe sur un mois complet de l'année synchronisée. Bronze pour un mois, argent pour deux mois d'affilée, or pour
+  trois ou plus ; leur sens s'affiche au survol.
 - **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, PR en attente,
   binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis

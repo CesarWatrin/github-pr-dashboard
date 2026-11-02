@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, parisDay, parisMidnight, reviewNetwork } = await import(
+const { DAY_MS, activityBounds, addDays, computeCi, computePeriod, monthlyActivity, parisDay, parisMidnight, reviewNetwork } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -432,6 +432,20 @@ const SENIORITY_START_DAYS = 14
 // A person without any pull request, review, comment or merge for this long has left the team.
 const FORMER_AFTER_DAYS = 30
 const MONTH_MS = (365.25 / 12) * DAY_MS
+// Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month of the synced year,
+// ties sharing it. Their tier comes from the longest run of months in a row: bronze for one, silver for two, gold for
+// three or more. The key is one of the monthly figures of monthlyActivity().
+const BADGES = [
+  { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes' },
+  { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues' },
+  { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review' },
+  { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix' },
+]
+const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
+const BADGES_LEGEND = {
+  label: 'Badges',
+  hint: `${BADGES.map((badge) => `${badge.icon} ${badge.name} : ${badge.what}`).join(' · ')}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus ; sur l’année synchronisée, quels que soient la période et le filtre.`,
+}
 // Explained in the legend under the cards, with the figures.
 const SENIORITY_LEGEND = {
   label: 'Ancienneté',
@@ -726,6 +740,8 @@ const state = {
   syncRequest: null,
   // When each person first and last shows in the stats, worked out once per stats: seniority, and who left the team.
   activity: null,
+  // The badges of each person, worked out once per stats.
+  badges: null,
   seenEvents: null,
   seenWaiting: null,
   seenUnapproved: null,
@@ -1858,6 +1874,113 @@ function seniority(login) {
   return { label: months < 1 ? 'moins d’un mois' : `${months} mois`, title: `Première activité le ${dateFormat.format(first)}` }
 }
 
+// The whole Paris months of the synced year, oldest first: the first one, cut by the start of the window, and the
+// current one are left out.
+function badgeMonths() {
+  const next = (month) => {
+    const [year, number] = month.split('-').map(Number)
+
+    return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
+  }
+  const current = parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)
+  const months = []
+  for (let month = next(parisDay(Date.parse(state.stats.windowStart)).slice(0, 7)); month < current; month = next(month)) {
+    months.push(month)
+  }
+
+  return months
+}
+
+// Each person's badges, worked out once per stats over everyone, the people who left included: a month someone who left
+// was the top of, nobody else was. For each badge won: the months won, the longest run of them in a row and its tier.
+function badgesOf(login) {
+  if (state.badges?.stats !== state.stats) {
+    const activity = monthlyActivity(state.stats.pullRequests)
+    const months = badgeMonths()
+    const byLogin = new Map()
+    for (const badge of BADGES) {
+      const won = new Map()
+      months.forEach((month, index) => {
+        const values = [...activity].map(([person, perMonth]) => [person, perMonth.get(month)?.[badge.key] ?? 0])
+        const best = Math.max(0, ...values.map(([, value]) => value))
+        for (const [person, value] of values) {
+          if (best > 0 && value === best) {
+            won.set(person, [...(won.get(person) ?? []), index])
+          }
+        }
+      })
+      for (const [person, indexes] of won) {
+        // The longest run of months in a row, the latest one on a tie.
+        let run = { start: indexes[0], end: indexes[0] }
+        let longest = run
+        for (const index of indexes.slice(1)) {
+          run = index === run.end + 1 ? { start: run.start, end: index } : { start: index, end: index }
+          if (run.end - run.start >= longest.end - longest.start) {
+            longest = run
+          }
+        }
+        const streak = longest.end - longest.start + 1
+        byLogin.set(person, [
+          ...(byLogin.get(person) ?? []),
+          {
+            ...badge,
+            total: indexes.length,
+            streak,
+            from: months[longest.start],
+            to: months[longest.end],
+            tier: streak >= 3 ? 'gold' : streak === 2 ? 'silver' : 'bronze',
+          },
+        ])
+      }
+    }
+    state.badges = { stats: state.stats, byLogin }
+  }
+
+  return state.badges.byLogin.get(login) ?? []
+}
+
+const monthName = (month) => monthLongFormat.format(new Date(`${month}-15T12:00:00Z`))
+
+// What a badge was won for: the longest run of months, and the total when there were more.
+function badgeWhy(badge) {
+  const run = badge.streak > 1 ? `${badge.streak} mois d’affilée, de ${monthName(badge.from)} à ${monthName(badge.to)}` : `en ${monthName(badge.to)}`
+  const total = badge.total > badge.streak ? `, ${badge.total} mois en tout` : ''
+
+  return `${capitalize(badge.what)} de l’équipe ${run}${total}.`
+}
+
+// A badge as a medal of its tier's metal, a face with its icon inside a brushed ring, the length of its run of months on
+// a tab. What it means shows over it on hover or keyboard focus, in a tooltip of its own: the one of the charts would
+// sit under the dialog.
+function badgeMedal(badge, size) {
+  const tier = BADGE_TIERS[badge.tier]
+  const medal = el(
+    'span',
+    { className: `badge-medal is-${badge.tier} is-${size}`, tabIndex: 0 },
+    el('span', { className: 'badge-face' }, el('span', { className: 'badge-icon', textContent: badge.icon })),
+    ...(badge.streak > 1 ? [el('span', { className: 'badge-streak', textContent: `×${badge.streak}` })] : []),
+    el(
+      'span',
+      { className: 'badge-tip' },
+      el('span', { className: 'badge-tip-head' }, el('strong', { textContent: `${badge.icon} ${badge.name}` }), el('span', { className: 'badge-tier', textContent: tier })),
+      el('span', { className: 'badge-tip-text', textContent: badgeWhy(badge) }),
+    ),
+  )
+  medal.setAttribute('role', 'img')
+  medal.setAttribute('aria-label', `${badge.name}, ${tier} : ${badgeWhy(badge)}`)
+  medal.lastChild.setAttribute('aria-hidden', 'true')
+
+  return medal
+}
+
+// The medals of a person, gold first; nothing for someone without any badge.
+function badgeRow(login, className, size) {
+  const order = ['gold', 'silver', 'bronze']
+  const won = badgesOf(login).toSorted((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier) || b.streak - a.streak)
+
+  return won.length ? [el('div', { className }, ...won.map((badge) => badgeMedal(badge, size)))] : []
+}
+
 // "7 mois d’ancienneté", with the date it counts from on hover; nothing for someone the stats do not know.
 function seniorityText(tag, className, login) {
   const value = seniority(login)
@@ -1882,7 +2005,10 @@ function personCard(row, index) {
   )
   open.setAttribute('aria-haspopup', 'dialog')
   open.addEventListener('click', () => openPersonDialog(row, open))
-  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), statList(TEAM_STATS, row))
+  const badges = badgeRow(row.login, 'person-badges', 'small')
+  // Above the button of the card for their hover, the badges still open the dialog.
+  badges[0]?.addEventListener('click', () => open.click())
+  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...badges, statList(TEAM_STATS, row))
   card.setAttribute('aria-label', name)
   card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
 
@@ -2030,6 +2156,7 @@ function openPersonDialog(row, opener) {
           textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
         }),
       ),
+      ...badgeRow(row.login, 'person-dialog-badges', 'large'),
     ),
     el('p', {
       className: 'person-dialog-scope',
@@ -2129,7 +2256,7 @@ function renderTableLegends() {
   for (const [name, table] of Object.entries(TABLES)) {
     $(`[data-table-legend="${name}"]`).replaceChildren(...legend(table.columns))
   }
-  $('[data-table-legend="team"]').replaceChildren(...legend([SENIORITY_LEGEND, ...TEAM_STATS, DEPENDENCY_STAT]))
+  $('[data-table-legend="team"]').replaceChildren(...legend([SENIORITY_LEGEND, BADGES_LEGEND, ...TEAM_STATS, DEPENDENCY_STAT]))
 }
 
 function renderStackLegends() {
