@@ -1428,6 +1428,12 @@ main.is-loading {
   z-index: 1;
   top: 14px;
   right: 14px;
+  transition: transform 500ms var(--ease-out);
+}
+
+/* The head comes forward as the card leans: the close button comes further still, or the head would take its clicks. */
+.person-dialog-card.is-tilting .person-dialog-close {
+  transform: translateZ(40px);
 }
 
 .person-dialog-close svg {
