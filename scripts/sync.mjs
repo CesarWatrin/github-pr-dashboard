@@ -864,6 +864,8 @@ function toPeriodRecord(pr, index) {
     // A revert merged into production undoes a deployment, as a hotfix repairs one: the title says it.
     ...(deployment && /^revert\b/i.test(pr.title) && { revert: true }),
     ...(kind === 'code' && !bot && { deployedAt: minutes(deployedAt(pr, index)) }),
+    // The lines a merged code pull request deletes, among its lines: the others are added.
+    ...(kind === 'code' && !bot && pr.mergedAt && { deleted: pr.deletions }),
     ...(['FAILURE', 'ERROR'].includes(pr.checks) && { checksFailed: true }),
     ...(dependency && { dependency }),
     // An open draft is not waiting for anyone yet.

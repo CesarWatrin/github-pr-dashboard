@@ -124,6 +124,8 @@ const formatNumber = (value) => (isMissing(value) ? '–' : numberFormat.format(
 const formatDecimal = (value) => (isMissing(value) ? '–' : decimalFormat.format(value))
 const formatPercent = (value) => (isMissing(value) ? '–' : `${value} %`)
 const formatShare = (value) => (isMissing(value) ? '–' : `${Math.round(value * 100)} %`)
+// Lines of code run into the millions: rounded (12 k, 1,2 M) everywhere but in the monthly report.
+const formatLines = (value) => (isMissing(value) ? '–' : compactFormat.format(value))
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1)
 
 // CI durations, in seconds: to the second under ten minutes.
@@ -187,6 +189,12 @@ const DELIVERY_TILES = [
   { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, route: 'authors' },
   { key: 'releases', label: 'Mises en production' },
   { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare, route: 'tma' },
+]
+
+const LINES_TILES = [
+  { key: 'added', label: 'Lignes ajoutées', format: formatLines },
+  { key: 'deleted', label: 'Lignes supprimées', format: formatLines },
+  { key: 'medianSize', label: 'Taille médiane des PR', route: 'authors' },
 ]
 
 const REVIEW_TILES = [
@@ -353,6 +361,8 @@ const REPORT_GROUPS = [
     figures: [
       { label: 'PR ouvertes', value: ({ period }) => period.totals.opened, kind: 'count' },
       { label: 'PR de code mergées', value: ({ period }) => period.totals.merged, kind: 'count' },
+      { label: 'Lignes ajoutées', value: ({ period }) => period.totals.added, kind: 'count' },
+      { label: 'Lignes supprimées', value: ({ period }) => period.totals.deleted, kind: 'count' },
       { label: 'Délai médian de merge', value: ({ period }) => period.totals.medianTimeToMergeHours, kind: 'duration', better: 'down' },
       { label: 'Déploiements', value: ({ period }) => period.delivery.deployments, kind: 'count' },
       { label: 'Délai médian jusqu’en prod', value: ({ period }) => period.delivery.medianLeadTimeHours, kind: 'duration', better: 'down' },
@@ -393,6 +403,14 @@ const REPORT_GROUPS = [
 const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: formatShare, decimal: formatDecimal }
 // The busiest repositories of a month, on the report.
 const REPORT_TOP_REPOS = 5
+
+// Lines added over lines deleted, one above the other like a diff, rounded: narrow enough for the tables to fit.
+const LINES_COLUMN = {
+  key: 'added',
+  label: 'Lignes',
+  cell: (row) => linesCell(row),
+  hint: 'Lignes ajoutées (+) et supprimées (−) par les PR mergées, au total, arrondies (k : milliers, M : millions). Le tri suit les lignes ajoutées.',
+}
 
 const AUTHOR_COLUMNS = [
   { key: 'login', label: 'Contributeur', kind: 'person', value: (row) => displayName(row.login) },
@@ -436,6 +454,7 @@ const AUTHOR_COLUMNS = [
     hint: 'Médiane, de la création au merge.',
   },
   { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR mergées.' },
+  LINES_COLUMN,
 ]
 
 const REVIEWER_COLUMNS = [
@@ -546,6 +565,8 @@ const TEAM_STATS = [
 const PERSON_WRITTEN = [
   { label: 'PR de code', value: ({ row }) => row.code, hint: TEAM_STATS[0].hint },
   { label: 'Mergées', value: ({ row }) => row.merged, hint: TEAM_STATS[1].hint },
+  { label: 'Lignes ajoutées', value: ({ author }) => author?.added, format: formatLines, hint: 'Total des lignes ajoutées par les PR mergées.' },
+  { label: 'Lignes supprimées', value: ({ author }) => author?.deleted, format: formatLines, hint: 'Total des lignes supprimées par les PR mergées.' },
   { label: 'Taux de merge', value: ({ author }) => author?.mergeRate, format: formatPercent, hint: 'Mergées / (mergées + fermées sans merge).' },
   { label: 'Merge en', value: ({ row }) => row.medianTimeToMergeHours, format: formatDuration, hint: TEAM_STATS[2].hint },
   {
@@ -633,6 +654,8 @@ const REPOSITORY_FIGURES = {
   merged: { key: 'merged', label: 'Mergées', hint: 'Parmi ces PR, celles qui ont été mergées.' },
   authors: { key: 'authors', label: 'Auteurs', hint: 'Personnes qui ont ouvert ces PR, parties comprises.' },
   medianSize: { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR mergées.' },
+  added: { key: 'added', label: 'Lignes ajoutées', format: formatLines, hint: 'Total des lignes ajoutées par les PR mergées.' },
+  deleted: { key: 'deleted', label: 'Lignes supprimées', format: formatLines, hint: 'Total des lignes supprimées par les PR mergées.' },
   unreviewedRate: {
     key: 'unreviewedRate',
     label: 'Sans review',
@@ -689,7 +712,7 @@ const REPOSITORY_STATS = repositoryFigures(
   'medianLeadTimeHours',
   'ciFailureRate',
 )
-const REPOSITORY_WRITTEN = repositoryFigures('code', 'merged', 'authors', 'medianSize', 'unreviewedRate', 'hotfixes')
+const REPOSITORY_WRITTEN = repositoryFigures('code', 'merged', 'authors', 'medianSize', 'added', 'deleted', 'unreviewedRate', 'hotfixes')
 const REPOSITORY_REVIEWED = repositoryFigures(
   'reviewers',
   'reviewed',
@@ -725,6 +748,7 @@ const REPO_COLUMNS = [
   },
   { key: 'code', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
   { key: 'contributors', label: 'Contributeurs', hint: 'Auteurs de ces PR.' },
+  LINES_COLUMN,
   {
     key: 'medianTimeToMergeHours',
     label: 'Délai de merge',
@@ -986,6 +1010,8 @@ const state = {
   networkCache: null,
   query: '',
   person: null,
+  // What the technologies chart weighs: a key of TECHNOLOGY_MEASURES.
+  technologyMeasure: 'prs',
   // Repositories selected for each table, null for all of them.
   repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null, repositories: null },
   sort: {
@@ -1288,6 +1314,7 @@ function renderTotals(mode) {
   const { totals } = currentPeriod()
   $('[data-totals-title]').textContent = capitalize(periodTitle())
   renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, mode)
+  renderTiles($('[data-totals-lines]'), LINES_TILES, totals, mode)
   renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, mode)
 }
 
@@ -1817,18 +1844,34 @@ function renderTmaCharts() {
 
 const formatTechnologyShare = (value) => (value < 0.01 ? '< 1 %' : formatShare(value))
 
+// What the technologies chart can weigh, each repository's amount shared among its technologies: the code pull
+// requests opened over the period, or the lines those merged added.
+const TECHNOLOGY_MEASURES = {
+  prs: { amount: (stats) => stats.code, share: 'Part des PR de code', of: 'des PR de code', weight: 'PR de code, au prorata' },
+  added: {
+    amount: (stats) => stats.added,
+    share: 'Part des lignes ajoutées',
+    of: 'des lignes ajoutées',
+    weight: 'Lignes ajoutées, au prorata',
+  },
+}
+
 function renderTechnologiesChart() {
-  const prsPerRepo = new Map()
+  const measure = TECHNOLOGY_MEASURES[state.technologyMeasure]
+  for (const button of document.querySelectorAll('[data-technology-measure]')) {
+    button.setAttribute('aria-checked', String(button.dataset.technologyMeasure === state.technologyMeasure))
+  }
+  const amountPerRepo = new Map()
   for (const person of currentPeriod().authors) {
     for (const [repo, stats] of Object.entries(person.repos)) {
-      prsPerRepo.set(repo, (prsPerRepo.get(repo) ?? 0) + stats.code)
+      amountPerRepo.set(repo, (amountPerRepo.get(repo) ?? 0) + measure.amount(stats))
     }
   }
-  const weights = technologyWeights([...prsPerRepo])
+  const weights = technologyWeights([...amountPerRepo])
   const total = weights.reduce((sum, [, weight]) => sum + weight, 0)
   const rows = weights.map(([name, weight]) => ({ name, weight, share: weight / total }))
   $('[data-technologies-sub]').textContent =
-    `Part des PR de code, ${formatNumber(rows.length)} technologie${rows.length > 1 ? 's' : ''}`
+    `${measure.share}, ${formatNumber(rows.length)} technologie${rows.length > 1 ? 's' : ''}`
   barChart($('[data-technologies-chart]'), {
     rows,
     label: (row) => row.name,
@@ -1836,12 +1879,12 @@ function renderTechnologiesChart() {
     value: (row) => row.share,
     format: formatTechnologyShare,
     color: 'var(--series-1)',
-    ariaLabel: 'Part des PR de code par technologie',
+    ariaLabel: `${measure.share} par technologie`,
     tooltip: (row) => ({
       title: row.name,
       rows: [
-        { label: 'des PR de code', value: formatTechnologyShare(row.share) },
-        { label: 'PR de code, au prorata', value: formatNumber(Math.round(row.weight)) },
+        { label: measure.of, value: formatTechnologyShare(row.share) },
+        { label: measure.weight, value: formatNumber(Math.round(row.weight)) },
       ],
     }),
   })
@@ -2962,7 +3005,19 @@ function repositoryRows({ all = false } = {}) {
   const rows = new Map()
   const row = (repo) => {
     if (!rows.has(repo)) {
-      rows.set(repo, { repo, code: 0, merged: 0, unreviewed: 0, timesToFirstReview: [], timesToMerge: [], sizes: [], authors: [], readers: [] })
+      rows.set(repo, {
+        repo,
+        code: 0,
+        merged: 0,
+        unreviewed: 0,
+        added: 0,
+        deleted: 0,
+        timesToFirstReview: [],
+        timesToMerge: [],
+        sizes: [],
+        authors: [],
+        readers: [],
+      })
     }
 
     return rows.get(repo)
@@ -2974,6 +3029,8 @@ function repositoryRows({ all = false } = {}) {
         totals.code += stats.code
         totals.merged += stats.merged
         totals.unreviewed += stats.unreviewed
+        totals.added += stats.added
+        totals.deleted += stats.deleted
         totals.timesToFirstReview.push(...stats.timesToFirstReviewHours)
         totals.timesToMerge.push(...stats.timesToMergeHours)
         totals.sizes.push(...stats.sizes)
@@ -3018,6 +3075,8 @@ function repositoryRows({ all = false } = {}) {
         merged: totals.merged,
         authors: totals.authors.length,
         medianSize: roundedMedian(totals.sizes),
+        added: totals.added,
+        deleted: totals.deleted,
         unreviewedRate: totals.merged ? totals.unreviewed / totals.merged : null,
         hotfixes: hotfixes.get(totals.repo) ?? 0,
         reviewers: totals.readers.length,
@@ -3551,6 +3610,8 @@ function authorRows(name = 'authors') {
         medianTimeToFirstReviewHours: median(parts.flatMap((stats) => stats.timesToFirstReviewHours)),
         medianTimeToMergeHours: median(parts.flatMap((stats) => stats.timesToMergeHours)),
         medianSize: roundedMedian(parts.flatMap((stats) => stats.sizes)),
+        added: sumOf(parts, 'added'),
+        deleted: sumOf(parts, 'deleted'),
       },
     ]
   })
@@ -3593,14 +3654,15 @@ function reviewerRows(name = 'reviewers') {
 const repoInfo = (repo) => state.stats.repos[repo] ?? { category: 'other', technologies: [] }
 const withCategory = (rows) => rows.map((row) => ({ ...row, category: repoInfo(row.repo).category }))
 
-// Spreads pull request counts per repository over the technologies of each repository, by their share of its code.
-function technologyWeights(prsPerRepo) {
+// Spreads amounts per repository, pull requests or lines, over the technologies of each repository, by their share of
+// its code.
+function technologyWeights(amountPerRepo) {
   const weights = new Map()
-  for (const [repo, prs] of prsPerRepo) {
+  for (const [repo, amount] of amountPerRepo) {
     const { technologies } = repoInfo(repo)
     const total = technologies.reduce((sum, [, share]) => sum + share, 0)
     for (const [name, share] of technologies) {
-      weights.set(name, (weights.get(name) ?? 0) + (prs * share) / total)
+      weights.set(name, (weights.get(name) ?? 0) + (amount * share) / total)
     }
   }
 
@@ -3630,7 +3692,7 @@ function repoRows() {
   const rows = new Map()
   const row = (repo) => {
     if (!rows.has(repo)) {
-      rows.set(repo, { repo, code: 0, contributors: 0, merged: 0, unreviewed: 0, timesToMerge: [], reviewed: 0 })
+      rows.set(repo, { repo, code: 0, contributors: 0, merged: 0, unreviewed: 0, added: 0, deleted: 0, timesToMerge: [], reviewed: 0 })
     }
 
     return rows.get(repo)
@@ -3643,6 +3705,8 @@ function repoRows() {
         totals.contributors++
         totals.merged += stats.merged
         totals.unreviewed += stats.unreviewed
+        totals.added += stats.added
+        totals.deleted += stats.deleted
         totals.timesToMerge.push(...stats.timesToMergeHours)
       }
     }
@@ -3657,6 +3721,8 @@ function repoRows() {
     technologies: repoInfo(totals.repo).technologies,
     code: totals.code,
     contributors: totals.contributors,
+    added: totals.added,
+    deleted: totals.deleted,
     medianTimeToMergeHours: median(totals.timesToMerge),
     unreviewedRate: totals.merged ? totals.unreviewed / totals.merged : null,
     reviewed: totals.reviewed,
@@ -3898,6 +3964,15 @@ function repoTypeTag(category) {
 
 function repoCell({ repo, category }) {
   return el('td', { className: 'person repo-cell' }, repoLink(repo), repoTypeTag(category))
+}
+
+function linesCell({ added, deleted }) {
+  return el(
+    'td',
+    { className: 'lines-cell' },
+    el('span', { textContent: `+${formatLines(added)}` }),
+    el('span', { textContent: `−${formatLines(deleted)}` }),
+  )
 }
 
 function technologiesCell(technologies) {
@@ -4994,6 +5069,14 @@ $('[data-report-month]').addEventListener('change', (event) => {
   state.reportMonth = event.target.value
   renderReport()
 })
+for (const button of document.querySelectorAll('[data-technology-measure]')) {
+  button.addEventListener('click', () => {
+    state.technologyMeasure = button.dataset.technologyMeasure
+    if (state.stats) {
+      renderTechnologiesChart()
+    }
+  })
+}
 // The dialog of a person closes from its button, with Escape, or with a click beside the card. The path of the click is
 // the one it had when made: a name in the card replaces the card's content, and its button with it, before the click
 // gets here.

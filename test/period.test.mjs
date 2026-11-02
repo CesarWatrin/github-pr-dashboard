@@ -48,11 +48,12 @@ const RECORDS = [
     createdAt: at('2026-03-02T09:00:00Z'),
     mergedAt: at('2026-03-02T15:00:00Z'),
     lines: 50,
+    deleted: 20,
     mergedBy: 'bob',
     interventions: [['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]],
     deployedAt: at('2026-03-04T12:00:00Z'),
   }),
-  // Merged by its author without any review, with a failed check.
+  // Merged by its author without any review, with a failed check: it only deletes.
   record({
     repo: 'web',
     number: 2,
@@ -60,6 +61,7 @@ const RECORDS = [
     createdAt: at('2026-03-03T09:00:00Z'),
     mergedAt: at('2026-03-04T09:00:00Z'),
     lines: 200,
+    deleted: 200,
     mergedBy: 'alice',
     deployedAt: at('2026-03-04T12:00:00Z'),
     checksFailed: true,
@@ -82,6 +84,7 @@ const RECORDS = [
     createdAt: at('2026-03-06T10:00:00Z'),
     mergedAt: at('2026-03-06T12:00:00Z'),
     lines: 5,
+    deleted: 1,
     mergedBy: 'carol',
     interventions: [['bob', at('2026-03-06T11:00:00Z'), 'CHANGES_REQUESTED', 1]],
     deployment: true,
@@ -106,6 +109,7 @@ const RECORDS = [
     author: 'alice',
     createdAt: at('2026-02-20T09:00:00Z'),
     mergedAt: at('2026-02-21T09:00:00Z'),
+    deleted: 3,
     mergedBy: 'alice',
     interventions: [['bob', at('2026-03-02T08:00:00Z'), 'COMMENTED', 1]],
   }),
@@ -143,6 +147,7 @@ const RECORDS = [
     author: 'bob',
     createdAt: at('2026-03-07T10:00:00Z'),
     mergedAt: at('2026-03-07T11:00:00Z'),
+    deleted: 10,
     mergedBy: 'bob',
     deployment: true,
     revert: true,
@@ -211,6 +216,10 @@ describe('computePeriod', () => {
       opened: 5,
       merged: 4,
       medianTimeToMergeHours: 4,
+      // Sizes 5, 10, 50 and 200.
+      medianSize: 30,
+      added: 34,
+      deleted: 231,
       releases: 1,
       hotfixShare: 0.2,
       unreviewedShare: 0.5,
@@ -236,8 +245,19 @@ describe('computePeriod', () => {
       // Tuesday 10:00 to Wednesday 10:00 in Paris: the eight working hours of Tuesday and one of Wednesday.
       timesToMergeHours: [6, 9],
       sizes: [50, 200],
+      added: 30,
+      deleted: 220,
     })
     assert.equal(authors.carol.api.closedUnmerged, 1)
+  })
+
+  test('lines added and deleted: those of the code pull requests opened in the range and merged', () => {
+    const authors = Object.fromEntries(period.authors.map((person) => [person.login, person.repos]))
+    // The hotfix adds 4 of its 5 lines; the pull request closed without a merge adds nothing.
+    assert.deepEqual([authors.carol.api.added, authors.carol.api.deleted], [4, 1])
+    // A revert only deletes. Alice's pull request merged before the range does not count.
+    assert.deepEqual([authors.bob.api.added, authors.bob.api.deleted], [0, 10])
+    assert.deepEqual([period.totals.added, period.totals.deleted], [30 + 4, 220 + 1 + 10])
   })
 
   test('reviewers count what they did in the range, older pull requests included', () => {

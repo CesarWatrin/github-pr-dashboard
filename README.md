@@ -11,13 +11,14 @@ Le dashboard est découpé en pages, dans une barre latérale (une barre en haut
 la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
-- **Vue d'ensemble** : l'activité du jour, puis celle de la période en deux volets, livraison (PR ouvertes et
-  mergées, délai de merge, mises en production, part de hotfix) et revue (PR relues, commentaires par PR,
-  approbations sans commentaire, PR mergées sans review), chaque tuile menant à sa page ; l'activité par période et
-  le fil des 7 derniers jours ; la part de chaque technologie dans les PR de code,
+- **Vue d'ensemble** : l'activité du jour, puis celle de la période en trois volets, livraison (PR ouvertes et
+  mergées, délai de merge, mises en production, part de hotfix), lignes de code (ajoutées, supprimées, taille médiane
+  des PR) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR mergées sans review), chaque
+  tuile menant à sa page ; l'activité par période et le fil des 7 derniers jours ; la part de chaque technologie dans
+  les PR de code, ou au choix dans les lignes ajoutées,
   avec son logo (les langages d'un dépôt sont regroupés sous le framework que déclarent ses fichiers de
-  dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, délai
-  de merge, PR mergées sans review, PR relues).
+  dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, lignes
+  ajoutées et supprimées, délai de merge, PR mergées sans review, PR relues).
 - **À débloquer** : les PR de code ouvertes qui attendent quelqu'un, hors brouillons, les plus anciennes d'abord :
   approuvées mais pas mergées depuis plus d'un jour ouvré, approuvées par moins de personnes qu'il n'en faut pour
   merger (`REQUIRED_APPROVALS`), bloquées par un code owner qui ne les a pas encore relues, avec des changements
@@ -26,12 +27,13 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des mois complets de l'année :
-  livraison, revue, intégration continue et équipe, chaque évolution en vert ou en orange quand elle a un bon sens ;
+  livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
+  vert ou en orange quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
   comparaison.
 - **Auteurs** : le tableau par auteur, filtrable par dépôt ou par type de dépôt (front, back, mobile, autres), avec
-  la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) ; l'effet de la
-  taille des PR sur le délai de merge et la profondeur de review.
+  la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) et ses lignes
+  ajoutées et supprimées ; l'effet de la taille des PR sur le délai de merge et la profondeur de review.
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
@@ -44,7 +46,8 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   et filtrables par dépôt : sa photo, son ancienneté (plus d'un an, ou les mois depuis sa première PR, review ou
   commentaire dans l'année synchronisée), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
   de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
-  ouvre la fiche de la personne, une carte qui s'incline vers la souris : taux de merge, attente de la première
+  ouvre la fiche de la personne, une carte qui s'incline vers la souris : lignes ajoutées et supprimées, taux de
+  merge, attente de la première
   review, profondeur des relectures, qui relit son code et quel code la personne relit, ses dépôts. Sous chaque
   chiffre, la médiane des personnes de la même stack (de toute l'équipe si la stack compte moins de trois personnes) :
   de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
@@ -70,8 +73,8 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   technologies, les personnes de l'équipe qui l'écrivent le plus, son bus factor (le plus petit nombre de personnes
   qui écrivent à elles seules la moitié de ses PR), son volume, ses délais de review et de merge, ses déploiements et
   sa CI. En tête, les dépôts actifs qui reposent sur une seule personne, ou sur des personnes parties. Un clic sur
-  une carte ouvre la fiche du dépôt : ses chiffres de code, de revue et de mise en prod, chacun avec la médiane des
-  dépôts du même type, et qui l'écrit et le relit.
+  une carte ouvre la fiche du dépôt : ses chiffres de code (lignes ajoutées et supprimées comprises), de revue et de
+  mise en prod, chacun avec la médiane des dépôts du même type, et qui l'écrit et le relit.
 - **Noms des dépôts**, sur toutes les pages : un clic sur un nom de dépôt (tableaux, cartes, fiches) ouvre sa fiche,
   qui mène au dépôt sur GitHub.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
@@ -127,7 +130,8 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
 - Elle lit aussi, par l'API REST, les exécutions GitHub Actions des dépôts poussés depuis la dernière synchro
   (toutes celles des 12 derniers mois au premier passage), et l'état des checks du dernier commit de chaque PR.
 - Les PR brutes et les exécutions sont gardées dans `.cache/snapshot.json` (jamais publié). La synchro en tire une
-  version réduite à ce que comptent les stats (dépôt, numéro, auteur, dates, taille, reviews et commentaires, sans
+  version réduite à ce que comptent les stats (dépôt, numéro, auteur, dates, taille et lignes supprimées, reviews et
+  commentaires, sans
   titre ni contenu ; exécutions regroupées par workflow et par jour), publiée chiffrée dans
   `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
   (`site/period.js`) : n'importe quelles dates des 12 derniers mois, et les chiffres de chaque personne détaillés par

@@ -16,6 +16,9 @@
   --success-text: #006300;
   --status-good: #0ca30c;
   --status-serious: #ec835a;
+  /* The colors of a diff on GitHub, for the lines added and deleted */
+  --diff-added: #1a7f37;
+  --diff-deleted: #d1242f;
   --shadow: 0 8px 24px rgba(11, 11, 11, 0.12);
   /* The light a tilted person card catches, and its faint rainbow sheen */
   --glare: rgba(255, 255, 255, 0.7);
@@ -52,6 +55,8 @@
     --series-3: #199e70;
     --highlight: rgba(57, 135, 229, 0.22);
     --success-text: #0ca30c;
+    --diff-added: #3fb950;
+    --diff-deleted: #f85149;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     --glare: rgba(255, 255, 255, 0.16);
     --sheen-blend: screen;
@@ -75,6 +80,8 @@
   --series-3: #199e70;
   --highlight: rgba(57, 135, 229, 0.22);
   --success-text: #0ca30c;
+  --diff-added: #3fb950;
+  --diff-deleted: #f85149;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   --glare: rgba(255, 255, 255, 0.16);
   --sheen-blend: screen;
@@ -2801,6 +2808,19 @@ td.text {
 td.text {
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Lines added over lines deleted, within the height of a row, in the colors of a diff on GitHub. */
+.lines-cell span {
+  display: block;
+  color: var(--diff-added);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.lines-cell span + span {
+  color: var(--diff-deleted);
 }
 
 /* The person stays visible while a wide table scrolls sideways. */
