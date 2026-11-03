@@ -66,6 +66,12 @@
             </svg>
             Bilan du mois
           </a>
+          <a class="nav-link" href="#/analyse" data-route-link="analysis">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 12.5h4M6.5 14.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2c.3.3.5.7.5 1.1v.7h4v-.7c0-.4.2-.8.5-1.1A4.5 4.5 0 0 0 8 1.5Z" />
+            </svg>
+            Analyse
+          </a>
           <a class="nav-link" href="#/auteurs" data-route-link="authors">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5 13.5 5.5 6 13H3v-3Z" /><path d="M9 4l3 3" /></svg>
             Auteurs
@@ -368,6 +374,26 @@
                 <ul class="report-list" data-report-arrivals></ul>
               </section>
             </div>
+          </div>
+
+          <!-- Analyse -->
+          <div class="route" data-route="analysis" hidden>
+            <section class="card" aria-labelledby="analysis-title">
+              <h2 id="analysis-title" data-analysis-title>Ce qui ressort</h2>
+              <p class="card-sub" data-analysis-sub></p>
+              <p class="card-note">
+                Chaque constat vient d’une règle fixe, décrite dans la Méthode, et ne s’affiche qu’au-delà de son seuil,
+                sur assez de PR ou d’exécutions. Une piste n’est pas un verdict : un chiffre dit où regarder, pas pourquoi.
+              </p>
+            </section>
+
+            <div class="findings" data-findings></div>
+
+            <section class="card" aria-labelledby="analysis-clear-title" data-analysis-clear-card>
+              <h2 id="analysis-clear-title">Rien à signaler</h2>
+              <p class="card-sub">Les règles vérifiées sur la période sans rien trouver</p>
+              <ul class="analysis-clear" data-analysis-clear></ul>
+            </section>
           </div>
 
           <!-- Auteurs -->
@@ -738,6 +764,26 @@
                   points pour les parts) et à la médiane des mois complets de l’année synchronisée. Une évolution est en
                   vert quand elle va dans le bon sens (délais, hotfix, reprises, PR sans review, échecs de CI en baisse),
                   en orange sinon ; les volumes restent neutres. Le mois en cours, incomplet, ne se compare pas.
+                </dd>
+                <dt>Analyse</dt>
+                <dd>
+                  Dix règles fixes croisent les chiffres de la période ; chacune ne parle que sur au moins 20 PR (10 pour
+                  un dépôt, 30 exécutions pour un workflow), et dit sinon qu’elle manque de données. Les délais sont ceux
+                  des PR relues, en heures ouvrées. <strong>Taille</strong> : les PR de 500 lignes ou plus mettent au
+                  moins deux fois plus de temps à être mergées que celles de moins de 100 lignes.
+                  <strong>PR géantes</strong> : les PR de 1 000 lignes ou plus sont mergées sans review ni commentaire au
+                  moins deux fois plus souvent que les autres, et au moins une fois sur dix. <strong>Étape avant le merge</strong> : la prise en charge, la relecture ou le merge
+                  prend en moyenne la moitié ou plus du temps des PR relues jusqu’à leur merge, quand celles-ci mettent
+                  une demi-journée ouvrée ou plus à être mergées. La mise en prod, qui suit le calendrier de déploiement
+                  de chaque dépôt, n’y compte pas.
+                  <strong>Relecteur</strong> : une seule personne de l’équipe intervient sur 60 % ou plus des PR relues
+                  d’un dépôt. <strong>Dépôts sans review</strong> : la moitié ou plus des PR mergées d’un dépôt l’ont été
+                  sans review. <strong>Workflows</strong> : un sur cinq ou plus de leurs exécutions échoue, ou leur durée
+                  médiane atteint 10 minutes. <strong>Abandon</strong> : 10 % ou plus des PR de code fermées sans merge.
+                  <strong>Tendance</strong> : la seconde moitié de la période face à la première, sa dernière semaine à
+                  part (ses PR ne sont pas toutes relues ou mergées), sur au moins 50 PR mergées par moitié ; une médiane
+                  bouge quand elle varie de moitié, une part de 5 points et d’un tiers. Un constat est prioritaire quand
+                  il dépasse nettement son seuil.
                 </dd>
                 <dt>Mises en production</dt>
                 <dd>PR de release mergées dans <code>master</code> ou <code>main</code>, y compris celles de release-please.</dd>
