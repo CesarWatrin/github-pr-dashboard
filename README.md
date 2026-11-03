@@ -31,6 +31,13 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   vert ou en orange quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
   comparaison.
+- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Dix règles fixes croisent les chiffres :
+  taille des PR et délai de merge, PR géantes mergées sans review plus souvent que les autres, étape qui retient les
+  PR avant leur merge, dépôts suspendus à un relecteur ou mergés sans review, workflows qui échouent souvent ou qui
+  sont lents, PR fermées sans merge, et ce qui se dégrade ou s'améliore d'une moitié de la période à l'autre. Chaque
+  constat, prioritaire ou à surveiller, donne ses chiffres, une piste et la page qui le détaille ; une règle ne parle
+  qu'au-delà de son seuil, sur assez de PR ou d'exécutions, et les autres sont listées sous « Rien à signaler ». Les
+  seuils sont dans la Méthode. La recherche ne s'y applique pas.
 - **Auteurs** : le tableau par auteur, filtrable par dépôt ou par type de dépôt (front, back, mobile, autres), avec
   la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) et ses lignes
   ajoutées et supprimées ; l'effet de la taille des PR sur le délai de merge et la profondeur de review.

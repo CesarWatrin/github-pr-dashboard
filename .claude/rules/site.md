@@ -12,14 +12,14 @@ paths:
 - `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js` with the same query string
   (`import.meta.url`). Any new module follows that pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, unblock, report, authors, reviewers, cycle, collaboration, team, awards,
-  repositories, tma, devops, method). The period selector and the search apply to every page but the method, report
-  and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what stands
-  now, keeps the search only (`period: false`).
+  page of the hash (`ROUTES`: overview, unblock, report, analysis, authors, reviewers, cycle, collaboration, team,
+  awards, repositories, tma, devops, method). The period selector and the search apply to every page but the method,
+  report and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what
+  stands now, keeps the search only (`period: false`), the analysis page the period only (`search: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
-- `site/period.js` is pure and covered by `test/period.test.mjs`: a change in a computation updates or adds a test,
-  on made-up records.
+- `site/period.js` is pure and covered by `test/period.test.mjs`, `site/analysis.js` too, by `test/analysis.test.mjs`:
+  a change in a computation updates or adds a test, on made-up records.
 
 ## Building blocks
 
@@ -58,6 +58,17 @@ paths:
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added
   over deleted, in the colors of a diff on GitHub: `--diff-added`, `--diff-deleted`), sorted on the lines added. The technologies chart weighs, at the viewer's choice
   (`TECHNOLOGY_MEASURES`), the code pull requests or these lines added.
+- **Analysis page**: `analyze()` of `site/analysis.js` runs `RULES`, fixed rules each crossing the figures of the period
+  (pull requests, cycles of `computePeriod()`, CI of `computeCi()`) against thresholds exported with them, and says
+  for each one: found (with its level, `high`, `watch` or `good`, and its facts), clear, or few (too little to go on:
+  `MIN_PRS`, `MIN_REPOSITORY_PRS`, `MIN_RUNS`, `MIN_HALF_PRS`). `currentAnalysis()` works it out once per stats and
+  range, only when the page shows (`renderAnalysis()`, also called by `renderRoute()`). `FINDINGS` in `app.js` turns
+  each finding into its card: area, title, text, evidence (`findingBars()`, `findingRows()`, `findingStages()`,
+  `findingChanges()`), a lead to act on and the page that details it; `RULE_LABELS` names the rules that found
+  nothing. A new rule goes into `RULES` with its test, into `FINDINGS` and `RULE_LABELS`, and its threshold into the
+  method page. Rules stay at the level of the team and the repositories: a person only shows as the one the reviews of
+  a repository wait for, never as a score. The time from the merge to production follows when each repository
+  deploys, not the review: no rule judges it.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
   and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the

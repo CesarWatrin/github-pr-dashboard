@@ -15,7 +15,7 @@ export const DAY_MS = 86_400_000
 const HOUR_MS = 3_600_000
 const MINUTE_MS = 60_000
 // Upper bounds (excluded) of the pull request size buckets, in changed lines.
-const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
+export const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
 const TOP_HOTFIX_REPOS = 3
 
 const parisDayFormat = new Intl.DateTimeFormat('en-CA', {

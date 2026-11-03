@@ -1486,6 +1486,237 @@ main.is-loading {
   white-space: nowrap;
 }
 
+/* Analysis page: one card per finding, two by two when there is room, its level in a tag. */
+.findings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 16px;
+}
+
+.findings:empty {
+  display: none;
+}
+
+.finding {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.finding-area {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.finding-level {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.finding-level.is-high {
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+  color: var(--text-primary);
+}
+
+.finding-level.is-good {
+  background: color-mix(in srgb, var(--series-3) 26%, var(--surface));
+  color: var(--text-primary);
+}
+
+.finding-title {
+  font-size: 16px;
+}
+
+.finding-text {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.finding-text strong {
+  color: var(--text-primary);
+}
+
+.finding-figure {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.finding-figure figcaption {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.finding-figure .legend {
+  margin-top: 0;
+}
+
+.finding-bars,
+.finding-rows,
+.finding-changes,
+.analysis-clear {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finding-bars li {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) 4rem;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.finding-bar-label {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finding-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-hover);
+}
+
+.finding-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--series-1);
+}
+
+.finding-bar-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+.finding-rows li,
+.finding-changes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.finding-row-name,
+.finding-row-figures {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finding-row-figures {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.finding-workflow {
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finding-change {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.finding-change strong {
+  color: var(--text-primary);
+}
+
+.finding-stack {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.finding-stack > span {
+  flex-basis: 0;
+  min-width: 2px;
+}
+
+.finding-action {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-hover);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.finding-link {
+  align-self: flex-start;
+  margin-top: auto;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.finding-link::after {
+  content: ' →';
+}
+
+.finding-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.analysis-clear {
+  margin-top: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.analysis-clear li {
+  display: flex;
+  gap: 8px;
+}
+
+.analysis-check {
+  flex: none;
+  color: var(--success-text);
+  font-weight: 700;
+}
+
+.analysis-clear .is-few .analysis-check {
+  color: var(--text-muted);
+}
+
 /* Hall of fame: one block per badge, three by three on a wide screen, two by two below, one by one on a phone; the
    months in a table. */
 .awards {
