@@ -53,9 +53,9 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
   collaborateurs.
 - **Badges**, sur les cartes et dans la fiche, à la façon des succès GitHub : 🦈 Requin des PR, 🔍 Œil de lynx,
-  🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur et 🧹 Coup de balai, pour le plus de PR de code, de PR relues, de commentaires de
-  review, de hotfix, de lignes ajoutées ou de lignes supprimées de toute l'équipe sur un mois complet (les lignes au
-  mois du merge). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
+  🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur et 🧹 Coup de balai, pour le plus de PR ouvertes (merges de branches compris,
+  releases à part), de PR relues, de commentaires de review, de hotfix, de lignes ajoutées ou de lignes supprimées de
+  toute l'équipe sur un mois complet (les lignes au mois du merge ; hors Requin, seules les PR de code comptent). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
   s'affiche au survol. Une carte et une fiche en montrent trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
   mensuel de chacun au-delà de la fenêtre de 12 mois, dans son snapshot, et le relit dans les stats déjà publiées si
   le cache d'Actions s'est perdu. Quand une correction change la façon de compter, la synchro suivante recompte une
