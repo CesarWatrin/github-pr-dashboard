@@ -711,13 +711,15 @@ export function activityBounds(records) {
 }
 
 // The figures of each person's month, those of monthlyActivity().
-export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted']
+export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted', 'opened']
 
 // What each person did per Paris month ('YYYY-MM'), whatever the range, for the badges of the team page: code pull
 // requests opened and hotfixes among them, pull requests of others reviewed (once a month however many reviews),
 // comments left, and the lines added and deleted by their code pull requests merged that month. The month of the merge
 // rather than of the opening: the sync keeps a month for good a week after its end, and a pull request merged later
-// would miss it. Like the stats of a range, only code pull requests written by people count.
+// would miss it. Like the stats of a range, only code pull requests written by people count, but for the pull
+// requests opened (opened), which also count those that merge a branch into another: opening them is work too. Releases
+// stay out of it all.
 export function monthlyActivity(records) {
   const people = new Map()
   const monthOf = (at) => parisDay(at * MINUTE_MS).slice(0, 7)
@@ -726,10 +728,14 @@ export function monthlyActivity(records) {
       Object.fromEntries(MONTHLY_FIGURES.map((key) => [key, 0])),
     )
   for (const pr of records) {
-    if (pr.bot || pr.kind !== 'code') {
+    if (pr.bot || !['code', 'integration'].includes(pr.kind)) {
       continue
     }
     const opened = entry(pr.author, monthOf(pr.createdAt))
+    opened.opened++
+    if (pr.kind !== 'code') {
+      continue
+    }
     opened.code++
     if (pr.hotfix) {
       opened.hotfixes++

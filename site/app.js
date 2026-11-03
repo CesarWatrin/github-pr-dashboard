@@ -631,7 +631,7 @@ const MONTH_MS = (365.25 / 12) * DAY_MS
 // for one, silver for two, gold for three or more. The key is one of the monthly figures of monthlyActivity(), counted
 // in units, singular then plural, and shown with format when given.
 const BADGES = [
-  { key: 'code', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR de code ouvertes', units: ['PR de code', 'PR de code'] },
+  { key: 'opened', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR ouvertes, merges de branches compris', units: ['PR', 'PR'] },
   { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues', units: ['PR relue', 'PR relues'] },
   { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review', units: ['commentaire', 'commentaires'] },
   { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix', units: ['hotfix', 'hotfix'] },

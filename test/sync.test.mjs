@@ -325,7 +325,7 @@ describe('monthly history', () => {
   // A period record of the sync, reduced to what the monthly figures read.
   const record = (fields) => ({ bot: false, kind: 'code', hotfix: false, mergedAt: null, interventions: [], ...fields })
   // A person's figures of a month, those not given at zero.
-  const figures = (fields) => ({ code: 0, hotfixes: 0, reviewed: 0, comments: 0, added: 0, deleted: 0, ...fields })
+  const figures = (fields) => ({ code: 0, hotfixes: 0, reviewed: 0, comments: 0, added: 0, deleted: 0, opened: 0, ...fields })
 
   test('only the Paris months lying whole within the window count', () => {
     // From the 10th of January to the 15th of April: February and March only.
@@ -372,7 +372,7 @@ describe('monthly history', () => {
     assert.deepEqual(merged['2026-01'], history['2026-01'])
     assert.deepEqual(merged['2026-02'], history['2026-02'])
     assert.deepEqual(merged['2026-03'], {
-      ana: figures({ code: 2 }),
+      ana: figures({ code: 2, opened: 2 }),
       ben: figures({ reviewed: 1, comments: 2 }),
     })
   })
@@ -413,7 +413,7 @@ describe('monthly history', () => {
     const merged = mergeMonthlyHistory(history, records, range)
 
     assert.deepEqual(merged['2026-02'], {
-      ana: { code: 5, hotfixes: 0, reviewed: 1, comments: 2, added: 20, deleted: 10 },
+      ana: { code: 5, hotfixes: 0, reviewed: 1, comments: 2, added: 20, deleted: 10, opened: 1 },
       ben: figures({ deleted: 8 }),
     })
     assert.deepEqual(merged['2026-03'], history['2026-03'])
@@ -448,7 +448,11 @@ describe('monthly history', () => {
     const merged = mergeMonthlyHistory(history, records, { ...range, revision: 1 })
 
     assert.deepEqual(merged['2025-06'], history['2025-06'])
-    assert.deepEqual(merged['2026-02'], { ana: figures({ code: 1, added: 20, deleted: 10 }) })
+    // Ben's merge of a branch still counts among the pull requests he opened.
+    assert.deepEqual(merged['2026-02'], {
+      ana: figures({ code: 1, added: 20, deleted: 10, opened: 1 }),
+      ben: figures({ opened: 1 }),
+    })
     // March and April, without any activity, join the history as they would have.
     assert.deepEqual(merged['2026-03'], {})
     // Counted the current way, February is final again: the same history, kept as it is.
@@ -473,7 +477,7 @@ describe('monthly history', () => {
       windowStart: Date.parse('2026-01-10T12:00:00Z'),
       now: Date.parse('2026-03-05T12:00:00Z'),
     })
-    assert.deepEqual(merged, { '2026-02': { ana: figures({ code: 1 }) } })
+    assert.deepEqual(merged, { '2026-02': { ana: figures({ code: 1, opened: 1 }) } })
   })
 })
 

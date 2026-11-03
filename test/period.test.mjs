@@ -640,20 +640,31 @@ describe('monthlyActivity', () => {
       interventions: [['ben', at('2026-03-10T10:00:00Z'), 'APPROVED', 0]],
     }),
     record({ repo: 'web', number: 33, author: 'renovate', bot: true, createdAt: at('2026-03-11T09:00:00Z') }),
+    // A merge of a branch into another counts among the pull requests Ana opened in March, and nowhere else.
+    record({
+      repo: 'web',
+      number: 34,
+      author: 'ana',
+      kind: 'integration',
+      createdAt: at('2026-03-12T09:00:00Z'),
+      mergedAt: at('2026-03-12T10:00:00Z'),
+      lines: 3000,
+      interventions: [['ben', at('2026-03-12T09:30:00Z'), 'APPROVED', 1]],
+    }),
   ]
   const activity = monthlyActivity(records)
 
   test('code pull requests and hotfixes count in the Paris month opened, their lines in that of the merge', () => {
     assert.deepEqual(Object.fromEntries(activity.get('ana')), {
-      '2026-03': { code: 1, hotfixes: 1, reviewed: 0, comments: 0, added: 0, deleted: 0 },
-      '2026-04': { code: 1, hotfixes: 0, reviewed: 0, comments: 0, added: 25, deleted: 15 },
+      '2026-03': { code: 1, hotfixes: 1, reviewed: 0, comments: 0, added: 0, deleted: 0, opened: 2 },
+      '2026-04': { code: 1, hotfixes: 0, reviewed: 0, comments: 0, added: 25, deleted: 15, opened: 1 },
     })
   })
 
   test('a pull request counts once a month for its reviewer, comments all count', () => {
     assert.deepEqual(Object.fromEntries(activity.get('ben')), {
-      '2026-03': { code: 0, hotfixes: 0, reviewed: 1, comments: 3, added: 0, deleted: 0 },
-      '2026-04': { code: 0, hotfixes: 0, reviewed: 1, comments: 1, added: 0, deleted: 0 },
+      '2026-03': { code: 0, hotfixes: 0, reviewed: 1, comments: 3, added: 0, deleted: 0, opened: 0 },
+      '2026-04': { code: 0, hotfixes: 0, reviewed: 1, comments: 1, added: 0, deleted: 0, opened: 0 },
     })
   })
 
