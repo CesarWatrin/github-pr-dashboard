@@ -77,10 +77,19 @@ describe('classify', () => {
     assert.equal(kind('project/search/main', 'develop'), 'integration')
   })
 
+  test('a project branch named after a merge brings another branch into its project', () => {
+    assert.equal(kind('project/search/merge-develop', 'project/search/main'), 'integration')
+    assert.equal(kind('project/search/main-into-merge-develop', 'project/search/main'), 'integration')
+    assert.equal(kind('project/search-merge-main', 'project/search/main-v2'), 'integration')
+  })
+
   test('everything else is code, hotfixes and project work included', () => {
     assert.equal(kind('feature/search', 'develop'), 'code')
     assert.equal(kind('hotfix/login', 'master'), 'code')
     assert.equal(kind('project/search/main', 'project/search/step-2'), 'code')
+    assert.equal(kind('project/search/merger-screen', 'project/search/main'), 'code')
+    // Away from project branches, a merge in the name may be what the feature is about.
+    assert.equal(kind('feature/merge-accounts', 'develop'), 'code')
   })
 })
 
@@ -403,6 +412,44 @@ describe('monthly history', () => {
     assert.deepEqual(mergeMonthlyHistory(merged, [], range), merged)
   })
 
+  test('a history counted an older way has its months of the window worked out again once, final or not', () => {
+    const history = {
+      // Gone from the window: kept as it is.
+      '2025-06': { ana: figures({ code: 9 }) },
+      // Final, but counted before a fix: ben's merge of a branch was taken for code.
+      '2026-02': { ana: figures({ code: 1 }), ben: figures({ code: 1, added: 4000 }) },
+    }
+    const records = [
+      record({
+        author: 'ana',
+        createdAt: minutes('2026-02-02T09:00:00Z'),
+        mergedAt: minutes('2026-02-03T09:00:00Z'),
+        lines: 30,
+        deleted: 10,
+      }),
+      record({
+        author: 'ben',
+        kind: 'integration',
+        createdAt: minutes('2026-02-04T09:00:00Z'),
+        mergedAt: minutes('2026-02-04T10:00:00Z'),
+        lines: 4000,
+      }),
+    ]
+    const range = { windowStart: Date.parse('2026-01-10T12:00:00Z'), now: Date.parse('2026-05-05T12:00:00Z') }
+    const merged = mergeMonthlyHistory(history, records, { ...range, revision: 1 })
+
+    assert.deepEqual(merged['2025-06'], history['2025-06'])
+    assert.deepEqual(merged['2026-02'], { ana: figures({ code: 1, added: 20, deleted: 10 }) })
+    // March and April, without any activity, join the history as they would have.
+    assert.deepEqual(merged['2026-03'], {})
+    // Counted the current way, February is final again: the same history, kept as it is.
+    assert.deepEqual(mergeMonthlyHistory(history, records, range), {
+      ...history,
+      '2026-03': {},
+      '2026-04': {},
+    })
+  })
+
   test('a whole month the history lacks is worked out, even an empty one', () => {
     const merged = mergeMonthlyHistory({}, [], {
       windowStart: Date.parse('2026-01-10T12:00:00Z'),
@@ -434,9 +481,12 @@ describe('readPublishedHistory', () => {
   }
   const monthly = { '2026-02': { ana: { code: 2, hotfixes: 0, reviewed: 1, comments: 3 } } }
 
-  test('the history of the stats last published comes back when the snapshot has none', async () => {
+  test('the history of the stats last published comes back when the snapshot has none, with its revision', async () => {
+    await writeFile(process.env.STATS_PATH, encrypted({ monthly, monthlyRevision: 2 }, 'test-password'))
+    assert.deepEqual(await readPublishedHistory(), { history: monthly, revision: 2 })
+    // Published before the revisions: counted the first way.
     await writeFile(process.env.STATS_PATH, encrypted({ monthly }, 'test-password'))
-    assert.deepEqual(await readPublishedHistory(), monthly)
+    assert.deepEqual(await readPublishedHistory(), { history: monthly, revision: 1 })
   })
 
   test('stats without a history, or encrypted with another password, give none', async () => {

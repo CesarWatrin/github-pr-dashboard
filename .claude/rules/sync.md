@@ -25,8 +25,10 @@ paths:
 ## Classification
 
 - `classify()`: **release** (`release*` heads, release titles, `develop`/`staging` into `master`/`main`),
-  **integration** (`merge*` heads, back-merges, `project/<name>/main` into a non-project base), else **code**. Only
-  code pull requests count for merges, delays, sizes and reviews.
+  **integration** (`merge*` heads, back-merges, `project/<name>/main` into a non-project base, project branches with
+  the word merge in their name, `PROJECT_MERGE`: `project/<name>/merge-develop`…), else **code**. Only code pull
+  requests count for merges, delays, sizes, lines and reviews. Elsewhere than on project branches, a merge in the name
+  may be what a feature is about: it stays code.
 - **Hotfix**: a head starting with `hotfix`. **Revert**: a title starting with "Revert".
 - **Bots**: GitHub Apps (actor type other than `User`), `ghost`, and the logins of `BOT_USERS`. Bot pull requests are
   only kept when they deploy or are Dependabot updates; bot reviews and comments never count.
@@ -55,7 +57,10 @@ paths:
   (`MONTH_FINAL_AFTER_MS`), then it is final: worked out again, it would lose the reviews of pull requests created
   before the window as the window moves on. A final month kept before some figure of `MONTHLY_FIGURES` existed (the
   lines added and deleted came later) gets the missing figures once, from its records still within the window: what
-  it kept stays. A new monthly figure goes into `MONTHLY_FIGURES`, and the history fills itself. The history lives in
+  it kept stays. A new monthly figure goes into `MONTHLY_FIGURES`, and the history fills itself. A fix that changes
+  how a month counts (a classification, a figure) bumps `MONTHLY_REVISION`, kept with the history as `monthlyRevision`
+  in the snapshot and the stats: the next sync works out again, once, every whole month of the history still in the
+  window, final or not; the older months stay as kept. The history lives in
   the snapshot; without one (a lost Actions cache, a
   `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
   the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.

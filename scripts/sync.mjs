@@ -58,6 +58,10 @@ const FAILED_CONCLUSIONS = ['failure', 'timed_out', 'startup_failure']
 const KEY_ITERATIONS = 600_000
 // A month of the monthly history is final this long after its end (see mergeMonthlyHistory()).
 const MONTH_FINAL_AFTER_MS = 7 * DAY_MS
+// How the months of the history are counted, kept with it: bumped when a fix changes it, so that the next sync works out
+// again, once, every whole month of the history still in the window. A history without any was counted the first way.
+// 2: the project branches that merge another branch into theirs are no longer code.
+const MONTHLY_REVISION = 2
 
 // Repository types, from the languages GitHub detects in them. TypeScript and JavaScript go with Vue: front-end code
 // next to it, back-end services without it. Docs, infrastructure and tooling fall under "other".
@@ -710,8 +714,11 @@ const isOutdated = (kept) =>
 // MONTH_FINAL_AFTER_MS, for the data synced late; from then on it is final and stays as kept. Worked out again later, it
 // would lose the reviews of pull requests created before the window as the window moves on. A final month kept before
 // some of the figures existed, such as the lines added and deleted, gets them once from its records, still within the
-// window: the figures it kept stay, and the people only those new figures name join it.
-function mergeMonthlyHistory(history, records, { windowStart, now }) {
+// window: the figures it kept stay, and the people only those new figures name join it. A history counted the way of an
+// older MONTHLY_REVISION (revision) has every whole month of the window worked out again, once, final or not: the fix
+// applies to them too. The months gone from the window stay as kept.
+function mergeMonthlyHistory(history, records, { windowStart, now, revision = MONTHLY_REVISION }) {
+  const revised = revision < MONTHLY_REVISION
   const activity = monthlyActivity(records)
   const merged = { ...history }
   for (const month of wholeMonthsWithin(windowStart, now)) {
@@ -721,7 +728,7 @@ function mergeMonthlyHistory(history, records, { windowStart, now }) {
         .map(([login, perMonth]) => [login, perMonth.get(month)])
         .sort(([a], [b]) => a.localeCompare(b)),
     )
-    if (!(month in history) || parisMidnight(`${nextMonth(month)}-01`) > now - MONTH_FINAL_AFTER_MS) {
+    if (revised || !(month in history) || parisMidnight(`${nextMonth(month)}-01`) > now - MONTH_FINAL_AFTER_MS) {
       merged[month] = worked
     } else if (isOutdated(history[month])) {
       const kept = history[month]
@@ -736,10 +743,10 @@ function mergeMonthlyHistory(history, records, { windowStart, now }) {
   return Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)))
 }
 
-// The monthly history of the stats last published, for a snapshot without one: a lost Actions cache or a new
-// SNAPSHOT_VERSION must not lose it. The local stats file first, else the deployed page (PUBLISHED_STATS_URL, by default
-// the GitHub Pages address of the repository in CI). Stats encrypted with another password, or without any history,
-// give none.
+// The monthly history of the stats last published, with its revision, for a snapshot without one: a lost Actions cache
+// or a new SNAPSHOT_VERSION must not lose it. The local stats file first, else the deployed page (PUBLISHED_STATS_URL,
+// by default the GitHub Pages address of the repository in CI). Stats encrypted with another password, or without any
+// history, give none.
 async function readPublishedHistory() {
   const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '').split('/')
   const url = process.env.PUBLISHED_STATS_URL ?? (repo ? `https://${owner.toLowerCase()}.github.io/${repo}/data/stats.enc.json` : null)
@@ -754,9 +761,9 @@ async function readPublishedHistory() {
   for (const source of sources) {
     try {
       const payload = await source()
-      const history = payload && decrypt(payload).monthly
-      if (history) {
-        return history
+      const stats = payload && decrypt(payload)
+      if (stats?.monthly) {
+        return { history: stats.monthly, revision: stats.monthlyRevision ?? 1 }
       }
     } catch {
       // Missing, unreachable or written with another password: the next source, or no history.
@@ -769,7 +776,11 @@ async function readPublishedHistory() {
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
 const isBot = (login) => BOT_USERS.has(login) || people.bots.has(login)
 
-// Release PRs ship develop to production, integration PRs sync long-lived branches: neither is new code.
+// Release PRs ship develop to production, integration PRs sync long-lived branches: neither is new code. A project
+// branch named after a merge (project/<name>/merge-develop, project/<name>-merge-main…) brings another branch into its
+// project; elsewhere, a branch with merge in its name may well be a feature.
+const PROJECT_MERGE = /^project\/(.*[/_-])?merge([/_-]|$)/i
+
 function classify(pr) {
   const { head, base, title } = pr
   if (
@@ -781,6 +792,7 @@ function classify(pr) {
   }
   if (
     head.startsWith('merge') ||
+    PROJECT_MERGE.test(head) ||
     ['master', 'main', 'develop'].includes(head) ||
     (/^project\/[^/]+\/main/.test(head) && !base.startsWith('project/'))
   ) {
@@ -1038,10 +1050,15 @@ async function sync({ full }) {
 
   const index = deliveryIndex(inWindow)
   const records = inWindow.map((pr) => toPeriodRecord(pr, index)).filter(Boolean)
-  // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none.
-  const history = mergeMonthlyHistory(previous?.monthly ?? (await readPublishedHistory()) ?? {}, records, {
+  // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none. Without
+  // any, the history starts from the window, counted the current way.
+  const kept = previous?.monthly
+    ? { history: previous.monthly, revision: previous.monthlyRevision ?? 1 }
+    : ((await readPublishedHistory()) ?? { history: {}, revision: MONTHLY_REVISION })
+  const history = mergeMonthlyHistory(kept.history, records, {
     windowStart: Date.parse(windowStartIso),
     now: now.getTime(),
+    revision: kept.revision,
   })
 
   await writeJson(SNAPSHOT_PATH, {
@@ -1055,6 +1072,7 @@ async function sync({ full }) {
     pullRequests: inWindow,
     runs: runsInWindow,
     monthly: history,
+    monthlyRevision: MONTHLY_REVISION,
   })
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
   await writeJson(
@@ -1081,6 +1099,7 @@ async function sync({ full }) {
       pullRequests: records,
       // The badges are won over this history, since the first sync.
       monthly: history,
+      monthlyRevision: MONTHLY_REVISION,
       ci: computeCi(runsInWindow),
       events: computeEvents(inWindow, now),
     }),
