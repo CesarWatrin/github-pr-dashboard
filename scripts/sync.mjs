@@ -60,8 +60,9 @@ const KEY_ITERATIONS = 600_000
 const MONTH_FINAL_AFTER_MS = 7 * DAY_MS
 // How the months of the history are counted, kept with it: bumped when a fix changes it, so that the next sync works out
 // again, once, every whole month of the history still in the window. A history without any was counted the first way.
-// 2: the project branches that merge another branch into theirs are no longer code.
-const MONTHLY_REVISION = 2
+// 2: the project branches that merge another branch into theirs are no longer code. 3: nor those named after the
+// branch they bring in rather than after a merge (develop-into-main, sync-develop…).
+const MONTHLY_REVISION = 3
 
 // Repository types, from the languages GitHub detects in them. TypeScript and JavaScript go with Vue: front-end code
 // next to it, back-end services without it. Docs, infrastructure and tooling fall under "other".
@@ -777,9 +778,15 @@ const keyOf = (pr) => `${pr.repo}#${pr.number}`
 const isBot = (login) => BOT_USERS.has(login) || people.bots.has(login)
 
 // Release PRs ship develop to production, integration PRs sync long-lived branches: neither is new code. A project
-// branch named after a merge (project/<name>/merge-develop, project/<name>-merge-main…) brings another branch into its
-// project; elsewhere, a branch with merge in its name may well be a feature.
-const PROJECT_MERGE = /^project\/(.*[/_-])?merge([/_-]|$)/i
+// branch named after a merge (project/<name>/merge-develop, project/<name>-merge-main…), or after a long-lived branch
+// it brings in (project/<name>/develop-into-main, project/<name>-into-main, project/<name>/sync-develop…), brings another
+// branch into its project. A sync alone may be a feature, such as the sync of some data; and elsewhere than on project
+// branches, a branch with merge in its name may well be a feature too.
+const LONG_LIVED = '(develop|main|master|staging)'
+const PROJECT_MERGE = new RegExp(
+  `^project/(.*[/_-])?(merge|${LONG_LIVED}-into|into-${LONG_LIVED}|sync-${LONG_LIVED})([/_-]|$)`,
+  'i',
+)
 
 function classify(pr) {
   const { head, base, title } = pr
