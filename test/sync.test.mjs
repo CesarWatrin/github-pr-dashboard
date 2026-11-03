@@ -83,11 +83,20 @@ describe('classify', () => {
     assert.equal(kind('project/search-merge-main', 'project/search/main-v2'), 'integration')
   })
 
+  test('so does a project branch named after the long-lived branch it brings in', () => {
+    assert.equal(kind('project/search/develop-into-main', 'project/search/main'), 'integration')
+    assert.equal(kind('project/search-into-main', 'project/search/main'), 'integration')
+    assert.equal(kind('project/search/sync-develop', 'project/search/main'), 'integration')
+  })
+
   test('everything else is code, hotfixes and project work included', () => {
     assert.equal(kind('feature/search', 'develop'), 'code')
     assert.equal(kind('hotfix/login', 'master'), 'code')
     assert.equal(kind('project/search/main', 'project/search/step-2'), 'code')
     assert.equal(kind('project/search/merger-screen', 'project/search/main'), 'code')
+    // The sync of some data is a feature, and so is a change into anything but a long-lived branch.
+    assert.equal(kind('project/search/sync-contacts', 'project/search/main'), 'code')
+    assert.equal(kind('project/search/split-results-into-pages', 'project/search/main'), 'code')
     // Away from project branches, a merge in the name may be what the feature is about.
     assert.equal(kind('feature/merge-accounts', 'develop'), 'code')
   })

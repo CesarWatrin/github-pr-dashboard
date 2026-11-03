@@ -149,8 +149,9 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   dans `BOT_USERS`.
 - Les noms affichés sont ceux des profils GitHub (identifiant à défaut).
 - Les PR de release (`release/*`, release-please, `develop` → `master`) et d'intégration (`merge*`, back-merges,
-  `project/*/main` → `develop`/`master`, branches de projet dont le nom contient le mot merge, comme
-  `project/*/merge-develop`) sont comptées à part : les merges, taux, délais et lignes portent sur les PR de code.
+  `project/*/main` → `develop`/`master`, branches de projet qui en ramènent une autre, comme
+  `project/*/merge-develop`, `project/*/develop-into-main` ou `project/*/sync-develop`) sont comptées à part : les
+  merges, taux, délais et lignes portent sur les PR de code.
 
 ## En local
 

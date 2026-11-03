@@ -25,10 +25,11 @@ paths:
 ## Classification
 
 - `classify()`: **release** (`release*` heads, release titles, `develop`/`staging` into `master`/`main`),
-  **integration** (`merge*` heads, back-merges, `project/<name>/main` into a non-project base, project branches with
-  the word merge in their name, `PROJECT_MERGE`: `project/<name>/merge-develop`…), else **code**. Only code pull
-  requests count for merges, delays, sizes, lines and reviews. Elsewhere than on project branches, a merge in the name
-  may be what a feature is about: it stays code.
+  **integration** (`merge*` heads, back-merges, `project/<name>/main` into a non-project base, project branches named
+  after a merge or after the long-lived branch they bring in, `PROJECT_MERGE`: `project/<name>/merge-develop`,
+  `project/<name>/develop-into-main`, `project/<name>/sync-develop`…), else **code**. Only code pull requests count for
+  merges, delays, sizes, lines and reviews. A sync alone may be a feature (the sync of some data), and elsewhere than
+  on project branches a merge in the name may be what a feature is about: both stay code.
 - **Hotfix**: a head starting with `hotfix`. **Revert**: a title starting with "Revert".
 - **Bots**: GitHub Apps (actor type other than `User`), `ghost`, and the logins of `BOT_USERS`. Bot pull requests are
   only kept when they deploy or are Dependabot updates; bot reviews and comments never count.
