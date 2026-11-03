@@ -58,7 +58,8 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   mois du merge). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
   s'affiche au survol. Une carte et une fiche en montrent trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
   mensuel de chacun au-delà de la fenêtre de 12 mois, dans son snapshot, et le relit dans les stats déjà publiées si
-  le cache d'Actions s'est perdu.
+  le cache d'Actions s'est perdu. Quand une correction change la façon de compter, la synchro suivante recompte une
+  fois les mois encore dans la fenêtre ; les mois plus anciens restent tels quels.
 - **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
   le tableau d'honneur, qui détient quel badge et à quel niveau ; les champions de chaque mois depuis la première
   synchro. Les personnes parties comptent dans la course, et n'apparaissent sous leur nom que dans ce dernier tableau.
@@ -148,7 +149,8 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   dans `BOT_USERS`.
 - Les noms affichés sont ceux des profils GitHub (identifiant à défaut).
 - Les PR de release (`release/*`, release-please, `develop` → `master`) et d'intégration (`merge*`, back-merges,
-  `project/*/main` → `develop`/`master`) sont comptées à part : les merges, taux et délais portent sur les PR de code.
+  `project/*/main` → `develop`/`master`, branches de projet dont le nom contient le mot merge, comme
+  `project/*/merge-develop`) sont comptées à part : les merges, taux, délais et lignes portent sur les PR de code.
 
 ## En local
 
