@@ -26,7 +26,8 @@ concurrency:
 jobs:
   sync-and-deploy:
     runs-on: ubuntu-latest
-    # The first sync after a snapshot format change reads a whole year of PRs and Actions runs.
+    # The first sync after a snapshot format change reads a whole year of PRs and Actions runs; the two years before it
+    # come back a month per run.
     timeout-minutes: 45
     environment:
       name: github-pages

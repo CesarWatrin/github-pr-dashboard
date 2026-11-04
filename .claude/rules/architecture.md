@@ -8,25 +8,28 @@
    to `main`, manual runs (`workflow_dispatch`, with a `full` input). One run at a time (`concurrency: pages`, queued,
    never cancelled), 45 minutes at most.
 2. **Snapshot** (`.cache/snapshot.json`, never published, kept in the Actions cache): the raw pull requests created
-   over the rolling window (365 days), the Actions runs of the window, display names, bot accounts, the languages and
-   frameworks of each repository, and the monthly history of each person's figures (`monthly`), which outlasts the
-   window: it goes back to the first sync. `SNAPSHOT_VERSION` in the sync: bumping it makes the next run read everything
-   again, the monthly history aside, read back from the published stats.
+   over the rolling window (`WINDOW_DAYS`, three years), the Actions runs of the window, what it covers of both
+   (`pullRequestsSince`, `runsSince`), display names, bot accounts, the languages and frameworks of each repository,
+   and the monthly history of each person's figures (`monthly`), which outlasts the window: it goes back to the first
+   sync. `SNAPSHOT_VERSION` in the sync: bumping it makes the next run read the last year again, the two before it
+   coming back a month per run, and the monthly history read back from the published stats.
 3. **Published data** (`site/data/`, written by the sync, never committed):
    - `stats.enc.json`: `{ iterations, salt, iv, data }`. The JSON is gzipped then encrypted with AES-256-GCM; the key
      is derived from `DASHBOARD_PASSWORD` with PBKDF2-SHA256 (600 000 iterations) and a salt made of the first 16
      bytes of `sha256("github-pr-dashboard:" + ORG)`, so it stays the same from one sync to the next.
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
      today's counters, the 7-day activity feed, the sync trigger (with `DISPATCH_TOKEN`), and above all `pullRequests`
-     (one compact record per pull request, no title or content), `ci` (Actions runs per repository, workflow and Paris
-     day) and `monthly` (each person's monthly figures since the first sync, for the badges, with `monthlyRevision`:
-     how they were counted).
+     (one compact record per pull request, no title or content) since `windowStart` (the start of the data: the
+     window, or what the snapshot covers while the backfill runs), `ci` (Actions runs per repository, workflow and
+     Paris day) since `ciStart` (GitHub forgets runs after about 13 months: they go back to when the snapshot started
+     keeping them) and `monthly` (each person's monthly figures since the first sync, for the badges, with
+     `monthlyRevision`: how they were counted).
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
    only when `generatedAt` changes, reloads itself when `build` changes. It decrypts with Web Crypto and keeps the
    derived key (not the password) in `localStorage` for 30 days. Every period stat is computed in the browser by
-   `site/period.js` from the records: presets (30 days, 90 days, 12 months, up to the last sync) or any whole Paris days
-   within the window.
+   `site/period.js` from the records: presets (30 days, 90 days, 12, 24 or 36 months, up to the last sync; a preset the
+   data does not cover yet waits for the backfill) or any whole Paris days within the data.
 
 All days, buckets and "today" are Paris days (`Europe/Paris`).
 
@@ -56,9 +59,12 @@ workflow run, and nothing else.
 
 ## Sync durations
 
-- Incremental (the cron, the "quick" button): about 15 seconds.
-- Full (the "full" button, `npm run sync:full`): about 15 to 20 minutes, mostly reading the pull requests again; the
-  Actions runs already read are kept. The page asks for confirmation and presents it as exceptional.
+- Incremental (the cron, the "quick" button): about 15 seconds, plus about a minute while the backfill runs (one slice
+  of 30 days per sync, until the snapshot covers the window: 25 syncs for the two years before the last one).
+- Full (the "full" button, `npm run sync:full`): about 15 to 20 minutes, mostly reading the pull requests of the last
+  year again; the older ones and the Actions runs already read are kept. The page asks for confirmation and presents it
+  as exceptional.
 - Everything, Actions runs included: without a snapshot, or with one older than `SNAPSHOT_VERSION` (the first run
-  after a bump, a new `SNAPSHOT_PATH`, a stale `.cache/snapshot.json`). Reading every Actions run of the window again
-  is what makes it so long: about 25 minutes in CI, up to about an hour locally. Keep it under the 45-minute timeout.
+  after a bump, a new `SNAPSHOT_PATH`, a stale `.cache/snapshot.json`). It reads the last year, pull requests and runs:
+  reading every Actions run of it again is what makes it so long, about 25 minutes in CI, up to about an hour locally.
+  Keep it under the 45-minute timeout: never make a sync read the whole window at once.
