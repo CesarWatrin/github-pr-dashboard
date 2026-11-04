@@ -1,8 +1,9 @@
 // Syncs the pull requests of a GitHub organization and writes, encrypted, what the dashboard computes its stats from.
 //
-// The raw pull requests are kept in a local snapshot: the first run fetches the whole rolling window
-// repository by repository, the next runs only fetch the pull requests updated since the last sync. A monthly history
-// of each person's figures, for the badges of the page, outlasts the window: it goes back to the first sync.
+// The raw pull requests are kept in a local snapshot: the first run fetches the last year repository by repository,
+// the next runs only fetch the pull requests updated since the last sync, and each reads back one older slice until the
+// snapshot covers the whole rolling window, three years. A monthly history of each person's figures, for the badges of
+// the page, outlasts the window: it goes back to the first sync.
 //
 // Usage: node scripts/sync.mjs [--full] [--watch]
 
@@ -25,9 +26,22 @@ import {
 
 const ORG = process.env.ORG
 // 4: the checks of each pull request and the Actions runs. The monthly history (monthly) came later as an optional
-// field: an older snapshot just has none yet, and never needs to be read again for it.
+// field: an older snapshot just has none yet, and never needs to be read again for it. So did what the snapshot covers
+// (pullRequestsSince, runsSince): without them, it covers the year before its sync, as it then did.
 const SNAPSHOT_VERSION = 4
-const WINDOW_DAYS = 365
+// The rolling window of the pull requests and runs published: three years, for the periods of the page up to 36 months.
+const WINDOW_DAYS = 3 * 365
+// What a full sync reads again, and a sync without snapshot reads at once: the last year. A full sync keeps the older
+// pull requests as read: closed for the most part, and an incremental sync still reads one again when it changes.
+const RECENT_DAYS = 365
+// The pull requests older than what the snapshot covers are read back one slice of this many days per sync, about a
+// minute, until it covers the window: the whole window at once would outlast the workflow and the token's hourly quota.
+const BACKFILL_DAYS = 30
+// The backfill waits while the token has fewer GraphQL points left for the hour: they are shared with the CI and the team.
+const BACKFILL_MIN_POINTS = 2500
+// A month of the monthly history is only worked out once the month before it lies within the data too: its reviews
+// and merges are mostly of pull requests opened shortly before it.
+const HISTORY_LEAD_DAYS = 31
 const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.enc.json'
 const VERSION_PATH = join(dirname(STATS_PATH), 'version.json')
@@ -560,6 +574,74 @@ async function fetchUpdatedSince(sinceIso) {
   }
 }
 
+// The pull requests created between two days (UTC, included), for the backfill. The search answers at most 1000
+// results: a range with more is read in halves.
+async function fetchCreatedBetween(from, to) {
+  const query = `org:${ORG} is:pr created:${from}..${to} sort:created-asc`
+  const records = []
+  let cursor = null
+  for (;;) {
+    const data = await graphql(SEARCH_PULL_REQUESTS_QUERY, { query, cursor })
+    const { issueCount, nodes, pageInfo } = data.search
+    if (cursor === null && issueCount > SEARCH_RESULT_LIMIT && from < to) {
+      const middle = addDays(from, Math.floor((Date.parse(to) - Date.parse(from)) / DAY_MS / 2))
+
+      return [...(await fetchCreatedBetween(from, middle)), ...(await fetchCreatedBetween(addDays(middle, 1), to))]
+    }
+    for (const node of nodes) {
+      records.push(await toRecord(node))
+    }
+    if (!pageInfo.hasNextPage) {
+      return records
+    }
+    cursor = pageInfo.endCursor
+  }
+}
+
+// What a snapshot covers: every pull request, and every run, created since these times has been read. A snapshot kept
+// before it told covers the year before its sync, the window then; without a snapshot, the sync starts from the year
+// before now (recentStartIso), and so do the runs without any.
+function snapshotCoverage(snapshot, recentStartIso) {
+  if (!snapshot) {
+    return { pullRequests: recentStartIso, runs: recentStartIso }
+  }
+  const yearBefore = new Date(Date.parse(snapshot.syncedAt) - RECENT_DAYS * DAY_MS).toISOString()
+
+  return {
+    pullRequests: snapshot.pullRequestsSince ?? yearBefore,
+    runs: snapshot.runs ? (snapshot.runsSince ?? yearBefore) : recentStartIso,
+  }
+}
+
+// The next slice of the backfill: the days (UTC, included) of the BACKFILL_DAYS before what the snapshot covers
+// (sinceIso), back to the start of the window at most, and what the snapshot covers once they are read. Null once it
+// covers the window. Whole days, so that each slice starts where the previous one ended.
+function backfillSlice(sinceIso, windowStartIso) {
+  if (sinceIso <= windowStartIso) {
+    return null
+  }
+  const start = Math.max(Date.parse(sinceIso) - BACKFILL_DAYS * DAY_MS, Date.parse(windowStartIso))
+  const from = new Date(start).toISOString().slice(0, 10)
+
+  return { from, to: sinceIso.slice(0, 10), since: `${from}T00:00:00.000Z` }
+}
+
+// One slice of the backfill, when the token can spare it: the pull requests read, what the snapshot then covers, and
+// whether the slice was read, waits for the quota, or the snapshot already covers the window.
+async function backfill(sinceIso, windowStartIso) {
+  const slice = backfillSlice(sinceIso, windowStartIso)
+  if (!slice) {
+    return { pullRequests: [], since: sinceIso, status: 'done' }
+  }
+  // Asking for the quota does not count against it.
+  const limits = await rest('/rate_limit')
+  if ((limits?.resources?.graphql?.remaining ?? 0) < BACKFILL_MIN_POINTS) {
+    return { pullRequests: [], since: sinceIso, status: 'waiting' }
+  }
+
+  return { pullRequests: await fetchCreatedBetween(slice.from, slice.to), since: slice.since, status: 'read' }
+}
+
 function parseManifest(blob) {
   try {
     return JSON.parse(blob?.text ?? '{}')
@@ -773,6 +855,9 @@ async function readPublishedHistory() {
 
   return null
 }
+
+// What the logs tell of the backfill, the same in CI: nothing of the organization.
+const BACKFILL_LOGS = { read: ', older pull requests read back', waiting: ', backfill waiting for the quota', done: '' }
 
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
 const isBot = (login) => BOT_USERS.has(login) || people.bots.has(login)
@@ -1002,36 +1087,49 @@ function computeEvents(pullRequests, now) {
 
 async function sync({ full }) {
   const now = new Date()
-  const windowStartIso = new Date(now.getTime() - WINDOW_DAYS * DAY_MS).toISOString()
+  const before = (days) => new Date(now.getTime() - days * DAY_MS).toISOString()
+  const windowStartIso = before(WINDOW_DAYS)
+  const recentStartIso = before(RECENT_DAYS)
   const previous = await readSnapshot()
-  const snapshot = full ? null : previous
-  for (const [login, name] of Object.entries(snapshot?.names ?? {})) {
+  // Kept through a full sync too: the older pull requests it keeps still name these people, and still need the bots.
+  for (const [login, name] of Object.entries(previous?.names ?? {})) {
     people.names.set(login, name)
   }
-  for (const login of snapshot?.bots ?? []) {
+  for (const login of previous?.bots ?? []) {
     people.bots.add(login)
   }
+  const coverage = snapshotCoverage(previous, recentStartIso)
 
   let mode = 'incremental'
-  let fetched = snapshot
-    ? await fetchUpdatedSince(new Date(Date.parse(snapshot.syncedAt) - SYNC_OVERLAP_MS).toISOString())
-    : null
+  let fetched =
+    previous && !full
+      ? await fetchUpdatedSince(new Date(Date.parse(previous.syncedAt) - SYNC_OVERLAP_MS).toISOString())
+      : null
   if (fetched === null) {
     mode = 'full'
-    fetched = await fetchWindow(windowStartIso)
+    fetched = await fetchWindow(recentStartIso)
   }
+  const backfilled = await backfill(coverage.pullRequests, windowStartIso)
 
-  const pullRequests = new Map(mode === 'full' ? [] : snapshot.pullRequests.map((pr) => [keyOf(pr), pr]))
-  for (const pr of fetched) {
+  // A full sync has read the last year again: it keeps the older pull requests of the snapshot as they were read.
+  const keptPullRequests = (previous?.pullRequests ?? []).filter(
+    (pr) => mode === 'incremental' || pr.createdAt < recentStartIso,
+  )
+  const pullRequests = new Map(keptPullRequests.map((pr) => [keyOf(pr), pr]))
+  for (const pr of [...backfilled.pullRequests, ...fetched]) {
     pullRequests.set(keyOf(pr), pr)
   }
-  const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= windowStartIso)
+  // The data starts with the window once the backfill has reached it, until then with what the snapshot covers: an
+  // older pull request updated since, read on its own, waits for its slice.
+  const dataStartIso = backfilled.since > windowStartIso ? backfilled.since : windowStartIso
+  const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= dataStartIso)
 
-  // Actions runs: the whole window the first time, then those created since shortly before the last sync. A full
-  // sync keeps them too: a finished run does not change.
+  // Actions runs: the last year the first time, then those created since shortly before the last sync. A full sync
+  // keeps them too: a finished run does not change. GitHub forgets them after about 13 months: the snapshot keeps them
+  // for the whole window, so the CI goes back further as time goes by, from what the snapshot covers.
   const previousRuns = previous?.runs
   const fetchedRuns = await fetchRuns(
-    previousRuns ? new Date(Date.parse(previous.syncedAt) - RUNS_OVERLAP_MS).toISOString() : windowStartIso,
+    previousRuns ? new Date(Date.parse(previous.syncedAt) - RUNS_OVERLAP_MS).toISOString() : recentStartIso,
     now,
   )
   const runs = new Map((previousRuns ?? []).map((run) => [run.id, run]))
@@ -1039,11 +1137,12 @@ async function sync({ full }) {
     runs.set(run.id, run)
   }
   const runsInWindow = [...runs.values()].filter((run) => run.createdAt >= windowStartIso)
+  const ciStartIso = coverage.runs > windowStartIso ? coverage.runs : windowStartIso
 
   // Languages and frameworks are only looked up for repositories not seen yet: a full sync refreshes them all.
   const repositories = [...new Set(inWindow.map((pr) => pr.repo))]
-  let languages = mode === 'full' ? {} : (snapshot.languages ?? {})
-  let frameworks = mode === 'full' ? {} : (snapshot.frameworks ?? {})
+  let languages = mode === 'full' ? {} : (previous.languages ?? {})
+  let frameworks = mode === 'full' ? {} : (previous.frameworks ?? {})
   if (repositories.some((repo) => !languages[repo] || !frameworks[repo])) {
     const details = await fetchRepositoryDetails()
     languages = details.languages
@@ -1058,12 +1157,12 @@ async function sync({ full }) {
   const index = deliveryIndex(inWindow)
   const records = inWindow.map((pr) => toPeriodRecord(pr, index)).filter(Boolean)
   // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none. Without
-  // any, the history starts from the window, counted the current way.
+  // any, the history starts from the data, counted the current way.
   const kept = previous?.monthly
     ? { history: previous.monthly, revision: previous.monthlyRevision ?? 1 }
     : ((await readPublishedHistory()) ?? { history: {}, revision: MONTHLY_REVISION })
   const history = mergeMonthlyHistory(kept.history, records, {
-    windowStart: Date.parse(windowStartIso),
+    windowStart: Date.parse(dataStartIso) + HISTORY_LEAD_DAYS * DAY_MS,
     now: now.getTime(),
     revision: kept.revision,
   })
@@ -1077,7 +1176,9 @@ async function sync({ full }) {
     languages,
     frameworks,
     pullRequests: inWindow,
+    pullRequestsSince: backfilled.since,
     runs: runsInWindow,
+    runsSince: coverage.runs,
     monthly: history,
     monthlyRevision: MONTHLY_REVISION,
   })
@@ -1101,13 +1202,15 @@ async function sync({ full }) {
         ]),
       ),
       today: computeToday(inWindow, now),
-      // The page computes the stats of the range it shows from these.
-      windowStart: windowStartIso,
+      // The page computes the stats of the range it shows from these, since the start of the data.
+      windowStart: dataStartIso,
       pullRequests: records,
       // The badges are won over this history, since the first sync.
       monthly: history,
       monthlyRevision: MONTHLY_REVISION,
       ci: computeCi(runsInWindow),
+      // The runs only go back to there: GitHub had forgotten the older ones when the snapshot started keeping them.
+      ciStart: ciStartIso,
       events: computeEvents(inWindow, now),
     }),
   )
@@ -1119,12 +1222,13 @@ async function sync({ full }) {
     ? ''
     : `: ${fetched.length} PR fetched, ${inWindow.length} PR in window, ` +
       `${fetchedRuns.length} runs fetched, ${runsInWindow.length} runs in window, ` +
-      `${Object.keys(history).length} months of history`
-  console.log(`[${now.toISOString()}] ${mode} sync${counts}`)
+      `${Object.keys(history).length} months of history, data since ${dataStartIso.slice(0, 10)}`
+  console.log(`[${now.toISOString()}] ${mode} sync${BACKFILL_LOGS[backfilled.status]}${counts}`)
 }
 
 // The pure parts of the sync, for the tests, the reading back of the published history and the calls to GitHub.
 export {
+  backfillSlice,
   classify,
   computeCi,
   deliveryIndex,
@@ -1134,6 +1238,7 @@ export {
   repositoryCategory,
   request,
   requiredApprovals,
+  snapshotCoverage,
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,

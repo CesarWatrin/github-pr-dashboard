@@ -8,12 +8,23 @@ paths:
 
 ## Fetching
 
-- **Full sync**: lists the repositories pushed to over the window, then reads their pull requests through GraphQL,
-  newest first, four repositories at a time. Reviews and comments are paginated beyond the first 50.
+- **Full sync**: lists the repositories pushed to over the last year (`RECENT_DAYS`), then reads their pull requests
+  through GraphQL, newest first, four repositories at a time. Reviews and comments are paginated beyond the first 50.
+  The older pull requests of the snapshot are kept as read: closed for the most part, and the incremental sync still
+  reads one again when it changes. Names and bots come from the snapshot whatever the sync: they still serve them.
 - **Incremental sync**: GraphQL search `org:… is:pr updated:>=…` from 10 minutes before the last sync. The search
   answers at most 1000 results: beyond that, the sync falls back to a full one.
+- **Backfill**: the window (`WINDOW_DAYS`) is three years, too long to read at once (timeout, hourly quota). The
+  snapshot keeps what it covers (`pullRequestsSince`; a snapshot without it covers the year before its sync). Each
+  sync reads one slice (`backfillSlice()`): the pull requests created in the `BACKFILL_DAYS` before it, by whole UTC
+  days, through the search `org:… is:pr created:from..to` (read in halves beyond 1000 results), until it covers the
+  window; it waits while fewer than `BACKFILL_MIN_POINTS` GraphQL points are left for the hour (`/rate_limit`, free).
+  The published `windowStart` is the start of the data: the window, or what the snapshot covers until then. An older
+  pull request updated before its slice comes back is left out until then.
 - **Actions runs**: REST `GET /repos/{org}/{repo}/actions/runs?created=from..to`, for the repositories pushed to since
-  one day before the last sync (the whole window the first time). A filtered query answers at most 1000 runs, so a
+  one day before the last sync (the last year the first time). GitHub forgets runs after about 13 months: the snapshot
+  keeps them for the whole window, from `runsSince` (a snapshot without it covers the year before its sync), published
+  as `ciStart`. A filtered query answers at most 1000 runs, so a
   range with more is split in halves; a page of 100 runs weighs about 1 MB, so pages are fetched in parallel, at most
   `REST_CONCURRENCY` calls at once across repositories. A repository without Actions answers 404: no runs. A full
   sync keeps the runs already read: a finished run does not change.
@@ -54,7 +65,9 @@ paths:
 - `computeCi()`: per repository, workflow and Paris day, `[runs, failed, rerun, durations in seconds]`, for runs on pull
   requests and pushes that reached a verdict (cancelled and skipped ones left out).
 - `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first
-  sync, published as `monthly` for the badges. A whole month of the window is worked out until a week after its end
+  sync, published as `monthly` for the badges. The sync works out the months from `HISTORY_LEAD_DAYS` after the start
+  of the data: a month needs the month before it, whose pull requests its reviews and merges are mostly about. So the
+  backfill adds the older months to the history as it reaches them. A whole month of the window is worked out until a week after its end
   (`MONTH_FINAL_AFTER_MS`), then it is final: worked out again, it would lose the reviews of pull requests created
   before the window as the window moves on. A final month kept before some figure of `MONTHLY_FIGURES` existed (the
   lines added and deleted came later) gets the missing figures once, from its records still within the window: what

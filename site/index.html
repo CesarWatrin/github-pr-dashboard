@@ -182,6 +182,8 @@
             <button type="button" role="radio" data-period="30d">30 jours</button>
             <button type="button" role="radio" data-period="90d">90 jours</button>
             <button type="button" role="radio" data-period="365d">12 mois</button>
+            <button type="button" role="radio" data-period="730d">24 mois</button>
+            <button type="button" role="radio" data-period="1095d">36 mois</button>
           </div>
           <details class="date-range" data-date-range>
             <summary class="search">
@@ -196,7 +198,7 @@
                 <label>Du <input type="date" name="from" required /></label>
                 <label>Au <input type="date" name="to" required /></label>
               </div>
-              <p class="date-range-note">Jusqu’à 12 mois en arrière, jusqu’à la dernière synchro.</p>
+              <p class="date-range-note" data-date-range-note>Jusqu’à 36 mois en arrière, jusqu’à la dernière synchro.</p>
               <button class="button-primary" type="submit">Afficher</button>
             </form>
           </details>
@@ -370,7 +372,7 @@
 
               <section class="card" aria-labelledby="report-arrivals-title">
                 <h2 id="report-arrivals-title">Arrivées</h2>
-                <p class="card-sub">Premières PR, reviews ou commentaires de l’année synchronisée</p>
+                <p class="card-sub">Premières PR, reviews ou commentaires depuis le début des données synchronisées</p>
                 <ul class="report-list" data-report-arrivals></ul>
               </section>
             </div>
@@ -643,6 +645,7 @@
               <div class="tiles" data-dora-tiles></div>
               <h3 class="tile-group">Intégration continue</h3>
               <div class="tiles" data-ci-tiles></div>
+              <p class="card-note" data-ci-cut hidden></p>
               <h3 class="tile-group">Dependabot</h3>
               <div class="tiles" data-dependency-tiles></div>
             </section>
@@ -668,7 +671,7 @@
 
             <section class="card" aria-labelledby="ci-title">
               <h2 id="ci-title">Intégration continue</h2>
-              <p class="card-sub">Exécutions GitHub Actions déclenchées par une PR ou un push</p>
+              <p class="card-sub" data-ci-sub>Exécutions GitHub Actions déclenchées par une PR ou un push</p>
               <h3 class="tile-group" data-ci-charts-title>Exécutions</h3>
               <div class="minis">
                 <div class="mini"><h3>Durée médiane, en minutes</h3><div class="chart chart-sm" data-ci-duration-chart></div></div>
@@ -694,9 +697,10 @@
               <dl class="definitions">
                 <dt>Périmètre</dt>
                 <dd>
-                  Tous les dépôts de l’organisation, PR créées au cours des 12 derniers mois. La période choisie, ou les
-                  dates choisies dans ces 12 mois, filtre les PR créées et la date des reviews, commentaires et merges.
-                  Les PR et reviews des bots sont exclues.
+                  Tous les dépôts de l’organisation, PR créées au cours des 36 derniers mois. La période choisie, ou les
+                  dates choisies dans ces 36 mois, filtre les PR créées et la date des reviews, commentaires et merges.
+                  Les PR et reviews des bots sont exclues. Les deux années avant la dernière se rechargent d’un mois à
+                  chaque synchro : tant qu’elles ne sont pas toutes là, les périodes de 24 et 36 mois attendent.
                 </dd>
                 <dt>PR de code</dt>
                 <dd>
@@ -762,7 +766,7 @@
                 <dd>
                   Un mois compte, comme une période choisie, les PR ouvertes ce mois-là et les reviews, merges,
                   déploiements et exécutions de CI de ce mois-là. Il se compare au mois précédent (en pourcentage, ou en
-                  points pour les parts) et à la médiane des mois complets de l’année synchronisée. Une évolution est en
+                  points pour les parts) et à la médiane des 12 derniers mois complets. Une évolution est en
                   vert quand elle va dans le bon sens (délais, hotfix, reprises, PR sans review, échecs de CI en baisse),
                   en orange sinon ; les volumes restent neutres. Le mois en cours, incomplet, ne se compare pas.
                 </dd>
@@ -816,8 +820,11 @@
                 <dd>
                   Exécutions GitHub Actions déclenchées par une PR ou un push, hors exécutions planifiées, manuelles et
                   de Dependabot. Seules celles qui aboutissent à un verdict comptent : annulées et ignorées sont exclues.
-                  Elles sont regroupées par jour, et une période compte ses jours en entier. Check rouge : au moins un
-                  check en échec sur le dernier commit de la PR, checks facultatifs compris (Sentry, CodeRabbit…).
+                  Elles sont regroupées par jour, et une période compte ses jours en entier. GitHub efface les exécutions
+                  au bout d’environ 13 mois : la CI ne remonte qu’aux exécutions que la synchro a déjà lues, et s’allonge
+                  avec le temps jusqu’à 36 mois. Une période qui commence avant compte la CI depuis sa première exécution
+                  gardée, et le bilan d’un mois plus ancien n’en a pas. Check rouge : au moins un check en échec sur le
+                  dernier commit de la PR, checks facultatifs compris (Sentry, CodeRabbit…).
                 </dd>
                 <dt>Dependabot</dt>
                 <dd>
@@ -886,8 +893,8 @@
         <h2 id="full-sync-title">Lancer une synchro complète ?</h2>
         <p>
           Elle relit depuis GitHub toutes les PR des 12 derniers mois, dépôt par dépôt, avec leurs checks :
-          <strong>15 à 20 minutes</strong>. Pendant ce temps, les autres synchros attendent leur tour et la page garde
-          les données actuelles.
+          <strong>15 à 20 minutes</strong>. Les PR plus anciennes restent telles qu’elles ont été lues. Pendant ce
+          temps, les autres synchros attendent leur tour et la page garde les données actuelles.
         </p>
         <p>
           Elle doit rester exceptionnelle : seulement si des données semblent fausses ou manquantes. Pour les dernières

@@ -1,7 +1,7 @@
 # github-pr-dashboard
 
 Dashboard web des pull requests et des reviews par contributeur d'une organisation GitHub, sur une période glissante
-(30 jours, 90 jours, 12 mois) ou des dates choisies dans les 12 derniers mois. L'organisation n'a pas de valeur par
+(30 jours, 90 jours, 12, 24 ou 36 mois) ou des dates choisies dans les 36 derniers mois. L'organisation n'a pas de valeur par
 défaut : elle se configure avec la variable `ORG`.
 
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
@@ -26,7 +26,7 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
-- **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des mois complets de l'année :
+- **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
@@ -50,8 +50,8 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
 - **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code
-  et filtrables par dépôt : sa photo, son ancienneté (plus d'un an, ou les mois depuis sa première PR, review ou
-  commentaire dans l'année synchronisée), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
+  et filtrables par dépôt : sa photo, son ancienneté (plus de trois ans, ou le temps depuis sa première PR, review ou
+  commentaire dans les données synchronisées), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
   de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
   ouvre la fiche de la personne, une carte qui s'incline vers la souris : lignes ajoutées et supprimées, taux de
   merge, attente de la première
@@ -64,7 +64,7 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   releases à part), de PR relues, de commentaires de review, de hotfix, de lignes ajoutées ou de lignes supprimées de
   toute l'équipe sur un mois complet (les lignes au mois du merge ; hors Requin, seules les PR de code comptent). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
   s'affiche au survol. Une carte et une fiche en montrent trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
-  mensuel de chacun au-delà de la fenêtre de 12 mois, dans son snapshot, et le relit dans les stats déjà publiées si
+  mensuel de chacun au-delà de la fenêtre de 36 mois, dans son snapshot, et le relit dans les stats déjà publiées si
   le cache d'Actions s'est perdu. Quand une correction change la façon de compter, la synchro suivante recompte une
   fois les mois encore dans la fenêtre ; les mois plus anciens restent tels quels.
 - **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
@@ -90,7 +90,9 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; le calendrier des mises en production, quand chaque dépôt déploie, par
   jour, semaine ou mois selon la période ; la durée, les échecs et les relances de la CI GitHub Actions, par
-  workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème.
+  workflow, et la part des PR mergées avec un check rouge ; les PR Dependabot, par dépôt et par écosystème. GitHub
+  efface les exécutions de CI au bout d'environ 13 mois : la CI ne remonte qu'à celles que la synchro a déjà lues, et
+  s'allonge avec le temps jusqu'à 36 mois ; une période qui commence avant le dit.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
 Chaque page a son adresse (`#/a-debloquer`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
@@ -119,8 +121,8 @@ pour un visiteur comme pour un robot.
 
 ### Bouton de synchro
 
-Le bouton ⟳ en haut de la page lance une synchro rapide (PR modifiées, environ 1 min) ou complète (les 12 mois,
-15 à 20 min, à garder exceptionnelle : les autres synchros attendent pendant ce temps). L'icône tourne les quelques
+Le bouton ⟳ en haut de la page lance une synchro rapide (PR modifiées, environ 1 min) ou complète (les 12 derniers
+mois, 15 à 20 min, à garder exceptionnelle : les autres synchros attendent pendant ce temps). L'icône tourne les quelques
 secondes que GitHub met à accepter la demande, puis la page affiche les nouvelles données dès qu'elles sont
 publiées. Il n'apparaît que si le
 secret `DISPATCH_TOKEN` existe : un token fine-grained limité à ce repo, avec la seule permission _Actions_ en
@@ -135,15 +137,21 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
 - `scripts/sync.mjs` interroge l'API GraphQL de GitHub :
   - premier passage : toutes les PR créées sur les 12 derniers mois, repo par repo (environ 7 min pour une centaine de repos) ;
   - passages suivants : uniquement les PR modifiées depuis la dernière synchro, via l'API de recherche (quelques
-    secondes).
+    secondes) ;
+  - à chaque passage, tant que le snapshot ne couvre pas les 36 derniers mois : les PR créées dans les 30 jours
+    d'avant ce qu'il couvre, via l'API de recherche (environ une minute). Les deux années avant la dernière reviennent
+    ainsi en 25 synchros, sans dépasser le timeout du workflow ni le quota horaire du token : ce rattrapage attend
+    quand il reste moins de 2 500 points GraphQL dans l'heure ;
+  - une synchro complète relit les 12 derniers mois et garde les PR plus anciennes telles qu'elles ont été lues.
 - Elle lit aussi, par l'API REST, les exécutions GitHub Actions des dépôts poussés depuis la dernière synchro
-  (toutes celles des 12 derniers mois au premier passage), et l'état des checks du dernier commit de chaque PR.
+  (toutes celles des 12 derniers mois au premier passage), et l'état des checks du dernier commit de chaque PR. GitHub
+  les efface au bout d'environ 13 mois : le snapshot les garde 36 mois.
 - Les PR brutes et les exécutions sont gardées dans `.cache/snapshot.json` (jamais publié). La synchro en tire une
   version réduite à ce que comptent les stats (dépôt, numéro, auteur, dates, taille et lignes supprimées, reviews et
   commentaires, sans
   titre ni contenu ; exécutions regroupées par workflow et par jour), publiée chiffrée dans
   `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
-  (`site/period.js`) : n'importe quelles dates des 12 derniers mois, et les chiffres de chaque personne détaillés par
+  (`site/period.js`) : n'importe quelles dates des 36 derniers mois, et les chiffres de chaque personne détaillés par
   dépôt pour le filtre des tableaux.
   `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne
   retélécharge les stats que lorsqu'elle change.

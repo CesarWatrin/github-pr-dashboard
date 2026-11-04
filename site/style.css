@@ -723,6 +723,26 @@ h3 {
   font-weight: 600;
 }
 
+/* A period the synced data does not cover yet. */
+.segmented button:disabled {
+  background: transparent;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* On a phone, the periods share the whole width. */
+@media (max-width: 600px) {
+  .segmented {
+    flex: 1 1 100%;
+  }
+
+  .segmented button {
+    flex: 1;
+    padding: 6px 4px;
+    white-space: nowrap;
+  }
+}
+
 .date-range {
   position: relative;
 }

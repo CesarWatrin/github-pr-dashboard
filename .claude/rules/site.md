@@ -17,7 +17,12 @@ paths:
   report and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what
   stands now, keeps the search only (`period: false`), the analysis page the period only (`search: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
-  `PERIODS`; picked dates (`CUSTOM_PERIOD`) are clamped to the synced year.
+  `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
+  `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
+  the synced data.
+- **CI**: the runs only go back to `ciStart` of the stats. `ciRange()` cuts the range of the CI there (`currentCi()`,
+  `ciPerRepository()`), so that no chart starts with empty buckets, and `ciCut()` tells the DevOps page that the CI of
+  the period starts later; a month of the report that starts before has no CI.
 - `site/period.js` is pure and covered by `test/period.test.mjs`, `site/analysis.js` too, by `test/analysis.test.mjs`:
   a change in a computation updates or adds a test, on made-up records.
 
@@ -72,7 +77,8 @@ paths:
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
   and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the
-  median of the whole months of the synced year (`reportMonths()`); the current month, unfinished, shows no change.
+  median of the last `REPORT_YEAR_MONTHS` whole months, whichever month is shown; the months come from
+  `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not
@@ -84,8 +90,8 @@ paths:
     and catches the light (`--glare`, `--sheen-*`); never for touch, nor under `prefers-reduced-motion`. No chart or
     tooltip in the dialog: the tooltip would sit under it.
   - Seniority (`seniority()`, card and dialog) comes from `activityBounds()` of `site/period.js` over every record,
-    whatever the period: more than a year when the first activity falls in the first `SENIORITY_START_DAYS` of the
-    synced year, which only covers a year, else the months since then.
+    whatever the period: more than the whole years of the synced data (three, fewer while the backfill runs) when the
+    first activity falls in its first `SENIORITY_START_DAYS`, else the time since then (`monthsLabel()`).
 - **Badges** (team cards and dialog, awards page): `BADGES` names each one after a monthly figure of
   `monthlyActivity()` in `site/period.js`, with its units and, for the lines, a `format`. `badgeStandings()` works
   out, once per stats, the leaders of each month with `monthlyLeaders()` of `site/period.js` over the history the sync

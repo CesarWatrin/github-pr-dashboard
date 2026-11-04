@@ -93,11 +93,14 @@ const ROUTES = {
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
 }
 
-// Preset periods, up to the last sync. Picked dates are whole days within the synced year.
+// Preset periods, up to the last sync. Picked dates are whole days within the synced data. The sync reads back the
+// years before the last one a month at a time: a period the data does not cover yet waits for it.
 const PERIODS = {
   '30d': { days: 30, bucket: 'day', title: '30 derniers jours' },
   '90d': { days: 90, bucket: 'week', title: '90 derniers jours' },
   '365d': { days: 365, bucket: 'month', title: '12 derniers mois' },
+  '730d': { days: 730, bucket: 'month', title: '24 derniers mois' },
+  '1095d': { days: 1095, bucket: 'month', title: '36 derniers mois' },
 }
 const BUCKET_TITLES = { day: 'par jour', week: 'par semaine', month: 'par mois' }
 
@@ -392,8 +395,8 @@ const REPORT_GROUPS = [
   {
     label: 'Intégration continue',
     figures: [
-      { label: 'Exécutions', value: ({ ci }) => ci.totals.runs, kind: 'count' },
-      { label: 'En échec', value: ({ ci }) => ci.totals.failureRate, kind: 'share', better: 'down' },
+      { label: 'Exécutions', value: ({ ci }) => ci?.totals.runs, kind: 'count' },
+      { label: 'En échec', value: ({ ci }) => ci?.totals.failureRate, kind: 'share', better: 'down' },
       { label: 'PR mergées avec un check rouge', value: ({ period }) => period.totals.checksFailedShare, kind: 'share', better: 'down' },
     ],
   },
@@ -406,6 +409,8 @@ const REPORT_GROUPS = [
   },
 ]
 const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: formatShare, decimal: formatDecimal }
+// A month of the report is set against the median of this many last whole months.
+const REPORT_YEAR_MONTHS = 12
 // The busiest repositories of a month, on the report.
 const REPORT_TOP_REPOS = 5
 
@@ -626,7 +631,7 @@ const PERSON_CIRCULATION = [
 const PERSON_TOP = 3
 // Fewest people of a stack to compare a person with: under it, the dialog compares with the whole team.
 const MIN_PEERS = 3
-// A person first seen this close to the start of the synced year was already there before it: more than a year.
+// A person first seen this close to the start of the synced data was already there before it: more than all of it.
 const SENIORITY_START_DAYS = 14
 // A person without any pull request, review, comment or merge for this long has left the team.
 const FORMER_AFTER_DAYS = 30
@@ -668,7 +673,7 @@ const BADGES_LEGEND = {
 // Explained in the legend under the cards, with the figures.
 const SENIORITY_LEGEND = {
   label: 'Ancienneté',
-  hint: `Depuis la première PR, review ou commentaire de la personne. Les données couvrent un an : une première activité dans ses ${SENIORITY_START_DAYS} premiers jours compte pour plus d’un an.`,
+  hint: `Depuis la première PR, review ou commentaire de la personne. Les données remontent jusqu’à trois ans : une première activité dans leurs ${SENIORITY_START_DAYS} premiers jours compte pour plus que toute leur durée.`,
 }
 // The figures of a repository over the period, on its card and in its dialog. Their hints make the legend under the
 // cards.
@@ -1121,7 +1126,7 @@ function svg(tag, attributes = {}) {
 
 const dayDate = (day) => new Date(`${day}T12:00:00Z`)
 
-// Days that can be picked: from the start of the synced year to the day of the last sync.
+// Days that can be picked: from the start of the synced data to the day of the last sync.
 function dateBounds() {
   return { min: parisDay(state.stats.windowStart), max: parisDay(state.stats.generatedAt) }
 }
@@ -1136,6 +1141,11 @@ function clampRange(range) {
   const to = range.to > max ? max : range.to
 
   return from <= to ? { from, to } : null
+}
+
+// Whether the synced data covers a preset period: the years before the last one come back a month per sync.
+function periodAvailable(key) {
+  return Date.parse(state.stats.windowStart) <= Date.parse(state.stats.generatedAt) - PERIODS[key].days * DAY_MS
 }
 
 // Time span of the period shown, in milliseconds, and the buckets of its charts.
@@ -1166,14 +1176,31 @@ function currentPeriod() {
   return state.periodCache.period
 }
 
+// When the CI runs start: GitHub forgets them after about 13 months, so they only go back to when the sync started
+// keeping them, the start of the synced data at most. Stats published before it come without one.
+const ciStart = () => Date.parse(state.stats.ciStart ?? state.stats.windowStart)
+
+// The range of the CI for a range of the period: cut to the runs the sync keeps, so that no chart starts with empty
+// buckets.
+function ciRange(range) {
+  return { ...range, start: Math.max(range.start, ciStart()) }
+}
+
 function currentCi() {
-  const range = periodRange()
+  const range = ciRange(periodRange())
   const key = `${range.start}:${range.end}:${range.bucket}`
   if (state.ciCache?.stats !== state.stats || state.ciCache.key !== key) {
     state.ciCache = { stats: state.stats, key, ci: computeCi(state.stats.ci ?? [], range) }
   }
 
   return state.ciCache.ci
+}
+
+// What the CI of the period leaves out, when it starts after the period: « depuis le 3 mars 2025 », say.
+function ciCut() {
+  const start = ciStart()
+
+  return periodRange().start < start ? `depuis le ${dateFormat.format(start)}` : null
 }
 
 function periodTitle() {
@@ -1326,6 +1353,9 @@ function renderDevopsTiles(mode) {
     mode,
   )
   renderTiles($('[data-ci-tiles]'), CI_TILES, { ...currentCi().totals, checksFailedShare: totals.checksFailedShare }, mode)
+  const cut = ciCut()
+  $('[data-ci-cut]').hidden = cut === null
+  $('[data-ci-cut]').textContent = cut ? `Exécutions de CI ${cut} seulement : GitHub efface les plus anciennes, la synchro garde les autres.` : ''
   renderTiles($('[data-dependency-tiles]'), DEPENDENCY_TILES, dependencies, mode)
 }
 
@@ -1430,14 +1460,15 @@ function barPath(x, y, width, height) {
 
 const bucketDate = (key) => new Date(`${key.length === 7 ? `${key}-01` : key}T12:00:00Z`)
 
-function axisLabel(key, bucket) {
+// A month shows its year in January, or wherever a year starts among labels that skip months (withYear).
+function axisLabel(key, bucket, withYear = false) {
   const date = bucketDate(key)
   if (bucket !== 'month') {
     return dayMonthFormat.format(date)
   }
   const month = monthShortFormat.format(date)
 
-  return date.getUTCMonth() === 0 ? `${month} ${String(date.getUTCFullYear()).slice(2)}` : month
+  return date.getUTCMonth() === 0 || withYear ? `${month} ${String(date.getUTCFullYear()).slice(2)}` : month
 }
 
 function bucketTitle(key, bucket) {
@@ -1478,6 +1509,14 @@ function columnChart(
   const groupWidth = Math.min(series.length * 24 + (series.length - 1) * 2, slot * 0.7)
   const barWidth = Math.max(1, (groupWidth - (series.length - 1) * 2) / series.length)
   const labelEvery = Math.max(1, Math.ceil(points.length / Math.max(1, Math.floor(innerWidth / 64))))
+  const isLabelled = (index) => (points.length - 1 - index) % labelEvery === 0
+  // Labels that skip months may skip January too: the first label of each year then tells it.
+  const yearOf = (index) => points[index].key.slice(0, 4)
+  const firstLabelOfYear = (index) => {
+    const previous = index - labelEvery
+
+    return labelEvery > 1 && (previous < 0 || yearOf(previous) !== yearOf(index))
+  }
 
   const root = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel })
   for (const tick of ticks) {
@@ -1518,9 +1557,9 @@ function columnChart(
       valueLabel.textContent = format(value)
       root.append(valueLabel)
     }
-    if ((points.length - 1 - index) % labelEvery === 0) {
+    if (isLabelled(index)) {
       const axis = svg('text', { class: 'axis-label', x: center, y: baselineY + 18, 'text-anchor': 'middle' })
-      axis.textContent = axisLabel(point.key, bucket)
+      axis.textContent = axisLabel(point.key, bucket, firstLabelOfYear(index))
       root.append(axis)
     }
 
@@ -1992,6 +2031,8 @@ function renderDevopsCharts() {
   renderDeploymentCalendar()
 
   const ci = currentCi()
+  const cut = ciCut()
+  $('[data-ci-sub]').textContent = `Exécutions GitHub Actions déclenchées par une PR ou un push${cut ? `, ${cut} seulement` : ''}`
   $('[data-ci-charts-title]').textContent = `Exécutions ${BUCKET_TITLES[bucket]}`
   columnChart($('[data-ci-duration-chart]'), {
     points: ci.series,
@@ -2433,23 +2474,42 @@ const withoutFormer = ({ authors, reviewPairs }) => ({
   reviewPairs: reviewPairs.filter((pair) => isCurrent(pair.author) && isCurrent(pair.reviewer)),
 })
 
-// How long a person has been around, whatever the period: more than a year when already active in the first days of the
-// synced year, else the months since their first pull request, review, comment or merge.
+// How long a person has been around, whatever the period: more than the whole years of the synced data when already
+// active in its first days, else the time since their first pull request, review, comment or merge.
 function seniority(login) {
   const activity = activities().get(login)
   if (!activity) {
     return null
   }
   const first = activity.first * 60_000
-  if (first - Date.parse(state.stats.windowStart) < SENIORITY_START_DAYS * DAY_MS) {
-    return { label: 'plus d’un an', title: 'Première activité dès les premiers jours de l’année synchronisée' }
-  }
-  const months = Math.floor((Date.parse(state.stats.generatedAt) - first) / MONTH_MS)
+  const start = Date.parse(state.stats.windowStart)
+  const end = Date.parse(state.stats.generatedAt)
+  if (first - start < SENIORITY_START_DAYS * DAY_MS) {
+    // Years of 365 days, as the window counts them: three, or fewer while the sync reads back the older ones.
+    const years = Math.max(1, Math.floor((end - start) / (365 * DAY_MS) + 1e-9))
 
-  return { label: months < 1 ? 'moins d’un mois' : `${months} mois`, title: `Première activité le ${dateFormat.format(first)}` }
+    return {
+      label: years === 1 ? 'plus d’un an' : `plus de ${years} ans`,
+      title: 'Première activité dès les premiers jours des données synchronisées',
+    }
+  }
+  const months = Math.floor((end - first) / MONTH_MS)
+
+  return { label: months < 1 ? 'moins d’un mois' : monthsLabel(months), title: `Première activité le ${dateFormat.format(first)}` }
 }
 
-// The whole Paris months of the synced year, oldest first: the first one, cut by the start of the window, and the
+// « 7 mois », « 1 an et 3 mois », « 2 ans ».
+function monthsLabel(months) {
+  if (months < 12) {
+    return `${months} mois`
+  }
+  const years = Math.floor(months / 12)
+  const rest = months % 12
+
+  return `${years} an${years > 1 ? 's' : ''}${rest > 0 ? ` et ${rest} mois` : ''}`
+}
+
+// The whole Paris months of the synced data, oldest first: the first one, cut by the start of the data, and the
 // current one are left out.
 function badgeMonths() {
   const next = (month) => {
@@ -2877,7 +2937,7 @@ const nextMonthOf = (month) => {
   return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
 }
 
-// The months a report can cover: the whole months of the synced year, then the current one, unfinished.
+// The months a report can cover: the whole months of the synced data, then the current one, unfinished.
 function reportMonths() {
   return [...badgeMonths(), parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)]
 }
@@ -2895,7 +2955,9 @@ function monthStats(month) {
       end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(state.stats.generatedAt)),
       bucket: 'week',
     }
-    months.set(month, { period: computePeriod(state.stats.pullRequests, range), ci: computeCi(state.stats.ci ?? [], range) })
+    // A month the runs do not cover whole has no CI: GitHub had forgotten its runs.
+    const ci = range.start >= ciStart() ? computeCi(state.stats.ci ?? [], range) : null
+    months.set(month, { period: computePeriod(state.stats.pullRequests, range), ci })
   }
 
   return months.get(month)
@@ -2927,24 +2989,25 @@ function reportChange(figure, value, previous) {
 function renderReport() {
   const months = reportMonths()
   if (!months.includes(state.reportMonth)) {
-    // The last whole month, unless the synced year has none yet.
+    // The last whole month, unless the synced data has none yet.
     state.reportMonth = months.at(-2) ?? months.at(-1)
   }
   const month = state.reportMonth
   const current = month === months.at(-1)
   const previous = months[months.indexOf(month) - 1] ?? null
-  const whole = months.slice(0, -1)
+  // The year a month is set against: the last whole months, whichever month is shown.
+  const whole = months.slice(0, -1).slice(-REPORT_YEAR_MONTHS)
   const picker = $('[data-report-month]')
   picker.replaceChildren(
     ...months.toReversed().map((option) => new Option(`${capitalize(monthName(option))}${option === months.at(-1) ? ', en cours' : ''}`, option)),
   )
   picker.value = month
-  const against = `la médiane des ${formatNumber(whole.length)} mois complets de l’année`
+  const against = `la médiane des ${formatNumber(whole.length)} derniers mois complets`
   $('[data-report-sub]').textContent = current
     ? 'Mois en cours, jusqu’à la dernière synchro : provisoire, trop tôt pour le comparer au mois précédent'
     : previous
       ? `Comparé à ${monthName(previous)}, et à ${against}`
-      : `Premier mois complet de l’année synchronisée : comparé à ${against} seulement`
+      : `Premier mois complet des données synchronisées : comparé à ${against} seulement`
 
   const stats = monthStats(month)
   const before = previous ? monthStats(previous) : null
@@ -2958,7 +3021,7 @@ function renderReport() {
       el('th', { scope: 'col', textContent: capitalize(monthName(month)) }),
       el('th', { scope: 'col', textContent: previous ? capitalize(monthName(previous)) : 'Mois précédent' }),
       el('th', { scope: 'col', textContent: 'Évolution' }),
-      el('th', { scope: 'col', textContent: 'Médiane de l’année' }),
+      el('th', { scope: 'col', textContent: 'Médiane sur 12 mois' }),
     ),
   )
   const body = el(
@@ -3028,7 +3091,7 @@ function renderReportRepositories(period) {
   list('[data-report-repos="deployments"]', top(period.delivery.repositories.map((row) => [row.repo, row.deployments])), ['déploiement', 'déploiements'])
 }
 
-// The people of the team whose first contribution of the synced year falls in the month, those already there when it
+// The people of the team whose first contribution of the synced data falls in the month, those already there when it
 // starts aside.
 function renderReportArrivals(month) {
   const windowStart = Date.parse(state.stats.windowStart)
@@ -3417,7 +3480,7 @@ function renderAnalysis() {
 
 // The CI of the period per repository: its runs, the share of them that failed or were run again.
 function ciPerRepository() {
-  const range = periodRange()
+  const range = ciRange(periodRange())
   const workflows = new Map()
   for (const workflow of state.stats.ci ?? []) {
     if (!workflows.has(workflow.repo)) {
@@ -5135,7 +5198,7 @@ function renderPeriodSelector() {
   for (const button of document.querySelectorAll('[data-period]')) {
     button.setAttribute('aria-checked', String(button.dataset.period === state.period))
   }
-  // Also shown before the stats arrive: the stored days are only checked against the synced year once they do.
+  // Also shown before the stats arrive: the stored days are only checked against the synced data once they do.
   const custom = state.period === CUSTOM_PERIOD && state.range !== null
   $('[data-date-range]').classList.toggle('is-active', custom)
   $('[data-date-range-label]').textContent = custom
@@ -5144,7 +5207,12 @@ function renderPeriodSelector() {
   if (!state.stats) {
     return
   }
+  for (const button of document.querySelectorAll('[data-period]')) {
+    button.disabled = !periodAvailable(button.dataset.period)
+    button.title = button.disabled ? 'Historique en cours de synchronisation : un mois de plus à chaque synchro' : ''
+  }
   const { min, max } = dateBounds()
+  $('[data-date-range-note]').textContent = `Du ${dateFormat.format(dayDate(min))} à la dernière synchro.`
   const { from, to } = $('[data-date-range-form]').elements
   from.min = min
   from.max = max
@@ -5153,9 +5221,9 @@ function renderPeriodSelector() {
 }
 
 function render(animate) {
-  // A stored period may no longer exist, and picked days leave the synced year as time goes by.
+  // A stored period may no longer exist or not be covered yet, and picked days leave the synced data as time goes by.
   state.range = clampRange(state.range)
-  if (state.period === CUSTOM_PERIOD ? !state.range : !PERIODS[state.period]) {
+  if (state.period === CUSTOM_PERIOD ? !state.range : !PERIODS[state.period] || !periodAvailable(state.period)) {
     state.period = DEFAULT_PERIOD
   }
   $('[data-org]').textContent = state.stats.org
