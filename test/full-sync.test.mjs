@@ -76,9 +76,9 @@ describe('fullSyncProof and checkFullSyncProof', () => {
     assert.equal(await checkFullSyncProof(proof, key, REPOSITORY, NOW), false)
   })
 
-  test('a proof from the future is refused, but for a minute of clock skew', async () => {
-    assert.equal(await checkFullSyncProof(await fullSyncProof(key, REPOSITORY, NOW + 60), key, REPOSITORY, NOW), true)
-    assert.equal(await checkFullSyncProof(await fullSyncProof(key, REPOSITORY, NOW + 61), key, REPOSITORY, NOW), false)
+  test('a proof from the future is refused, but for five minutes of clock skew', async () => {
+    assert.equal(await checkFullSyncProof(await fullSyncProof(key, REPOSITORY, NOW + 300), key, REPOSITORY, NOW), true)
+    assert.equal(await checkFullSyncProof(await fullSyncProof(key, REPOSITORY, NOW + 301), key, REPOSITORY, NOW), false)
     assert.equal(await checkFullSyncProof(await fullSyncProof(key, REPOSITORY, NOW + 3600), key, REPOSITORY, NOW), false)
   })
 

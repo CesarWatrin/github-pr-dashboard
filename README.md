@@ -136,8 +136,10 @@ synchro complète, sans le retenir. La vérification qui compte se fait dans le 
 dans les stats, n'importe qui avec le mot de passe de la page pourrait lancer le workflow sans passer par la page. La
 page signe donc la demande avec une clé dérivée du mot de passe de la synchro complète (PBKDF2-SHA256, 600 000
 itérations, puis HMAC-SHA256 du dépôt et de l'heure), et le run vérifie cette preuve, valable 2 heures, le temps
-d'attendre les runs déjà lancés. Sans preuve valable, le run fait une synchro rapide à la place et le dit en une
-ligne dans ses logs, sans autre détail. Conséquence : avec ce mot de passe en place, l'option de resynchro complète
+d'attendre les runs déjà lancés. L'heure vient du serveur qui sert la page, pas de l'horloge de l'ordinateur, qui peut
+être décalée (5 minutes de marge). Sans preuve valable, le run fait une synchro rapide à la place, le dit en une
+ligne dans ses logs, sans autre détail, et la page qui l'a demandée l'annonce dans le menu de synchro (mot de passe
+changé depuis la dernière synchro, ou demande expirée). Conséquence : avec ce mot de passe en place, l'option de resynchro complète
 du bouton _Run workflow_ de GitHub ne suffit plus, il faut passer par la page ou par `npm run sync:full` en local
 (qui, lui, n'en demande pas : il a déjà le `.env`). Sans `FULL_SYNC_PASSWORD`, rien ne change : la synchro complète se
 lance sans mot de passe.

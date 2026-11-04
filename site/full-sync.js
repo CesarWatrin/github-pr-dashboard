@@ -14,8 +14,10 @@ export const FULL_SYNC_ITERATIONS = 600_000
 // minutes each: a full sync asked while another run is going waits for it. A proof that leaks (it travels as a workflow
 // input) can only start another full sync within that time.
 export const FULL_SYNC_PROOF_MAX_AGE = 2 * 60 * 60
-// A proof dated this far in the future is still taken: the clock of the browser may run a little ahead of the runner's.
-const CLOCK_SKEW = 60
+// A proof dated this far in the future is still taken. The page dates it with the time of the server that serves it (the
+// Date header, to the second), the browser's clock only when that fails: a clock a little ahead must not turn the full
+// sync into a quick one.
+export const CLOCK_SKEW = 5 * 60
 
 const toHex = (bytes) => Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('')
 const toBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))

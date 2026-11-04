@@ -1194,7 +1194,7 @@ function computeEvents(pullRequests, now) {
   return events.sort((a, b) => b.at.localeCompare(a.at)).slice(0, EVENTS_LIMIT)
 }
 
-async function sync({ full, fullSync = null }) {
+async function sync({ full, fullSync = null, refused = false }) {
   const now = new Date()
   const before = (days) => new Date(now.getTime() - days * DAY_MS).toISOString()
   const windowStartIso = before(WINDOW_DAYS)
@@ -1305,6 +1305,8 @@ async function sync({ full, fullSync = null }) {
       ...version,
       timezone: TIMEZONE,
       syncTrigger: publishedSyncTrigger(SYNC_TRIGGER, fullSync),
+      // A full sync asked without a valid proof, synced incrementally instead: the page that asked tells so.
+      ...(refused && { fullSyncRefused: true }),
       requiredApprovals: REQUIRED_APPROVALS,
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
       repos: Object.fromEntries(
@@ -1388,7 +1390,7 @@ if (import.meta.main) {
     console.warn('full sync refused: no valid proof of the full sync password, incremental sync instead')
   }
 
-  await sync({ full, fullSync: fullSync?.published })
+  await sync({ full, fullSync: fullSync?.published, refused })
   while (args.has('--watch')) {
     await wait(WATCH_INTERVAL_MS)
     await sync({ full: false, fullSync: fullSync?.published }).catch((error) => console.error(error))

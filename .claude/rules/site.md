@@ -163,8 +163,11 @@ paths:
   it. Never log it or print it.
 - The sync button uses `DISPATCH_TOKEN` from the decrypted stats; a full sync asks for confirmation first.
 - When the stats carry `syncTrigger.fullSync` (`FULL_SYNC_PASSWORD`), the confirmation asks for the full sync password
-  too, `autocomplete="off"` so that the browser does not fill the dashboard password in. `confirmFullSync()` derives its
-  key with `site/full-sync.js` (loaded like `period.js`), compares the verifier, and only then dispatches with the
-  `proof` input; a wrong password keeps the dialog open and dispatches nothing. The key and the password are kept
+  too, `autocomplete="new-password"` so that password managers do not fill the dashboard password in (they ignore
+  `off`). `confirmFullSync()` derives its key with `site/full-sync.js` (loaded like `period.js`), compares the
+  verifier, and only then dispatches with the `proof` input, dated by `serverNow()` (the `Date` header of the page's
+  server, the browser's clock only without it); a wrong password keeps the dialog open and dispatches nothing. The key and the password are kept
   nowhere, never logged: each full sync asks again, and closing the dialog clears the field. The check in the page only
-  spares a run: the workflow run checks the proof itself, the dispatch token alone being readable from the stats.
+  spares a run: the workflow run checks the proof itself, the dispatch token alone being readable from the stats. A run
+  that refuses it publishes `fullSyncRefused`: `checkFullSyncRefused()` reads it in the first new stats after a full
+  sync the page started, and says so in the sync menu.

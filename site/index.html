@@ -900,11 +900,11 @@
           Elle doit rester exceptionnelle : seulement si des données semblent fausses ou manquantes. Pour les dernières
           PR, la synchro rapide suffit.
         </p>
-        <!-- Shown when the full sync has a password of its own, asked again each time. Not the dashboard password: the
-             browser is told not to fill it in. -->
+        <!-- Shown when the full sync has a password of its own, asked again each time. Not the dashboard password: a
+             new-password field is one that password managers do not fill with a saved password (they ignore off). -->
         <label class="lock-field confirm-field" data-full-sync-field hidden>
           Mot de passe de la synchro complète
-          <input class="search" type="password" name="fullSyncPassword" autocomplete="off" disabled data-full-sync-password />
+          <input class="search" type="password" name="fullSyncPassword" autocomplete="new-password" disabled data-full-sync-password />
         </label>
         <p class="lock-error" role="alert" data-full-sync-error hidden></p>
         <div class="confirm-actions">

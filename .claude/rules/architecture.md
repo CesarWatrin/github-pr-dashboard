@@ -68,7 +68,8 @@ Its key is derived with PBKDF2-SHA256 (600 000 iterations) and a salt made of th
 `sha256("github-pr-dashboard:full-sync:" + ORG)`; the stats only carry `sha256("verify:" + key)`. The page checks the
 password against it, then signs the request with the key, kept nowhere. Since the dispatch token alone can start a run,
 the run checks the proof itself: without a valid one for `GITHUB_REPOSITORY`, a full sync asked through the workflow
-input is refused, the run syncs incrementally and logs one line without any detail, and the deployment goes on.
+input is refused, the run syncs incrementally, logs one line without any detail and publishes `fullSyncRefused` (the
+page that asked says so), and the deployment goes on.
 
 ## Sync durations
 
