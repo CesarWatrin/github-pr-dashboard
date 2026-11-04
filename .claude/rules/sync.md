@@ -87,6 +87,20 @@ paths:
 - Never publish titles, bodies, branch names or anything not needed by a stat: what is published must stay minimal,
   even encrypted.
 
+## Full sync password
+
+- With `FULL_SYNC_PASSWORD` and a sync trigger, `publishedSyncTrigger()` adds `fullSync: { salt, iterations, verifier }`
+  to `syncTrigger` (`fullSyncSettings()`, from `site/full-sync.js`, which the page shares): never the key, which signs
+  the proofs. Without it, `syncTrigger` stays as before and nothing is asked.
+- `chooseFullSync()` decides, before the sync, whether it is a full one: `--full` on the command line always (whoever
+  runs it holds the `.env`); `FULL_SYNC=true` from the workflow only with a `FULL_SYNC_PROOF` that
+  `checkFullSyncProof()` takes for `GITHUB_REPOSITORY` (or `DISPATCH_REPOSITORY`), signed less than
+  `FULL_SYNC_PROOF_MAX_AGE` ago (2 hours: a run waits for the ones before it, 45 minutes each at most), a minute of
+  clock skew allowed. Otherwise the sync is incremental and logs one line, `full sync refused: …`, never the proof nor
+  why it failed. The run never fails over it: the deployment goes on.
+- The workflow masks the `proof` input (read from `GITHUB_EVENT_PATH`) before the sync step: the logs show the env of
+  each step, and inputs are not secrets.
+
 ## Changing the sync
 
 - A change in the snapshot shape bumps `SNAPSHOT_VERSION` (comment why): the next run reads everything again. Measure

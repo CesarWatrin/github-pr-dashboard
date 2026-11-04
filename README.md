@@ -129,6 +129,19 @@ secret `DISPATCH_TOKEN` existe : un token fine-grained limité à ce repo, avec 
 lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a le mot de passe peut s'en servir,
 pour lancer ou annuler des runs de ce workflow et rien d'autre.
 
+La synchro complète peut avoir son propre mot de passe, distinct de celui de la page : `FULL_SYNC_PASSWORD`, dans le
+`.env` et dans un secret (`gh secret set FULL_SYNC_PASSWORD --env github-pages`). Choisir là aussi une valeur longue
+et aléatoire. Une fois le secret posé, la synchro suivante publie de quoi le vérifier, et la page le demande à chaque
+synchro complète, sans le retenir. La vérification qui compte se fait dans le run : comme le token du bouton se lit
+dans les stats, n'importe qui avec le mot de passe de la page pourrait lancer le workflow sans passer par la page. La
+page signe donc la demande avec une clé dérivée du mot de passe de la synchro complète (PBKDF2-SHA256, 600 000
+itérations, puis HMAC-SHA256 du dépôt et de l'heure), et le run vérifie cette preuve, valable 2 heures, le temps
+d'attendre les runs déjà lancés. Sans preuve valable, le run fait une synchro rapide à la place et le dit en une
+ligne dans ses logs, sans autre détail. Conséquence : avec ce mot de passe en place, l'option de resynchro complète
+du bouton _Run workflow_ de GitHub ne suffit plus, il faut passer par la page ou par `npm run sync:full` en local
+(qui, lui, n'en demande pas : il a déjà le `.env`). Sans `FULL_SYNC_PASSWORD`, rien ne change : la synchro complète se
+lance sans mot de passe.
+
 Changer le mot de passe : mettre la nouvelle valeur dans le `.env` et dans le secret (`gh secret set
 DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouvertes redemandent alors le mot de passe.
 
@@ -179,14 +192,15 @@ Copier `.env.example` en `.env` et renseigner `ORG` et `DASHBOARD_PASSWORD`.
 npm run sync        # synchro (complète la première fois, incrémentale ensuite)
 npm run serve       # http://localhost:4173
 npm run dev         # synchro toutes les 60 s + serveur, pour un affichage en direct
-npm run sync:full   # force une resynchro complète
+npm run sync:full   # force une resynchro complète, sans demander FULL_SYNC_PASSWORD
 ```
 
 ## Déploiement (GitHub Actions + Pages)
 
 Le workflow `.github/workflows/deploy.yml` est planifié toutes les 15 minutes du lundi au vendredi, de 6-7 h à
 20-21 h (heure de Paris), et tourne aussi à chaque push sur `main` et à la demande (avec une option de resynchro
-complète). Le snapshot est conservé d'un run à l'autre dans le cache Actions.
+complète, qui demande la preuve du mot de passe de la synchro complète quand `FULL_SYNC_PASSWORD` est posé). Le
+snapshot est conservé d'un run à l'autre dans le cache Actions.
 
 GitHub ne garantit pas les déclenchements planifiés : ils sont souvent retardés ou sautés. Pour des données à jour
 tout de suite, lance le workflow depuis Actions → _Sync and deploy_ → _Run workflow_, ou avec
@@ -206,13 +220,14 @@ Prérequis :
    - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
    - `BOT_USERS` (facultatif) : les comptes utilisateurs de l'org qui agissent en bots, séparés par des virgules ;
    - `REQUIRED_APPROVALS` (facultatif) : le nombre d'approbations qu'il faut pour merger une PR, 1 par défaut ;
-   - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro.
+   - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro ;
+   - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées) et la vérification de syntaxe (`npm run check`) tournent sur
 chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
-`REQUIRED_APPROVALS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `SNAPSHOT_PATH`,
-`STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire l'historique des badges, par défaut
-l'adresse GitHub Pages du dépôt en CI).
+`REQUIRED_APPROVALS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
+`SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire l'historique des
+badges, par défaut l'adresse GitHub Pages du dépôt en CI).
