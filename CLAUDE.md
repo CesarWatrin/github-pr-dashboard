@@ -14,13 +14,14 @@ English.
 | `scripts/sync.mjs` | Sync: reads GitHub (GraphQL for pull requests, REST for Actions runs), keeps the snapshot, publishes the encrypted data |
 | `site/period.js` | Module shared by the sync and the page: computes the stats of a date range |
 | `site/analysis.js` | The rules of the analysis page: what stands out of a date range, and where to act |
+| `site/full-sync.js` | Module shared by the sync and the page: the password of the full sync, its verifier and the signed proof |
 | `site/app.js` | The whole page: unlocking, routes, tiles, charts, tables, starting a sync from the page |
 | `site/index.html`, `site/style.css` | Markup of the pages and styles (light and dark themes) |
 | `site/technology-icons.svg` | Technology logos (Simple Icons, CC0) |
 | `scripts/serve.mjs` | Local static server (port 4173, `PORT` to change it) |
 | `.github/workflows/deploy.yml` | Sync then deploy to Pages: weekday cron, every push to `main`, manual runs |
 | `.github/workflows/checks.yml` | Syntax and tests of every pull request, without any secret |
-| `test/` | Tests of `site/period.js`, `site/analysis.js` and of the sync rules, on made-up data (`node --test`) |
+| `test/` | Tests of `site/period.js`, `site/analysis.js`, `site/full-sync.js` and of the sync rules, on made-up data (`node --test`) |
 
 ## Commands
 

@@ -889,7 +889,7 @@
     </div>
 
     <dialog class="confirm" aria-labelledby="full-sync-title" data-full-sync-dialog>
-      <form method="dialog">
+      <form method="dialog" data-full-sync-form>
         <h2 id="full-sync-title">Lancer une synchro complète ?</h2>
         <p>
           Elle relit depuis GitHub toutes les PR des 12 derniers mois, dépôt par dépôt, avec leurs checks :
@@ -900,9 +900,18 @@
           Elle doit rester exceptionnelle : seulement si des données semblent fausses ou manquantes. Pour les dernières
           PR, la synchro rapide suffit.
         </p>
+        <!-- Shown when the full sync has a password of its own, asked again each time. Not the dashboard password: a
+             new-password field is one that password managers do not fill with a saved password (they ignore off). -->
+        <label class="lock-field confirm-field" data-full-sync-field hidden>
+          Mot de passe de la synchro complète
+          <input class="search" type="password" name="fullSyncPassword" autocomplete="new-password" disabled data-full-sync-password />
+        </label>
+        <p class="lock-error" role="alert" data-full-sync-error hidden></p>
         <div class="confirm-actions">
-          <button type="submit" value="cancel" class="button-secondary" autofocus>Annuler</button>
-          <button type="submit" value="confirm" class="button-primary">Lancer la synchro complète</button>
+          <button type="submit" value="cancel" class="button-secondary" formnovalidate autofocus>Annuler</button>
+          <button type="submit" value="confirm" class="button-primary" data-full-sync-confirm>
+            Lancer la synchro complète
+          </button>
         </div>
       </form>
     </dialog>

@@ -14,6 +14,13 @@ import { dirname, join } from 'node:path'
 import { gunzipSync, gzipSync } from 'node:zlib'
 
 import {
+  FULL_SYNC_ITERATIONS,
+  checkFullSyncProof,
+  deriveFullSyncKey,
+  fullSyncSalt,
+  fullSyncVerifier,
+} from '../site/full-sync.js'
+import {
   DAY_MS,
   MONTHLY_FIGURES,
   TIMEZONE,
@@ -137,9 +144,11 @@ const CATEGORY_OVERRIDES = new Map(
 // Optional fine-grained token, restricted to starting the workflow of this repository, that lets the page start a
 // sync. It only travels inside the encrypted stats: only the people with the password can use it.
 const WORKFLOW_FILE = 'deploy.yml'
+// The repository of the dashboard, whose workflow the page starts and for which a full sync is signed.
+const DASHBOARD_REPOSITORY = process.env.GITHUB_REPOSITORY ?? process.env.DISPATCH_REPOSITORY
 const SYNC_TRIGGER = process.env.DISPATCH_TOKEN
   ? {
-      repository: process.env.GITHUB_REPOSITORY ?? process.env.DISPATCH_REPOSITORY,
+      repository: DASHBOARD_REPOSITORY,
       workflow: WORKFLOW_FILE,
       ref: process.env.GITHUB_REF_NAME || 'main',
       token: process.env.DISPATCH_TOKEN,
@@ -161,6 +170,44 @@ function requiredApprovals(value = '') {
 }
 
 const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
+
+// The full sync asks for a password of its own (FULL_SYNC_PASSWORD), see site/full-sync.js: its key, and what the page
+// checks a password against, published inside syncTrigger. Null without it: no password asked, as before.
+async function fullSyncSettings(password, org, iterations = FULL_SYNC_ITERATIONS) {
+  if (!password) {
+    return null
+  }
+  const salt = await fullSyncSalt(org)
+  const key = await deriveFullSyncKey(password, salt, iterations)
+  const verifier = await fullSyncVerifier(key)
+
+  return { key, published: { salt: Buffer.from(salt).toString('base64'), iterations, verifier } }
+}
+
+// What the page gets to start a sync: the trigger, with what checks the full sync password when there is one.
+function publishedSyncTrigger(trigger, fullSync) {
+  if (!trigger?.repository) {
+    return null
+  }
+
+  return fullSync ? { ...trigger, fullSync } : trigger
+}
+
+// Whether this sync is a full one. On the command line, --full is enough: whoever runs it holds the .env. The full input
+// of the workflow is not: anyone with the dashboard password holds the dispatch token, so once the full sync has a
+// password of its own, the run also needs a proof of it, signed for this repository by the page. Without one, the run
+// syncs as usual, incrementally: refused, but the deployment goes on.
+async function chooseFullSync({ commandLine, requested, key, proof, repository, now }) {
+  if (commandLine || (requested && !key)) {
+    return { full: true, refused: false }
+  }
+  if (!requested) {
+    return { full: false, refused: false }
+  }
+  const proven = Boolean(repository) && (await checkFullSyncProof(proof, key, repository, now))
+
+  return { full: proven, refused: !proven }
+}
 
 // GitHub Apps are detected from their actor type: these are user accounts acting as bots. The organization's own
 // come from BOT_USERS (logins separated by commas), so that its account names stay out of this public code.
@@ -1147,7 +1194,7 @@ function computeEvents(pullRequests, now) {
   return events.sort((a, b) => b.at.localeCompare(a.at)).slice(0, EVENTS_LIMIT)
 }
 
-async function sync({ full }) {
+async function sync({ full, fullSync = null, refused = false }) {
   const now = new Date()
   const before = (days) => new Date(now.getTime() - days * DAY_MS).toISOString()
   const windowStartIso = before(WINDOW_DAYS)
@@ -1257,7 +1304,9 @@ async function sync({ full }) {
       org: ORG,
       ...version,
       timezone: TIMEZONE,
-      syncTrigger: SYNC_TRIGGER?.repository ? SYNC_TRIGGER : null,
+      syncTrigger: publishedSyncTrigger(SYNC_TRIGGER, fullSync),
+      // A full sync asked without a valid proof, synced incrementally instead: the page that asked tells so.
+      ...(refused && { fullSyncRefused: true }),
       requiredApprovals: REQUIRED_APPROVALS,
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
       repos: Object.fromEntries(
@@ -1304,11 +1353,14 @@ async function sync({ full }) {
 // The pure parts of the sync, for the tests, the reading back of the published history and the calls to GitHub.
 export {
   backfillSlice,
+  chooseFullSync,
   classify,
   computeCi,
   deliveryIndex,
+  fullSyncSettings,
   isBot,
   mergeMonthlyHistory,
+  publishedSyncTrigger,
   readPublishedHistory,
   repositoryCategory,
   request,
@@ -1324,11 +1376,23 @@ export {
 // Runs when executed, not when imported by the tests.
 if (import.meta.main) {
   const args = new Set(process.argv.slice(2))
-  const full = args.has('--full') || process.env.FULL_SYNC === 'true'
+  const fullSync = await fullSyncSettings(process.env.FULL_SYNC_PASSWORD, ORG)
+  const { full, refused } = await chooseFullSync({
+    commandLine: args.has('--full'),
+    requested: process.env.FULL_SYNC === 'true',
+    key: fullSync?.key,
+    proof: process.env.FULL_SYNC_PROOF,
+    repository: DASHBOARD_REPOSITORY,
+    now: Math.floor(Date.now() / 1000),
+  })
+  if (refused) {
+    // Never the proof nor why it failed: the logs are public.
+    console.warn('full sync refused: no valid proof of the full sync password, incremental sync instead')
+  }
 
-  await sync({ full })
+  await sync({ full, fullSync: fullSync?.published, refused })
   while (args.has('--watch')) {
     await wait(WATCH_INTERVAL_MS)
-    await sync({ full: false }).catch((error) => console.error(error))
+    await sync({ full: false, fullSync: fullSync?.published }).catch((error) => console.error(error))
   }
 }

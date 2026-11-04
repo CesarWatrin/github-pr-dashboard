@@ -7,6 +7,10 @@ const { BIG_PR_LINES, HUGE_PR_LINES, MAIN_REVIEWER_SHARE, SLOW_MEDIAN_SECONDS, S
   `./analysis.js${new URL(import.meta.url).search}`
 )
 
+const { deriveFullSyncKey, fullSyncProof, fullSyncVerifier } = await import(
+  `./full-sync.js${new URL(import.meta.url).search}`
+)
+
 const DATA_URL = 'data/stats.enc.json'
 const VERSION_URL = 'data/version.json'
 const POLL_INTERVAL_MS = 60_000
@@ -1066,6 +1070,8 @@ const state = {
   syncStarting: null,
   // The sync started from the page, until new data arrives.
   syncRequest: null,
+  // A full sync started with the proof of its password, until new stats tell whether the run took it.
+  fullSyncAsked: false,
   // When each person first and last shows in the stats, worked out once per stats: seniority, and who left the team.
   activity: null,
   // The badges of each person, worked out once per stats.
@@ -5076,8 +5082,9 @@ function renderSyncMenu() {
   }
 }
 
-// A sync already queued or running is waited for rather than doubled.
-async function startSync(kind) {
+// A sync already queued or running is waited for rather than doubled. A full sync carries the proof of its password,
+// when it has one.
+async function startSync(kind, proof = null) {
   const { workflow, ref } = state.stats.syncTrigger
   const menu = $('[data-sync-menu]')
   const error = $('[data-sync-error]')
@@ -5097,11 +5104,13 @@ async function startSync(kind) {
     if (!running) {
       const response = await githubApi(`/actions/workflows/${workflow}/dispatches`, {
         method: 'POST',
-        body: JSON.stringify({ ref, inputs: { full: String(SYNC_KINDS[kind].full) } }),
+        body: JSON.stringify({ ref, inputs: { full: String(SYNC_KINDS[kind].full), ...(proof ? { proof } : {}) } }),
       })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
+      // Its stats will say whether the run refused it (checkFullSyncRefused()).
+      state.fullSyncAsked = proof !== null
     }
     state.syncRequest = { kind: running ? 'running' : kind, at: Date.now() }
     menu.open = false
@@ -5113,6 +5122,84 @@ async function startSync(kind) {
   state.syncStarting = null
   renderSyncMenu()
   renderSyncStatus()
+}
+
+// The time a proof of the full sync password is dated with, in seconds: that of the server serving the page (its Date
+// header, to the second), which the runner checking the proof shares; the browser's clock, which may be off, only when
+// the server does not tell.
+async function serverNow() {
+  try {
+    const response = await fetch(`${VERSION_URL}?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
+    const date = Date.parse(response.headers.get('date'))
+    if (Number.isFinite(date)) {
+      return Math.floor(date / 1000)
+    }
+  } catch {
+    // Unreachable: the browser's clock.
+  }
+
+  return Math.floor(Date.now() / 1000)
+}
+
+// A full sync the run refused tells so in the stats it publishes, a quick sync done in its place (fullSyncRefused): the
+// first new stats after a full sync the page started say whether it was. The run started is the first of the queue,
+// since the page only starts one when none is going.
+function checkFullSyncRefused(stats) {
+  if (!state.fullSyncAsked) {
+    return
+  }
+  state.fullSyncAsked = false
+  if (stats.fullSyncRefused) {
+    const error = $('[data-sync-error]')
+    error.textContent =
+      'La synchro complète a été refusée (mot de passe changé depuis la dernière synchro, ou demande expirée) : une synchro rapide a été faite à la place.'
+    error.hidden = false
+    $('[data-sync-menu]').open = true
+  }
+}
+
+// The full sync may have a password of its own (syncTrigger.fullSync). The page checks it against the verifier the stats
+// carry, then signs the request with the key derived from it, kept nowhere: the dispatch token alone could start a full
+// sync, so the workflow run checks that proof again. A wrong password keeps the dialog open and starts nothing.
+async function confirmFullSync() {
+  const dialog = $('[data-full-sync-dialog]')
+  const button = $('[data-full-sync-confirm]')
+  const { fullSync, repository } = state.stats.syncTrigger
+  if (!fullSync) {
+    dialog.close()
+    startSync('full')
+
+    return
+  }
+  // Already checking the password.
+  if (button.disabled) {
+    return
+  }
+  const password = $('[data-full-sync-password]')
+  const error = $('[data-full-sync-error]')
+  error.hidden = true
+  button.disabled = true
+  try {
+    const key = await deriveFullSyncKey(password.value, fromBase64(fullSync.salt), fullSync.iterations)
+    if ((await fullSyncVerifier(key)) !== fullSync.verifier) {
+      error.textContent = 'Mot de passe incorrect.'
+      error.hidden = false
+      password.select()
+
+      return
+    }
+    const proof = await fullSyncProof(key, repository, await serverNow())
+    // Closed meanwhile: cancelled.
+    if (dialog.open) {
+      dialog.close()
+      startSync('full', proof)
+    }
+  } catch {
+    error.textContent = 'Le mot de passe n’a pas pu être vérifié, réessaie dans un instant.'
+    error.hidden = false
+  } finally {
+    button.disabled = false
+  }
 }
 
 // The request ends with the next data, or after a while if the run failed.
@@ -5427,6 +5514,7 @@ async function unlock(form) {
 function applyStats(stats) {
   const isUpdate = state.stats !== null
   state.stats = stats
+  checkFullSyncRefused(stats)
   render(isUpdate)
   if (!isUpdate) {
     playEntrance()
@@ -5542,7 +5630,7 @@ $('[data-search]').addEventListener('input', (event) => {
 
 $('[data-theme-toggle]').addEventListener('click', toggleTheme)
 
-// The full sync is heavy: it is only started once confirmed.
+// The full sync is heavy: it is only started once confirmed, with a password of its own when the stats carry one.
 for (const button of document.querySelectorAll('[data-sync-kind]')) {
   button.addEventListener('click', () => {
     if (button.dataset.syncKind !== 'full') {
@@ -5551,15 +5639,37 @@ for (const button of document.querySelectorAll('[data-sync-kind]')) {
       return
     }
     const dialog = $('[data-full-sync-dialog]')
+    const password = $('[data-full-sync-password]')
+    const asksPassword = Boolean(state.stats.syncTrigger.fullSync)
     $('[data-sync-menu]').open = false
+    $('[data-full-sync-field]').hidden = !asksPassword
+    $('[data-full-sync-error]').hidden = true
+    password.disabled = !asksPassword
+    password.required = asksPassword
     dialog.returnValue = ''
     dialog.showModal()
+    if (asksPassword) {
+      password.focus()
+    }
   })
 }
-$('[data-full-sync-dialog]').addEventListener('close', (event) => {
-  if (event.currentTarget.returnValue === 'confirm') {
-    startSync('full')
+$('[data-full-sync-form]').addEventListener('submit', (event) => {
+  if (event.submitter?.value === 'confirm') {
+    event.preventDefault()
+    confirmFullSync()
   }
+})
+// Enter in the password confirms: the first button of the form, the one the browser would take, cancels.
+$('[data-full-sync-password]').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    $('[data-full-sync-form]').requestSubmit($('[data-full-sync-confirm]'))
+  }
+})
+// The password typed does not stay in the page.
+$('[data-full-sync-dialog]').addEventListener('close', () => {
+  $('[data-full-sync-form]').reset()
+  $('[data-full-sync-error]').hidden = true
 })
 $('[data-sync-menu]').addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && event.currentTarget.open) {

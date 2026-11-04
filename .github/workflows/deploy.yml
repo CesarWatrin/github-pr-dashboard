@@ -13,6 +13,11 @@ on:
         description: Refetch the whole rolling window instead of an incremental sync
         type: boolean
         default: false
+      # Once FULL_SYNC_PASSWORD is set, a full sync needs it: the page signs the request with that password.
+      proof:
+        description: Proof of the full sync password, set by the page (leave empty)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -47,6 +52,13 @@ jobs:
           key: snapshot-${{ github.run_id }}
           restore-keys: snapshot-
 
+      # The logs show the env of each step, inputs in clear: the proof is masked first, read from the event rather than
+      # written into the command. Only the characters of a proof are kept, so that no other workflow command slips in;
+      # anything else is no valid proof anyway.
+      - name: Mask the proof of the full sync
+        if: inputs.proof
+        run: echo "::add-mask::$(jq -r '.inputs.proof' "$GITHUB_EVENT_PATH" | tr -cd '0-9a-f.')"
+
       # Every value is a secret so that the public logs show none of them, the organization included.
       - name: Sync pull requests
         run: node scripts/sync.mjs
@@ -59,6 +71,8 @@ jobs:
           REQUIRED_APPROVALS: ${{ secrets.REQUIRED_APPROVALS }}
           DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
+          FULL_SYNC_PASSWORD: ${{ secrets.FULL_SYNC_PASSWORD }}
+          FULL_SYNC_PROOF: ${{ inputs.proof }}
           BUILD_ID: ${{ github.sha }}
 
       - name: Save snapshot
