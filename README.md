@@ -50,8 +50,8 @@ la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
 - **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code
-  et filtrables par dépôt : sa photo, son ancienneté (plus de trois ans, ou le temps depuis sa première PR, review ou
-  commentaire dans les données synchronisées), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
+  et filtrables par dépôt : sa photo, son ancienneté (depuis sa première PR dans l'organisation, même avant les données
+  synchronisées, ou sa première review ou son premier commentaire s'ils sont plus anciens), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
   de merge, ses PR relues, ses commentaires par PR relue et le nombre de personnes qui relisent son code. Un clic
   ouvre la fiche de la personne, une carte qui s'incline vers la souris : lignes ajoutées et supprimées, taux de
   merge, attente de la première
@@ -143,6 +143,8 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
     ainsi en 25 synchros, sans dépasser le timeout du workflow ni le quota horaire du token : ce rattrapage attend
     quand il reste moins de 2 500 points GraphQL dans l'heure ;
   - une synchro complète relit les 12 derniers mois et garde les PR plus anciennes telles qu'elles ont été lues.
+- Pour l'ancienneté, elle cherche une fois par personne sa toute première PR dans l'organisation (une recherche d'un
+  seul résultat, un point du quota) et garde la réponse dans le snapshot.
 - Elle lit aussi, par l'API REST, les exécutions GitHub Actions des dépôts poussés depuis la dernière synchro
   (toutes celles des 12 derniers mois au premier passage), et l'état des checks du dernier commit de chaque PR. GitHub
   les efface au bout d'environ 13 mois : le snapshot les garde 36 mois.

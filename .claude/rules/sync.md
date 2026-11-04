@@ -63,6 +63,11 @@ paths:
   no `SNAPSHOT_VERSION` bump, filled for the
   pull requests the sync reads again (a full sync reads them all). `graphql()` lets through the errors on a
   `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/period.js` documents the shape and is the only consumer.
+- `firstPullRequests`: for each person of the records (`peopleOf()`, bots aside), the first pull request they opened
+  in the organization, whatever the window: a search `org:… is:pr author:<login> sort:created-asc` of one result, a
+  point each, `CONCURRENCY` at once, only for the people not known yet (`peopleToLookUp()`). The snapshot keeps the
+  answers, null for someone who never opened one; the stats publish the known ones, in minutes, for the people of the
+  records only.
 - `computeCi()`: per repository, workflow and Paris day, `[runs, failed, rerun, durations in seconds]`, for runs on pull
   requests and pushes that reached a verdict (cancelled and skipped ones left out).
 - `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first

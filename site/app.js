@@ -673,7 +673,7 @@ const BADGES_LEGEND = {
 // Explained in the legend under the cards, with the figures.
 const SENIORITY_LEGEND = {
   label: 'Ancienneté',
-  hint: `Depuis la première PR, review ou commentaire de la personne. Les données remontent jusqu’à trois ans : une première activité dans leurs ${SENIORITY_START_DAYS} premiers jours compte pour plus que toute leur durée.`,
+  hint: `Depuis la première PR de la personne dans l’organisation, même au-delà des données synchronisées, ou sa première review ou son premier commentaire s’ils sont plus anciens. Sans PR, une première activité dans les ${SENIORITY_START_DAYS} premiers jours des données compte pour plus que toute leur durée.`,
 }
 // The figures of a repository over the period, on its card and in its dialog. Their hints make the legend under the
 // cards.
@@ -2474,17 +2474,36 @@ const withoutFormer = ({ authors, reviewPairs }) => ({
   reviewPairs: reviewPairs.filter((pair) => isCurrent(pair.author) && isCurrent(pair.reviewer)),
 })
 
-// How long a person has been around, whatever the period: more than the whole years of the synced data when already
-// active in its first days, else the time since their first pull request, review, comment or merge.
-function seniority(login) {
+// When a person first showed, whatever the period, in milliseconds: their first pull request in the organization, which
+// the sync looks up beyond the window (firstPullRequests), or their first review, comment or merge of the data when
+// earlier. Exact (known) unless it comes from the data within its first SENIORITY_START_DAYS: the person may well have
+// been there before. Null for someone the stats do not know.
+function firstShown(login) {
   const activity = activities().get(login)
   if (!activity) {
     return null
   }
-  const first = activity.first * 60_000
+  const opened = state.stats.firstPullRequests?.[login] ?? Infinity
+  const at = Math.min(activity.first, opened) * 60_000
+  const fromPullRequest = opened <= activity.first
+
+  return {
+    at,
+    fromPullRequest,
+    known: fromPullRequest || at - Date.parse(state.stats.windowStart) >= SENIORITY_START_DAYS * DAY_MS,
+  }
+}
+
+// How long a person has been around, whatever the period: since their first pull request in the organization, or their
+// first review, comment or merge when earlier; more than the whole years of the synced data when that one is not known.
+function seniority(login) {
+  const first = firstShown(login)
+  if (!first) {
+    return null
+  }
   const start = Date.parse(state.stats.windowStart)
   const end = Date.parse(state.stats.generatedAt)
-  if (first - start < SENIORITY_START_DAYS * DAY_MS) {
+  if (!first.known) {
     // Years of 365 days, as the window counts them: three, or fewer while the sync reads back the older ones.
     const years = Math.max(1, Math.floor((end - start) / (365 * DAY_MS) + 1e-9))
 
@@ -2493,9 +2512,10 @@ function seniority(login) {
       title: 'Première activité dès les premiers jours des données synchronisées',
     }
   }
-  const months = Math.floor((end - first) / MONTH_MS)
+  const months = Math.floor((end - first.at) / MONTH_MS)
+  const what = first.fromPullRequest ? 'Première PR dans l’organisation' : 'Première activité'
 
-  return { label: months < 1 ? 'moins d’un mois' : monthsLabel(months), title: `Première activité le ${dateFormat.format(first)}` }
+  return { label: months < 1 ? 'moins d’un mois' : monthsLabel(months), title: `${what} le ${dateFormat.format(first.at)}` }
 }
 
 // « 7 mois », « 1 an et 3 mois », « 2 ans ».
@@ -3091,21 +3111,18 @@ function renderReportRepositories(period) {
   list('[data-report-repos="deployments"]', top(period.delivery.repositories.map((row) => [row.repo, row.deployments])), ['déploiement', 'déploiements'])
 }
 
-// The people of the team whose first contribution of the synced data falls in the month, those already there when it
-// starts aside.
+// The people of the team who first showed in the month (firstShown()), those who may have been there before the
+// synced data aside.
 function renderReportArrivals(month) {
-  const windowStart = Date.parse(state.stats.windowStart)
-  const arrivals = [...activities()]
-    .filter(([login, { first }]) => {
-      const at = first * 60_000
-
-      return isCurrent(login) && parisDay(at).slice(0, 7) === month && at - windowStart >= SENIORITY_START_DAYS * DAY_MS
-    })
-    .sort((a, b) => a[1].first - b[1].first)
+  const arrivals = [...activities().keys()]
+    .filter(isCurrent)
+    .map((login) => ({ login, first: firstShown(login) }))
+    .filter(({ first }) => first.known && parisDay(first.at).slice(0, 7) === month)
+    .sort((a, b) => a.first.at - b.first.at)
   renderList(
     $('[data-report-arrivals]'),
-    arrivals.map(([login, { first }]) =>
-      el('li', {}, personLink(login), el('span', { className: 'pair-count', textContent: `le ${dayMonthFormat.format(dayDate(parisDay(first * 60_000)))}` })),
+    arrivals.map(({ login, first }) =>
+      el('li', {}, personLink(login), el('span', { className: 'pair-count', textContent: `le ${dayMonthFormat.format(dayDate(parisDay(first.at)))}` })),
     ),
     'Aucune arrivée ce mois-ci',
   )
