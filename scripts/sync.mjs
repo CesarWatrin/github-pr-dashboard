@@ -626,8 +626,24 @@ function backfillSlice(sinceIso, windowStartIso) {
   return { from, to: sinceIso.slice(0, 10), since: `${from}T00:00:00.000Z` }
 }
 
+// Whole days from one day to another (UTC, included) cut into at most `parts` ranges of about the same length, in order.
+function splitDays(from, to, parts) {
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS) + 1
+  const count = Math.min(parts, days)
+  const ranges = []
+  let start = from
+  for (let index = 0; index < count; index++) {
+    const end = addDays(start, Math.floor(days / count) + (index < days % count ? 1 : 0) - 1)
+    ranges.push([start, end])
+    start = addDays(end, 1)
+  }
+
+  return ranges
+}
+
 // One slice of the backfill, when the token can spare it: the pull requests read, what the snapshot then covers, and
-// whether the slice was read, waits for the quota, or the snapshot already covers the window.
+// whether the slice was read, waits for the quota, or the snapshot already covers the window. A page of the search
+// takes seconds: the slice is read in CONCURRENCY ranges at once, as the full sync reads repositories.
 async function backfill(sinceIso, windowStartIso) {
   const slice = backfillSlice(sinceIso, windowStartIso)
   if (!slice) {
@@ -639,7 +655,10 @@ async function backfill(sinceIso, windowStartIso) {
     return { pullRequests: [], since: sinceIso, status: 'waiting' }
   }
 
-  return { pullRequests: await fetchCreatedBetween(slice.from, slice.to), since: slice.since, status: 'read' }
+  const ranges = splitDays(slice.from, slice.to, CONCURRENCY)
+  const perRange = await mapWithConcurrency(ranges, CONCURRENCY, ([from, to]) => fetchCreatedBetween(from, to))
+
+  return { pullRequests: perRange.flat(), since: slice.since, status: 'read' }
 }
 
 function parseManifest(blob) {
@@ -1239,6 +1258,7 @@ export {
   request,
   requiredApprovals,
   snapshotCoverage,
+  splitDays,
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,
