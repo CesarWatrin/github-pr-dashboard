@@ -89,9 +89,12 @@ paths:
     `reviewNetwork()`. The card leans towards a mouse (`tiltPersonCard()`, measured on its scene, which does not turn)
     and catches the light (`--glare`, `--sheen-*`); never for touch, nor under `prefers-reduced-motion`. No chart or
     tooltip in the dialog: the tooltip would sit under it.
-  - Seniority (`seniority()`, card and dialog) comes from `activityBounds()` of `site/period.js` over every record,
-    whatever the period: more than the whole years of the synced data (three, fewer while the backfill runs) when the
-    first activity falls in its first `SENIORITY_START_DAYS`, else the time since then (`monthsLabel()`).
+  - Seniority (`seniority()`, card and dialog) counts from `firstShown()`, whatever the period: the person's first pull
+    request in the organization (`firstPullRequests` of the stats, looked up by the sync beyond the window), or their
+    first activity of `activityBounds()` over every record when earlier, in years and months (`monthsLabel()`). A first
+    activity without a pull request before it, in the first `SENIORITY_START_DAYS` of the data, is not known: more than
+    the whole years of the synced data. The arrivals of the monthly report come from `firstShown()` too, known ones
+    only.
 - **Badges** (team cards and dialog, awards page): `BADGES` names each one after a monthly figure of
   `monthlyActivity()` in `site/period.js`, with its units and, for the lines, a `format`. `badgeStandings()` works
   out, once per stats, the leaders of each month with `monthlyLeaders()` of `site/period.js` over the history the sync

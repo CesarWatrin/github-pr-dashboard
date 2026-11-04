@@ -233,6 +233,14 @@ const SEARCH_PULL_REQUESTS_QUERY = `
     }
   }`
 
+// The oldest pull request a person opened in the organization, whatever the window.
+const FIRST_PULL_REQUEST_QUERY = `
+  query($query: String!) {
+    search(query: $query, type: ISSUE, first: 1) {
+      nodes { ... on PullRequest { createdAt } }
+    }
+  }`
+
 const remainingItemsQuery = (connection, fields) => `
   query($org: String!, $name: String!, $number: Int!, $cursor: String) {
     repository(owner: $org, name: $name) {
@@ -596,6 +604,41 @@ async function fetchCreatedBetween(from, to) {
     }
     cursor = pageInfo.endCursor
   }
+}
+
+// The people of the published records, bots aside: authors, reviewers and commenters, and those who merged.
+function peopleOf(records) {
+  const logins = new Set()
+  for (const pr of records) {
+    if (!pr.bot) {
+      logins.add(pr.author)
+    }
+    for (const [login] of pr.interventions) {
+      logins.add(login)
+    }
+    if (pr.mergedBy) {
+      logins.add(pr.mergedBy)
+    }
+  }
+
+  return [...logins].sort()
+}
+
+// The people whose first pull request in the organization is not known yet: each is looked up once, the snapshot
+// keeps the answer, null for someone who never opened one.
+const peopleToLookUp = (records, known) => peopleOf(records).filter((login) => !(login in known))
+
+// The first pull request each person opened in the organization, ever, for their seniority beyond the window: one
+// search of a single result each, a point of the quota, a few at once.
+async function fetchFirstPullRequests(logins) {
+  const found = await mapWithConcurrency(logins, CONCURRENCY, async (login) => {
+    const query = `org:${ORG} is:pr author:${login} sort:created-asc`
+    const data = await graphql(FIRST_PULL_REQUEST_QUERY, { query })
+
+    return [login, data.search.nodes[0]?.createdAt ?? null]
+  })
+
+  return Object.fromEntries(found)
 }
 
 // What a snapshot covers: every pull request, and every run, created since these times has been read. A snapshot kept
@@ -1180,6 +1223,11 @@ async function sync({ full }) {
   const kept = previous?.monthly
     ? { history: previous.monthly, revision: previous.monthlyRevision ?? 1 }
     : ((await readPublishedHistory()) ?? { history: {}, revision: MONTHLY_REVISION })
+  const knownFirstPullRequests = previous?.firstPullRequests ?? {}
+  const firstPullRequests = {
+    ...knownFirstPullRequests,
+    ...(await fetchFirstPullRequests(peopleToLookUp(records, knownFirstPullRequests))),
+  }
   const history = mergeMonthlyHistory(kept.history, records, {
     windowStart: Date.parse(dataStartIso) + HISTORY_LEAD_DAYS * DAY_MS,
     now: now.getTime(),
@@ -1198,6 +1246,7 @@ async function sync({ full }) {
     pullRequestsSince: backfilled.since,
     runs: runsInWindow,
     runsSince: coverage.runs,
+    firstPullRequests,
     monthly: history,
     monthlyRevision: MONTHLY_REVISION,
   })
@@ -1224,6 +1273,13 @@ async function sync({ full }) {
       // The page computes the stats of the range it shows from these, since the start of the data.
       windowStart: dataStartIso,
       pullRequests: records,
+      // When each person opened their first pull request in the organization, in minutes: seniority goes back further
+      // than the data.
+      firstPullRequests: Object.fromEntries(
+        peopleOf(records)
+          .filter((login) => firstPullRequests[login])
+          .map((login) => [login, minutes(firstPullRequests[login])]),
+      ),
       // The badges are won over this history, since the first sync.
       monthly: history,
       monthlyRevision: MONTHLY_REVISION,
@@ -1257,6 +1313,7 @@ export {
   repositoryCategory,
   request,
   requiredApprovals,
+  peopleToLookUp,
   snapshotCoverage,
   splitDays,
   technologyShares,

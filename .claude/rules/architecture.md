@@ -10,6 +10,7 @@
 2. **Snapshot** (`.cache/snapshot.json`, never published, kept in the Actions cache): the raw pull requests created
    over the rolling window (`WINDOW_DAYS`, three years), the Actions runs of the window, what it covers of both
    (`pullRequestsSince`, `runsSince`), display names, bot accounts, the languages and frameworks of each repository,
+   the first pull request each person opened in the organization (`firstPullRequests`, looked up once per person),
    and the monthly history of each person's figures (`monthly`), which outlasts the window: it goes back to the first
    sync. `SNAPSHOT_VERSION` in the sync: bumping it makes the next run read the last year again, the two before it
    coming back a month per run, and the monthly history read back from the published stats.
@@ -22,7 +23,8 @@
      (one compact record per pull request, no title or content) since `windowStart` (the start of the data: the
      window, or what the snapshot covers while the backfill runs), `ci` (Actions runs per repository, workflow and
      Paris day) since `ciStart` (GitHub forgets runs after about 13 months: they go back to when the snapshot started
-     keeping them) and `monthly` (each person's monthly figures since the first sync, for the badges, with
+     keeping them), `firstPullRequests` (when each person of the records opened their first pull request in the
+     organization, for seniority) and `monthly` (each person's monthly figures since the first sync, for the badges, with
      `monthlyRevision`: how they were counted).
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
