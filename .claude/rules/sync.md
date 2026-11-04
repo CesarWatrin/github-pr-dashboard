@@ -17,8 +17,9 @@ paths:
 - **Backfill**: the window (`WINDOW_DAYS`) is three years, too long to read at once (timeout, hourly quota). The
   snapshot keeps what it covers (`pullRequestsSince`; a snapshot without it covers the year before its sync). Each
   sync reads one slice (`backfillSlice()`): the pull requests created in the `BACKFILL_DAYS` before it, by whole UTC
-  days, through the search `org:… is:pr created:from..to` (read in halves beyond 1000 results), until it covers the
-  window; it waits while fewer than `BACKFILL_MIN_POINTS` GraphQL points are left for the hour (`/rate_limit`, free).
+  days, through the search `org:… is:pr created:from..to` (read in halves beyond 1000 results), cut by `splitDays()`
+  into `CONCURRENCY` ranges read at once (a page of 25 pull requests takes several seconds, for 1 point), until it
+  covers the window; it waits while fewer than `BACKFILL_MIN_POINTS` GraphQL points are left for the hour (`/rate_limit`, free).
   The published `windowStart` is the start of the data: the window, or what the snapshot covers until then. An older
   pull request updated before its slice comes back is left out until then.
 - **Actions runs**: REST `GET /repos/{org}/{repo}/actions/runs?created=from..to`, for the repositories pushed to since

@@ -35,6 +35,7 @@ const {
   request,
   requiredApprovals,
   snapshotCoverage,
+  splitDays,
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,
@@ -526,6 +527,22 @@ describe('backfill', () => {
     const last = backfillSlice('2025-02-01T00:00:00.000Z', windowStart)
     assert.deepEqual(last, { from: '2025-01-15', to: '2025-02-01', since: '2025-01-15T00:00:00.000Z' })
     assert.equal(backfillSlice(last.since, windowStart), null)
+  })
+
+  test('a slice is read in ranges of whole days that follow each other, about the same length', () => {
+    // The 31 days of a slice, its last day included.
+    assert.deepEqual(splitDays('2025-01-30', '2025-03-01', 4), [
+      ['2025-01-30', '2025-02-06'],
+      ['2025-02-07', '2025-02-14'],
+      ['2025-02-15', '2025-02-22'],
+      ['2025-02-23', '2025-03-01'],
+    ])
+    // Fewer days than ranges: a day each.
+    assert.deepEqual(splitDays('2025-01-15', '2025-01-16', 4), [
+      ['2025-01-15', '2025-01-15'],
+      ['2025-01-16', '2025-01-16'],
+    ])
+    assert.deepEqual(splitDays('2025-01-15', '2025-01-15', 4), [['2025-01-15', '2025-01-15']])
   })
 
   test('slice after slice, the two years before the last one come back in 25 syncs', () => {
