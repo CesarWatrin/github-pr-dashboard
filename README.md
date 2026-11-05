@@ -8,7 +8,8 @@ Site statique sans build ni dépendance, déployé sur GitHub Pages par un workf
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
 
 Le dashboard est découpé en pages, dans une barre latérale (une barre en haut sur les écrans étroits). La période et
-la recherche s'appliquent à toutes. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
+la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
+une colonne à droite, qui reste à portée quand la page défile. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
 - **Vue d'ensemble** : l'activité du jour, puis celle de la période en trois volets, livraison (PR ouvertes et

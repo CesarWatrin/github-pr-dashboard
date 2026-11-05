@@ -865,6 +865,59 @@ h3 {
   font: inherit;
 }
 
+/* With room to spare on the right, the filters, which apply to every page, leave the top of the page for a column of
+   their own that stays in view as the page scrolls. The column stays on the pages without filters, so that the page
+   keeps its width from one to the next. The content is never narrower than beside the sidebar at 1280 px (968 px),
+   nor wider than without the column (1240 px); the column is wide enough for the placeholder of the search. */
+@media (min-width: 1536px) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    align-content: start;
+    column-gap: 32px;
+    max-width: calc(40px + 1240px + 32px + 240px + 24px);
+    padding-right: 24px;
+  }
+
+  .page > :not(.filters) {
+    grid-column: 1;
+  }
+
+  .filters {
+    position: sticky;
+    z-index: 6;
+    top: 32px;
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    align-self: start;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 10px;
+    margin: 0;
+  }
+
+  .segmented {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .segmented button {
+    padding: 7px 12px;
+    text-align: left;
+  }
+
+  .filters .search {
+    flex: none;
+    width: 100%;
+  }
+
+  /* The column ends near the right edge: the panel opens towards the page. */
+  .date-range-panel {
+    right: 0;
+    left: auto;
+  }
+}
+
 button:focus-visible,
 input:focus-visible,
 a:focus-visible,
