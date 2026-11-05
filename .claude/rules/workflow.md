@@ -32,7 +32,7 @@
     from `.env` (never written in a command nor printed), swaps `syncTrigger` for a fake one and encrypts it again with
     a throwaway password.
   - Link the `site/` files into that folder and serve it with `PORT=<port> node scripts/serve.mjs`.
-  - Check 1920, 1280, 1080 and 390 px, light and dark mode, and an empty console.
+  - Check 1920, 1536, 1280, 1080 and 390 px, light and dark mode, and an empty console.
 - The README and the "Méthode" page follow any change of behavior or definition.
 
 ## Shared resources

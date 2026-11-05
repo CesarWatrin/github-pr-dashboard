@@ -149,8 +149,11 @@ paths:
 - Colors are tokens on `:root`, redefined for dark mode (system preference and `data-theme`). Data series use
   `--series-1` (blue), `--series-2` (orange), `--series-3` (green), a palette checked for color blindness; text never
   takes a series color. Repository types are labelled front, back, mobile or full-stack.
-- Layout: a sidebar from 1280 px, a top bar below. Tables fit at 1080 px without horizontal scrolling. Check 1920,
-  1280, 1080 and 390 px (phone), light and dark.
+- Layout: a sidebar from 1280 px, a top bar below. From 1536 px the filters (`[data-filters]`) move from the top of
+  the page to a sticky column on its right, under the name « Filtres », the period shown tinted like the current page
+  of the sidebar; the column stays on the pages without filters so that the content keeps its width;
+  beside it the content is as wide as beside the sidebar at 1280 px, so whatever fits there fits there too. Tables
+  fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
 - Hiding: the `hidden` attribute, which a rule of `style.css` makes win over any `display`; never a class of its own.
 - Motion: pages enter with `.is-entering` and a staggered `--delay`; everything stops under
   `prefers-reduced-motion`.
