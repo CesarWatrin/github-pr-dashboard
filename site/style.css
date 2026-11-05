@@ -706,6 +706,17 @@ h3 {
   margin-bottom: 20px;
 }
 
+/* The name of the filters, over their column on wide screens; at the top of the page they need none. */
+.filters-title {
+  display: none;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .segmented {
   display: inline-flex;
   padding: 3px;
@@ -868,15 +879,16 @@ h3 {
 /* With room to spare on the right, the filters, which apply to every page, leave the top of the page for a column of
    their own that stays in view as the page scrolls. The column stays on the pages without filters, so that the page
    keeps its width from one to the next. The content is never narrower than beside the sidebar at 1280 px (968 px),
-   nor wider than without the column (1240 px); the column is wide enough for the placeholder of the search. */
+   nor wider than without the column (1240 px); the column is wide enough for the placeholder of the search beside
+   the room the browser keeps for its clear button. */
 @media (min-width: 1536px) {
   .page {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 240px;
+    grid-template-columns: minmax(0, 1fr) 256px;
     align-content: start;
-    column-gap: 32px;
-    max-width: calc(40px + 1240px + 32px + 240px + 24px);
-    padding-right: 24px;
+    column-gap: 24px;
+    max-width: calc(40px + 1240px + 24px + 256px + 16px);
+    padding-right: 16px;
   }
 
   .page > :not(.filters) {
@@ -896,6 +908,11 @@ h3 {
     margin: 0;
   }
 
+  .filters-title {
+    display: block;
+    padding: 0 4px;
+  }
+
   .segmented {
     flex-direction: column;
     gap: 2px;
@@ -903,7 +920,22 @@ h3 {
 
   .segmented button {
     padding: 7px 12px;
+    font-weight: 500;
     text-align: left;
+  }
+
+  /* In a column like the pages of the sidebar, the period shown looks like the current page: a light tint. So do
+     picked dates, which replace it. */
+  .segmented button[aria-checked='true'],
+  .date-range.is-active summary {
+    border-color: var(--border);
+    background: color-mix(in srgb, var(--series-1) 12%, transparent);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .date-range.is-active summary svg {
+    color: var(--series-1);
   }
 
   .filters .search {
