@@ -716,6 +716,312 @@ h3 {
   margin-top: 22px;
 }
 
+/* The timeline of a pull request: a dialog like the confirmations, wider, its card filling it so that only a click on
+   the backdrop reaches the dialog. */
+.pr-dialog {
+  width: min(100% - 32px, 560px);
+  max-height: calc(100% - 32px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+}
+
+.pr-dialog::backdrop {
+  background: rgba(11, 11, 11, 0.45);
+}
+
+.pr-dialog-card {
+  position: relative;
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.pr-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.pr-dialog-close svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.pr-dialog-head {
+  display: grid;
+  gap: 10px;
+  padding-right: 40px;
+}
+
+/* Above the title, the repository and number of the pull request, then its tags: its state, its kind. */
+.pr-dialog-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.pr-dialog-ref {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.pr-dialog-tags .feed-tag {
+  margin-left: 0;
+}
+
+.pr-dialog-title {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* The state of the checks of the last commit: a dot of its colour, and what it says. */
+.pr-checks {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+/* Its icon, drawn in strokes like the page's others: green check mark, red cross, slashed grey circle. The dot of the
+   checks that run or wait is gold, ringed darker so that it stands out on a light surface as on a dark one; it pulses
+   gently while they do, still under prefers-reduced-motion. */
+.pr-checks-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pr-checks.is-success .pr-checks-icon {
+  color: var(--diff-added);
+}
+
+.pr-checks.is-failure .pr-checks-icon {
+  color: var(--diff-deleted);
+}
+
+.pr-checks.is-pending .pr-checks-icon {
+  fill: var(--gold);
+  stroke: var(--gold-ring);
+  stroke-width: 1;
+}
+
+.pr-checks.is-none {
+  color: var(--text-secondary);
+}
+
+.pr-checks.is-none .pr-checks-icon {
+  color: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pr-checks.is-pending .pr-checks-icon circle {
+    animation: pr-checks-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes pr-checks-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.pr-status.is-merged {
+  background: color-mix(in srgb, var(--series-3) 16%, transparent);
+  color: var(--text-primary);
+}
+
+.pr-dialog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.pr-dialog-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin: 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pr-dialog-figures div {
+  display: grid;
+  gap: 2px;
+}
+
+.pr-dialog-figures dt {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.pr-dialog-figures dd {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-dialog-section {
+  display: grid;
+  gap: 10px;
+}
+
+.pr-dialog-section h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pr-dialog-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* The steps, oldest first, on a line: before each, the working time it waited. A dot of its own colour for each kind
+   of step; what it still waits for, hollow and dashed, at the end. */
+.pr-timeline {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pr-timeline::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 5px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--baseline);
+}
+
+.pr-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  column-gap: 14px;
+}
+
+.pr-step-wait {
+  grid-column: 2;
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-step-dot {
+  grid-column: 1;
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-sizing: border-box;
+  box-shadow: 0 0 0 1px var(--gridline);
+}
+
+.pr-step-body {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.pr-step-title,
+.pr-step-time {
+  margin: 0;
+}
+
+.pr-step-title {
+  font-size: 14px;
+}
+
+.pr-step-time {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.pr-step.is-commented .pr-step-dot,
+.pr-step.is-reviewed .pr-step-dot {
+  background: var(--series-1);
+}
+
+.pr-step.is-changes .pr-step-dot {
+  background: var(--status-serious);
+}
+
+.pr-step.is-approved .pr-step-dot {
+  background: var(--status-good);
+}
+
+.pr-step.is-merged .pr-step-dot {
+  background: var(--series-3);
+}
+
+.pr-step.is-deployed .pr-step-dot {
+  background: var(--text-primary);
+}
+
+.pr-step.is-pending .pr-step-dot {
+  border: 2px dashed var(--text-muted);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.pr-step.is-pending .pr-step-title {
+  color: var(--text-secondary);
+}
+
+.pr-people {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pr-people li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.pr-people-summary {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 /* Sync status */
 .sync {
   display: inline-flex;

@@ -178,6 +178,20 @@ paths:
   shows, a table, a feed, the pairs, the former people or the dialog itself, it opens the person's dialog
   (`openPersonOf()`); the dialog links to the GitHub profile. A person without any figure over the period opens their
   GitHub profile instead.
+- **Pull requests named in a list**: always `pullRequestLink(repo, number)`. It stays a link to GitHub, but a plain
+  click opens the pull request's timeline (`openPullRequestDialog()`, its own `data-pr-dialog`, styled like the
+  confirmations) when the records have it (`pullRequestOf()`, a map per stats); a click with a modifier key, the middle
+  button or the link's menu still open GitHub, as the « Voir sur GitHub » pill of the dialog does. The steps, the
+  working hours waited before each, unrounded (one pull request reads to the minute), what it still waits for at the
+  last sync, and the people who intervened come from `pullRequestTimeline()` of `site/period.js`. The head shows the
+  title (`title` of the record, else the repository and number) and the state of the checks of the last commit
+  (`checksTag()`, `CHECK_STATES`; from `checksFailed` alone on an older record), both published for the pull requests
+  the page opens the timeline of only. The state shows an icon like GitHub's checks, drawn in the page's 16×16 stroke
+  style (`CHECK_ICONS`, never Octicons' paths) next to its words: green check mark (`--diff-added`), red cross
+  (`--diff-deleted`), gold dot ringed with `--gold-ring` while the checks run or wait, pulsing but still under
+  `prefers-reduced-motion`, slashed grey circle without any (`--text-muted`). The dialog closes
+  from its button, with Escape or on the backdrop, and gives the focus back to the link; a name in it opens the
+  person's dialog over it.
 - **Former people**, on every page: a person without any pull request, review, comment or merge for
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the

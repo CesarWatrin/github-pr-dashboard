@@ -31,6 +31,7 @@ const {
   classify,
   computeCi,
   deliveryIndex,
+  fetchOpenChecks,
   fullSyncSettings,
   isBot,
   mergeMonthlyHistory,
@@ -46,6 +47,7 @@ const {
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,
+  withOpenChecks,
 } = await import('../scripts/sync.mjs')
 const { checkFullSyncProof, deriveFullSyncKey, fullSyncProof, fullSyncVerifier } = await import('../site/full-sync.js')
 
@@ -784,5 +786,94 @@ describe('request', () => {
     const fetch = answers(...Array.from({ length: 7 }, () => new Response('Bad Gateway', { status: 502 })))
     assert.deepEqual(await withoutWaiting(() => request(url, {})), { ok: false, status: 502, body: 'Bad Gateway' })
     assert.equal(fetch.mock.callCount(), 6)
+  })
+})
+
+describe('timeline details', () => {
+  const since = '2026-03-10T00:00:00Z'
+  const PULL_REQUESTS = {
+    open: pullRequest({ number: 30, title: 'Add the search page', checks: 'PENDING', createdAt: '2026-01-05T09:00:00Z' }),
+    mergedLately: pullRequest({
+      number: 31,
+      title: 'Fix the login form',
+      createdAt: '2026-03-02T09:00:00Z',
+      mergedAt: '2026-03-12T10:00:00Z',
+    }),
+    reviewedLately: pullRequest({
+      number: 32,
+      state: 'CLOSED',
+      closedAt: '2026-03-03T09:00:00Z',
+      comments: [{ author: 'bob', createdAt: '2026-03-11T09:00:00Z' }],
+    }),
+    mergedLongAgo: pullRequest({
+      number: 33,
+      title: 'Old change',
+      createdAt: '2026-01-02T09:00:00Z',
+      mergedAt: '2026-01-03T10:00:00Z',
+      reviews: [{ author: 'bob', state: 'APPROVED', submittedAt: '2026-01-03T09:00:00Z', comments: 0 }],
+    }),
+    withoutChecks: pullRequest({ number: 34, checks: null }),
+  }
+  const index = deliveryIndex(Object.values(PULL_REQUESTS))
+  const recordOf = (name, detailsSince = since) => toPeriodRecord(PULL_REQUESTS[name], index, detailsSince)
+
+  test('the open pull requests and those with any activity since carry their title and checks', () => {
+    assert.deepEqual([recordOf('open').title, recordOf('open').checks], ['Add the search page', 'PENDING'])
+    assert.deepEqual([recordOf('mergedLately').title, recordOf('mergedLately').checks], ['Fix the login form', 'SUCCESS'])
+    // A comment since, on a pull request closed before.
+    assert.equal(recordOf('reviewedLately').title, 'Some change')
+  })
+
+  test('the others carry neither, and without a date only the open ones do', () => {
+    assert.equal('title' in recordOf('mergedLongAgo'), false)
+    assert.equal('checks' in recordOf('mergedLongAgo'), false)
+    assert.equal('title' in recordOf('mergedLately', null), false)
+    assert.equal(recordOf('open', null).title, 'Add the search page')
+  })
+
+  test('a pull request without checks says so', () => {
+    assert.equal(recordOf('withoutChecks').checks, null)
+  })
+
+  test('the checks just read replace those of the open pull requests only', () => {
+    const pullRequests = [
+      PULL_REQUESTS.open,
+      PULL_REQUESTS.mergedLately,
+      pullRequest({ number: 35, checks: 'PENDING' }),
+    ]
+    const checks = new Map([
+      ['web#30', 'FAILURE'],
+      // Merged since the search indexed it: kept as the snapshot read it.
+      ['web#31', 'PENDING'],
+    ])
+    assert.deepEqual(
+      withOpenChecks(pullRequests, checks).map((pr) => pr.checks),
+      ['FAILURE', 'SUCCESS', 'PENDING'],
+    )
+    // A failed check of an open pull request now shows on its record.
+    assert.equal(toPeriodRecord(withOpenChecks(pullRequests, checks)[0], index).checksFailed, true)
+  })
+
+  test('the checks of the open pull requests are read page after page', async (t) => {
+    const page = (nodes, hasNextPage) =>
+      Response.json({ data: { search: { pageInfo: { hasNextPage, endCursor: hasNextPage ? 'next' : null }, nodes } } })
+    const node = (repo, number, state) => ({
+      number,
+      repository: { name: repo },
+      commits: { nodes: [{ commit: { statusCheckRollup: state === null ? null : { state } } }] },
+    })
+    const answers = [page([node('web', 30, 'SUCCESS'), {}], true), page([node('api', 7, null)], false)]
+    const fetch = t.mock.method(globalThis, 'fetch', async () => answers.shift())
+    assert.deepEqual(
+      [...(await fetchOpenChecks())],
+      [
+        ['web#30', 'SUCCESS'],
+        ['api#7', null],
+      ],
+    )
+    assert.equal(fetch.mock.callCount(), 2)
+    const [, second] = fetch.mock.calls.map((call) => JSON.parse(call.arguments[1].body))
+    assert.equal(second.variables.cursor, 'next')
+    assert.equal(second.variables.query, 'org:example-org is:pr is:open sort:updated-desc')
   })
 })

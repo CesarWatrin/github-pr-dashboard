@@ -924,6 +924,22 @@
                   Chaque PR ouverte sur la période ne compte que dans les étapes qu’elle a franchies, et ce qui suit son
                   merge n’y compte pas. Chaque étape a sa médiane : elles ne s’additionnent pas.
                 </dd>
+                <dt>Frise d’une PR</dt>
+                <dd>
+                  Un clic sur une PR, dans n’importe quelle liste, ouvre sa frise ; Ctrl ou ⌘ + clic l’ouvre sur GitHub.
+                  En tête, son titre et l’état de la CI de son dernier commit, avec une icône comme sur GitHub : réussie
+                  (coche verte), en échec ou en erreur (croix rouge), en cours ou attendue (point jaune), ou sans CI
+                  (cercle barré gris). Seules les PR que les listes montrent ont un titre et l’état de leur CI dans les
+                  données : celles qui sont ouvertes ou ont bougé dans les 30 derniers jours, pour garder les données
+                  légères. La synchro relit à chaque passage la CI des PR ouvertes, une CI qui se termine ne modifiant
+                  pas la PR. Ses étapes : l’ouverture, la première review ou le premier commentaire d’une autre personne, chaque
+                  demande de changements et chaque approbation avant le merge, le merge, puis l’arrivée en prod d’une
+                  PR de code. Avant chaque étape, l’attente en heures ouvrées, à la minute près : la page Cycle de vie
+                  arrondit ses médianes au dixième d’heure. Une PR ouverte, en brouillon ou pas encore en prod dit
+                  depuis combien de temps elle attend, à la dernière synchro. Une PR fermée sans merge le dit, sans
+                  date : les données ne la gardent pas. Les interventions après le merge ne sont pas des étapes, mais
+                  comptent dans la liste de qui est intervenu.
+                </dd>
                 <dt>Bilan du mois</dt>
                 <dd>
                   Un mois compte, comme une période choisie, les PR ouvertes ce mois-là et les reviews, merges,
@@ -1109,6 +1125,11 @@
       <div class="person-dialog-scene" data-person-dialog-scene>
         <article class="person-dialog-card" data-person-dialog-card></article>
       </div>
+    </dialog>
+
+    <!-- The timeline of a pull request, opened from its reference in any list: drawn when it opens. -->
+    <dialog class="pr-dialog" aria-labelledby="pr-dialog-title" data-pr-dialog>
+      <article class="pr-dialog-card" data-pr-dialog-card></article>
     </dialog>
 
     <dialog class="confirm" aria-labelledby="lock-title" data-lock-dialog>

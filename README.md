@@ -107,6 +107,13 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   mise en prod, chacun avec la médiane des dépôts du même type, et qui l'écrit et le relit.
 - **Noms des dépôts**, sur toutes les pages : un clic sur un nom de dépôt (tableaux, cartes, fiches) ouvre sa fiche,
   qui mène au dépôt sur GitHub.
+- **Frise d'une PR**, sur toutes les pages : un clic sur une PR (fil d'activité, À débloquer, Pour moi, PR mergées
+  sans approbation) ouvre sa frise : son titre, l'état de la CI de son dernier commit, son ouverture, la première review ou le premier commentaire d'une autre
+  personne, chaque demande de changements et chaque approbation avant le merge, le merge, puis l'arrivée en prod,
+  avec l'attente en heures ouvrées avant chaque étape, à la minute près. Une PR encore ouverte, en brouillon ou pas
+  encore en prod dit depuis combien de temps elle attend. Suivent les délais de bout en bout et qui est intervenu
+  (approbations, demandes de changements, commentaires). Un Ctrl ou ⌘ + clic ouvre directement la PR sur GitHub,
+  comme le lien « Voir sur GitHub » de la frise.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; le calendrier des mises en production, quand chaque dépôt déploie, par
@@ -193,11 +200,14 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   seul résultat, un point du quota) et garde la réponse dans le snapshot.
 - Elle lit aussi, par l'API REST, les exécutions GitHub Actions des dépôts poussés depuis la dernière synchro
   (toutes celles des 12 derniers mois au premier passage), et l'état des checks du dernier commit de chaque PR. GitHub
-  les efface au bout d'environ 13 mois : le snapshot les garde 36 mois.
+  les efface au bout d'environ 13 mois : le snapshot les garde 36 mois. Un check qui se termine ne compte pas comme
+  une modification de la PR : à chaque synchro, une recherche des PR ouvertes relit l'état de leurs checks (quelques
+  pages de 100, environ un point chacune), pour qu'une CI finie ne reste pas « en cours ».
 - Les PR brutes et les exécutions sont gardées dans `.cache/snapshot.json` (jamais publié). La synchro en tire une
   version réduite à ce que comptent les stats (dépôt, numéro, auteur, dates, taille et lignes supprimées, reviews et
-  commentaires, sans
-  titre ni contenu ; exécutions regroupées par workflow et par jour), publiée chiffrée dans
+  commentaires, sans contenu ; le titre et l'état de la CI seulement pour les PR dont la page ouvre la frise : celles
+  qui sont ouvertes ou ont bougé dans les 30 derniers jours, puisque le titre de toutes les PR alourdirait les stats
+  de moitié ; exécutions regroupées par workflow et par jour), publiée chiffrée dans
   `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
   (`site/period.js`) : n'importe quelles dates des 36 derniers mois, et les chiffres de chaque personne détaillés par
   dépôt pour le filtre des tableaux.

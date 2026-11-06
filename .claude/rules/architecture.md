@@ -22,7 +22,8 @@
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
      today's counters, the 7-day activity feed, the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
      `fullSync`: `{ salt, iterations, verifier }`, what the page checks the full sync password against), and above all
-     `pullRequests` (one compact record per pull request, no title or content) since `windowStart` (the start of the
+     `pullRequests` (one compact record per pull request, no content; the title and the state of the checks only for
+     the pull requests the page opens the timeline of: open, or active over the last 30 days) since `windowStart` (the start of the
      data: the window, or what the snapshot covers while the backfill runs), `ci` (Actions runs per repository,
      workflow and Paris day) since `ciStart` (GitHub forgets runs after about 13 months: they go back to when the
      snapshot started keeping them), `firstPullRequests` (when each person of the records opened their first pull

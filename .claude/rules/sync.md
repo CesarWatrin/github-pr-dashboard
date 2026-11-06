@@ -14,6 +14,12 @@ paths:
   reads one again when it changes. Names and bots come from the snapshot whatever the sync: they still serve them.
 - **Incremental sync**: GraphQL search `org:… is:pr updated:>=…` from 10 minutes before the last sync. The search
   answers at most 1000 results: beyond that, the sync falls back to a full one.
+- **Checks of the open pull requests**, at every sync, full or not (`fetchOpenChecks()`): a check that ends does not
+  move the `updatedAt` of its pull request, so the incremental search would keep it `PENDING`. One search
+  `org:… is:pr is:open sort:updated-desc`, 100 a page, asking only the state of the checks of the last commit (about a
+  point a page); past 1000 open pull requests, the most recently updated only. `withOpenChecks()` sets it on the open
+  pull requests of the snapshot (one merged or closed since keeps what the sync read). When GitHub does not answer,
+  `readOpenChecks()` keeps the states last read and the sync goes on; in CI the warning says nothing more.
 - **Backfill**: the window (`WINDOW_DAYS`) is three years, too long to read at once (timeout, hourly quota). The
   snapshot keeps what it covers (`pullRequestsSince`; a snapshot without it covers the year before its sync). Each
   sync reads one slice (`backfillSlice()`): the pull requests created in the `BACKFILL_DAYS` before it, by whole UTC
@@ -88,8 +94,11 @@ paths:
   the snapshot; without one (a lost Actions cache, a
   `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
   the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.
-- Never publish titles, bodies, branch names or anything not needed by a stat: what is published must stay minimal,
-  even encrypted.
+- Never publish bodies, branch names or anything not needed by a stat or a view: what is published must stay minimal,
+  even encrypted. Titles are the one exception, with the state of the checks (`checks`), and only for the pull
+  requests the page opens the timeline of (`hasDetails()`: open, or with an opening, a merge, a closing, a review or a
+  comment over the last `DETAILS_DAYS`, which covers the 7-day feed and the merges without approval of the last 30
+  days): the title of every pull request of the window would make the stats about half as heavy again.
 
 ## Full sync password
 
