@@ -72,6 +72,10 @@
             </svg>
             Bilan du mois
           </a>
+          <a class="nav-link" href="#/tendances" data-route-link="trends">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 12.5 6 8.5l2.5 2.5L14 5.5" /><path d="M10.5 5.5H14V9" /></svg>
+            Tendances
+          </a>
           <a class="nav-link" href="#/analyse" data-route-link="analysis">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M6 12.5h4M6.5 14.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2c.3.3.5.7.5 1.1v.7h4v-.7c0-.4.2-.8.5-1.1A4.5 4.5 0 0 0 8 1.5Z" />
@@ -449,6 +453,25 @@
                 <ul class="report-list" data-report-arrivals></ul>
               </section>
             </div>
+          </div>
+
+          <!-- Tendances -->
+          <div class="route" data-route="trends" hidden>
+            <section class="card" aria-labelledby="trends-title">
+              <h2 id="trends-title" data-trends-title>Mois après mois</h2>
+              <p class="card-sub" data-trends-sub></p>
+              <div class="legend" data-trends-legend></div>
+              <p class="card-note">
+                Chaque mois que la période touche compte en entier, comme sur le bilan du mois. La médiane sur 3 mois
+                lisse les à-coups d’un mois à l’autre ; le mois en cours, incomplet, est plus clair et n’y entre pas. Le
+                dernier mois complet de la période se compare au même mois un an plus tôt et à la médiane des 12 mois
+                complets jusqu’à lui, même avant la période : en vert quand il va dans le bon sens, en orange dans le
+                mauvais ; les volumes restent neutres.
+              </p>
+              <p class="chart-empty" data-trends-status hidden></p>
+            </section>
+
+            <div class="trend-grid" data-trends></div>
           </div>
 
           <!-- Analyse -->
@@ -855,6 +878,17 @@
                   vert quand elle va dans le bon sens (délais, hotfix, reprises, PR sans review, échecs de CI en baisse),
                   en orange sinon ; les volumes restent neutres. La page s’ouvre sur le mois en cours : incomplet, il
                   ne se compare pas.
+                </dd>
+                <dt>Tendances</dt>
+                <dd>
+                  Les chiffres du bilan, mois par mois, sur les mois que la période touche : chacun compte en entier, même
+                  si la période n’en couvre que quelques jours, et le mois en cours, incomplet, est plus clair. Le premier
+                  mois des données, coupé par leur début, reste de côté. Sur 30 ou 90 jours, une courbe n’a que deux à
+                  quatre mois. La médiane sur 3 mois d’un mois est celle de ce mois et des deux précédents, même avant la
+                  période ; elle attend trois mois complets d’affilée et laisse de côté le mois en cours. Le dernier mois
+                  complet de la période se compare au même mois un an plus tôt et à la médiane des 12 mois complets
+                  jusqu’à lui, même s’ils sont avant la période. L’intégration continue ne remonte qu’aux exécutions que
+                  GitHub a gardées, environ 13 mois.
                 </dd>
                 <dt>Analyse</dt>
                 <dd>

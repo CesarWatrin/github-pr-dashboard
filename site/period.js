@@ -776,6 +776,50 @@ export function monthlyLeaders(history, key) {
     })
 }
 
+// The same month a year earlier ('YYYY-MM').
+export const monthYearBefore = (month) => `${Number(month.slice(0, 4)) - 1}${month.slice(4)}`
+
+// The months ('YYYY-MM', among `months`, in order) that a range touches, its start included and its end left out, in
+// Paris time: each one counts whole, however little of it the range covers.
+export function monthsTouched(months, { start, end }) {
+  const first = parisDay(start).slice(0, 7)
+  const last = parisDay(end - 1).slice(0, 7)
+
+  return months.filter((month) => month >= first && month <= last)
+}
+
+// The median of each value and of the ones just before it, `size` values in all: none until that many follow each
+// other, a missing value (null) breaking the run. Smooths the ups and downs of a monthly series without hiding a turn.
+export function rollingMedian(values, size) {
+  return values.map((_, index) => {
+    const run = values.slice(Math.max(0, index - size + 1), index + 1)
+
+    return run.length === size && run.every(Number.isFinite) ? median(run) : null
+  })
+}
+
+// What a series of whole months, oldest first ([{ month, value }], null for a month without the figure), tells of its
+// last month: its value, that of the same month a year earlier (null when the series does not have it), and the median
+// of its last `yearMonths` months, the last one included, over the months that have the figure.
+export function lastMonthSummary(points, yearMonths = 12) {
+  const last = points.at(-1)
+  if (!last) {
+    return null
+  }
+  const yearAgo = points.find((point) => point.month === monthYearBefore(last.month))
+  const recent = points
+    .slice(-yearMonths)
+    .map((point) => point.value)
+    .filter(Number.isFinite)
+
+  return {
+    month: last.month,
+    value: Number.isFinite(last.value) ? last.value : null,
+    yearAgo: Number.isFinite(yearAgo?.value) ? yearAgo.value : null,
+    yearMedian: median(recent),
+  }
+}
+
 // The open code pull requests of people, drafts aside, and where each one stands after the latest decision of each
 // reviewer, as GitHub reckons it: changes requested by someone (changes), else blocked by code owners who have not
 // reviewed it yet (owners), else approved by as many people as merging needs (approved), else approved by fewer
