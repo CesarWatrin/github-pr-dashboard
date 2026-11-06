@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, sameDays, WORK_DAY_HOURS, workHoursBetween } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, overlapsPeriod, reviewNetwork, sameDays, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -5403,19 +5403,23 @@ function toggleTheme() {
 // Main
 
 // A comparison the synced data does not cover for the period shown is marked so, and cannot be picked. The same period
-// last year is left out when it is the period before, as for 12 months. Picking a period changes the comparison picked
-// accordingly: to the period before when last year is the same, to none when the data no longer covers it, such as for
-// 36 months. Called before the tiles are drawn. Under the picker, the days compared to.
+// last year is left out when it is the period before, as for 12 months, or when it takes back part of the period, as
+// for 24 months. Picking a period changes the comparison picked accordingly: to the period before when last year is
+// the same, to none when the data no longer covers it (36 months) or when it is left out. Called before the tiles are
+// drawn. Under the picker, the days compared to.
 function renderComparePicker() {
   const picker = $('[data-compare]')
   const sameAsBefore = state.stats !== null && sameDays(comparedRange('previous'), comparedRange('year'))
+  const offered = (mode) =>
+    state.stats === null || (!(sameAsBefore && mode === 'year') && !overlapsPeriod(periodRange(), comparedRange(mode)))
   const compare = sameAsBefore && state.compare === 'year' ? 'previous' : state.compare
-  const shown = state.stats && compare !== NO_COMPARISON && comparedRange(compare) === null ? NO_COMPARISON : compare
+  const shown =
+    state.stats && compare !== NO_COMPARISON && (!offered(compare) || comparedRange(compare) === null) ? NO_COMPARISON : compare
   if (shown !== state.compare) {
     state.compare = shown
     storePeriod()
   }
-  const modes = Object.keys(COMPARISONS).filter((mode) => !(sameAsBefore && mode === 'year'))
+  const modes = Object.keys(COMPARISONS).filter(offered)
   picker.replaceChildren(
     new Option(NO_COMPARISON_LABEL, NO_COMPARISON),
     ...modes.map((mode) => {

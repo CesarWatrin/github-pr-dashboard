@@ -26,7 +26,8 @@ paths:
   same Paris days a year earlier, null when the synced data does not cover it (the option is then marked « hors
   données » and disabled; `renderComparePicker()` goes back to `NO_COMPARISON`, stored, when a new period leaves the
   comparison picked uncovered). When the year before is the period before (`sameDays()`, as for 12 months), the year
-  option is left out and a year picked becomes the period before. The days compared to show under the picker
+  option is left out and a year picked becomes the period before. It is left out too, and a year picked goes back to
+  no comparison, when it takes back part of the period (`overlapsPeriod()`, for a period longer than a year). The days compared to show under the picker
   (`[data-compare-note]`). `comparedPeriod()` and `comparedCi()` work out its stats once per range and data, the CI only when the
   runs cover it whole. `renderTiles()` takes those values as its last argument and `renderTileChange()` shows each
   change with `reportChange()`, colored after the `better` of the tile definition; `compare: false` keeps a tile about

@@ -903,6 +903,12 @@ export function sameDays(a, b) {
   return a !== null && b !== null && Math.abs(a.start - b.start) <= DAY_MS && Math.abs(a.end - b.end) <= DAY_MS
 }
 
+// Whether the range a period is compared to, before it, shares more than a day with it: the same period last year of
+// a period longer than a year takes back part of it, and both sides would count the same pull requests.
+export function overlapsPeriod(range, compared) {
+  return compared !== null && compared.end - range.start > DAY_MS
+}
+
 // The same time of the same Paris day, one year earlier: 29 February falls on the 28th.
 function yearEarlier(time) {
   const day = parisDay(time)

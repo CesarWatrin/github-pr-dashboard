@@ -13,6 +13,7 @@ import {
   monthlyActivity,
   monthlyLeaders,
   openPullRequests,
+  overlapsPeriod,
   parisDay,
   parisMidnight,
   reviewNetwork,
@@ -888,5 +889,28 @@ describe('sameDays', () => {
   test('a range the data does not cover matches nothing', () => {
     assert.equal(sameDays(null, comparisonRange(YEAR, 'year', 0)), false)
     assert.equal(sameDays(null, null), false)
+  })
+})
+
+describe('overlapsPeriod', () => {
+  // Presets up to a sync in the morning, with no 29 February within the years before.
+  const upTo = Date.parse('2026-11-06T09:30:00Z')
+  const preset = (days) => ({ start: upTo - days * DAY_MS, end: upTo, bucket: 'month' })
+
+  test('the same period last year of 24 months takes back part of them', () => {
+    assert.equal(overlapsPeriod(preset(730), comparisonRange(preset(730), 'year', 0)), true)
+  })
+
+  test('for 12 months or less, last year ends where the period starts', () => {
+    assert.equal(overlapsPeriod(preset(365), comparisonRange(preset(365), 'year', 0)), false)
+    assert.equal(overlapsPeriod(preset(90), comparisonRange(preset(90), 'year', 0)), false)
+  })
+
+  test('the period before never takes back any of it', () => {
+    assert.equal(overlapsPeriod(preset(730), comparisonRange(preset(730), 'previous', 0)), false)
+  })
+
+  test('a range the data does not cover overlaps nothing', () => {
+    assert.equal(overlapsPeriod(preset(730), null), false)
   })
 })
