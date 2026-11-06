@@ -779,6 +779,22 @@ describe('openPullRequests', () => {
     open(9, { kind: 'release' }),
   ]).map(({ number, stance, since, by, lastAt }) => [number, stance, iso(since), by, iso(lastAt)])
 
+  test('releases and integrations come with the code when asked for, each with its kind', () => {
+    const records = [open(1), open(2, { kind: 'release' }), open(3, { kind: 'integration' }), open(4, { kind: 'integration', draft: true })]
+    assert.deepEqual(
+      openPullRequests(records).map(({ number, kind }) => [number, kind]),
+      [[1, 'code']],
+    )
+    assert.deepEqual(
+      openPullRequests(records, { kinds: ['code', 'integration', 'release'] }).map(({ number, kind }) => [number, kind]),
+      [
+        [1, 'code'],
+        [2, 'release'],
+        [3, 'integration'],
+      ],
+    )
+  })
+
   test('code owners who have not reviewed it block a pull request, unless changes are requested', () => {
     const blocked = openPullRequests([
       open(1, { codeOwners: ['carol', '@backend'], interventions: [['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]] }),

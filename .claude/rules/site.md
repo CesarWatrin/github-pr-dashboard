@@ -72,7 +72,8 @@ paths:
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
   `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
   by two, the forgotten pull requests beside those merged without approval.
-- **« Pour moi » page** (`renderMe()`): the same open pull requests, those of people still in the team, for one person
+- **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
+  the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
   `personalQueue()` of `site/period.js` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
   others still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know

@@ -5564,6 +5564,12 @@ function waitedFor(pr) {
 
 const minutesIso = (minutes) => new Date(minutes * 60_000).toISOString()
 
+// Unlike the unblock page, about the code, the « Pour moi » page lists releases and integrations too: they wait for
+// their reviews and code owners all the same. A tag tells them apart.
+const ME_KINDS = ['code', 'integration', 'release']
+const KIND_TAGS = { integration: 'intégration', release: 'release' }
+const kindTag = (pr) => (KIND_TAGS[pr.kind] ? [el('span', { className: 'feed-tag', textContent: KIND_TAGS[pr.kind] })] : [])
+
 const ME_ITEMS = {
   // Someone else's pull request, where it stands, since its opening.
   toReview: (pr) =>
@@ -5575,6 +5581,7 @@ const ME_ITEMS = {
         pullRequestLink(pr.repo, pr.number),
         document.createTextNode(' de '),
         personLink(pr.author, { withAvatar: false }),
+        ...kindTag(pr),
         el('span', { className: 'feed-tag', textContent: UNBLOCK_STANCES.find((stance) => stance.key === pr.stance).tag }),
       ),
       minutesIso(pr.createdAt),
@@ -5595,6 +5602,7 @@ function ownItem(pr, { tagged = false, forgotten = false } = {}) {
     'p',
     { className: 'feed-text' },
     pullRequestLink(pr.repo, pr.number),
+    ...kindTag(pr),
     ...(tagged ? [el('span', { className: 'feed-tag', textContent: stance.tag })] : []),
     ...(forgotten ? [] : waitedFor(pr)),
   )
@@ -5614,7 +5622,9 @@ function renderMe(mode) {
   picker.value = me ?? ''
 
   const required = requiredApprovals()
-  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required }).filter((pr) => isCurrent(pr.author))
+  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required, kinds: ME_KINDS }).filter((pr) =>
+    isCurrent(pr.author),
+  )
   // Forgotten as on the unblock page: no review nor comment for FORGOTTEN_AFTER_DAYS.
   const forgottenBefore = Date.now() / 60_000 - FORGOTTEN_AFTER_DAYS * 24 * 60
   const queue = me ? personalQueue(open, me, { forgottenBefore }) : null
