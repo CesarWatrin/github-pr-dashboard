@@ -359,11 +359,43 @@ const UNBLOCK_TILES = [
   { key: 'open', label: 'PR de code ouvertes' },
 ]
 
-// The lists of the « Pour moi » page, from personalQueue() of site/period.js.
+// The lists of the « Pour moi » page, from personalQueue() of site/period.js, in the order of the page. Named and
+// defined as on the unblock page, without its delays, but the forgotten ones: a pull request of the person shows in
+// one list only, forgotten whatever it stands, else after where it stands, the others in the last one.
+const unblockStance = (key) => UNBLOCK_STANCES.find((stance) => stance.key === key)
 const ME_LISTS = {
-  toReview: { label: 'Reviews qu’on m’a demandées', tile: 'Reviews demandées', empty: 'Aucune review demandée en attente' },
-  ready: { label: 'Prêtes à merger', tile: 'Prêtes à merger', empty: 'Aucune PR approuvée qui attend son merge' },
-  open: { label: 'Mes PR ouvertes', tile: 'Mes PR ouvertes', empty: 'Aucune PR ouverte en attente' },
+  toReview: {
+    label: 'Reviews qu’on m’a demandées',
+    tile: 'Reviews demandées',
+    hint: 'PR des autres qui attendent encore ma review, les plus anciennes d’abord',
+    empty: 'Aucune review demandée en attente',
+  },
+  ready: {
+    label: 'Prêtes à merger',
+    tile: 'Prêtes à merger',
+    hint: (required) =>
+      `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)}, sans demande de changements en cours : il ne reste qu’à merger`,
+    empty: 'Aucune PR approuvée qui attend son merge',
+  },
+  changes: {
+    label: unblockStance('changes').label,
+    tile: unblockStance('changes').label,
+    hint: 'Des changements demandés, sans nouvelle approbation depuis : à corriger, ou à faire relire de nouveau',
+    empty: 'Aucune PR avec des changements demandés',
+  },
+  owners: {
+    label: unblockStance('owners').label,
+    tile: unblockStance('owners').label,
+    hint: 'Pas encore validées, et un code owner du dépôt ne les a pas encore relues : GitHub bloque le merge',
+    empty: unblockStance('owners').empty,
+  },
+  forgotten: { label: FORGOTTEN.label, tile: FORGOTTEN.label, hint: FORGOTTEN.hint, empty: FORGOTTEN.empty },
+  open: {
+    label: 'Mes PR ouvertes',
+    tile: 'Mes autres PR ouvertes',
+    hint: 'Les autres, sans review, en discussion ou pas encore assez approuvées : où en est chacune, ce qu’elle attend et depuis quand',
+    empty: 'Aucune autre PR ouverte',
+  },
 }
 const ME_TILES = Object.entries(ME_LISTS).map(([key, { tile }]) => ({ key, label: tile }))
 
@@ -5108,19 +5140,28 @@ const ME_ITEMS = {
       minutesIso(pr.createdAt),
       'ouverte ',
     ),
-  // The person's own, where it stands and since when, and who it waits for.
-  open: (pr) => {
-    const stance = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
+  ready: (pr) => ownItem(pr),
+  changes: (pr) => ownItem(pr),
+  owners: (pr) => ownItem(pr),
+  forgotten: (pr) => ownItem(pr, { tagged: true, forgotten: true }),
+  open: (pr) => ownItem(pr, { tagged: true }),
+}
 
-    return listItem(
-      pr.author,
-      el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), el('span', { className: 'feed-tag', textContent: stance.tag }), ...waitedFor(pr)),
-      minutesIso(pr.since),
-      `${stance.since} `,
-    )
-  },
-  ready: (pr) =>
-    listItem(pr.author, el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), ...waitedFor(pr)), minutesIso(pr.since), 'approuvée '),
+// One of the person's own pull requests: who it waits for and since when it stands where it does, or, forgotten, its
+// latest activity; where it stands when its list does not say.
+function ownItem(pr, { tagged = false, forgotten = false } = {}) {
+  const stance = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
+  const text = el(
+    'p',
+    { className: 'feed-text' },
+    pullRequestLink(pr.repo, pr.number),
+    ...(tagged ? [el('span', { className: 'feed-tag', textContent: stance.tag })] : []),
+    ...(forgotten ? [] : waitedFor(pr)),
+  )
+
+  return forgotten
+    ? listItem(pr.author, text, minutesIso(pr.lastAt), `${FORGOTTEN.since} `)
+    : listItem(pr.author, text, minutesIso(pr.since), `${stance.since} `)
 }
 
 function renderMe(mode) {
@@ -5134,12 +5175,13 @@ function renderMe(mode) {
 
   const required = requiredApprovals()
   const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required }).filter((pr) => isCurrent(pr.author))
-  const queue = me ? personalQueue(open, me) : null
+  // Forgotten as on the unblock page: no review nor comment for FORGOTTEN_AFTER_DAYS.
+  const forgottenBefore = Date.now() / 60_000 - FORGOTTEN_AFTER_DAYS * 24 * 60
+  const queue = me ? personalQueue(open, me, { forgottenBefore }) : null
   renderTiles($('[data-me-tiles]'), ME_TILES, Object.fromEntries(ME_TILES.map(({ key }) => [key, queue?.[key].length ?? null])), mode)
-  $('[data-me-sub="ready"]').textContent =
-    `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)}, sans demande de changements en cours : il ne reste qu’à merger`
   for (const [key, list] of Object.entries(ME_LISTS)) {
     $(`[data-me-title="${key}"]`).textContent = queue ? `${list.label} (${formatNumber(queue[key].length)})` : list.label
+    $(`[data-me-sub="${key}"]`).textContent = typeof list.hint === 'function' ? list.hint(required) : list.hint
     renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : 'Choisir une personne en haut de la page')
   }
 }

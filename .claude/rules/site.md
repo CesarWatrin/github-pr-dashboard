@@ -62,10 +62,12 @@ paths:
   by two, the forgotten pull requests beside those merged without approval.
 - **« Pour moi » page** (`renderMe()`): the same open pull requests, those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
-  `personalQueue()` of `site/period.js` gives the lists of `ME_LISTS`, without any delay: the pull requests of others
-  still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know who is
-  in a team), theirs not approved enough yet, and theirs approved, each with where it stands (the tags of
-  `UNBLOCK_STANCES`) and who it waits for (`waitedFor()`). No score, no ranking.
+  `personalQueue()` of `site/period.js` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
+  others still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know
+  who is in a team), then theirs, each in one list only, named and defined as on the unblock page but without its
+  delays: forgotten first (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked
+  by code owners, and the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not
+  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking.
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added

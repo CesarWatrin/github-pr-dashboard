@@ -829,18 +829,27 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
     })
 }
 
+// Where a person's own open pull request goes when it is not forgotten, by where it stands; the others go to open.
+const OWN_LISTS = { approved: 'ready', changes: 'changes', owners: 'owners' }
+
 // What stands for one person among the open pull requests of openPullRequests(): those of other people still asking
-// for their review, the oldest first; theirs not approved enough yet, and theirs approved by as many people as merging
-// needs, waiting for their merge, both the longest where they stand first.
-export function personalQueue(open, login) {
-  const own = open.filter((pr) => pr.author === login).sort((a, b) => a.since - b.since)
+// for their review (toReview), the oldest first; and theirs, each in one list only. Forgotten when nothing was
+// reviewed or commented since forgottenBefore (minutes since the epoch), whatever it stands, the longest forgotten
+// first; else after where it stands: approved by as many people as merging needs (ready), changes requested (changes),
+// blocked by code owners (owners), or any other stance (open), the longest where they stand first.
+export function personalQueue(open, login, { forgottenBefore = -Infinity } = {}) {
+  const own = open.filter((pr) => pr.author === login)
+  const lists = { ready: [], changes: [], owners: [], open: [] }
+  for (const pr of own.filter((other) => other.lastAt > forgottenBefore).sort((a, b) => a.since - b.since)) {
+    lists[OWN_LISTS[pr.stance] ?? 'open'].push(pr)
+  }
 
   return {
     toReview: open
       .filter((pr) => pr.author !== login && pr.requestedReviewers.includes(login))
       .sort((a, b) => a.createdAt - b.createdAt),
-    open: own.filter((pr) => pr.stance !== 'approved'),
-    ready: own.filter((pr) => pr.stance === 'approved'),
+    ...lists,
+    forgotten: own.filter((pr) => pr.lastAt <= forgottenBefore).sort((a, b) => a.lastAt - b.lastAt),
   }
 }
 

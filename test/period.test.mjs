@@ -784,21 +784,29 @@ describe('openPullRequests', () => {
 
 describe('personalQueue', () => {
   const open = (number, fields) => record({ repo: 'web', number, author: 'alice', createdAt: at('2026-03-02T09:00:00Z'), ...fields })
+  // Forgotten: nothing reviewed or commented since the 5th.
+  const forgottenBefore = at('2026-03-05T00:00:00Z')
   const queue = personalQueue(
     openPullRequests([
-      // Bob's, asking for Alice's review: the older one first.
-      open(1, { author: 'bob', createdAt: at('2026-03-04T09:00:00Z'), requestedReviewers: ['alice', 'carol'] }),
+      // Bob's, asking for Alice's review: the older one first, forgotten or not.
+      open(1, { author: 'bob', createdAt: at('2026-03-06T09:00:00Z'), requestedReviewers: ['alice', 'carol'] }),
       open(2, { author: 'bob', createdAt: at('2026-03-03T09:00:00Z'), requestedReviewers: ['alice'] }),
       // Bob's, asking someone else: not for Alice.
       open(3, { author: 'bob', requestedReviewers: ['carol'] }),
-      // Alice's own: waiting since its opening, changes requested later, approved enough to merge.
-      open(4, { createdAt: at('2026-03-04T09:00:00Z'), requestedReviewers: ['bob'] }),
-      open(5, { interventions: [['bob', at('2026-03-03T10:00:00Z'), 'CHANGES_REQUESTED', 1]] }),
-      open(6, { interventions: [['carol', at('2026-03-02T15:00:00Z'), 'APPROVED', 0]] }),
+      // Alice's own, with something since the 5th: by where each stands.
+      open(4, { createdAt: at('2026-03-06T09:00:00Z'), requestedReviewers: ['bob'] }),
+      open(5, { createdAt: at('2026-03-06T09:00:00Z'), interventions: [['bob', at('2026-03-07T10:00:00Z'), 'CHANGES_REQUESTED', 1]] }),
+      open(6, { createdAt: at('2026-03-06T09:00:00Z'), interventions: [['carol', at('2026-03-06T15:00:00Z'), 'APPROVED', 0]] }),
+      open(7, { createdAt: at('2026-03-06T09:00:00Z'), codeOwners: ['@backend'] }),
+      open(8, { createdAt: at('2026-03-05T09:00:00Z'), interventions: [['bob', at('2026-03-06T10:00:00Z'), 'COMMENTED', 1]] }),
+      // Alice's own, nothing since the 5th: forgotten, whatever they stand, the longest forgotten first.
+      open(9, { interventions: [['bob', at('2026-03-03T10:00:00Z'), 'CHANGES_REQUESTED', 1]] }),
+      open(10, { interventions: [['carol', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]] }),
       // A draft waits for no one: neither in her lists nor in Carol's.
-      open(7, { draft: true, author: 'bob', requestedReviewers: ['alice'] }),
+      open(11, { draft: true, author: 'bob', requestedReviewers: ['alice'] }),
     ]),
     'alice',
+    { forgottenBefore },
   )
   const numbers = (prs) => prs.map((pr) => pr.number)
 
@@ -806,16 +814,21 @@ describe('personalQueue', () => {
     assert.deepEqual(numbers(queue.toReview), [2, 1])
   })
 
-  test('their own pull requests not approved enough yet, the longest where they stand first', () => {
-    assert.deepEqual(numbers(queue.open), [5, 4])
-  })
-
-  test('their own approved pull requests, waiting for their merge', () => {
+  test('their own, each in one list after where it stands, the longest there first', () => {
     assert.deepEqual(numbers(queue.ready), [6])
+    assert.deepEqual(numbers(queue.changes), [5])
+    assert.deepEqual(numbers(queue.owners), [7])
+    assert.deepEqual(numbers(queue.open), [4, 8])
   })
 
-  test('someone without anything open has empty lists', () => {
-    assert.deepEqual(personalQueue([], 'alice'), { toReview: [], open: [], ready: [] })
+  test('forgotten wins over where it stands, the longest forgotten first', () => {
+    assert.deepEqual(numbers(queue.forgotten), [10, 9])
+  })
+
+  test('nothing is forgotten without a date, and someone without anything open has empty lists', () => {
+    const recent = personalQueue(openPullRequests([open(1, { interventions: [['bob', at('2026-03-02T10:00:00Z'), 'CHANGES_REQUESTED', 1]] })]), 'alice')
+    assert.deepEqual([numbers(recent.changes), numbers(recent.forgotten)], [[1], []])
+    assert.deepEqual(personalQueue([], 'alice'), { toReview: [], ready: [], changes: [], owners: [], open: [], forgotten: [] })
   })
 })
 
