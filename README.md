@@ -7,7 +7,8 @@ défaut : elle se configure avec la variable `ORG`.
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
 
-Le dashboard est découpé en pages, dans une barre latérale (une barre en haut sur les écrans étroits). La période et
+Le dashboard est découpé en pages, dans une barre latérale. Sous 1280 px, une barre en haut garde le nom et l'état de
+la synchro, et son bouton menu ouvre la barre latérale par-dessus la page, sans défilement horizontal. La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
 une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1535 px, elles restent collées en haut de
 la fenêtre. Sur la vue d'ensemble, le cycle de vie, la TMA et

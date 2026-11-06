@@ -223,59 +223,122 @@ code {
   left: 0;
 }
 
+/* Focused as a whole when the drawer opens from a tap (app.js): no ring, its links have theirs. */
+.sidebar:focus {
+  outline: none;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* The bar on top of narrower screens, the button that opens the sidebar and the one that closes it: there only. The
+   close button outranks the display of the icon buttons, set further down. */
+.topbar,
+.sidebar .nav-close,
+.nav-backdrop {
+  display: none;
+}
+
+/* On narrower screens the pages need the whole width: a bar on top keeps the brand and the sync status, and its menu
+   button opens the sidebar as a drawer over the page, the same as beside it, links never cut. The page behind is
+   dimmed and out of reach (inert, from app.js) until the drawer closes: its button, a page picked, the backdrop or
+   Escape. Hidden, the drawer is out of the focus order too. */
 @media (max-width: 1279px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
+    align-content: start;
   }
 
-  .sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    display: flex;
     align-items: center;
-    gap: 8px 16px;
-    height: auto;
+    gap: 12px;
     padding: 10px 16px;
-    border-right: 0;
     border-bottom: 1px solid var(--border);
+    background: var(--surface);
   }
 
-  .brand {
+  .topbar .brand {
     grid-auto-flow: column;
     align-items: baseline;
     gap: 8px;
+    min-width: 0;
     padding: 0;
+    white-space: nowrap;
   }
 
-  .nav {
-    display: flex;
-    overflow-x: auto;
+  /* The status takes what is left, on the right, its label cut short rather than the bar wrapping. */
+  .topbar .sync {
+    min-width: 0;
+    margin-left: auto;
   }
 
-  .sidebar-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 0 auto;
+  .topbar [data-sync-label] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  /* On a narrow bar the icons may wrap to the left: the menu hangs from the bar's right edge so that it always fits. */
-  .sidebar .sync-menu {
-    position: static;
+  .sidebar {
+    position: fixed;
+    z-index: 20;
+    inset: 0 auto 0 0;
+    width: min(280px, 85vw);
+    height: 100dvh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    box-shadow: 0 0 32px rgb(0 0 0 / 0.2);
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition:
+      transform 0.2s ease,
+      visibility 0s 0.2s;
   }
 
-  .sidebar .sync-menu-panel {
-    top: calc(100% + 6px);
-    right: 16px;
-    bottom: auto;
-    left: auto;
+  .app.is-nav-open .sidebar {
+    visibility: visible;
+    transform: none;
+    transition: transform 0.2s ease;
   }
 
-  .sidebar .icon-button[data-label]::after {
-    top: calc(100% + 6px);
-    right: 0;
-    bottom: auto;
-    left: auto;
+  .sidebar .nav-close {
+    display: inline-grid;
+    flex: none;
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    z-index: 19;
+    inset: 0;
+    display: block;
+    background: rgb(0 0 0 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .app.is-nav-open .nav-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* The page behind an open drawer does not scroll. */
+  :root:has(.app.is-nav-open) {
+    overflow: hidden;
+  }
+}
+
+/* On a phone, the name of the organization gives the room to the sync status. */
+@media (max-width: 600px) {
+  .topbar .org {
+    display: none;
   }
 }
 
@@ -3793,13 +3856,6 @@ tbody th {
 .sidebar .sync-menu[open] .sync-menu-panel {
   transform-origin: bottom left;
   animation-name: pop-up;
-}
-
-@media (max-width: 1279px) {
-  .sidebar .sync-menu[open] .sync-menu-panel {
-    transform-origin: top right;
-    animation-name: pop-down;
-  }
 }
 
 .tooltip:not([hidden]) {

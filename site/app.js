@@ -5880,9 +5880,14 @@ function notifyNewReviews(me) {
 
 // Sync status
 
+// The status shows in the sidebar, and in the bar on top of narrower screens: both say the same.
 function renderSyncStatus() {
-  const status = $('[data-sync]')
-  const label = $('[data-sync-label]')
+  for (const status of document.querySelectorAll('[data-sync]')) {
+    renderSyncStatusIn(status, status.querySelector('[data-sync-label]'))
+  }
+}
+
+function renderSyncStatusIn(status, label) {
   status.classList.remove('is-live', 'is-stale', 'is-error')
   if (!state.stats) {
     status.classList.add('is-error')
@@ -6167,6 +6172,46 @@ window.addEventListener('hashchange', () => {
   window.scrollTo(0, 0)
 })
 
+// Below 1280 px the sidebar opens as a drawer over the page (style.css): the page behind is out of reach meanwhile, and
+// the focus goes into it: on the page shown when opened from the keyboard, else on the drawer itself, without a ring
+// around a link just tapped. Closing gives it back to the menu button, unless a page was picked.
+function setNavOpen(open, { focus = true, keyboard = false } = {}) {
+  const app = $('[data-page]')
+  if (app.classList.contains('is-nav-open') === open) {
+    return
+  }
+  app.classList.toggle('is-nav-open', open)
+  const toggle = $('[data-nav-toggle]')
+  toggle.setAttribute('aria-expanded', String(open))
+  $('.page').inert = open
+  $('[data-topbar]').inert = open
+  if (open) {
+    const target = keyboard ? ($('[data-sidebar] [aria-current="page"]') ?? $('[data-nav-close]')) : $('[data-sidebar]')
+    target.focus()
+  } else if (focus) {
+    toggle.focus()
+  }
+}
+
+// A click the keyboard made (Enter or Space on the button) has no detail.
+$('[data-nav-toggle]').addEventListener('click', (event) => setNavOpen(true, { keyboard: event.detail === 0 }))
+$('[data-nav-close]').addEventListener('click', () => setNavOpen(false))
+$('[data-nav-backdrop]').addEventListener('click', () => setNavOpen(false))
+for (const link of document.querySelectorAll('[data-sidebar] a')) {
+  link.addEventListener('click', () => setNavOpen(false, { focus: false }))
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && $('[data-page]').classList.contains('is-nav-open')) {
+    setNavOpen(false)
+  }
+})
+// Wide enough for the sidebar beside the page: no drawer to close.
+window.matchMedia('(max-width: 1279px)').addEventListener('change', (event) => {
+  if (!event.matches) {
+    setNavOpen(false, { focus: false })
+  }
+})
+
 // Theme: follows the system until the toggle is used, then sticks to the chosen one.
 
 const currentTheme = () => document.documentElement.dataset.theme ?? (darkScheme.matches ? 'dark' : 'light')
@@ -6269,7 +6314,9 @@ function render(animate) {
   if (state.period === CUSTOM_PERIOD ? !state.range : !PERIODS[state.period] || !periodAvailable(state.period)) {
     state.period = DEFAULT_PERIOD
   }
-  $('[data-org]').textContent = state.stats.org
+  for (const org of document.querySelectorAll('[data-org]')) {
+    org.textContent = state.stats.org
+  }
   $('[data-empty]').hidden = true
   $('[data-main]').classList.remove('is-loading')
   renderPeriodSelector()
@@ -6386,6 +6433,7 @@ async function readStoredKey() {
 }
 
 function showLock(message = '') {
+  setNavOpen(false, { focus: false })
   $('[data-page]').hidden = true
   $('[data-lock]').hidden = false
   const error = $('[data-lock-error]')
@@ -6463,10 +6511,11 @@ function applyStats(stats) {
     playEntrance()
   }
   if (isUpdate) {
-    const status = $('[data-sync]')
-    status.classList.remove('is-pulsing')
-    void status.offsetWidth
-    status.classList.add('is-pulsing')
+    for (const status of document.querySelectorAll('[data-sync]')) {
+      status.classList.remove('is-pulsing')
+      void status.offsetWidth
+      status.classList.add('is-pulsing')
+    }
   }
 }
 

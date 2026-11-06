@@ -198,7 +198,11 @@ paths:
 - Colors are tokens on `:root`, redefined for dark mode (system preference and `data-theme`). Data series use
   `--series-1` (blue), `--series-2` (orange), `--series-3` (green), a palette checked for color blindness; text never
   takes a series color. Repository types are labelled front, back, mobile or full-stack.
-- Layout: a sidebar from 1280 px, a top bar below. From 1536 px the filters (`[data-filters]`) move from the top of
+- Layout: a sidebar from 1280 px. Below, a bar on top (`[data-topbar]`: the menu button, the brand, a second sync
+  status, which `renderSyncStatus()` keeps like the first) opens the same sidebar as a drawer over the page
+  (`setNavOpen()`: `is-nav-open` on `.app`, the page and the bar `inert` meanwhile, the page not scrolling). It closes
+  with its button, the backdrop, Escape, a page picked, or the screen growing past 1280 px; opened from the keyboard,
+  the focus goes to the current page, else to the drawer itself. From 1536 px the filters (`[data-filters]`) move from the top of
   the page to a sticky column on its right, under the name « Filtres », the period shown tinted like the current page
   of the sidebar; the column stays on the pages without filters so that the content keeps its width;
   beside it the content is as wide as beside the sidebar at 1280 px, so whatever fits there fits there too. From 1280

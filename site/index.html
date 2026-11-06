@@ -44,11 +44,38 @@
     </div>
 
     <div class="app" data-page hidden>
-      <aside class="sidebar">
+      <!-- Below 1280 px only: the sidebar opens from it, as a drawer over the page. -->
+      <div class="topbar" data-topbar>
+        <button
+          type="button"
+          class="icon-button nav-toggle"
+          aria-label="Ouvrir le menu"
+          aria-expanded="false"
+          aria-controls="sidebar"
+          data-nav-toggle
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" /></svg>
+        </button>
         <a class="brand" href="#/">
           <span class="brand-title">Stats PR</span>
           <span class="org" data-org></span>
         </a>
+        <p class="sync" data-sync>
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span data-sync-label>Chargement…</span>
+        </p>
+      </div>
+
+      <aside class="sidebar" id="sidebar" aria-label="Menu" tabindex="-1" data-sidebar>
+        <div class="sidebar-head">
+          <a class="brand" href="#/">
+            <span class="brand-title">Stats PR</span>
+            <span class="org" data-org></span>
+          </a>
+          <button type="button" class="icon-button nav-close" aria-label="Fermer le menu" data-nav-close>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" /></svg>
+          </button>
+        </div>
         <nav class="nav" aria-label="Pages">
           <a class="nav-link" href="#/" data-route-link="overview">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H9.5V10h-3v3.5H3a.5.5 0 0 1-.5-.5Z" /></svg>
@@ -178,6 +205,7 @@
           </div>
         </div>
       </aside>
+      <div class="nav-backdrop" data-nav-backdrop></div>
 
       <div class="page">
         <header class="page-header">
