@@ -5401,12 +5401,16 @@ function toggleTheme() {
 
 // Main
 
-// The comparison picked stays picked when the synced data does not cover it for the period shown: it is marked so,
-// and the tiles show no change until another period brings it back.
+// A comparison the synced data does not cover for the period shown is marked so, and cannot be picked. Picking a
+// period it no longer covers, such as 36 months, goes back to no comparison: called before the tiles are drawn.
 function renderComparePicker() {
   const picker = $('[data-compare]')
   if (picker.options.length === 1) {
     picker.append(...Object.entries(COMPARISONS).map(([mode, label]) => new Option(label, mode)))
+  }
+  if (state.stats && state.compare !== NO_COMPARISON && comparedRange() === null) {
+    state.compare = NO_COMPARISON
+    storePeriod()
   }
   for (const option of picker.options) {
     if (option.value === NO_COMPARISON || !state.stats) {
