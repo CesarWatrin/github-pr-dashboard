@@ -78,7 +78,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   merge, PR en attente. Un clic ouvre sa fiche, qui s'incline vers la souris : ce qu'elle écrit, sa revue (dont la
   part relue en interne), sa mise en prod, ses membres, qui relit son code et ses dépôts, chaque chiffre avec la
   médiane des squads. Dessous, le classement des squads, trié sur la colonne choisie, médailles pour les trois
-  premières et meilleur chiffre de chaque colonne marqué, en totaux ou par personne pour comparer des squads de
+  premières et meilleur chiffre de chaque colonne marqué, les lignes ajoutées et supprimées en vert et en rouge comme dans les autres tableaux, en totaux ou par personne pour comparer des squads de
   tailles différentes, avec toute l'organisation en dernière ligne. Puis quatre graphiques : la colonne qui classe,
   squad par squad (il suit le classement) ; où passe le temps d'une PR de chaque squad, étape par étape ; ce que
   chaque squad écrit, la part de ses PR par type de dépôt ; qui relit qui entre squads, la diagonale étant la
