@@ -1947,7 +1947,10 @@ function shareChart(container, { rows, ariaLabel }) {
 // Grid of intensities, one cell per row and column, darker as the value grows. rows and columns are { key, label },
 // flagged grouped when they add up several entries: these stay out of the color scale, which they would flatten.
 // value(row, column) is a count, tooltip(row, column, value) the content of the tooltip of a cell. Labels of columns
-// too wide for their cell are tilted.
+// too wide for their cell are tilted; on cells too narrow for tilted labels side by side (a phone), only one column in
+// two or three keeps its label, the last one always, as the other charts thin their axis out.
+const TILTED_LABEL_SPACING = 18
+
 function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, format = formatNumber }) {
   const width = container.clientWidth
   if (width === 0) {
@@ -1979,7 +1982,11 @@ function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, for
   )
 
   const root = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel })
+  const step = tilted ? Math.ceil(TILTED_LABEL_SPACING / cell) : 1
   columns.forEach((column, index) => {
+    if ((columns.length - 1 - index) % step !== 0) {
+      return
+    }
     const x = labelWidth + cell * index + cell / 2
     const label = tilted
       ? svg('text', { class: 'axis-label', x, y: header - 8, transform: `rotate(-45 ${x} ${header - 8})` })
@@ -5700,21 +5707,25 @@ function openPullRequestDialog(pr, opener) {
       )
     : el('p', { className: 'pr-dialog-note', textContent: 'Aucune intervention d’une autre personne.' })
 
+  // The head stays in place, with the close button; only the body under it scrolls, from its top for each pull request.
   $('[data-pr-dialog-card]').replaceChildren(
     close,
     head,
-    ...(figures.length ? [el('dl', { className: 'pr-dialog-figures' }, ...figures)] : []),
     el(
-      'section',
-      { className: 'pr-dialog-section' },
-      el('h3', { textContent: 'Frise' }),
-      el('p', { className: 'pr-dialog-note', textContent: 'Attentes en heures ouvrées : du lundi au vendredi, de 9 h à 18 h.' }),
-      timeline,
+      'div',
+      { className: 'pr-dialog-body' },
+      ...(figures.length ? [el('dl', { className: 'pr-dialog-figures' }, ...figures)] : []),
+      el(
+        'section',
+        { className: 'pr-dialog-section' },
+        el('h3', { textContent: 'Frise' }),
+        el('p', { className: 'pr-dialog-note', textContent: 'Attentes en heures ouvrées : du lundi au vendredi, de 9 h à 18 h.' }),
+        timeline,
+      ),
+      el('section', { className: 'pr-dialog-section' }, el('h3', { textContent: 'Interventions' }), interventions),
     ),
-    el('section', { className: 'pr-dialog-section' }, el('h3', { textContent: 'Interventions' }), interventions),
   )
   const dialog = $('[data-pr-dialog]')
-  dialog.scrollTop = 0
   if (dialog.open) {
     close.focus()
 

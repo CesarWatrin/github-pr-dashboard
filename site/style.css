@@ -105,6 +105,11 @@ body {
   font: 14px/1.5 var(--font);
 }
 
+/* A double tap does not zoom into the page, as in an app; pinching still does, for whoever needs larger text. */
+html {
+  touch-action: manipulation;
+}
+
 a {
   color: inherit;
 }
@@ -151,9 +156,23 @@ code {
   font-size: 13px;
 }
 
+/* On a window too short for the whole sidebar, only the list of pages scrolls: the brand above and the actions below
+   stay in place. Its padding, taken from the margins, leaves room for the focus ring of the links. */
 .nav {
   display: grid;
+  align-content: start;
   gap: 2px;
+  min-height: 0;
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.sidebar-head,
+.sidebar-footer {
+  flex: none;
 }
 
 .nav-link {
@@ -292,8 +311,6 @@ code {
     inset: 0 auto 0 0;
     width: min(280px, 85vw);
     height: 100dvh;
-    overflow-y: auto;
-    scrollbar-width: thin;
     box-shadow: 0 0 32px rgb(0 0 0 / 0.2);
     visibility: hidden;
     transform: translateX(-100%);
@@ -327,6 +344,22 @@ code {
   .app.is-nav-open .nav-backdrop {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  /* The drawer is narrower than the menu hung from its button, which beside the page overflows over the page: it spans
+     the width of the buttons instead, within the drawer. */
+  .sidebar .header-actions {
+    position: relative;
+  }
+
+  .sidebar .sync-menu {
+    position: static;
+  }
+
+  .sidebar .sync-menu-panel {
+    right: 0;
+    left: 0;
+    width: auto;
   }
 
   /* The page behind an open drawer does not scroll. */
@@ -717,7 +750,8 @@ h3 {
 }
 
 /* The timeline of a pull request: a dialog like the confirmations, wider, its card filling it so that only a click on
-   the backdrop reaches the dialog. */
+   the backdrop reaches the dialog. A column: the head, with the close button, stays at the top, and only the body
+   under it scrolls when the whole is taller than the screen. */
 .pr-dialog {
   width: min(100% - 32px, 560px);
   max-height: calc(100% - 32px);
@@ -729,15 +763,32 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.pr-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .pr-dialog::backdrop {
   background: rgba(11, 11, 11, 0.45);
 }
 
 .pr-dialog-card {
   position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pr-dialog-body {
   display: grid;
+  flex: 1 1 auto;
   gap: 20px;
-  padding: 24px;
+  min-height: 0;
+  padding: 18px 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .pr-dialog-close {
@@ -757,8 +808,10 @@ h3 {
 
 .pr-dialog-head {
   display: grid;
+  flex: none;
   gap: 10px;
-  padding-right: 40px;
+  padding: 24px 64px 16px 24px;
+  border-bottom: 1px solid var(--border);
 }
 
 /* Above the title, the repository and number of the pull request, then its tags: its state, its kind. */
@@ -865,8 +918,7 @@ h3 {
   flex-wrap: wrap;
   gap: 10px 28px;
   margin: 0;
-  padding: 14px 0;
-  border-top: 1px solid var(--border);
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -2076,6 +2128,14 @@ main.is-loading {
 
 .report-table tbody th {
   font-weight: 500;
+}
+
+/* On a phone the names of the figures wrap, so that the month shown fits beside them; the other months scroll. */
+@media (max-width: 600px) {
+  .report-table tbody th {
+    min-width: 8rem;
+    white-space: normal;
+  }
 }
 
 .report-table tbody tr:hover th {
@@ -3438,9 +3498,9 @@ main.is-loading {
   list-style: none;
 }
 
-/* The lists of « Pour moi » keep to what they hold, up to the height of a feed: an empty one leaves a short card, and
-   two short ones a short row. */
-[data-route='me'] .feed {
+/* The lists of « Pour moi » and of the unblock page keep to what they hold, up to the height of a feed: an empty or
+   short one leaves a short card, and two short ones a short row; one under the other on a phone, no blank. */
+.unblock-lists .feed {
   height: auto;
   min-height: 0;
   max-height: 380px;
@@ -4203,6 +4263,26 @@ tbody th {
 
 .lock:not([hidden]) .lock-card {
   animation: rise-in 420ms var(--ease-out) both;
+}
+
+/* On a touch screen, Safari zooms into the page when a field whose text is under 16 px gets the focus, and leaves it
+   zoomed: the password, the search, the dates and the pickers take 16 px there. Last in the file, so that it wins over
+   the font of each field. */
+@media (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio']),
+  input.search,
+  select,
+  select.search,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* On a phone the search has a line of its own among the filters: it takes it whole, its placeholder uncut. */
+@media (max-width: 640px) {
+  .filters input.search {
+    flex: 1 1 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
