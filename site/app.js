@@ -5604,7 +5604,18 @@ function interventionSummary(person) {
 }
 
 // The state of the checks of the last commit, as the sync publishes it for the pull requests the page opens the
-// timeline of (checks, null without any); a record without it, older, only tells a failure (checksFailed).
+// timeline of (checks, null without any); a record without it, older, only tells a failure (checksFailed). Each shows
+// an icon as GitHub's checks do, drawn here in the page's 16×16 style, next to its words: a check mark when they
+// passed, a cross when they failed, a dot while they run or wait, a slashed circle without any.
+const CHECK_ICONS = {
+  success: [['path', { d: 'M3.5 8.5l3 3 6-7' }]],
+  failure: [['path', { d: 'M4.5 4.5l7 7M11.5 4.5l-7 7' }]],
+  pending: [['circle', { cx: 8, cy: 8, r: 4 }]],
+  none: [
+    ['circle', { cx: 8, cy: 8, r: 5.5 }],
+    ['path', { d: 'M4.1 11.9l7.8-7.8' }],
+  ],
+}
 const CHECK_STATES = {
   SUCCESS: { key: 'success', label: 'CI réussie' },
   FAILURE: { key: 'failure', label: 'CI en échec' },
@@ -5613,6 +5624,15 @@ const CHECK_STATES = {
   EXPECTED: { key: 'pending', label: 'CI attendue' },
 }
 const NO_CHECKS = { key: 'none', label: 'Sans CI' }
+
+function checksIcon(key) {
+  const icon = svg('svg', { class: 'pr-checks-icon', viewBox: '0 0 16 16', 'aria-hidden': 'true' })
+  for (const [tag, attributes] of CHECK_ICONS[key]) {
+    icon.append(svg(tag, attributes))
+  }
+
+  return icon
+}
 
 function checksTag(pr) {
   const check = 'checks' in pr ? (CHECK_STATES[pr.checks] ?? NO_CHECKS) : pr.checksFailed ? CHECK_STATES.FAILURE : null
@@ -5624,7 +5644,7 @@ function checksTag(pr) {
     el(
       'span',
       { className: `pr-checks is-${check.key}`, title: 'Checks du dernier commit, à la dernière synchro' },
-      el('span', { className: 'pr-checks-dot' }),
+      checksIcon(check.key),
       document.createTextNode(check.label),
     ),
   ]

@@ -796,29 +796,53 @@ h3 {
   color: var(--text-primary);
 }
 
-.pr-checks-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-muted);
+/* Its icon, drawn in strokes like the page's others: green check mark, red cross, slashed grey circle. The dot of the
+   checks that run or wait is gold, ringed darker so that it stands out on a light surface as on a dark one; it pulses
+   gently while they do, still under prefers-reduced-motion. */
+.pr-checks-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.pr-checks.is-success .pr-checks-dot {
-  background: var(--status-good);
+.pr-checks.is-success .pr-checks-icon {
+  color: var(--diff-added);
 }
 
-.pr-checks.is-failure .pr-checks-dot {
-  background: var(--diff-deleted);
+.pr-checks.is-failure .pr-checks-icon {
+  color: var(--diff-deleted);
 }
 
-.pr-checks.is-pending .pr-checks-dot {
-  border: 2px solid var(--series-1);
-  background: transparent;
-  box-sizing: border-box;
+.pr-checks.is-pending .pr-checks-icon {
+  fill: var(--gold);
+  stroke: var(--gold-ring);
+  stroke-width: 1;
 }
 
 .pr-checks.is-none {
   color: var(--text-secondary);
+}
+
+.pr-checks.is-none .pr-checks-icon {
+  color: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pr-checks.is-pending .pr-checks-icon circle {
+    animation: pr-checks-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes pr-checks-pulse {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .pr-status.is-merged {

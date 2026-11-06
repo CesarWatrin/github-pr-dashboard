@@ -186,7 +186,10 @@ paths:
   last sync, and the people who intervened come from `pullRequestTimeline()` of `site/period.js`. The head shows the
   title (`title` of the record, else the repository and number) and the state of the checks of the last commit
   (`checksTag()`, `CHECK_STATES`; from `checksFailed` alone on an older record), both published for the pull requests
-  the page opens the timeline of only. The dialog closes
+  the page opens the timeline of only. The state shows an icon like GitHub's checks, drawn in the page's 16×16 stroke
+  style (`CHECK_ICONS`, never Octicons' paths) next to its words: green check mark (`--diff-added`), red cross
+  (`--diff-deleted`), gold dot ringed with `--gold-ring` while the checks run or wait, pulsing but still under
+  `prefers-reduced-motion`, slashed grey circle without any (`--text-muted`). The dialog closes
   from its button, with Escape or on the backdrop, and gives the focus back to the link; a name in it opens the
   person's dialog over it.
 - **Former people**, on every page: a person without any pull request, review, comment or merge for
