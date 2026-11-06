@@ -30,8 +30,8 @@ une colonne à droite, qui reste à portée quand la page défile. Tous les dél
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;
-  les champions du mois, les dépôts les plus actifs et les arrivées. Le mois en cours y figure, provisoire, sans
-  comparaison.
+  les champions du mois, les dépôts les plus actifs et les arrivées. Il s'ouvre sur le mois en cours, provisoire et
+  sans comparaison ; les mois complets se choisissent dans la liste.
 - **Analyse** : ce qui ressort de la période et des pistes pour progresser. Dix règles fixes croisent les chiffres :
   taille des PR et délai de merge, PR géantes mergées sans review plus souvent que les autres, étape qui retient les
   PR avant leur merge, dépôts suspendus à un relecteur ou mergés sans review, workflows qui échouent souvent ou qui

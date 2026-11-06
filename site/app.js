@@ -1076,7 +1076,7 @@ const state = {
   activity: null,
   // The badges of each person, worked out once per stats.
   badges: null,
-  // The month of the report, and the stats of each month, worked out once per stats.
+  // The month of the report, null for the current one, and the stats of each month, worked out once per stats.
   reportMonth: null,
   reportCache: null,
   seenEvents: null,
@@ -3015,10 +3015,11 @@ function reportChange(figure, value, previous) {
 function renderReport() {
   const months = reportMonths()
   if (!months.includes(state.reportMonth)) {
-    // The last whole month, unless the synced data has none yet.
-    state.reportMonth = months.at(-2) ?? months.at(-1)
+    state.reportMonth = null
   }
-  const month = state.reportMonth
+  // The month picked, else the current one, unfinished: its figures so far, without any change. Left on it, the page
+  // follows the current month into the next one.
+  const month = state.reportMonth ?? months.at(-1)
   const current = month === months.at(-1)
   const previous = months[months.indexOf(month) - 1] ?? null
   // The year a month is set against: the last whole months, whichever month is shown.
@@ -5700,7 +5701,8 @@ $('[data-person]').addEventListener('change', (event) => {
   renderMiniCharts()
 })
 $('[data-report-month]').addEventListener('change', (event) => {
-  state.reportMonth = event.target.value
+  const months = reportMonths()
+  state.reportMonth = event.target.value === months.at(-1) ? null : event.target.value
   renderReport()
 })
 for (const button of document.querySelectorAll('[data-technology-measure]')) {

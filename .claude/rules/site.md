@@ -79,7 +79,9 @@ paths:
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
   and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the
   median of the last `REPORT_YEAR_MONTHS` whole months, whichever month is shown; the months come from
-  `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change.
+  `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change. The page
+  opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month
+  picked.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not
