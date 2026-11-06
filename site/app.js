@@ -41,6 +41,8 @@ const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
 const ME_STORAGE_KEY = 'github-pr-dashboard:me'
 // Whether this browser notifies the reviews newly asked of that person.
 const NOTIFY_STORAGE_KEY = 'github-pr-dashboard:notify'
+// The squad picked in the filters, in this browser: none for the whole organization.
+const SQUAD_STORAGE_KEY = 'github-pr-dashboard:squad'
 // The reviews already asked of that person when the tab last looked (sessionStorage): a reload for a new build notifies
 // those asked meanwhile, a new tab none of those already there.
 const KNOWN_REVIEWS_STORAGE_KEY = 'github-pr-dashboard:known-reviews'
@@ -109,6 +111,7 @@ const ROUTES = {
   cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
+  squads: { hash: '#/squads', title: 'Squads', subtitle: 'Les squads classées et comparées, puis le détail de celle choisie', search: false },
   report: { hash: '#/bilan', title: 'Bilan du mois', subtitle: 'Un mois comparé au précédent et au reste de l’année', filters: false },
   trends: { hash: '#/tendances', title: 'Tendances', subtitle: 'Les indicateurs clés mois après mois, sur les mois de la période', search: false },
   analysis: { hash: '#/analyse', title: 'Analyse', subtitle: 'Ce qui ressort de la période, et des pistes pour progresser', search: false },
@@ -1157,6 +1160,13 @@ const state = {
   trendsCards: null,
   seenEvents: null,
   seenUnapproved: null,
+  // The squad the pages are scoped to (its name), '' for the whole organization; the pull requests of each squad, and
+  // the stats of each squad and range, worked out once per stats; how the squads page ranks them.
+  squad: readStoredSquad(),
+  squadRecordsCache: null,
+  squadPeriodsCache: null,
+  squadSort: { key: 'merged', reversed: false },
+  squadPerMember: false,
   // Who the « Pour moi » page is for, null until picked.
   me: readStoredMe(),
   notify: readStoredNotify(),
@@ -1202,6 +1212,26 @@ function storePeriod() {
     }
   } catch {
     // Storage can be unavailable (private browsing): the period is simply not remembered.
+  }
+}
+
+function readStoredSquad() {
+  try {
+    return localStorage.getItem(SQUAD_STORAGE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function storeSquad() {
+  try {
+    if (state.squad) {
+      localStorage.setItem(SQUAD_STORAGE_KEY, state.squad)
+    } else {
+      localStorage.removeItem(SQUAD_STORAGE_KEY)
+    }
+  } catch {
+    // Without storage, the squad is picked again on the next visit.
   }
 }
 
@@ -1300,11 +1330,29 @@ function periodRange() {
   }
 }
 
+// The squads of the stats (SQUADS of the sync), none without them. The one picked in the filters scopes the pages to the
+// pull requests its members opened; the pages without filters (the report, the badges, « Pour moi ») never are.
+const squadsOf = () => state.stats?.squads ?? []
+
+function activeSquad() {
+  if (!state.squad || ROUTES[currentRoute()].filters === false) {
+    return null
+  }
+
+  return squadsOf().find((squad) => squad.name === state.squad) ?? null
+}
+
+const squadKey = () => activeSquad()?.name ?? ''
+// The pull requests the page counts: those of the squad picked, else all of them.
+const scopedRecords = () => squadRecords(activeSquad())
+// Whether a person belongs to the squad picked, always true without one.
+const inSquad = (login) => activeSquad()?.members.includes(login) ?? true
+
 function currentPeriod() {
   const range = periodRange()
-  const key = `${range.start}:${range.end}:${range.bucket}`
+  const key = `${range.start}:${range.end}:${range.bucket}:${squadKey()}`
   if (state.periodCache?.stats !== state.stats || state.periodCache.key !== key) {
-    state.periodCache = { stats: state.stats, key, period: computePeriod(state.stats.pullRequests, range) }
+    state.periodCache = { stats: state.stats, key, period: computePeriod(scopedRecords(), range) }
   }
 
   return state.periodCache.period
@@ -1348,9 +1396,9 @@ function comparedPeriod() {
   if (!range) {
     return null
   }
-  const key = `${range.start}:${range.end}:${range.bucket}`
+  const key = `${range.start}:${range.end}:${range.bucket}:${squadKey()}`
   if (state.comparisonCache?.stats !== state.stats || state.comparisonCache.key !== key) {
-    state.comparisonCache = { stats: state.stats, key, period: computePeriod(state.stats.pullRequests, range) }
+    state.comparisonCache = { stats: state.stats, key, period: computePeriod(scopedRecords(), range) }
   }
 
   return state.comparisonCache.period
@@ -1533,7 +1581,10 @@ function showBump(node, delta) {
   node.timer = setTimeout(() => node.classList.remove('is-visible'), BUMP_VISIBLE_MS)
 }
 
+// The counts of today come from the sync, for the whole organization: a squad picked hides them, rather than show figures
+// that are not its own.
 function renderToday(mode) {
+  $('[data-today-card]').hidden = activeSquad() !== null
   const { today, timezone } = state.stats
   const currentDay = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
   $('[data-today-title]').textContent =
@@ -1560,8 +1611,14 @@ function renderDevopsTiles(mode) {
     compared && { ...comparedCi()?.totals, checksFailedShare: compared.totals.checksFailedShare },
   )
   const cut = ciCut()
-  $('[data-ci-cut]').hidden = cut === null
-  $('[data-ci-cut]').textContent = cut ? `Exécutions de CI ${cut} seulement : GitHub efface les plus anciennes, la synchro garde les autres.` : ''
+  const squad = activeSquad()
+  const notes = [
+    ...(cut ? [`Exécutions de CI ${cut} seulement : GitHub efface les plus anciennes, la synchro garde les autres.`] : []),
+    // No run belongs to a squad: the CI stays that of the whole organization, and says so.
+    ...(squad ? [`Intégration continue de toute l’organisation : une exécution ne se rattache à aucune squad, pas même ${squad.name}.`] : []),
+  ]
+  $('[data-ci-cut]').hidden = notes.length === 0
+  $('[data-ci-cut]').textContent = notes.join(' ')
   renderTiles($('[data-dependency-tiles]'), DEPENDENCY_TILES, dependencies, mode, compared?.dependencies)
 }
 
@@ -2984,7 +3041,8 @@ function renderFormer() {
 
 function renderTeam() {
   renderFormer()
-  const rows = teamRows().filter((row) => matchesQuery(row.login, displayName(row.login)))
+  // With a squad, the cards of its members only: the reviewers of its pull requests from elsewhere have theirs without it.
+  const rows = teamRows().filter((row) => inSquad(row.login) && matchesQuery(row.login, displayName(row.login)))
   const container = $('[data-team]')
   if (rows.length === 0) {
     const filtered = state.query || state.repos.team
@@ -3180,14 +3238,15 @@ function reportMonths() {
   return [...badgeMonths(), parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)]
 }
 
-// The stats of a month, worked out once per stats: those of a period and of the CI over its Paris days, up to the last
-// sync for the current month.
+// The stats of a month, worked out once per stats and squad: those of a period and of the CI over its Paris days, up to
+// the last sync for the current month. The CI stays that of the whole organization: no run belongs to a squad.
 function monthStats(month) {
   if (state.reportCache?.stats !== state.stats) {
     state.reportCache = { stats: state.stats, months: new Map() }
   }
   const { months } = state.reportCache
-  if (!months.has(month)) {
+  const key = `${squadKey()}:${month}`
+  if (!months.has(key)) {
     const range = {
       start: parisMidnight(`${month}-01`),
       end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(state.stats.generatedAt)),
@@ -3195,10 +3254,10 @@ function monthStats(month) {
     }
     // A month the runs do not cover whole has no CI: GitHub had forgotten its runs.
     const ci = range.start >= ciStart() ? computeCi(state.stats.ci ?? [], range) : null
-    months.set(month, { period: computePeriod(state.stats.pullRequests, range), ci })
+    months.set(key, { period: computePeriod(scopedRecords(), range), ci })
   }
 
-  return months.get(month)
+  return months.get(key)
 }
 
 // How a figure changed from one month to the next: by how much for counts and durations, by how many points for
@@ -3727,7 +3786,7 @@ async function prepareTrendMonths(months) {
   return state.stats === stats
 }
 
-const monthReady = (month) => state.reportCache?.stats === state.stats && state.reportCache.months.has(month)
+const monthReady = (month) => state.reportCache?.stats === state.stats && state.reportCache.months.has(`${squadKey()}:${month}`)
 
 // Below this many months, a period says too little of a trend: the page says so.
 const TREND_FEW_MONTHS = 6
@@ -3744,14 +3803,16 @@ function renderTrends() {
     // New stats keep the cards of the previous ones in the meantime.
     status.hidden = Boolean(state.trendsCards)
     status.textContent = 'Calcul des tendances, mois par mois…'
-    if (state.trendsPreparing !== state.stats) {
-      state.trendsPreparing = state.stats
+    // Once per stats and squad: the months of another squad are other stats.
+    const preparing = `${squadKey()}`
+    if (state.trendsPreparing?.stats !== state.stats || state.trendsPreparing.squad !== preparing) {
+      state.trendsPreparing = { stats: state.stats, squad: preparing }
       prepareTrendMonths(months).then((done) => done && renderTrends())
     }
     return
   }
   const range = periodRange()
-  const key = `${range.start}:${range.end}`
+  const key = `${range.start}:${range.end}:${squadKey()}`
   const shown = monthsTouched(months, range)
   status.hidden = shown.length > 0
   // Only the first month of the data, cut by its start: no whole month to show.
@@ -3796,9 +3857,9 @@ function renderTrends() {
 // The findings of analyze() for the period, worked out once per stats and range: the page only reads them when it shows.
 function currentAnalysis() {
   const range = periodRange()
-  const key = `${range.start}:${range.end}`
+  const key = `${range.start}:${range.end}:${squadKey()}`
   if (state.analysisCache?.stats !== state.stats || state.analysisCache.key !== key) {
-    state.analysisCache = { stats: state.stats, key, analysis: analyze(state.stats.pullRequests, state.stats.ci ?? [], { ...range, isCurrent }) }
+    state.analysisCache = { stats: state.stats, key, analysis: analyze(scopedRecords(), state.stats.ci ?? [], { ...range, isCurrent }) }
   }
 
   return state.analysisCache.analysis
@@ -5754,9 +5815,12 @@ function renderList(container, items, emptyText) {
 function renderFeed(highlight) {
   const { events } = state.stats
   const previous = state.seenEvents
+  // With a squad, the events of the pull requests of its members, whoever acted on them.
   const items = events
-    .filter((event) =>
-      matchesQuery(event.actor, event.author, displayName(event.actor), displayName(event.author), event.repo),
+    .filter(
+      (event) =>
+        inSquad(event.author) &&
+        matchesQuery(event.actor, event.author, displayName(event.actor), displayName(event.author), event.repo),
     )
     .map((event) => {
       const text = el(
@@ -5786,7 +5850,7 @@ function renderFeed(highlight) {
 function mergedWithoutApproval() {
   const since = (Date.parse(state.stats.generatedAt) - UNAPPROVED_DAYS * DAY_MS) / 60_000
 
-  return state.stats.pullRequests
+  return scopedRecords()
     .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt !== null && pr.mergedAt >= since)
     .filter((pr) => pr.mergedBy === pr.author)
     .filter((pr) => UNAPPROVED_CATEGORIES.includes(repoInfo(pr.repo).category))
@@ -5840,7 +5904,7 @@ function renderUnapproved(highlight) {
 // long for someone, by where they stand, the oldest first, those forgotten apart, and how many are open.
 function blockedPullRequests() {
   const now = Date.now() / 60_000
-  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author))
+  const open = openPullRequests(scopedRecords(), { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author))
   const forgotten = (pr) => now - pr.lastAt >= FORGOTTEN_AFTER_DAYS * 24 * 60
   const recent = open.filter((pr) => !forgotten(pr))
 
@@ -6109,6 +6173,380 @@ function notifyNewReviews(me) {
   } catch {
     // A browser that only notifies through a service worker: the tab title still counts them.
   }
+}
+
+// Squads
+
+// The figures of a squad over the period: those of the pull requests its members opened (squadRecords()), and what its
+// members did on any pull request of the organization, reviews and comments. perMember: a volume, divided by the number
+// of members when the ranking compares squads per person; better: the way that ranks a squad first.
+const SQUAD_FIGURES = {
+  members: { key: 'members', label: 'Membres', hint: 'Personnes de la squad, parties comprises.' },
+  code: { key: 'code', label: 'PR de code', perMember: true, better: 'up', hint: 'PR de code ouvertes sur la période par les membres.' },
+  merged: { key: 'merged', label: 'Mergées', perMember: true, better: 'up', hint: 'Parmi ces PR, celles qui ont été mergées.' },
+  reviews: {
+    key: 'reviews',
+    label: 'Relectures',
+    perMember: true,
+    better: 'up',
+    hint: 'PR relues par les membres, dans toute l’organisation : une par personne et par PR, review ou commentaire.',
+  },
+  comments: {
+    key: 'comments',
+    label: 'Commentaires',
+    perMember: true,
+    better: 'up',
+    hint: 'Commentaires et reviews « commentaire » des membres, sur toutes les PR de l’organisation.',
+  },
+  lines: { key: 'lines', label: 'Lignes', perMember: true, format: formatLines, hint: 'Lignes ajoutées et supprimées par les PR mergées de la squad.' },
+  medianTimeToFirstReviewHours: {
+    key: 'medianTimeToFirstReviewHours',
+    label: '1re review',
+    format: formatDuration,
+    better: 'down',
+    hint: 'Médiane, de la création d’une PR de la squad à la première review ou au premier commentaire d’une autre personne.',
+  },
+  medianTimeToMergeHours: { key: 'medianTimeToMergeHours', label: 'Merge en', format: formatDuration, better: 'down', hint: 'Médiane, de la création au merge.' },
+  medianLeadTimeHours: {
+    key: 'medianLeadTimeHours',
+    label: 'Jusqu’en prod',
+    format: formatDuration,
+    better: 'down',
+    hint: 'Médiane, de la création d’une PR de la squad à son arrivée en production.',
+  },
+  unreviewedRate: {
+    key: 'unreviewedRate',
+    label: 'Sans review',
+    format: formatShare,
+    better: 'down',
+    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+  },
+  insideReviewRate: {
+    key: 'insideReviewRate',
+    label: 'Relu en interne',
+    format: formatShare,
+    hint: 'Part des relectures des PR de la squad faites par ses membres ; le reste vient d’autres personnes.',
+  },
+  commentsPerPr: { key: 'commentsPerPr', label: 'Comm. / PR', format: formatDecimal, hint: 'Commentaires et reviews « commentaire », par PR relue.' },
+  hotfixShare: { key: 'hotfixShare', label: 'Hotfix', format: formatShare, better: 'down', hint: 'Part des PR de code ouvertes depuis une branche hotfix.' },
+  reworkRate: {
+    key: 'reworkRate',
+    label: 'Reprise',
+    format: formatShare,
+    better: 'down',
+    hint: 'Part des mises en production de la squad suivies d’un correctif.',
+  },
+  open: {
+    key: 'open',
+    label: 'En attente',
+    perMember: true,
+    better: 'down',
+    hint: 'PR de code des membres encore ouvertes à la dernière synchro, hors brouillons.',
+  },
+}
+const squadFigures = (...keys) => keys.map((key) => SQUAD_FIGURES[key])
+const SQUAD_CARD_STATS = squadFigures('code', 'merged', 'reviews', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours', 'open')
+const SQUAD_WRITTEN = squadFigures('code', 'merged', 'lines', 'unreviewedRate', 'hotfixShare')
+const SQUAD_REVIEWED = squadFigures('reviews', 'comments', 'commentsPerPr', 'insideReviewRate', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours')
+const SQUAD_DELIVERED = squadFigures('medianLeadTimeHours', 'reworkRate', 'open')
+// The columns of the ranking, in order.
+const SQUAD_RANKING = squadFigures(
+  'members',
+  'code',
+  'merged',
+  'reviews',
+  'comments',
+  'medianTimeToFirstReviewHours',
+  'medianTimeToMergeHours',
+  'medianLeadTimeHours',
+  'unreviewedRate',
+  'hotfixShare',
+  'open',
+)
+const SQUAD_MEDALS = ['🥇', '🥈', '🥉']
+// The readers and repositories listed on a squad's dialog.
+const SQUAD_TOP = 5
+
+// The pull requests the members of a squad opened, worked out once per stats; all of them without a squad.
+function squadRecords(squad) {
+  if (!squad) {
+    return state.stats.pullRequests
+  }
+  if (state.squadRecordsCache?.stats !== state.stats) {
+    state.squadRecordsCache = { stats: state.stats, records: new Map() }
+  }
+  const { records } = state.squadRecordsCache
+  if (!records.has(squad.name)) {
+    const members = new Set(squad.members)
+    records.set(
+      squad.name,
+      state.stats.pullRequests.filter((pr) => members.has(pr.author)),
+    )
+  }
+
+  return records.get(squad.name)
+}
+
+// The stats of a squad, '*' for the whole organization, over a range, worked out once per stats, squad and range.
+function squadPeriod(name, records, range) {
+  if (state.squadPeriodsCache?.stats !== state.stats) {
+    state.squadPeriodsCache = { stats: state.stats, periods: new Map() }
+  }
+  const { periods } = state.squadPeriodsCache
+  const key = `${name}:${range.start}:${range.end}:${range.bucket}`
+  if (!periods.has(key)) {
+    periods.set(key, computePeriod(records, range))
+  }
+
+  return periods.get(key)
+}
+
+const repoTotal = (rows, field) => rows.reduce((total, row) => total + Object.values(row.repos).reduce((sum, stats) => sum + stats[field], 0), 0)
+const byRepoTotal = (rows, field) =>
+  rows
+    .map((row) => [row.login, Object.values(row.repos).reduce((sum, stats) => sum + stats[field], 0)])
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+
+// One squad over the period, or the whole organization ('*', without members): its figures (SQUAD_FIGURES), its members
+// by pull requests merged, who reads its code, and its repositories.
+function squadRow(name, members, range, organization) {
+  const records = members ? squadRecords({ name, members }) : state.stats.pullRequests
+  const period = name === '*' ? organization : squadPeriod(name, records, range)
+  const inside = members ? new Set(members) : null
+  const own = (rows) => (inside ? rows.filter((row) => inside.has(row.login)) : rows)
+  const readers = byRepoTotal(period.reviewers.filter((row) => isCurrent(row.login)), 'prs')
+  const read = readers.reduce((total, [, prs]) => total + prs, 0)
+  const readInside = inside ? readers.filter(([login]) => inside.has(login)).reduce((total, [, prs]) => total + prs, 0) : read
+  const repos = new Map()
+  for (const author of period.authors) {
+    for (const [repo, stats] of Object.entries(author.repos)) {
+      repos.set(repo, (repos.get(repo) ?? 0) + stats.code)
+    }
+  }
+  const writers = new Map(byRepoTotal(period.authors, 'merged'))
+
+  return {
+    name,
+    members: members ?? [],
+    size: members ? members.length : mePeople().length,
+    code: repoTotal(period.authors, 'code'),
+    merged: period.totals.merged,
+    reviews: repoTotal(own(organization.reviewers), 'prs'),
+    comments: repoTotal(own(organization.reviewers), 'comments'),
+    lines: period.totals.added + period.totals.deleted,
+    medianTimeToFirstReviewHours: median(period.authors.flatMap((row) => Object.values(row.repos).flatMap((stats) => stats.timesToFirstReviewHours))),
+    medianTimeToMergeHours: period.totals.medianTimeToMergeHours,
+    medianLeadTimeHours: period.delivery.medianLeadTimeHours,
+    unreviewedRate: period.totals.unreviewedShare,
+    insideReviewRate: read ? readInside / read : null,
+    commentsPerPr: period.totals.commentsPerPr,
+    hotfixShare: period.totals.hotfixShare,
+    reworkRate: period.delivery.reworkRate,
+    open: openPullRequests(records, { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author)).length,
+    writers: (members ?? []).map((login) => [login, writers.get(login) ?? 0]).sort((a, b) => b[1] - a[1]),
+    readers,
+    repos: [...repos].filter(([, code]) => code > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+  }
+}
+
+// Every squad over the period, in the order of SQUADS, and the whole organization.
+function squadRows() {
+  const range = periodRange()
+  const organization = squadPeriod('*', state.stats.pullRequests, range)
+
+  return {
+    squads: squadsOf().map((squad) => squadRow(squad.name, squad.members, range, organization)),
+    organization: squadRow('*', null, range, organization),
+  }
+}
+
+// A figure of the ranking: per member when asked, for the volumes.
+function rankingValue(row, figure) {
+  const value = row[figure.key === 'members' ? 'size' : figure.key]
+
+  return state.squadPerMember && figure.perMember && !isMissing(value) ? value / row.size : value
+}
+
+const rankingFormat = (figure) => (state.squadPerMember && figure.perMember ? formatDecimal : (figure.format ?? formatNumber))
+
+// The squads in the order of the ranking: best first on the figure picked, missing figures last; reversed on demand.
+function rankedSquads(rows) {
+  const figure = SQUAD_FIGURES[state.squadSort.key]
+  const direction = figure.better === 'down' ? 1 : -1
+  const ranked = rows.toSorted((a, b) => {
+    const [x, y] = [rankingValue(a, figure), rankingValue(b, figure)]
+    if (isMissing(x) || isMissing(y)) {
+      return isMissing(x) - isMissing(y)
+    }
+
+    return (x - y) * direction || a.name.localeCompare(b.name)
+  })
+
+  return state.squadSort.reversed ? ranked.toReversed() : ranked
+}
+
+// The avatars of the members still in the team, overlapping, as on a team photo.
+function squadAvatars(members, size = 28) {
+  const current = members.filter(isCurrent)
+
+  return el(
+    'span',
+    { className: 'squad-avatars', title: current.map(displayName).join(', ') },
+    ...current.map((login) => el('img', { src: avatarUrl(login, size * 2), alt: '', loading: 'lazy', width: size, height: size })),
+  )
+}
+
+const membersText = (count) => `${formatNumber(count)} membre${count > 1 ? 's' : ''}`
+
+function squadCard(row, index, rows) {
+  // The whole card opens the squad's dialog: the button of its head stretches over it.
+  const open = el(
+    'button',
+    { type: 'button', className: 'repo-card-head squad-card-head' },
+    el('strong', { className: 'repo-card-name', textContent: row.name, title: row.name }),
+    el('span', { className: 'squad-card-size', textContent: membersText(row.size) }),
+  )
+  open.setAttribute('aria-haspopup', 'dialog')
+  open.addEventListener('click', () => openSquadDialog(row, rows, open))
+  const card = el(
+    'article',
+    { className: `repo-card squad-card${row.name === state.squad ? ' is-selected' : ''}` },
+    open,
+    squadAvatars(row.members),
+    statList(SQUAD_CARD_STATS, row),
+  )
+  card.setAttribute('aria-label', row.name)
+  card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
+
+  return card
+}
+
+// The dialog of a squad, like those of a person or a repository: its figures, each set against the median of the
+// squads, then who it is, who reads its code and where it writes.
+function openSquadDialog(row, rows, opener) {
+  const peers = rows.filter((other) => other.code > 0)
+
+  showCardDialog(
+    [
+      el(
+        'header',
+        { className: 'person-dialog-head' },
+        el(
+          'div',
+          { className: 'person-dialog-identity' },
+          el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: row.name, title: row.name })),
+          el('p', { className: 'person-dialog-meta', textContent: membersText(row.size) }),
+          squadAvatars(row.members, 36),
+        ),
+      ),
+      el('p', {
+        className: 'person-dialog-scope',
+        textContent: `${periodTitle()} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(peers.length)} squads`,
+      }),
+      dialogSection('Ce que la squad écrit', statList(SQUAD_WRITTEN, row, peers)),
+      dialogSection('La revue', statList(SQUAD_REVIEWED, row, peers.filter((other) => other.reviews > 0))),
+      dialogSection('La mise en prod', statList(SQUAD_DELIVERED, row, peers)),
+      dialogSection(
+        'Qui, et où',
+        el(
+          'div',
+          { className: 'person-dialog-columns' },
+          topList('Ses membres, PR mergées', row.writers.filter(([login]) => isCurrent(login)), true),
+          topList('Son code est relu par', row.readers.slice(0, SQUAD_TOP), true),
+          topList('Ses dépôts', row.repos.slice(0, SQUAD_TOP), false),
+        ),
+      ),
+    ],
+    opener,
+  )
+}
+
+// The ranking: a row per squad, ranked on the column picked (a click on its head, a second one reverses it), the first
+// three with a medal and the best of each column marked; the whole organization under them, out of the ranking.
+function renderSquadRanking(rows, organization) {
+  const ranked = rankedSquads(rows)
+  const sorted = SQUAD_FIGURES[state.squadSort.key]
+  const best = new Map(
+    SQUAD_RANKING.filter((figure) => figure.better).map((figure) => {
+      const values = rows.map((row) => rankingValue(row, figure)).filter((value) => !isMissing(value))
+
+      return [figure.key, values.length > 1 ? (figure.better === 'down' ? Math.min(...values) : Math.max(...values)) : null]
+    }),
+  )
+  const head = el(
+    'tr',
+    {},
+    el('th', { scope: 'col', className: 'text squad-rank', textContent: '#' }),
+    el('th', { scope: 'col', className: 'text', textContent: 'Squad' }),
+    ...SQUAD_RANKING.map((figure) => {
+      const descending = (figure.better !== 'down') !== state.squadSort.reversed
+      const button = el(
+        'button',
+        { type: 'button', title: figure.hint },
+        document.createTextNode(figure.label),
+        el('span', { className: 'sort-icon', textContent: figure === sorted ? (descending ? '↓' : '↑') : '' }),
+      )
+      button.addEventListener('click', () => {
+        state.squadSort = { key: figure.key, reversed: state.squadSort.key === figure.key && !state.squadSort.reversed }
+        renderSquads()
+      })
+      const cell = el('th', { scope: 'col' }, button)
+      if (figure === sorted) {
+        cell.setAttribute('aria-sort', descending ? 'descending' : 'ascending')
+      }
+
+      return cell
+    }),
+  )
+  const cells = (row, ranked) =>
+    SQUAD_RANKING.map((figure) => {
+      const value = rankingValue(row, figure)
+      const format = figure.key === 'members' ? formatNumber : rankingFormat(figure)
+      const isBest = ranked && !isMissing(value) && best.get(figure.key) === value
+
+      return el('td', { className: isBest ? 'is-best' : '', textContent: format(value) })
+    })
+  const body = ranked.map((row, index) => {
+    const medal = !state.squadSort.reversed && !isMissing(rankingValue(row, sorted)) ? (SQUAD_MEDALS[index] ?? '') : ''
+    const pick = el('button', { type: 'button', className: 'squad-pick', textContent: row.name })
+    pick.setAttribute('aria-haspopup', 'dialog')
+    pick.addEventListener('click', () => openSquadDialog(row, rows, pick))
+
+    return el(
+      'tr',
+      { className: row.name === state.squad ? 'is-selected' : '' },
+      el('td', { className: 'text squad-rank', textContent: medal || formatNumber(index + 1) }),
+      el('th', { scope: 'row', className: 'text' }, pick),
+      ...cells(row, true),
+    )
+  })
+  const total = el(
+    'tr',
+    { className: 'squad-total' },
+    el('td', { className: 'text squad-rank' }),
+    el('th', { scope: 'row', className: 'text', textContent: 'Toute l’organisation' }),
+    ...cells(organization, false),
+  )
+  $('[data-squads-ranking]').replaceChildren(el('table', { className: 'squad-ranking' }, el('thead', {}, head), el('tbody', {}, ...body, total)))
+  for (const button of document.querySelectorAll('[data-squad-measure]')) {
+    button.setAttribute('aria-checked', String((button.dataset.squadMeasure === 'member') === state.squadPerMember))
+  }
+}
+
+function renderSquads() {
+  const any = squadsOf().length > 0
+  $('[data-squads-empty]').hidden = any
+  $('[data-squads-content]').hidden = !any
+  if (!any || $('[data-route="squads"]').hidden) {
+    return
+  }
+  const { squads, organization } = squadRows()
+  $('[data-squads]').replaceChildren(...squads.map((row, index) => squadCard(row, index, squads)))
+  $('[data-squads-ranking-sub]').textContent = `${capitalize(periodTitle())}, ${
+    state.squadPerMember ? 'les volumes divisés par le nombre de membres de chaque squad' : 'en totaux'
+  }. Un clic sur une colonne classe les squads sur elle, un second inverse le classement.`
+  renderSquadRanking(squads, organization)
 }
 
 // Sync status
@@ -6393,11 +6831,34 @@ function renderRoute() {
   $('[data-search]').hidden = ROUTES[route].search === false
   $('[data-compare-field]').hidden = !COMPARED_ROUTES.has(route)
   renderTitle()
-  // The charts of a hidden page cannot be measured: they are drawn when their page shows. So is the analysis, which
-  // takes a moment to work out.
+  // A squad scopes the pages with filters only: going to or from one without them draws everything again.
+  if (state.stats && squadKey() !== state.renderedSquad) {
+    render(false)
+  }
+  // The charts of a hidden page cannot be measured: they are drawn when their page shows. So are the analysis, which
+  // takes a moment to work out, and the squads.
   renderCharts()
   renderAnalysis()
+  if (state.stats) {
+    renderSquads()
+  }
   playEntrance()
+}
+
+// The squad picker of the filters, with the squads of the stats; hidden without any, as is the squads page's link. A
+// squad no longer in the stats is forgotten.
+function renderSquadFilter() {
+  const squads = squadsOf()
+  if (state.squad && !squads.some((squad) => squad.name === state.squad)) {
+    state.squad = ''
+    storeSquad()
+  }
+  const picker = $('[data-squad-filter]')
+  picker.replaceChildren(new Option('Toutes les squads', ''), ...squads.map((squad) => new Option(squad.name, squad.name)))
+  picker.value = state.squad
+  picker.hidden = squads.length === 0
+  picker.classList.toggle('is-active', Boolean(state.squad))
+  $('[data-route-link="squads"]').hidden = squads.length === 0
 }
 
 // Whatever changes the page (a link, the browser's back button, a notification clicked) closes the drawer over it.
@@ -6555,7 +7016,9 @@ function render(animate) {
   }
   $('[data-empty]').hidden = true
   $('[data-main]').classList.remove('is-loading')
+  state.renderedSquad = squadKey()
   renderPeriodSelector()
+  renderSquadFilter()
   const tileMode = animate ? 'update' : 'enter'
   renderToday(tileMode)
   renderTotals(tileMode)
@@ -6574,6 +7037,7 @@ function render(animate) {
   renderReport()
   renderAnalysis()
   renderRepositories()
+  renderSquads()
   renderFeed(animate)
   renderUnblock(tileMode)
   renderMe(tileMode)
@@ -6805,6 +7269,22 @@ for (const button of document.querySelectorAll('[data-period]')) {
     storePeriod()
     render(false)
     playEntrance()
+  })
+}
+
+$('[data-squad-filter]').addEventListener('change', (event) => {
+  state.squad = event.target.value
+  storeSquad()
+  if (state.stats) {
+    render(false)
+    playEntrance()
+  }
+})
+
+for (const button of document.querySelectorAll('[data-squad-measure]')) {
+  button.addEventListener('click', () => {
+    state.squadPerMember = button.dataset.squadMeasure === 'member'
+    renderSquads()
   })
 }
 

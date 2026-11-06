@@ -176,6 +176,27 @@ function requiredApprovals(value = '') {
 
 const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
 
+// The squads of the organization, as "name:login,login;name:login,…": from SQUADS, none without it. Their names and
+// members are private, so they come from the environment, and only travel inside the encrypted stats, for the squads
+// page and the squad filter. A person may belong to several squads; the order is kept, the page lists them so.
+function parseSquads(value = '') {
+  const squads = []
+  for (const entry of value.split(';').map((part) => part.trim()).filter(Boolean)) {
+    const separator = entry.indexOf(':')
+    const name = entry.slice(0, separator).trim()
+    const members = [...new Set(entry.slice(separator + 1).split(',').map((login) => login.trim()).filter(Boolean))]
+    if (separator === -1 || !name || !members.length || squads.some((squad) => squad.name === name)) {
+      // The entry holds names of the organization: the public CI logs do not show it.
+      throw new Error(`SQUADS: ${process.env.CI ? 'an entry' : `"${entry}"`} should be name:login,login, each name once`)
+    }
+    squads.push({ name, members })
+  }
+
+  return squads
+}
+
+const SQUADS = parseSquads(process.env.SQUADS)
+
 // The full sync asks for a password of its own (FULL_SYNC_PASSWORD), see site/full-sync.js: its key, and what the page
 // checks a password against, published inside syncTrigger. Null without it: no password asked, as before.
 async function fullSyncSettings(password, org, iterations = FULL_SYNC_ITERATIONS) {
@@ -1405,6 +1426,7 @@ async function sync({ full, fullSync = null, refused = false }) {
       // A full sync asked without a valid proof, synced incrementally instead: the page that asked tells so.
       ...(refused && { fullSyncRefused: true }),
       requiredApprovals: REQUIRED_APPROVALS,
+      ...(SQUADS.length && { squads: SQUADS }),
       people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
       repos: Object.fromEntries(
         repositories.map((repo) => [
@@ -1458,6 +1480,7 @@ export {
   fullSyncSettings,
   isBot,
   mergeMonthlyHistory,
+  parseSquads,
   publishedSyncTrigger,
   readPublishedHistory,
   repositoryCategory,

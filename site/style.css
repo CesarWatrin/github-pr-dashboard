@@ -496,6 +496,13 @@ h3 {
   color: var(--text-primary);
 }
 
+/* The method's button, a link to its page: tinted like the current page of the sidebar while it shows. */
+.icon-button[aria-current='page'] {
+  border-color: color-mix(in srgb, var(--series-1) 45%, var(--border));
+  background: color-mix(in srgb, var(--series-1) 12%, var(--surface));
+  color: var(--series-1);
+}
+
 /* Label of an icon button, shown at once on hover or keyboard focus, aligned on its right edge to stay on screen. */
 .icon-button[data-label] {
   position: relative;
@@ -1355,12 +1362,13 @@ h3 {
     padding: 0 4px;
   }
 
-  .segmented {
+  /* The periods only: the other segmented pickers, in the cards, keep their row. */
+  .filters .segmented {
     flex-direction: column;
     gap: 2px;
   }
 
-  .segmented button {
+  .filters .segmented button {
     padding: 7px 12px;
     font-weight: 500;
     text-align: left;
@@ -1368,7 +1376,7 @@ h3 {
 
   /* In a column like the pages of the sidebar, the period shown looks like the current page: a light tint. So do
      picked dates, which replace it. */
-  .segmented button[aria-checked='true'],
+  .filters .segmented button[aria-checked='true'],
   .date-range.is-active summary {
     border-color: var(--border);
     background: color-mix(in srgb, var(--series-1) 12%, transparent);
@@ -1392,10 +1400,18 @@ h3 {
   }
 }
 
-/* What the tiles compare to: as wide as its longest option at the top of the page. */
-.compare {
+/* What the tiles compare to: as wide as its longest option at the top of the page. So is the squad picker, tinted
+   while a squad scopes the pages, as the period picked is in the column of wide screens. */
+.compare,
+.squad-filter {
   flex: none;
   cursor: pointer;
+}
+
+.squad-filter.is-active {
+  border-color: color-mix(in srgb, var(--series-1) 45%, var(--border));
+  background: color-mix(in srgb, var(--series-1) 12%, var(--surface));
+  color: var(--text-primary);
 }
 
 /* The days compared to: beside the picker at the top of the page, under it in the column of wide screens. */
@@ -2737,6 +2753,83 @@ main.is-loading {
 
 .repo-card-head .stack-logos {
   margin-left: auto;
+}
+
+/* Squads: their cards, like those of the repositories, then their ranking. */
+.squads-content {
+  display: grid;
+  gap: 16px;
+}
+
+.squad-card-size {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* The squad picked in the filters stands out among the cards and in the ranking. */
+.squad-card.is-selected {
+  border-color: var(--series-1);
+}
+
+/* The members, overlapping like a team photo; each keeps a ring of the card's background around it. */
+.squad-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  padding-left: 6px;
+}
+
+.squad-avatars img {
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--gridline);
+}
+
+.squad-ranking .squad-rank {
+  width: 2.5em;
+  text-align: center;
+}
+
+/* The rank leads the rows, not a person: no column stays in place as the table scrolls sideways. */
+.squad-ranking th:first-child {
+  left: auto;
+}
+
+.squad-ranking tbody th {
+  font-weight: 500;
+}
+
+.squad-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.squad-pick:hover {
+  text-decoration: underline;
+}
+
+/* The best figure of each column, among the squads. */
+.squad-ranking td.is-best {
+  color: var(--diff-added);
+  font-weight: 650;
+}
+
+.squad-ranking tr.is-selected > * {
+  background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
+}
+
+/* The whole organization, out of the ranking: under a line, in the secondary ink. */
+.squad-ranking .squad-total > * {
+  border-top: 1px solid var(--baseline);
+  color: var(--text-secondary);
 }
 
 .repo-card-people {

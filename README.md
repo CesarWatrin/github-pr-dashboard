@@ -11,7 +11,10 @@ Le dashboard est découpé en pages, dans une barre latérale. Sous 1280 px, une
 la synchro, et son bouton menu ouvre la barre latérale par-dessus la page, sans défilement horizontal. La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
 une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1535 px, elles restent collées en haut de
-la fenêtre. Sur la vue d'ensemble, le cycle de vie, la TMA et
+la fenêtre. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
+les PR ouvertes par ses membres, et ce qui s'y passe (qui les relit, leurs délais, leurs mises en prod). La CI reste
+celle de toute l'organisation, une exécution ne se rattachant à aucune squad, et le compteur du jour, qui ne se
+découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Pour moi » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, la TMA et
 DevOps, un choix « Comparer à » met chaque chiffre de la période face à la période d'avant ou à la même période l'an
 dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
@@ -70,6 +73,15 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
+- **Squads** (quand `SQUADS` en déclare) : une carte par squad, comme celles des personnes et des dépôts, avec ses
+  membres et ses chiffres de la période : PR de code, mergées, relectures, attente de la première review, délai de
+  merge, PR en attente. Un clic ouvre sa fiche, qui s'incline vers la souris : ce qu'elle écrit, sa revue (dont la
+  part relue en interne), sa mise en prod, ses membres, qui relit son code et ses dépôts, chaque chiffre avec la
+  médiane des squads. Dessous, le classement des squads, trié sur la colonne choisie, médailles pour les trois
+  premières et meilleur chiffre de chaque colonne marqué, en totaux ou par personne pour comparer des squads de
+  tailles différentes, avec toute l'organisation en dernière ligne. Une squad compte les PR ouvertes par ses membres,
+  et ce que ses membres ont relu ou commenté dans toute l'organisation ; une personne de deux squads compte dans les
+  deux.
 - **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code
   et filtrables par dépôt : sa photo, son ancienneté (depuis sa première PR dans l'organisation, même avant les données
   synchronisées, ou sa première review ou son premier commentaire s'ils sont plus anciens), sa stack et ses technologies principales, ses PR de code, mergées et leur délai
@@ -264,6 +276,8 @@ Prérequis :
    - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
    - `BOT_USERS` (facultatif) : les comptes utilisateurs de l'org qui agissent en bots, séparés par des virgules ;
    - `REQUIRED_APPROVALS` (facultatif) : le nombre d'approbations qu'il faut pour merger une PR, 1 par défaut ;
+   - `SQUADS` (facultatif) : les squads, `nom:login,login;nom:login,…`, une personne pouvant être dans plusieurs ;
+     sans lui, ni page Squads ni filtre de squad ;
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro ;
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
@@ -272,6 +286,6 @@ Les tests (`npm test`, sur des données inventées) et la vérification de synta
 chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
-`REQUIRED_APPROVALS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
+`REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
 `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire l'historique des
 badges, par défaut l'adresse GitHub Pages du dépôt en CI).

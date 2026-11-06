@@ -135,6 +135,14 @@
             </svg>
             Équipe
           </a>
+          <!-- Shown once the stats carry squads. -->
+          <a class="nav-link" href="#/squads" data-route-link="squads" hidden>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="5" cy="5.5" r="2" /><circle cx="11" cy="5.5" r="2" />
+              <path d="M1.5 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M7.5 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3" />
+            </svg>
+            Squads
+          </a>
           <a class="nav-link" href="#/palmares" data-route-link="awards">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M5 2.5h6V6a3 3 0 0 1-6 0Z" /><path d="M5 3.5H3a2 2 0 0 0 2 3M11 3.5h2a2 2 0 0 1-2 3M8 9v2.5M5.5 13.5h5" />
@@ -157,10 +165,6 @@
           </a>
         </nav>
         <div class="sidebar-footer">
-          <a class="nav-link nav-link-secondary" href="#/methode" data-route-link="method">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7.5L13 5v8.5H3Z" /><path d="M5.5 7h5M5.5 9.5h5" /></svg>
-            Méthode
-          </a>
           <p class="sync" data-sync>
             <span class="sync-dot" aria-hidden="true"></span>
             <span data-sync-label>Chargement…</span>
@@ -202,6 +206,10 @@
                 <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
               </svg>
             </button>
+            <!-- A page like the others, as a button beside the actions: tinted while it shows. -->
+            <a class="icon-button" href="#/methode" aria-label="Méthode" data-label="Méthode" data-route-link="method">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7.5L13 5v8.5H3Z" /><path d="M5.5 7h5M5.5 9.5h5" /></svg>
+            </a>
           </div>
         </div>
       </aside>
@@ -250,6 +258,10 @@
             </select>
             <p class="compare-note" data-compare-note hidden></p>
           </div>
+          <!-- Filled from the squads of the stats; hidden without any. A squad scopes the pages to its pull requests. -->
+          <select class="search squad-filter" name="squad" aria-label="Squad" data-squad-filter hidden>
+            <option value="">Toutes les squads</option>
+          </select>
           <input
             class="search"
             type="search"
@@ -267,7 +279,7 @@
         <main class="is-loading" data-main>
           <!-- Vue d'ensemble -->
           <div class="route" data-route="overview">
-            <section class="card" aria-labelledby="today-title">
+            <section class="card" aria-labelledby="today-title" data-today-card>
               <h2 id="today-title" data-today-title>Aujourd’hui</h2>
               <div class="tiles" data-today></div>
             </section>
@@ -743,6 +755,38 @@
             </section>
           </div>
 
+          <!-- Squads -->
+          <div class="route" data-route="squads" hidden>
+            <section class="card" aria-labelledby="squads-empty-title" data-squads-empty hidden>
+              <h2 id="squads-empty-title">Aucune squad</h2>
+              <p class="card-sub">
+                Les squads se déclarent dans la variable <code>SQUADS</code> de la synchro, un secret de l’environnement
+                <code>github-pages</code> : <code>nom:login,login;nom:login,…</code>.
+              </p>
+            </section>
+            <div class="squads-content" data-squads-content>
+              <div class="repo-cards" data-squads></div>
+              <section class="card" aria-labelledby="squads-ranking-title">
+                <div class="card-toolbar">
+                  <h2 id="squads-ranking-title">Classement des squads</h2>
+                  <div class="segmented" role="radiogroup" aria-label="Chiffres du classement">
+                    <button type="button" role="radio" data-squad-measure="total">Total</button>
+                    <button type="button" role="radio" data-squad-measure="member">Par personne</button>
+                  </div>
+                </div>
+                <p class="card-sub" data-squads-ranking-sub></p>
+                <div class="table-wrap" data-squads-ranking></div>
+                <p class="card-note">
+                  Une squad compte les PR que ses membres ont ouvertes, et ce que ses membres ont relu ou commenté dans
+                  toute l’organisation. Une personne de deux squads compte dans les deux. Les médailles suivent la colonne
+                  qui classe ; dans chaque colonne, le meilleur chiffre est marqué. « Par personne » divise les volumes par
+                  le nombre de membres, pour comparer des squads de tailles différentes ; les délais et les parts ne
+                  changent pas. Le nom d’une squad, comme sa carte, ouvre sa fiche.
+                </p>
+              </section>
+            </div>
+          </div>
+
           <!-- Dépôts -->
           <div class="route" data-route="repositories" hidden>
             <div class="team-toolbar">
@@ -863,6 +907,18 @@
                   36 mois synchronisés ne couvrent pas n’est pas proposée, et choisir une période qu’elle ne couvre plus
                   (36 mois, par exemple) revient sans comparaison ; les exécutions de CI que GitHub a effacées n’ont pas
                   d’évolution (« – »).
+                </dd>
+                <dt>Squads</dt>
+                <dd>
+                  Une squad compte les PR que ses membres ont ouvertes, et ce que ses membres ont relu ou commenté dans
+                  toute l’organisation ; une personne de deux squads compte dans les deux. Choisie dans les filtres, elle
+                  restreint les pages à ses PR : leurs chiffres, qui les relit, leurs délais, leurs mises en prod ; les
+                  cartes de l’équipe n’y montrent que ses membres. La CI reste celle de toute l’organisation, une
+                  exécution ne se rattachant à personne ; le compteur du jour, compté pour toute l’organisation,
+                  disparaît. Le bilan du mois, le palmarès et « Pour moi » ne se filtrent jamais. Sur la page Squads,
+                  « Par personne » divise les volumes (PR, relectures, commentaires, PR en attente) par le nombre de
+                  membres ; les délais et les parts restent ceux de la squad. « Relu en interne » : part des relectures
+                  des PR de la squad faites par ses membres.
                 </dd>
                 <dt>PR de code</dt>
                 <dd>

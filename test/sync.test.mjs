@@ -23,6 +23,7 @@ delete process.env.GITHUB_REPOSITORY
 delete process.env.PUBLISHED_STATS_URL
 delete process.env.FULL_SYNC_PASSWORD
 delete process.env.FULL_SYNC_PROOF
+delete process.env.SQUADS
 after(() => rm(statsFolder, { recursive: true, force: true }))
 
 const {
@@ -35,6 +36,7 @@ const {
   fullSyncSettings,
   isBot,
   mergeMonthlyHistory,
+  parseSquads,
   publishedSyncTrigger,
   readPublishedHistory,
   repositoryCategory,
@@ -153,6 +155,26 @@ describe('requiredApprovals', () => {
   test('anything but a whole number of 1 or more is refused', () => {
     for (const value of ['0', '-1', '1.5', 'two']) {
       assert.throws(() => requiredApprovals(value), /REQUIRED_APPROVALS/)
+    }
+  })
+})
+
+describe('parseSquads', () => {
+  test('none by default', () => {
+    assert.deepEqual(parseSquads(), [])
+    assert.deepEqual(parseSquads(' ; '), [])
+  })
+
+  test('each team with its members, in order, a person allowed in several teams', () => {
+    assert.deepEqual(parseSquads('Blue team: ada, grace ;Red team:linus,grace,linus'), [
+      { name: 'Blue team', members: ['ada', 'grace'] },
+      { name: 'Red team', members: ['linus', 'grace'] },
+    ])
+  })
+
+  test('a team without a name or members, or named twice, is refused', () => {
+    for (const value of ['ada,grace', ':ada', 'Blue team:', 'Blue team:ada;Blue team:grace']) {
+      assert.throws(() => parseSquads(value), /SQUADS/)
     }
   })
 })

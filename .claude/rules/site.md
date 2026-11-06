@@ -14,10 +14,12 @@ paths:
   pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
   page of the hash (`ROUTES`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
-  team, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
+  team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
   method, report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
-  analysis and trends pages the period only (`search: false`).
+  analysis, trends and squads pages the period only (`search: false`). The Méthode page has no link among the pages: a
+  button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
+  screens, only the periods of the filters stack (`.filters .segmented`), the other segmented pickers keep their row.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
@@ -73,6 +75,22 @@ paths:
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
   `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
   by two, the forgotten pull requests beside those merged without approval.
+- **Squads** (`squads` of the stats, from `SQUADS`; nothing of them shows without any). The squad picker of the
+  filters (`[data-squad-filter]`, `renderSquadFilter()`, `state.squad` kept in `localStorage` by `SQUAD_STORAGE_KEY`,
+  tinted while active) scopes the pages with filters to the pull requests its members opened: `activeSquad()` is null
+  on the pages without filters, `scopedRecords()` feeds `currentPeriod()`, `comparedPeriod()`, `monthStats()` (so the
+  trends), `currentAnalysis()`, the unblock page and the unapproved merges, each cache keyed by `squadKey()` too;
+  `inSquad()` keeps the feed to the events of its pull requests and the team cards to its members. The CI stays that
+  of the organization (a note says so on DevOps), and the card of today hides (`[data-today-card]`): the sync counts it
+  for everyone. `render()` notes the squad it drew with (`state.renderedSquad`); `renderRoute()` draws everything again
+  when going to or from a page without filters changes it. The squads page (`renderSquads()`, drawn when it shows):
+  `squadRow()` for each squad and the whole organization over the period (`squadPeriod()`, cached per squad and range;
+  `squadRecords()` per squad): `SQUAD_FIGURES`, the volumes `perMember`, the reviews and comments its members gave
+  anywhere, « Relu en interne » the share of the reviews of its pull requests by its members. A card per squad
+  (`squadCard()`, the repository card's style) opens `openSquadDialog()`, the card dialog with its tilt, each figure
+  over the median of the squads. The ranking (`renderSquadRanking()`): sorted on the column clicked
+  (`state.squadSort`, best first by `better`, again to reverse), medals for the first three, the best of each column
+  marked, « Total / Par personne » (`state.squadPerMember`), the organization in a last row out of the ranking.
 - **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.

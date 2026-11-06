@@ -73,6 +73,8 @@ paths:
   `toPeriodRecord()` publishes the `reviewRequests` of an open pull request that is not a draft as
   `requestedReviewers`, bots aside. `graphql()` lets through the errors on a
   `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/period.js` documents the shape and is the only consumer.
+- `squads`: `parseSquads()` of `SQUADS` (`name:login,login;name:login,…`, refused when an entry has no name, no
+  member or a name already given, the entry shown only outside CI), published as `[{ name, members }]` when any.
 - `firstPullRequests`: for each person of the records (`peopleOf()`, bots aside), the first pull request they opened
   in the organization, whatever the window: a search `org:… is:pr author:<login> sort:created-asc` of one result, a
   point each, `CONCURRENCY` at once, only for the people not known yet (`peopleToLookUp()`). The snapshot keeps the
