@@ -21,6 +21,13 @@ paths:
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
   the synced data.
+- **Comparison**: `state.compare` (`COMPARISONS`, or `NO_COMPARISON`; remembered with the period by `storePeriod()`)
+  sets the period against `comparisonRange()` of `site/period.js`: the range of the same length right before, or the
+  same Paris days a year earlier, null when the synced data does not cover it (the option is then marked « hors
+  données »). `comparedPeriod()` and `comparedCi()` work out its stats once per range and data, the CI only when the
+  runs cover it whole. `renderTiles()` takes those values as its last argument and `renderTileChange()` shows each
+  change with `reportChange()`, colored after the `better` of the tile definition; `compare: false` keeps a tile about
+  today out of it. The picker only shows on `COMPARED_ROUTES`, the pages whose tiles are about the period.
 - **CI**: the runs only go back to `ciStart` of the stats. `ciRange()` cuts the range of the CI there (`currentCi()`,
   `ciPerRepository()`), so that no chart starts with empty buckets, and `ciCut()` tells the DevOps page that the CI of
   the period starts later; a month of the report that starts before has no CI.

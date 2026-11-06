@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, WORK_DAY_HOURS, workHoursBetween } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -28,6 +28,7 @@ const STAGGERED_ROWS = 16
 const THEME_TRANSITION_MS = 350
 const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const RANGE_STORAGE_KEY = 'github-pr-dashboard:range'
+const COMPARE_STORAGE_KEY = 'github-pr-dashboard:compare'
 const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
 const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
@@ -35,6 +36,12 @@ const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
 const UNLOCK_DURATION_MS = 30 * 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const CUSTOM_PERIOD = 'custom'
+// What the tiles of a period may be compared to (comparisonRange() of period.js): the option of each in the filters.
+const NO_COMPARISON = 'none'
+const COMPARISONS = { previous: 'Comparer à la période d’avant', year: 'Comparer à l’an dernier' }
+const COMPARED_PHRASES = { previous: 'sur la période précédente', year: 'sur la même période l’an dernier' }
+// The pages whose tiles are about the period: the comparison is only offered there.
+const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
 // Picked dates are shown by day up to a month, then by week up to four months, then by month.
 const DAY_BUCKET_MAX_DAYS = 31
 const WEEK_BUCKET_MAX_DAYS = 120
@@ -198,9 +205,9 @@ const TODAY_TILES = [
 const DELIVERY_TILES = [
   { key: 'opened', label: 'PR ouvertes', route: 'authors' },
   { key: 'merged', label: 'PR de code mergées', route: 'authors' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, route: 'authors' },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, route: 'authors', better: 'down' },
   { key: 'releases', label: 'Mises en production' },
-  { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare, route: 'tma' },
+  { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare, route: 'tma', better: 'down' },
 ]
 
 const LINES_TILES = [
@@ -213,32 +220,33 @@ const REVIEW_TILES = [
   { key: 'reviewed', label: 'PR relues', route: 'reviewers' },
   { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal, route: 'reviewers' },
   { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare, route: 'reviewers' },
-  { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare, route: 'authors' },
+  { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare, route: 'authors', better: 'down' },
 ]
 
 const DORA_TILES = [
   { key: 'deployments', label: 'Déploiements' },
   { key: 'deploymentsPerWeek', label: 'Par semaine', format: formatDecimal },
-  { key: 'medianLeadTimeHours', label: 'Délai médian jusqu’en prod', format: formatDuration },
-  { key: 'reworkRate', label: 'Taux de reprise', format: formatShare },
-  { key: 'medianRestoreHours', label: 'Rétablissement médian', format: formatDuration },
+  { key: 'medianLeadTimeHours', label: 'Délai médian jusqu’en prod', format: formatDuration, better: 'down' },
+  { key: 'reworkRate', label: 'Taux de reprise', format: formatShare, better: 'down' },
+  { key: 'medianRestoreHours', label: 'Rétablissement médian', format: formatDuration, better: 'down' },
 ]
 
 const CI_TILES = [
   { key: 'runs', label: 'Exécutions' },
-  { key: 'medianSeconds', label: 'Durée médiane', format: formatSeconds },
-  { key: 'p90Seconds', label: '9 sur 10 en moins de', format: formatSeconds },
-  { key: 'failureRate', label: 'En échec', format: formatShare },
-  { key: 'rerunRate', label: 'Relancées', format: formatShare },
-  { key: 'checksFailedShare', label: 'PR mergées avec un check rouge', format: formatShare },
+  { key: 'medianSeconds', label: 'Durée médiane', format: formatSeconds, better: 'down' },
+  { key: 'p90Seconds', label: '9 sur 10 en moins de', format: formatSeconds, better: 'down' },
+  { key: 'failureRate', label: 'En échec', format: formatShare, better: 'down' },
+  { key: 'rerunRate', label: 'Relancées', format: formatShare, better: 'down' },
+  { key: 'checksFailedShare', label: 'PR mergées avec un check rouge', format: formatShare, better: 'down' },
 ]
 
 const DEPENDENCY_TILES = [
   { key: 'opened', label: 'PR ouvertes' },
   { key: 'merged', label: 'Mergées' },
   { key: 'closed', label: 'Fermées sans merge' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
-  { key: 'waiting', label: 'En attente aujourd’hui' },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, better: 'down' },
+  // A count of today, not of the period: nothing to compare.
+  { key: 'waiting', label: 'En attente aujourd’hui', compare: false },
 ]
 
 // The stages of a code pull request, in order, as cut by the period stats: the neutral color for the one that no
@@ -266,10 +274,10 @@ const CYCLE_STAGES = [
 ]
 const CYCLE_KEYS = [...CYCLE_STAGES.map((stage) => stage.key), 'toMerge', 'toProduction']
 
-const CYCLE_STAGE_TILES = CYCLE_STAGES.map(({ key, label }) => ({ key, label, format: formatDuration }))
+const CYCLE_STAGE_TILES = CYCLE_STAGES.map(({ key, label }) => ({ key, label, format: formatDuration, better: 'down' }))
 const CYCLE_END_TO_END_TILES = [
-  { key: 'toMerge', label: 'De l’ouverture au merge', format: formatDuration },
-  { key: 'toProduction', label: 'De l’ouverture à la prod', format: formatDuration },
+  { key: 'toMerge', label: 'De l’ouverture au merge', format: formatDuration, better: 'down' },
+  { key: 'toProduction', label: 'De l’ouverture à la prod', format: formatDuration, better: 'down' },
   { key: 'prs', label: 'PR de code ouvertes' },
 ]
 
@@ -359,8 +367,8 @@ const UNBLOCK_TILES = [
 const TMA_TILES = [
   { key: 'opened', label: 'Hotfix ouverts' },
   { key: 'merged', label: 'Hotfix mergés' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration },
-  { key: 'medianTimeToFirstReviewHours', label: 'Attente médiane 1re review', format: formatDuration },
+  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, better: 'down' },
+  { key: 'medianTimeToFirstReviewHours', label: 'Attente médiane 1re review', format: formatDuration, better: 'down' },
   { key: 'contributors', label: 'Contributeurs TMA' },
 ]
 
@@ -1036,6 +1044,11 @@ const state = {
   period: readStoredPeriod(),
   // Picked days, inclusive, used when the period is custom.
   range: readStoredRange(),
+  // What the tiles of the period are compared to: a key of COMPARISONS, or NO_COMPARISON.
+  compare: readStoredCompare(),
+  // The stats of the range compared to, computed once per range and data, like those of the period.
+  comparisonCache: null,
+  comparisonCiCache: null,
   // The stats of the period shown, computed once per period and data.
   periodCache: null,
   ciCache: null,
@@ -1102,9 +1115,20 @@ function readStoredRange() {
   }
 }
 
+function readStoredCompare() {
+  try {
+    const compare = localStorage.getItem(COMPARE_STORAGE_KEY)
+
+    return Object.hasOwn(COMPARISONS, compare ?? '') ? compare : NO_COMPARISON
+  } catch {
+    return NO_COMPARISON
+  }
+}
+
 function storePeriod() {
   try {
     localStorage.setItem(PERIOD_STORAGE_KEY, state.period)
+    localStorage.setItem(COMPARE_STORAGE_KEY, state.compare)
     if (state.range) {
       localStorage.setItem(RANGE_STORAGE_KEY, JSON.stringify(state.range))
     }
@@ -1209,6 +1233,41 @@ function ciCut() {
   return periodRange().start < start ? `depuis le ${dateFormat.format(start)}` : null
 }
 
+// The range the period is compared to: null without a comparison, or when the synced data does not cover it.
+function comparedRange(mode = state.compare) {
+  return comparisonRange(periodRange(), mode, Date.parse(state.stats.windowStart))
+}
+
+// The stats of the range compared to, worked out once per range and data; null without one.
+function comparedPeriod() {
+  const range = comparedRange()
+  if (!range) {
+    return null
+  }
+  const key = `${range.start}:${range.end}:${range.bucket}`
+  if (state.comparisonCache?.stats !== state.stats || state.comparisonCache.key !== key) {
+    state.comparisonCache = { stats: state.stats, key, period: computePeriod(state.stats.pullRequests, range) }
+  }
+
+  return state.comparisonCache.period
+}
+
+// The CI of the range compared to: null when the runs the sync keeps do not cover it whole.
+function comparedCi() {
+  const range = comparedRange()
+  if (!range || range.start < ciStart()) {
+    return null
+  }
+  const key = `${range.start}:${range.end}:${range.bucket}`
+  if (state.comparisonCiCache?.stats !== state.stats || state.comparisonCiCache.key !== key) {
+    state.comparisonCiCache = { stats: state.stats, key, ci: computeCi(state.stats.ci ?? [], range) }
+  }
+
+  return state.comparisonCiCache.ci
+}
+
+const perWeek = (count, { start, end }) => Math.round((10 * count) / ((end - start) / DAY_MS / 7)) / 10
+
 function periodTitle() {
   if (state.period !== CUSTOM_PERIOD) {
     return PERIODS[state.period].title
@@ -1286,10 +1345,12 @@ function ensureTiles(container, definitions) {
 }
 
 // "update" marks the values that grew since the last sync; "enter" rolls every value from where it was, or from zero.
-function renderTiles(container, definitions, values, mode) {
+// compared holds the values of the range compared to, for the tiles of a period: each tile then shows its change.
+function renderTiles(container, definitions, values, mode, compared = null) {
   const tiles = ensureTiles(container, definitions)
   for (const definition of definitions) {
     const tile = tiles.get(definition.key)
+    renderTileChange(tile, definition, values[definition.key], compared)
     const valueNode = tile.querySelector('.tile-value')
     const value = values[definition.key]
     const previous = valueNode.dataset.value === undefined ? null : JSON.parse(valueNode.dataset.value)
@@ -1307,6 +1368,34 @@ function renderTiles(container, definitions, values, mode) {
       valueNode.textContent = format(value)
     }
   }
+}
+
+// The change of a tile against the range compared to, as on the monthly report: by how much, by how many points for
+// a share, colored when the figure has a better way (better on its definition). « – » when it cannot be worked out, such
+// as for the CI of a range GitHub had forgotten the runs of; nothing without a comparison, or for a tile about today
+// (compare: false).
+function renderTileChange(tile, definition, value, compared) {
+  let node = tile.querySelector('.tile-change')
+  if (!compared || definition.compare === false) {
+    if (node) {
+      node.hidden = true
+    }
+
+    return
+  }
+  if (!node) {
+    node = el('span', { className: 'tile-change' })
+    tile.append(node)
+  }
+  const previous = compared[definition.key]
+  const kind = definition.format === formatShare ? 'share' : 'count'
+  const change = reportChange({ kind, better: definition.better }, value, previous)
+  node.hidden = false
+  node.className = change ? `tile-change report-change is-${change.tone}` : 'tile-change is-missing'
+  node.textContent = change ? change.text : '–'
+  node.title = isMissing(previous)
+    ? `Pas de chiffre ${COMPARED_PHRASES[state.compare]}`
+    : `Contre ${(definition.format ?? formatNumber)(previous)} ${COMPARED_PHRASES[state.compare]}`
 }
 
 function animateCounter(node, from, to, format, integer) {
@@ -1350,33 +1439,42 @@ function renderToday(mode) {
 
 function renderDevopsTiles(mode) {
   const { delivery, dependencies, totals } = currentPeriod()
-  const { start, end } = periodRange()
+  const compared = comparedPeriod()
   $('[data-devops-title]').textContent = capitalize(periodTitle())
   renderTiles(
     $('[data-dora-tiles]'),
     DORA_TILES,
-    { ...delivery, deploymentsPerWeek: Math.round((10 * delivery.deployments) / ((end - start) / DAY_MS / 7)) / 10 },
+    { ...delivery, deploymentsPerWeek: perWeek(delivery.deployments, periodRange()) },
     mode,
+    compared && { ...compared.delivery, deploymentsPerWeek: perWeek(compared.delivery.deployments, comparedRange()) },
   )
-  renderTiles($('[data-ci-tiles]'), CI_TILES, { ...currentCi().totals, checksFailedShare: totals.checksFailedShare }, mode)
+  renderTiles(
+    $('[data-ci-tiles]'),
+    CI_TILES,
+    { ...currentCi().totals, checksFailedShare: totals.checksFailedShare },
+    mode,
+    compared && { ...comparedCi()?.totals, checksFailedShare: compared.totals.checksFailedShare },
+  )
   const cut = ciCut()
   $('[data-ci-cut]').hidden = cut === null
   $('[data-ci-cut]').textContent = cut ? `Exécutions de CI ${cut} seulement : GitHub efface les plus anciennes, la synchro garde les autres.` : ''
-  renderTiles($('[data-dependency-tiles]'), DEPENDENCY_TILES, dependencies, mode)
+  renderTiles($('[data-dependency-tiles]'), DEPENDENCY_TILES, dependencies, mode, compared?.dependencies)
 }
 
 function renderTmaTiles(mode) {
   const { tma } = currentPeriod()
+  const compared = comparedPeriod()?.tma
   $('[data-tma-title]').textContent = capitalize(periodTitle())
-  renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, mode)
+  renderTiles($('[data-tma-tiles]'), TMA_TILES, { ...tma, contributors: tma.people.length }, mode, compared && { ...compared, contributors: compared.people.length })
 }
 
 function renderTotals(mode) {
   const { totals } = currentPeriod()
+  const compared = comparedPeriod()?.totals
   $('[data-totals-title]').textContent = capitalize(periodTitle())
-  renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, mode)
-  renderTiles($('[data-totals-lines]'), LINES_TILES, totals, mode)
-  renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, mode)
+  renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, mode, compared)
+  renderTiles($('[data-totals-lines]'), LINES_TILES, totals, mode, compared)
+  renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, mode, compared)
 }
 
 // Tooltip
@@ -2125,9 +2223,12 @@ function cycleRows() {
 
 function renderCycleTiles(mode) {
   const summary = cycleSummary(selectedCycles())
+  // The range compared to, over the same repositories.
+  const comparedCycles = comparedPeriod()?.cycles.filter((cycle) => inSelection(state.repos.cycle, cycle.repo))
+  const compared = comparedCycles ? cycleSummary(comparedCycles) : null
   $('[data-cycle-title]').textContent = capitalize(periodTitle())
-  renderTiles($('[data-cycle-stage-tiles]'), CYCLE_STAGE_TILES, summary, mode)
-  renderTiles($('[data-cycle-end-tiles]'), CYCLE_END_TO_END_TILES, summary, mode)
+  renderTiles($('[data-cycle-stage-tiles]'), CYCLE_STAGE_TILES, summary, mode, compared)
+  renderTiles($('[data-cycle-end-tiles]'), CYCLE_END_TO_END_TILES, summary, mode, compared)
 }
 
 function renderCycleCharts() {
@@ -5257,6 +5358,7 @@ function renderRoute() {
   $('[data-periods]').hidden = ROUTES[route].period === false
   $('[data-date-range]').hidden = ROUTES[route].period === false
   $('[data-search]').hidden = ROUTES[route].search === false
+  $('[data-compare]').hidden = !COMPARED_ROUTES.has(route)
   document.title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
   // The charts of a hidden page cannot be measured: they are drawn when their page shows. So is the analysis, which
   // takes a moment to work out.
@@ -5299,7 +5401,27 @@ function toggleTheme() {
 
 // Main
 
+// The comparison picked stays picked when the synced data does not cover it for the period shown: it is marked so,
+// and the tiles show no change until another period brings it back.
+function renderComparePicker() {
+  const picker = $('[data-compare]')
+  if (picker.options.length === 1) {
+    picker.append(...Object.entries(COMPARISONS).map(([mode, label]) => new Option(label, mode)))
+  }
+  for (const option of picker.options) {
+    if (option.value === NO_COMPARISON || !state.stats) {
+      continue
+    }
+    const covered = comparedRange(option.value) !== null
+    option.disabled = !covered
+    option.textContent = covered ? COMPARISONS[option.value] : `${COMPARISONS[option.value]} (hors données)`
+    option.title = covered ? '' : 'Les données synchronisées ne remontent pas jusque-là pour cette période.'
+  }
+  picker.value = state.compare
+}
+
 function renderPeriodSelector() {
+  renderComparePicker()
   for (const button of document.querySelectorAll('[data-period]')) {
     button.setAttribute('aria-checked', String(button.dataset.period === state.period))
   }
@@ -5613,6 +5735,19 @@ datePicker.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && datePicker.open) {
     datePicker.open = false
     datePicker.querySelector('summary').focus()
+  }
+})
+
+// A comparison only changes the tiles of the period.
+$('[data-compare]').addEventListener('change', (event) => {
+  state.compare = event.target.value
+  storePeriod()
+  if (state.stats) {
+    renderComparePicker()
+    renderTotals('enter')
+    renderCycleTiles('enter')
+    renderTmaTiles('enter')
+    renderDevopsTiles('enter')
   }
 })
 

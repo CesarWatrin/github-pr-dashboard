@@ -873,3 +873,35 @@ export function computeCi(workflows, { start, end, bucket }) {
     workflows: rows,
   }
 }
+
+// What a period can be compared to: the range of the same length right before it ('previous'), or the same Paris days
+// and hours one year earlier ('year'). A range of whole Paris days moves by whole days, whatever the changes of time
+// in between. Null for another mode, or when the data does not cover it: the window counts years of 365 days, so the
+// same days three calendar years earlier may start one day before the data, and the range then starts with the data.
+export function comparisonRange({ start, end, bucket }, mode, dataStart) {
+  let range
+  if (mode === 'previous') {
+    const firstDay = parisDay(start)
+    const wholeDays = parisMidnight(firstDay) === start && parisMidnight(parisDay(end)) === end
+    const earlierStart = wholeDays ? parisMidnight(addDays(firstDay, -Math.round((end - start) / DAY_MS))) : start - (end - start)
+    range = { start: earlierStart, end: start, bucket }
+  } else if (mode === 'year') {
+    range = { start: yearEarlier(start), end: yearEarlier(end), bucket }
+  } else {
+    return null
+  }
+  if (range.start < dataStart - DAY_MS) {
+    return null
+  }
+
+  return { ...range, start: Math.max(range.start, dataStart) }
+}
+
+// The same time of the same Paris day, one year earlier: 29 February falls on the 28th.
+function yearEarlier(time) {
+  const day = parisDay(time)
+  const [year, month, date] = day.split('-')
+  const earlier = `${Number(year) - 1}-${month}-${month === '02' && date === '29' ? '28' : date}`
+
+  return parisMidnight(earlier) + (time - parisMidnight(day))
+}

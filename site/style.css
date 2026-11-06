@@ -950,6 +950,12 @@ h3 {
   }
 }
 
+/* What the tiles compare to: as wide as its longest option at the top of the page. */
+.compare {
+  flex: none;
+  cursor: pointer;
+}
+
 button:focus-visible,
 input:focus-visible,
 a:focus-visible,
@@ -1093,6 +1099,17 @@ main.is-loading {
 .tile-bump.is-visible {
   opacity: 1;
   transform: none;
+}
+
+/* The change against the range compared to, under the value: a pill like those of the monthly report. */
+.tile-change {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.tile-change.is-missing {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 /* Charts */
