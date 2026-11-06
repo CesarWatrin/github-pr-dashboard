@@ -698,7 +698,8 @@ h3 {
   padding-right: 40px;
 }
 
-.pr-dialog-title {
+/* Above the title, the repository and number of the pull request, then its tags: its state, its kind. */
+.pr-dialog-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -706,14 +707,55 @@ h3 {
   min-width: 0;
 }
 
-.pr-dialog-title h2 {
-  margin: 0;
-  font-size: 19px;
+.pr-dialog-ref {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.pr-dialog-title .feed-tag {
+.pr-dialog-tags .feed-tag {
   margin-left: 0;
+}
+
+.pr-dialog-title {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* The state of the checks of the last commit: a dot of its colour, and what it says. */
+.pr-checks {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.pr-checks-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.pr-checks.is-success .pr-checks-dot {
+  background: var(--status-good);
+}
+
+.pr-checks.is-failure .pr-checks-dot {
+  background: var(--diff-deleted);
+}
+
+.pr-checks.is-pending .pr-checks-dot {
+  border: 2px solid var(--series-1);
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.pr-checks.is-none {
+  color: var(--text-secondary);
 }
 
 .pr-status.is-merged {

@@ -874,7 +874,11 @@
                 <dt>Frise d’une PR</dt>
                 <dd>
                   Un clic sur une PR, dans n’importe quelle liste, ouvre sa frise ; Ctrl ou ⌘ + clic l’ouvre sur GitHub.
-                  Ses étapes : l’ouverture, la première review ou le premier commentaire d’une autre personne, chaque
+                  En tête, son titre et l’état de la CI de son dernier commit : réussie, en échec, en erreur, en cours,
+                  attendue, ou sans CI. Seules les PR que les listes montrent ont un titre et l’état de leur CI dans les
+                  données : celles qui sont ouvertes ou ont bougé dans les 30 derniers jours, pour garder les données
+                  légères. La synchro relit à chaque passage la CI des PR ouvertes, une CI qui se termine ne modifiant
+                  pas la PR. Ses étapes : l’ouverture, la première review ou le premier commentaire d’une autre personne, chaque
                   demande de changements et chaque approbation avant le merge, le merge, puis l’arrivée en prod d’une
                   PR de code. Avant chaque étape, l’attente en heures ouvrées, à la minute près : la page Cycle de vie
                   arrondit ses médianes au dixième d’heure. Une PR ouverte, en brouillon ou pas encore en prod dit

@@ -58,6 +58,11 @@ const SEARCH_RESULT_LIMIT = 1000
 const CONCURRENCY = 4
 const EVENTS_LIMIT = 50
 const EVENTS_MAX_AGE_DAYS = 7
+// The pull requests the page opens the timeline of carry their title and the state of their checks: the open ones, and
+// those with any activity over the last DETAILS_DAYS, which covers the 7-day feed and the merges without approval of
+// the last 30 days (UNAPPROVED_DAYS of the page). The title of every pull request of the window would make the stats
+// about half as heavy again, for timelines the page never opens.
+const DETAILS_DAYS = 30
 const RELEASE_BASES = ['master', 'main']
 // Branches that production releases are cut from: a pull request merged into one ships with the next release.
 const INTEGRATION_BASES = ['develop', 'staging']
@@ -222,6 +227,7 @@ const BOT_USERS = new Set([
 const ACTOR_FIELDS = '__typename login ... on User { name }'
 const REVIEW_FIELDS = `author { ${ACTOR_FIELDS} } state submittedAt comments { totalCount }`
 const COMMENT_FIELDS = `author { ${ACTOR_FIELDS} } createdAt`
+const CHECKS_FIELDS = 'commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }'
 
 const PULL_REQUEST_FIELDS = `
   number title state isDraft createdAt mergedAt closedAt additions deletions headRefName baseRefName
@@ -230,7 +236,7 @@ const PULL_REQUEST_FIELDS = `
   mergedBy { ${ACTOR_FIELDS} }
   reviews(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${REVIEW_FIELDS} } }
   comments(first: 50) { pageInfo { hasNextPage endCursor } nodes { ${COMMENT_FIELDS} } }
-  commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+  ${CHECKS_FIELDS}
   reviewDecision
   reviewRequests(first: 10) { nodes { asCodeOwner requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
 `
@@ -277,6 +283,15 @@ const SEARCH_PULL_REQUESTS_QUERY = `
       issueCount
       pageInfo { hasNextPage endCursor }
       nodes { ... on PullRequest { ${PULL_REQUEST_FIELDS} } }
+    }
+  }`
+
+// The state of the checks of open pull requests, read again at each sync (fetchOpenChecks()).
+const OPEN_CHECKS_QUERY = `
+  query($query: String!, $cursor: String) {
+    search(query: $query, type: ISSUE, first: 100, after: $cursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes { ... on PullRequest { number repository { name } ${CHECKS_FIELDS} } }
     }
   }`
 
@@ -464,6 +479,8 @@ async function fetchAllItems(node, connection, toItem) {
   return items
 }
 
+const checksOf = (node) => node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null
+
 async function toRecord(node) {
   return {
     repo: node.repository.name,
@@ -483,7 +500,7 @@ async function toRecord(node) {
     reviews: await fetchAllItems(node, 'reviews', toReview),
     comments: await fetchAllItems(node, 'comments', toComment),
     // State of the checks of the last commit: SUCCESS, FAILURE, ERROR, PENDING or EXPECTED, null without checks.
-    checks: node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
+    checks: checksOf(node),
     // GitHub's verdict on the reviews the base branch requires (APPROVED, CHANGES_REQUESTED, REVIEW_REQUIRED, null
     // without such rules), the code owners still asked to review, and the people still asked to review, code owners
     // or not.
@@ -637,6 +654,49 @@ async function fetchUpdatedSince(sinceIso) {
     }
     cursor = pageInfo.endCursor
   }
+}
+
+// The state of the checks of the open pull requests, by repo#number. A check that ends does not move the updatedAt of
+// its pull request: the incremental sync, which reads the pull requests updated since the last one, would keep it
+// PENDING. One search of a few pages of 100, about a point each; past SEARCH_RESULT_LIMIT open pull requests, the most
+// recently updated only, the others keeping the state last read.
+async function fetchOpenChecks() {
+  const query = `org:${ORG} is:pr is:open sort:updated-desc`
+  const checks = new Map()
+  let cursor = null
+  for (;;) {
+    const data = await graphql(OPEN_CHECKS_QUERY, { query, cursor })
+    for (const node of data.search.nodes) {
+      // The search may answer what is not a pull request, as an empty node.
+      if (node?.repository) {
+        checks.set(keyOf({ repo: node.repository.name, number: node.number }), checksOf(node))
+      }
+    }
+    const { hasNextPage, endCursor } = data.search.pageInfo
+    if (!hasNextPage) {
+      return checks
+    }
+    cursor = endCursor
+  }
+}
+
+// The checks of the open pull requests, or none when GitHub does not answer: they then keep the state last read, and
+// the rest of the sync goes on.
+async function readOpenChecks() {
+  try {
+    return await fetchOpenChecks()
+  } catch (error) {
+    console.warn(`Checks of the open pull requests not read again${process.env.CI ? '' : `: ${error.message}`}`)
+
+    return new Map()
+  }
+}
+
+// The pull requests, those still open with the state of their checks just read when the search had them.
+function withOpenChecks(pullRequests, checks) {
+  return pullRequests.map((pr) =>
+    pr.state === 'OPEN' && checks.has(keyOf(pr)) ? { ...pr, checks: checks.get(keyOf(pr)) } : pr,
+  )
 }
 
 // The pull requests created between two days (UTC, included), for the backfill. The search answers at most 1000
@@ -1078,9 +1138,27 @@ function deployedAt(pr, index) {
   return index.deployments.get(pr.repo)?.find((time) => time >= at) ?? null
 }
 
-// What the page needs of a pull request to compute the stats of any range, see site/period.js. Bot pull requests
-// are only kept when they deploy or update a dependency (Dependabot).
-function toPeriodRecord(pr, index) {
+// Whether a pull request is one the page opens the timeline of (DETAILS_DAYS): open, or with an opening, a merge, a
+// closing, a review or a comment since detailsSince (ISO, null for the open ones only).
+function hasDetails(pr, detailsSince) {
+  if (pr.state === 'OPEN') {
+    return true
+  }
+  const times = [
+    pr.createdAt,
+    pr.mergedAt,
+    pr.closedAt,
+    ...pr.reviews.map((review) => review.submittedAt),
+    ...pr.comments.map((comment) => comment.createdAt),
+  ]
+
+  return detailsSince !== null && times.some((at) => at && at >= detailsSince)
+}
+
+// What the page needs of a pull request to compute the stats of any range, see site/period.js, and to show its
+// timeline (detailsSince, see hasDetails()). Bot pull requests are only kept when they deploy or update a dependency
+// (Dependabot).
+function toPeriodRecord(pr, index, detailsSince = null) {
   const kind = classify(pr)
   const production = kind === 'release' && RELEASE_BASES.includes(pr.base)
   const bot = isBot(pr.author)
@@ -1121,6 +1199,9 @@ function toPeriodRecord(pr, index) {
     // An open pull request GitHub does not let merge yet, while code owners are still asked to review it.
     ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && pr.codeOwnerRequests?.length > 0 && { codeOwners: pr.codeOwnerRequests }),
     ...(requestedReviewers.length > 0 && { requestedReviewers }),
+    // Only for the timelines the page opens: the title, and the state of the checks of the last commit (null without
+    // any), read again at each sync for an open pull request.
+    ...(hasDetails(pr, detailsSince) && { title: pr.title, checks: pr.checks ?? null }),
   }
 }
 
@@ -1244,7 +1325,10 @@ async function sync({ full, fullSync = null, refused = false }) {
   // The data starts with the window once the backfill has reached it, until then with what the snapshot covers: an
   // older pull request updated since, read on its own, waits for its slice.
   const dataStartIso = backfilled.since > windowStartIso ? backfilled.since : windowStartIso
-  const inWindow = [...pullRequests.values()].filter((pr) => pr.createdAt >= dataStartIso)
+  const inWindow = withOpenChecks(
+    [...pullRequests.values()].filter((pr) => pr.createdAt >= dataStartIso),
+    await readOpenChecks(),
+  )
 
   // Actions runs: the last year the first time, then those created since shortly before the last sync. A full sync
   // keeps them too: a finished run does not change. GitHub forgets them after about 13 months: the snapshot keeps them
@@ -1277,7 +1361,7 @@ async function sync({ full, fullSync = null, refused = false }) {
   }
 
   const index = deliveryIndex(inWindow)
-  const records = inWindow.map((pr) => toPeriodRecord(pr, index)).filter(Boolean)
+  const records = inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS))).filter(Boolean)
   // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none. Without
   // any, the history starts from the data, counted the current way.
   const kept = previous?.monthly
@@ -1370,6 +1454,7 @@ export {
   classify,
   computeCi,
   deliveryIndex,
+  fetchOpenChecks,
   fullSyncSettings,
   isBot,
   mergeMonthlyHistory,
@@ -1385,6 +1470,7 @@ export {
   technologyShares,
   toPeriodRecord,
   wholeMonthsWithin,
+  withOpenChecks,
 }
 
 // Runs when executed, not when imported by the tests.

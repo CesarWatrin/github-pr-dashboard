@@ -5480,6 +5480,33 @@ function interventionSummary(person) {
   return parts.join(' · ') || 'review'
 }
 
+// The state of the checks of the last commit, as the sync publishes it for the pull requests the page opens the
+// timeline of (checks, null without any); a record without it, older, only tells a failure (checksFailed).
+const CHECK_STATES = {
+  SUCCESS: { key: 'success', label: 'CI réussie' },
+  FAILURE: { key: 'failure', label: 'CI en échec' },
+  ERROR: { key: 'failure', label: 'CI en erreur' },
+  PENDING: { key: 'pending', label: 'CI en cours' },
+  EXPECTED: { key: 'pending', label: 'CI attendue' },
+}
+const NO_CHECKS = { key: 'none', label: 'Sans CI' }
+
+function checksTag(pr) {
+  const check = 'checks' in pr ? (CHECK_STATES[pr.checks] ?? NO_CHECKS) : pr.checksFailed ? CHECK_STATES.FAILURE : null
+  if (!check) {
+    return []
+  }
+
+  return [
+    el(
+      'span',
+      { className: `pr-checks is-${check.key}`, title: 'Checks du dernier commit, à la dernière synchro' },
+      el('span', { className: 'pr-checks-dot' }),
+      document.createTextNode(check.label),
+    ),
+  ]
+}
+
 const PULL_REQUEST_STATUS = { merged: 'Mergée', closed: 'Fermée sans merge', draft: 'Brouillon', open: 'Ouverte' }
 const pullRequestStatus = (pr) => (pr.mergedAt !== null ? 'merged' : pr.closed ? 'closed' : pr.draft ? 'draft' : 'open')
 
@@ -5503,15 +5530,19 @@ function openPullRequestDialog(pr, opener) {
   const figures = TIMELINE_FIGURES.filter(({ key }) => durations[key] !== null).map(({ key, label }) =>
     el('div', {}, el('dt', { textContent: label }), el('dd', { textContent: formatDuration(durations[key]) })),
   )
+  // The title when the stats carry it, the repository and number above it; else these as the title.
+  const reference = `${pr.repo}#${pr.number}`
   const head = el(
     'header',
     { className: 'pr-dialog-head' },
-    el('div', { className: 'pr-dialog-title' }, el('h2', { id: 'pr-dialog-title', textContent: `${pr.repo}#${pr.number}` }), ...tags),
+    el('div', { className: 'pr-dialog-tags' }, ...(pr.title ? [el('span', { className: 'pr-dialog-ref', textContent: reference })] : []), ...tags),
+    el('h2', { id: 'pr-dialog-title', className: 'pr-dialog-title', textContent: pr.title || reference }),
     el(
       'p',
       { className: 'pr-dialog-meta' },
       el('span', {}, document.createTextNode('Par '), personLink(pr.author, { withAvatar: false })),
       el('span', { textContent: `${formatNumber(pr.lines)} lignes modifiées` }),
+      ...checksTag(pr),
       githubPill(pullRequestPath(pr.repo, pr.number), 'Voir sur GitHub'),
     ),
   )
