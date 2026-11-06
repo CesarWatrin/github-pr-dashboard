@@ -100,6 +100,13 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   mise en prod, chacun avec la médiane des dépôts du même type, et qui l'écrit et le relit.
 - **Noms des dépôts**, sur toutes les pages : un clic sur un nom de dépôt (tableaux, cartes, fiches) ouvre sa fiche,
   qui mène au dépôt sur GitHub.
+- **Frise d'une PR**, sur toutes les pages : un clic sur une PR (fil d'activité, À débloquer, Pour moi, PR mergées
+  sans approbation) ouvre sa frise : son ouverture, la première review ou le premier commentaire d'une autre
+  personne, chaque demande de changements et chaque approbation avant le merge, le merge, puis l'arrivée en prod,
+  avec l'attente en heures ouvrées avant chaque étape, à la minute près. Une PR encore ouverte, en brouillon ou pas
+  encore en prod dit depuis combien de temps elle attend. Suivent les délais de bout en bout et qui est intervenu
+  (approbations, demandes de changements, commentaires). Un Ctrl ou ⌘ + clic ouvre directement la PR sur GitHub,
+  comme le lien « Voir sur GitHub » de la frise.
 - **TMA** : volume et délais des hotfix (branches `hotfix/*`), qui les fait, sur quels dépôts et quand.
 - **DevOps** : les indicateurs DORA (déploiements, délai jusqu'en prod, taux de reprise par des correctifs,
   rétablissement), au total et par dépôt ; le calendrier des mises en production, quand chaque dépôt déploie, par

@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, lastMonthSummary, monthlyActivity, monthlyLeaders, monthsTouched, monthYearBefore, openPullRequests, parisDay, parisMidnight, overlapsPeriod, personalQueue, reviewNetwork, rollingMedian, sameDays, WORK_DAY_HOURS, workHoursBetween } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, lastMonthSummary, monthlyActivity, monthlyLeaders, monthsTouched, monthYearBefore, openPullRequests, parisDay, parisMidnight, overlapsPeriod, personalQueue, pullRequestTimeline, reviewNetwork, rollingMedian, sameDays, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -5369,14 +5369,185 @@ document.addEventListener('click', (event) => {
 
 const eventId = (event) => `${event.type}:${event.repo}#${event.number}:${event.actor}:${event.at}`
 const pullRequestId = (pr) => `${pr.repo}#${pr.number}`
+const pullRequestPath = (repo, number) => `${state.stats.org}/${encodeURIComponent(repo)}/pull/${number}`
 
+// A pull request named in a list. A click opens its timeline when the records have it; a click with a modifier key, the
+// middle button or the menu of the link open it on GitHub, as the link of the timeline does.
 function pullRequestLink(repo, number) {
-  return el('a', {
-    href: githubUrl(`${state.stats.org}/${encodeURIComponent(repo)}/pull/${number}`),
+  const link = el('a', {
+    href: githubUrl(pullRequestPath(repo, number)),
     target: '_blank',
     rel: 'noopener',
     textContent: `${repo}#${number}`,
   })
+  if (pullRequestOf(repo, number)) {
+    link.title = 'Voir sa frise (Ctrl ou ⌘ + clic : l’ouvrir sur GitHub)'
+    link.setAttribute('aria-haspopup', 'dialog')
+    link.addEventListener('click', (event) => {
+      const pr = pullRequestOf(repo, number)
+      if (!pr || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+        return
+      }
+      event.preventDefault()
+      openPullRequestDialog(pr, link)
+    })
+  }
+
+  return link
+}
+
+// The record of a pull request, looked up in a map made once per stats.
+const pullRequestIndexes = new WeakMap()
+function pullRequestOf(repo, number) {
+  let index = pullRequestIndexes.get(state.stats)
+  if (!index) {
+    index = new Map(state.stats.pullRequests.map((pr) => [pullRequestId(pr), pr]))
+    pullRequestIndexes.set(state.stats, index)
+  }
+
+  return index.get(`${repo}#${number}`) ?? null
+}
+
+// Timeline of a pull request: its steps, the working time it waited before each, what it still waits for, and who
+// intervened (pullRequestTimeline() of site/period.js), as of the last sync.
+
+const TIMELINE_STEPS = {
+  opened: { label: 'Ouverte', by: 'par' },
+  commented: { label: 'Premier commentaire', by: 'de' },
+  reviewed: { label: 'Première review', by: 'de' },
+  changes: { label: 'Changements demandés', by: 'par' },
+  approved: { label: 'Approuvée', by: 'par' },
+  merged: { label: 'Mergée', by: 'par' },
+  deployed: { label: 'En prod', note: 'Avec le déploiement suivant du dépôt' },
+  closed: { label: 'Fermée sans merge', note: 'Sans date : les données ne la gardent pas' },
+}
+const TIMELINE_PENDING = {
+  open: 'Toujours ouverte',
+  draft: 'Toujours en brouillon',
+  production: 'Pas encore en prod',
+}
+const TIMELINE_FIGURES = [
+  { key: 'pickup', label: 'Prise en charge' },
+  { key: 'toMerge', label: 'De l’ouverture au merge' },
+  { key: 'toProduction', label: 'De l’ouverture à la prod' },
+]
+
+const minuteDate = (minutes) => new Date(minutes * 60_000)
+
+function timelineStep(step) {
+  const definition = TIMELINE_STEPS[step.key]
+  const title = el('p', { className: 'pr-step-title' }, el('strong', { textContent: definition.label }))
+  if (step.login && definition.by) {
+    title.append(document.createTextNode(` ${definition.by} `), personLink(step.login, { withAvatar: false }))
+  }
+  const details = [
+    ...(step.at === null
+      ? []
+      : [el('time', { dateTime: minuteDate(step.at).toISOString(), textContent: dateTimeFormat.format(minuteDate(step.at)) })]),
+    ...(definition.note ? [document.createTextNode(step.at === null ? definition.note : ` · ${definition.note}`)] : []),
+  ]
+
+  return el(
+    'li',
+    { className: `pr-step is-${step.key}` },
+    ...(step.wait === null ? [] : [el('p', { className: 'pr-step-wait', textContent: `${formatDuration(step.wait)} d’attente` })]),
+    el('span', { className: 'pr-step-dot' }),
+    el('div', { className: 'pr-step-body' }, title, el('p', { className: 'pr-step-time' }, ...details)),
+  )
+}
+
+function pendingStep(pending) {
+  return el(
+    'li',
+    { className: `pr-step is-pending is-${pending.key}` },
+    el('p', { className: 'pr-step-wait', textContent: `${formatDuration(pending.wait)} d’attente à la dernière synchro` }),
+    el('span', { className: 'pr-step-dot' }),
+    el(
+      'div',
+      { className: 'pr-step-body' },
+      el('p', { className: 'pr-step-title' }, el('strong', { textContent: TIMELINE_PENDING[pending.key] })),
+    ),
+  )
+}
+
+function interventionSummary(person) {
+  const parts = [
+    ...(person.approved ? [plural(person.approved, 'approbation')] : []),
+    ...(person.changes ? [plural(person.changes, 'demande de changements', 'demandes de changements')] : []),
+    ...(person.comments ? [plural(person.comments, 'commentaire')] : []),
+  ]
+
+  return parts.join(' · ') || 'review'
+}
+
+const PULL_REQUEST_STATUS = { merged: 'Mergée', closed: 'Fermée sans merge', draft: 'Brouillon', open: 'Ouverte' }
+const pullRequestStatus = (pr) => (pr.mergedAt !== null ? 'merged' : pr.closed ? 'closed' : pr.draft ? 'draft' : 'open')
+
+// The dialog of a pull request. Closing gives the focus back to the link that opened it, when still there.
+function openPullRequestDialog(pr, opener) {
+  const { steps, pending, people, durations } = pullRequestTimeline(pr, Date.parse(state.stats.generatedAt) / 60_000)
+  const close = el(
+    'button',
+    { type: 'button', className: 'icon-button pr-dialog-close', title: 'Fermer' },
+    svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
+  )
+  close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
+  close.setAttribute('aria-label', 'Fermer')
+  close.addEventListener('click', () => $('[data-pr-dialog]').close())
+
+  const tags = [
+    el('span', { className: `feed-tag pr-status is-${pullRequestStatus(pr)}`, textContent: PULL_REQUEST_STATUS[pullRequestStatus(pr)] }),
+    ...kindTag(pr),
+    ...(pr.hotfix ? [el('span', { className: 'feed-tag', textContent: 'hotfix' })] : []),
+  ]
+  const figures = TIMELINE_FIGURES.filter(({ key }) => durations[key] !== null).map(({ key, label }) =>
+    el('div', {}, el('dt', { textContent: label }), el('dd', { textContent: formatDuration(durations[key]) })),
+  )
+  const head = el(
+    'header',
+    { className: 'pr-dialog-head' },
+    el('div', { className: 'pr-dialog-title' }, el('h2', { id: 'pr-dialog-title', textContent: `${pr.repo}#${pr.number}` }), ...tags),
+    el(
+      'p',
+      { className: 'pr-dialog-meta' },
+      el('span', {}, document.createTextNode('Par '), personLink(pr.author, { withAvatar: false })),
+      el('span', { textContent: `${formatNumber(pr.lines)} lignes modifiées` }),
+      githubPill(pullRequestPath(pr.repo, pr.number), 'Voir sur GitHub'),
+    ),
+  )
+  const timeline = el('ol', { className: 'pr-timeline' }, ...steps.map(timelineStep), ...(pending ? [pendingStep(pending)] : []))
+  const interventions = people.length
+    ? el(
+        'ul',
+        { className: 'pr-people' },
+        ...people.map((person) =>
+          el('li', {}, personLink(person.login), el('span', { className: 'pr-people-summary', textContent: interventionSummary(person) })),
+        ),
+      )
+    : el('p', { className: 'pr-dialog-note', textContent: 'Aucune intervention d’une autre personne.' })
+
+  $('[data-pr-dialog-card]').replaceChildren(
+    close,
+    head,
+    ...(figures.length ? [el('dl', { className: 'pr-dialog-figures' }, ...figures)] : []),
+    el(
+      'section',
+      { className: 'pr-dialog-section' },
+      el('h3', { textContent: 'Frise' }),
+      el('p', { className: 'pr-dialog-note', textContent: 'Attentes en heures ouvrées : du lundi au vendredi, de 9 h à 18 h.' }),
+      timeline,
+    ),
+    el('section', { className: 'pr-dialog-section' }, el('h3', { textContent: 'Interventions' }), interventions),
+  )
+  const dialog = $('[data-pr-dialog]')
+  dialog.scrollTop = 0
+  if (dialog.open) {
+    close.focus()
+
+    return
+  }
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
+  dialog.showModal()
 }
 
 function listItem(login, text, at, timePrefix = '') {
@@ -6466,6 +6637,13 @@ $('[data-person-dialog]').addEventListener('click', (event) => {
 $('[data-person-dialog]').addEventListener('close', resetPersonTilt)
 $('[data-person-dialog-scene]').addEventListener('pointermove', tiltPersonCard)
 $('[data-person-dialog-scene]').addEventListener('pointerleave', resetPersonTilt)
+// The timeline of a pull request closes likewise: its card fills the dialog, so only a click on the backdrop reaches
+// the dialog itself.
+$('[data-pr-dialog]').addEventListener('click', (event) => {
+  if (event.target === event.currentTarget) {
+    event.currentTarget.close()
+  }
+})
 
 let resizeFrame = 0
 let observedWidth = 0
