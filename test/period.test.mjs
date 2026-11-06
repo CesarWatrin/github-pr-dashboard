@@ -9,12 +9,15 @@ import {
   busFactor,
   computeCi,
   computePeriod,
+  lastMonthSummary,
+  monthYearBefore,
   monthlyActivity,
   monthlyLeaders,
   openPullRequests,
   parisDay,
   parisMidnight,
   reviewNetwork,
+  rollingMedian,
   workHoursBetween,
 } from '../site/period.js'
 
@@ -693,6 +696,42 @@ describe('monthlyLeaders', () => {
       ['2026-01', '2026-02'],
     )
     assert.deepEqual(monthlyLeaders(history, 'hotfixes'), [])
+  })
+})
+
+describe('monthly trends', () => {
+  test('the same month a year earlier, across a new year too', () => {
+    assert.equal(monthYearBefore('2026-03'), '2025-03')
+    assert.equal(monthYearBefore('2026-01'), '2025-01')
+  })
+
+  test('a rolling median waits for as many values as its size, in a row', () => {
+    assert.deepEqual(rollingMedian([4, 1, 7, 2, 9], 3), [null, null, 4, 2, 7])
+    assert.deepEqual(rollingMedian([4, 1], 3), [null, null])
+  })
+
+  test('a missing value breaks the run of a rolling median', () => {
+    assert.deepEqual(rollingMedian([3, null, 5, 6, 1, 8], 3), [null, null, null, null, 5, 6])
+  })
+
+  // Fourteen whole months, from January 2025 to February 2026, each worth its number.
+  const months = Array.from({ length: 14 }, (_, index) => ({
+    month: index < 12 ? `2025-${String(index + 1).padStart(2, '0')}` : `2026-${String(index - 11).padStart(2, '0')}`,
+    value: index + 1,
+  }))
+
+  test('the last month against the same month a year earlier and the median of the last twelve', () => {
+    assert.deepEqual(lastMonthSummary(months), { month: '2026-02', value: 14, yearAgo: 2, yearMedian: 8.5 })
+  })
+
+  test('a series shorter than a year has nothing to set its last month against a year earlier', () => {
+    assert.deepEqual(lastMonthSummary(months.slice(-6)), { month: '2026-02', value: 14, yearAgo: null, yearMedian: 11.5 })
+  })
+
+  test('months without the figure stay out of the median, and leave the year earlier empty', () => {
+    const withGaps = months.map((point) => (point.month < '2025-07' ? { ...point, value: null } : point))
+    assert.deepEqual(lastMonthSummary(withGaps), { month: '2026-02', value: 14, yearAgo: null, yearMedian: 10.5 })
+    assert.equal(lastMonthSummary([]), null)
   })
 })
 

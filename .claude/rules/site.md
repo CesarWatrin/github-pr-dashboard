@@ -13,9 +13,10 @@ paths:
   `full-sync.js` with the same query string (`import.meta.url`). Any new module follows that pattern, so that the Pages
   cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, unblock, report, analysis, authors, reviewers, cycle, collaboration, team,
-  awards, repositories, tma, devops, method). The period selector and the search apply to every page but the method,
-  report and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what
+  page of the hash (`ROUTES`: overview, unblock, report, trends, analysis, authors, reviewers, cycle, collaboration,
+  team, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
+  method, report, trends and awards ones (`filters: false`): the report has a month picker of its own, the trends
+  page covers every month; the unblock page, about what
   stands now, keeps the search only (`period: false`), the analysis page the period only (`search: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
@@ -38,8 +39,9 @@ paths:
   - Every column whose meaning is not obvious has a `hint`: the legend under the table is built from these.
 - **Charts**: `columnChart()` over time buckets (series side by side, partial buckets lighter, tooltip on hover, an
   optional `format` for durations), `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows ×
-  columns, `color-mix` on `--series-1`), `shareChart()` for bars cut into shares that fill the width,
-  `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
+  columns, `color-mix` on `--series-1`), `shareChart()` for bars cut into shares that fill the width, `lineChart()`
+  for lines over months (trends page: broken where a month has no value, the unfinished month lighter, a crosshair on
+  hover), `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
 - **Calendar of deployments** (DevOps page): `renderDeploymentCalendar()` draws the `deploymentCalendar` of
   `computePeriod()` (per repository, `[deployments, corrective]` per bucket) in a `heatmapChart()`: the
@@ -82,6 +84,15 @@ paths:
   `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change. The page
   opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month
   picked.
+- **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), over every month of
+  `reportMonths()`, from `monthStats()`. `renderTrends()` only runs when the page shows, from `renderCharts()`: a first
+  visit works out the months one at a time (`prepareTrendMonths()`, a second or so for 36 months) so that the page
+  stays responsive, then builds the cards once per stats (`trendCard()`) and draws their charts again as the page
+  resizes. Each card shows the latest whole month against the same month a year earlier and the median of the last
+  `REPORT_YEAR_MONTHS` whole months (`lastMonthSummary()` of `site/period.js`, the change from `reportChange()`), then
+  a `lineChart()`: the months and their median over `TREND_ROLLING_MONTHS` (`rollingMedian()`, none until that many
+  whole months follow each other, the current month left out), the current month joining its line lighter. The axis
+  comes from `trendAxis()`: shares in percents, long durations in working days. The CI has no month before `ciStart`.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not
