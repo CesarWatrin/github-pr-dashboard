@@ -950,6 +950,37 @@ h3 {
   }
 }
 
+/* What the tiles compare to: as wide as its longest option at the top of the page. */
+.compare {
+  flex: none;
+  cursor: pointer;
+}
+
+/* The days compared to: beside the picker at the top of the page, under it in the column of wide screens. */
+.compare-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.compare-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+@media (min-width: 1536px) {
+  .compare-field {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .compare-note {
+    padding: 0 4px;
+  }
+}
+
 button:focus-visible,
 input:focus-visible,
 a:focus-visible,
@@ -1093,6 +1124,17 @@ main.is-loading {
 .tile-bump.is-visible {
   opacity: 1;
   transform: none;
+}
+
+/* The change against the range compared to, under the value: a pill like those of the monthly report. */
+.tile-change {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.tile-change.is-missing {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 /* Charts */
