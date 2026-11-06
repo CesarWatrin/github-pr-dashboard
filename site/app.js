@@ -6219,6 +6219,15 @@ const SQUAD_FIGURES = {
     hint: 'Commentaires et reviews « commentaire » des membres, sur toutes les PR de l’organisation.',
   },
   lines: { key: 'lines', label: 'Lignes', perMember: true, format: formatLines, hint: 'Lignes ajoutées et supprimées par les PR mergées de la squad.' },
+  // The ranking shows them one above the other, in green and red, as the other tables: sorted on the lines added.
+  added: {
+    key: 'added',
+    label: 'Lignes',
+    chartLabel: 'Lignes ajoutées',
+    perMember: true,
+    format: formatLines,
+    hint: 'Lignes ajoutées (+) et supprimées (−) par les PR mergées de la squad, au total, arrondies (k : milliers, M : millions). Le tri suit les lignes ajoutées.',
+  },
   medianTimeToFirstReviewHours: {
     key: 'medianTimeToFirstReviewHours',
     label: '1re review',
@@ -6276,6 +6285,7 @@ const SQUAD_RANKING = squadFigures(
   'merged',
   'reviews',
   'comments',
+  'added',
   'medianTimeToFirstReviewHours',
   'medianTimeToMergeHours',
   'medianLeadTimeHours',
@@ -6358,6 +6368,8 @@ function squadRow(name, members, range, organization) {
     reviews: repoTotal(own(organization.reviewers), 'prs'),
     comments: repoTotal(own(organization.reviewers), 'comments'),
     lines: period.totals.added + period.totals.deleted,
+    added: period.totals.added,
+    deleted: period.totals.deleted,
     medianTimeToFirstReviewHours: median(period.authors.flatMap((row) => Object.values(row.repos).flatMap((stats) => stats.timesToFirstReviewHours))),
     medianTimeToMergeHours: period.totals.medianTimeToMergeHours,
     medianLeadTimeHours: period.delivery.medianLeadTimeHours,
@@ -6391,7 +6403,8 @@ function rankingValue(row, figure) {
   return state.squadPerMember && figure.perMember && !isMissing(value) ? value / row.size : value
 }
 
-const rankingFormat = (figure) => (state.squadPerMember && figure.perMember ? formatDecimal : (figure.format ?? formatNumber))
+// Per member, a count reads with a decimal; the lines keep their rounding.
+const rankingFormat = (figure) => (state.squadPerMember && figure.perMember ? (figure.format ?? formatDecimal) : (figure.format ?? formatNumber))
 
 // The squads in the order of the ranking: best first on the figure picked, missing figures last; reversed on demand.
 function rankedSquads(rows) {
@@ -6546,6 +6559,11 @@ function renderSquadRanking(rows, organization) {
   )
   const cells = (row, ranked) =>
     SQUAD_RANKING.map((figure) => {
+      if (figure.key === 'added') {
+        const size = state.squadPerMember ? row.size : 1
+
+        return linesCell({ added: row.added / size, deleted: row.deleted / size })
+      }
       const value = rankingValue(row, figure)
       const format = figure.key === 'members' ? formatNumber : rankingFormat(figure)
       const isBest = ranked && !isMissing(value) && best.get(figure.key) === value
@@ -6584,7 +6602,9 @@ function renderSquadComparison(rows) {
   const figure = SQUAD_FIGURES[state.squadSort.key]
   const format = figure.key === 'members' ? formatNumber : rankingFormat(figure)
   const perMember = state.squadPerMember && figure.perMember
-  $('[data-squads-compare-title]').textContent = `${figure.label}${perMember ? ' par personne' : ''}`
+  // A figure the ranking shows in more than one way (the lines) names what its bars show.
+  const label = figure.chartLabel ?? figure.label
+  $('[data-squads-compare-title]').textContent = `${label}${perMember ? ' par personne' : ''}`
   $('[data-squads-compare-sub]').textContent = `${figure.hint} Le graphique suit la colonne qui classe le classement.`
   barChart($('[data-squads-compare]'), {
     rows: rankedSquads(rows).filter((row) => !isMissing(rankingValue(row, figure))),
@@ -6592,11 +6612,14 @@ function renderSquadComparison(rows) {
     value: (row) => rankingValue(row, figure),
     format,
     color: 'var(--series-1)',
-    ariaLabel: `${figure.label} de chaque squad${perMember ? ', par personne' : ''}, ${periodTitle()}`,
+    ariaLabel: `${label} de chaque squad${perMember ? ', par personne' : ''}, ${periodTitle()}`,
     tooltip: (row) => ({
       title: row.name,
       rows: [
-        { label: figure.label.toLowerCase(), value: format(rankingValue(row, figure)) },
+        { label: label.toLowerCase(), value: format(rankingValue(row, figure)) },
+        ...(figure.key === 'added'
+          ? [{ label: 'lignes supprimées', value: format(perMember ? row.deleted / row.size : row.deleted) }]
+          : []),
         { label: 'membres', value: formatNumber(row.size) },
       ],
     }),

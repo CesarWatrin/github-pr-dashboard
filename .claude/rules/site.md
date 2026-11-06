@@ -90,7 +90,7 @@ paths:
   (`squadCard()`, the repository card's style) opens `openSquadDialog()`, the card dialog with its tilt, each figure
   over the median of the squads. The ranking (`renderSquadRanking()`): sorted on the column clicked
   (`state.squadSort`, best first by `better`, again to reverse), medals for the first three, the best of each column
-  marked, « Total / Par personne » (`state.squadPerMember`), the organization in a last row out of the ranking. Four charts under it (`renderSquadCharts()`, drawn again
+  marked, « Total / Par personne » (`state.squadPerMember`), the lines added over the lines deleted in green and red (`linesCell()`, sorted on the lines added; `chartLabel` names the bars of the comparison), the organization in a last row out of the ranking. Four charts under it (`renderSquadCharts()`, drawn again
   as the page resizes): the column that ranks, squad by squad (`renderSquadComparison()`); the share of each stage of
   the cycle (`shareChart()`, which takes other parts and tooltip rows than the stages); the share of their code pull
   requests by repository type (`SQUAD_TYPES`, the colors of the types); who reads whom between squads, from the
