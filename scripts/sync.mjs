@@ -182,7 +182,9 @@ const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
 // before a login marks the lead of the squad, one at most: "name:*login,login".
 function parseSquads(value = '') {
   const squads = []
-  for (const entry of value.split(';').map((part) => part.trim()).filter(Boolean)) {
+  // A value copied with the quotes of its line in .env, as a secret: they surround the value, not the first squad's name.
+  const unquoted = value.trim().replace(/^(["'])([\s\S]*)\1$/, '$2')
+  for (const entry of unquoted.split(';').map((part) => part.trim()).filter(Boolean)) {
     const separator = entry.indexOf(':')
     const name = entry.slice(0, separator).trim()
     const logins = entry.slice(separator + 1).split(',').map((login) => login.trim()).filter(Boolean)
