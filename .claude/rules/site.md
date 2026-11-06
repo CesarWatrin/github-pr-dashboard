@@ -15,9 +15,9 @@ paths:
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
   page of the hash (`ROUTES`: overview, unblock, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
-  method, report, trends and awards ones (`filters: false`): the report has a month picker of its own, the trends
-  page covers every month; the unblock page, about what
-  stands now, keeps the search only (`period: false`), the analysis page the period only (`search: false`).
+  method, report and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about
+  what stands now, keeps the search only (`period: false`), the analysis and trends pages the period only
+  (`search: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
@@ -84,15 +84,19 @@ paths:
   `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change. The page
   opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month
   picked.
-- **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), over every month of
-  `reportMonths()`, from `monthStats()`. `renderTrends()` only runs when the page shows, from `renderCharts()`: a first
-  visit works out the months one at a time (`prepareTrendMonths()`, a second or so for 36 months) so that the page
-  stays responsive, then builds the cards once per stats (`trendCard()`) and draws their charts again as the page
-  resizes. Each card shows the latest whole month against the same month a year earlier and the median of the last
-  `REPORT_YEAR_MONTHS` whole months (`lastMonthSummary()` of `site/period.js`, the change from `reportChange()`), then
-  a `lineChart()`: the months and their median over `TREND_ROLLING_MONTHS` (`rollingMedian()`, none until that many
-  whole months follow each other, the current month left out), the current month joining its line lighter. The axis
-  comes from `trendAxis()`: shares in percents, long durations in working days. The CI has no month before `ciStart`.
+- **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), from `monthStats()`,
+  over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/period.js`: each month
+  whole, the first month of the data, cut by its start, left out); the period selector applies, not the search. 30 or
+  90 days give two to four months: the page says that a trend reads better over 12 months or more (under
+  `TREND_FEW_MONTHS`). `renderTrends()` only runs when the page shows, from `renderCharts()`: a first visit works out
+  every month of the data one at a time (`prepareTrendMonths()`, a second or so for 36 months) so that the page stays
+  responsive, then builds the cards once per stats and range (`trendCard()`) and draws their charts again as the page
+  resizes. Each card shows the latest whole month of the period against the same month a year earlier and the median
+  of the `REPORT_YEAR_MONTHS` whole months up to it (`lastMonthSummary()`, the change from `reportChange()`), then a
+  `lineChart()`: the months and their median over `TREND_ROLLING_MONTHS` (`rollingMedian()`, none until that many
+  whole months follow each other, the current month left out), the current month joining its line lighter. The
+  rolling median and the comparisons read the months before the period when they need them. The axis comes from
+  `trendAxis()`: shares in percents, long durations in working days. The CI has no month before `ciStart`.
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not

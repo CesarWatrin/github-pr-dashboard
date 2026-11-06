@@ -12,6 +12,7 @@ import {
   lastMonthSummary,
   monthYearBefore,
   monthlyActivity,
+  monthsTouched,
   monthlyLeaders,
   openPullRequests,
   parisDay,
@@ -703,6 +704,17 @@ describe('monthly trends', () => {
   test('the same month a year earlier, across a new year too', () => {
     assert.equal(monthYearBefore('2026-03'), '2025-03')
     assert.equal(monthYearBefore('2026-01'), '2025-01')
+  })
+
+  test('the months a range touches, each whole, its end left out, in Paris time', () => {
+    const months = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05']
+    // From 15 February to 10 April included.
+    assert.deepEqual(monthsTouched(months, { start: parisMidnight('2026-02-15'), end: parisMidnight('2026-04-11') }), ['2026-02', '2026-03', '2026-04'])
+    // Up to the end of March: April is not touched.
+    assert.deepEqual(monthsTouched(months, { start: parisMidnight('2026-03-01'), end: parisMidnight('2026-04-01') }), ['2026-03'])
+    // A range starting before the first month keeps the months there are.
+    assert.deepEqual(monthsTouched(months, { start: parisMidnight('2025-11-20'), end: parisMidnight('2026-01-05') }), ['2026-01'])
+    assert.deepEqual(monthsTouched(months, { start: parisMidnight('2025-10-01'), end: parisMidnight('2025-12-01') }), [])
   })
 
   test('a rolling median waits for as many values as its size, in a row', () => {

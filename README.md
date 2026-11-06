@@ -34,8 +34,9 @@ une colonne à droite, qui reste à portée quand la page défile. Tous les dél
   sans comparaison ; les mois complets se choisissent dans la liste.
 - **Tendances** : les indicateurs clés du bilan (PR de code mergées, délai de merge, attente de la première review,
   commentaires par PR relue, délai jusqu'en prod, taux de reprise, part de hotfix, CI en échec) mois après mois, sur
-  tout l'historique synchronisé, avec leur médiane sur 3 mois ; pour chacun, le dernier mois complet comparé au même
-  mois un an plus tôt et à la médiane des 12 derniers mois complets.
+  les mois que touche la période choisie (36 mois : tout l'historique), avec leur médiane sur 3 mois ; pour chacun, le
+  dernier mois complet de la période comparé au même mois un an plus tôt et à la médiane des 12 mois complets jusqu'à
+  lui, même avant la période.
 - **Analyse** : ce qui ressort de la période et des pistes pour progresser. Dix règles fixes croisent les chiffres :
   taille des PR et délai de merge, PR géantes mergées sans review plus souvent que les autres, étape qui retient les
   PR avant leur merge, dépôts suspendus à un relecteur ou mergés sans review, workflows qui échouent souvent ou qui

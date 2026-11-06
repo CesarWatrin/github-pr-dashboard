@@ -387,14 +387,15 @@
           <!-- Tendances -->
           <div class="route" data-route="trends" hidden>
             <section class="card" aria-labelledby="trends-title">
-              <h2 id="trends-title">Mois après mois</h2>
+              <h2 id="trends-title" data-trends-title>Mois après mois</h2>
               <p class="card-sub" data-trends-sub></p>
               <div class="legend" data-trends-legend></div>
               <p class="card-note">
-                Chaque mois compte comme sur le bilan du mois. La médiane sur 3 mois lisse les à-coups d’un mois à
-                l’autre ; le mois en cours, incomplet, est plus clair et n’y entre pas. Le dernier mois complet se compare
-                au même mois un an plus tôt et à la médiane des 12 derniers mois complets : en vert quand il va dans le bon
-                sens, en orange dans le mauvais ; les volumes restent neutres.
+                Chaque mois que la période touche compte en entier, comme sur le bilan du mois. La médiane sur 3 mois
+                lisse les à-coups d’un mois à l’autre ; le mois en cours, incomplet, est plus clair et n’y entre pas. Le
+                dernier mois complet de la période se compare au même mois un an plus tôt et à la médiane des 12 mois
+                complets jusqu’à lui, même avant la période : en vert quand il va dans le bon sens, en orange dans le
+                mauvais ; les volumes restent neutres.
               </p>
               <p class="chart-empty" data-trends-status hidden></p>
             </section>
@@ -797,11 +798,14 @@
                 </dd>
                 <dt>Tendances</dt>
                 <dd>
-                  Les chiffres du bilan, mois par mois, sur tous les mois complets des données synchronisées, et le mois
-                  en cours, plus clair. La médiane sur 3 mois d’un mois est celle de ce mois et des deux précédents ; elle
-                  attend trois mois complets d’affilée et laisse de côté le mois en cours. Le dernier mois complet se compare
-                  au même mois un an plus tôt et à la médiane des 12 derniers mois complets, comme dans le bilan.
-                  L’intégration continue ne remonte qu’aux exécutions que GitHub a gardées, environ 13 mois.
+                  Les chiffres du bilan, mois par mois, sur les mois que la période touche : chacun compte en entier, même
+                  si la période n’en couvre que quelques jours, et le mois en cours, incomplet, est plus clair. Le premier
+                  mois des données, coupé par leur début, reste de côté. Sur 30 ou 90 jours, une courbe n’a que deux à
+                  quatre mois. La médiane sur 3 mois d’un mois est celle de ce mois et des deux précédents, même avant la
+                  période ; elle attend trois mois complets d’affilée et laisse de côté le mois en cours. Le dernier mois
+                  complet de la période se compare au même mois un an plus tôt et à la médiane des 12 mois complets
+                  jusqu’à lui, même s’ils sont avant la période. L’intégration continue ne remonte qu’aux exécutions que
+                  GitHub a gardées, environ 13 mois.
                 </dd>
                 <dt>Analyse</dt>
                 <dd>

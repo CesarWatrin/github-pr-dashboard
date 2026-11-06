@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, lastMonthSummary, monthlyActivity, monthlyLeaders, monthYearBefore, openPullRequests, parisDay, parisMidnight, reviewNetwork, rollingMedian, WORK_DAY_HOURS, workHoursBetween } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, lastMonthSummary, monthlyActivity, monthlyLeaders, monthsTouched, monthYearBefore, openPullRequests, parisDay, parisMidnight, reviewNetwork, rollingMedian, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -89,7 +89,7 @@ const ROUTES = {
   collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
   team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
   report: { hash: '#/bilan', title: 'Bilan du mois', subtitle: 'Un mois comparé au précédent et au reste de l’année', filters: false },
-  trends: { hash: '#/tendances', title: 'Tendances', subtitle: 'Chaque indicateur mois après mois, sur tout l’historique synchronisé', filters: false },
+  trends: { hash: '#/tendances', title: 'Tendances', subtitle: 'Les indicateurs clés mois après mois, sur les mois de la période', search: false },
   analysis: { hash: '#/analyse', title: 'Analyse', subtitle: 'Ce qui ressort de la période, et des pistes pour progresser', search: false },
   awards: { hash: '#/palmares', title: 'Palmarès', subtitle: 'Les badges de l’équipe, mois après mois, depuis la première synchro', filters: false },
   repositories: { hash: '#/depots', title: 'Dépôts', subtitle: 'Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit' },
@@ -3325,9 +3325,11 @@ function trendComparison(figure, value, against, text) {
   )
 }
 
-// One card per figure: its latest whole month against the same month a year earlier and the median of the last whole
-// months, then its chart and the data of it. Returns the card and how to draw its chart once it is on the page.
-function trendCard(figure, months) {
+// One card per figure, over the months of the period (shown): the latest whole one against the same month a year
+// earlier and the median of the whole months up to it, then the chart and its data. The rolling median and these
+// comparisons read the months before the period when they need them: every month of the data (months) is worked out.
+// Returns the card and how to draw its chart once it is on the page.
+function trendCard(figure, months, shown) {
   const format = REPORT_FORMATS[figure.kind]
   const current = months.at(-1)
   const value = (month) => {
@@ -3340,14 +3342,16 @@ function trendCard(figure, months) {
     whole.map((point) => point.value),
     TREND_ROLLING_MONTHS,
   )
-  const points = [
-    ...whole.map((point, index) => ({ key: point.month, value: point.value, rolling: rolling[index] })),
-    { key: current, value: value(current), rolling: null, partial: true },
-  ]
-  const summary = lastMonthSummary(whole, REPORT_YEAR_MONTHS)
+  const rollingOf = new Map(whole.map((point, index) => [point.month, rolling[index]]))
+  const points = shown.map((month) =>
+    month === current ? { key: month, value: value(month), rolling: null, partial: true } : { key: month, value: value(month), rolling: rollingOf.get(month) },
+  )
+  const lastWhole = shown.findLast((month) => month !== current)
+  const upToLast = lastWhole ? whole.slice(0, whole.findIndex((point) => point.month === lastWhole) + 1) : []
+  const summary = lastMonthSummary(upToLast, REPORT_YEAR_MONTHS)
   const yearBefore = summary ? monthYearBefore(summary.month) : null
   // The CI does not go back as far: its median may rest on fewer months.
-  const medianMonths = whole.slice(-REPORT_YEAR_MONTHS).filter((point) => Number.isFinite(point.value)).length
+  const medianMonths = upToLast.slice(-REPORT_YEAR_MONTHS).filter((point) => Number.isFinite(point.value)).length
 
   const chart = el('div', { className: 'chart chart-trend' })
   const table = el('div', { className: 'table-wrap' })
@@ -3367,7 +3371,7 @@ function trendCard(figure, months) {
           el('strong', { className: 'trend-value', textContent: format(summary.value) }),
           el('span', { textContent: `en ${monthName(summary.month)}` }),
         )
-      : el('p', { className: 'card-sub', textContent: 'Pas encore de mois complet' }),
+      : el('p', { className: 'card-sub', textContent: 'Pas de mois complet sur la période' }),
     summary
       ? el(
           'ul',
@@ -3384,7 +3388,7 @@ function trendCard(figure, months) {
     chart,
     el('details', { className: 'chart-data' }, el('summary', { textContent: 'Voir les données du graphique' }), table),
   )
-  const ariaLabel = `${figure.label}, mois par mois, de ${monthName(months[0])} à ${monthName(current)}, et sa médiane sur ${TREND_ROLLING_MONTHS} mois`
+  const ariaLabel = `${figure.label}, mois par mois, de ${monthName(shown[0])} à ${monthName(shown.at(-1))}, et sa médiane sur ${TREND_ROLLING_MONTHS} mois`
 
   return { card, draw: () => lineChart(chart, { points, series: TREND_SERIES, kind: figure.kind, format, ariaLabel }) }
 }
@@ -3406,7 +3410,11 @@ async function prepareTrendMonths(months) {
 
 const monthReady = (month) => state.reportCache?.stats === state.stats && state.reportCache.months.has(month)
 
-// Only when the page shows: its cards are built once per stats, their charts drawn again as the page resizes.
+// Below this many months, a period says too little of a trend: the page says so.
+const TREND_FEW_MONTHS = 6
+
+// Only when the page shows: its cards are built once per stats and period, their charts drawn again as the page
+// resizes. Every month of the data is worked out, whatever the period: the comparisons may need the months before it.
 function renderTrends() {
   if (!state.stats || currentRoute() !== 'trends') {
     return
@@ -3423,15 +3431,30 @@ function renderTrends() {
     }
     return
   }
-  status.hidden = true
+  const range = periodRange()
+  const key = `${range.start}:${range.end}`
+  const shown = monthsTouched(months, range)
+  status.hidden = shown.length > 0
+  // Only the first month of the data, cut by its start: no whole month to show.
+  status.textContent = 'Aucun mois complet des données sur la période : choisissez une période plus longue.'
 
-  if (state.trendsCards?.stats !== state.stats) {
-    const whole = months.slice(0, -1)
+  if (state.trendsCards?.stats !== state.stats || state.trendsCards.key !== key) {
+    const current = months.at(-1)
+    const whole = shown.filter((month) => month !== current)
     const ciFrom = months.find((month) => monthStats(month).ci)
+    $('[data-trends-title]').textContent = capitalize(periodTitle())
+    // « D’avril », « D’août », « D’octobre » : de elides before a vowel.
+    const from = (month) => (/^[aeiou]/.test(monthName(month)) ? `D’${monthName(month)}` : `De ${monthName(month)}`)
+    const then = shown.includes(current) ? `, puis ${monthName(current)} en cours` : ''
     $('[data-trends-sub]').textContent = [
-      whole.length ? `De ${monthName(months[0])} à ${monthName(whole.at(-1))}, puis ${monthName(months.at(-1))} en cours.` : `${capitalize(monthName(months[0]))} en cours.`,
-      ciFrom && ciFrom !== months[0] ? `L’intégration continue commence en ${monthName(ciFrom)} : GitHub oublie ses exécutions après environ 13 mois.` : '',
-    ].join(' ')
+      whole.length > 1 ? `${from(whole[0])} à ${monthName(whole.at(-1))}${then}.` : '',
+      whole.length === 1 ? `${capitalize(monthName(whole[0]))}${then}.` : '',
+      whole.length === 0 && shown.length ? `${capitalize(monthName(current))} en cours.` : '',
+      shown.length && shown.length < TREND_FEW_MONTHS ? `${capitalize(plural(shown.length, 'mois', 'mois'))} seulement : une tendance se lit mieux sur 12 mois ou plus.` : '',
+      ciFrom && shown.length && shown[0] < ciFrom ? `L’intégration continue commence en ${monthName(ciFrom)} : GitHub oublie ses exécutions après environ 13 mois.` : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
     $('[data-trends-legend]').replaceChildren(
       ...TREND_SERIES.map((item) => {
         const key = el('span', { className: 'line-key' })
@@ -3440,9 +3463,9 @@ function renderTrends() {
         return el('span', {}, key, document.createTextNode(item.label))
       }),
     )
-    const cards = TREND_FIGURES.map((figure) => trendCard(figure, months))
+    const cards = shown.length ? TREND_FIGURES.map((figure) => trendCard(figure, months, shown)) : []
     $('[data-trends]').replaceChildren(...cards.map(({ card }) => card))
-    state.trendsCards = { stats: state.stats, cards }
+    state.trendsCards = { stats: state.stats, key, cards }
   }
   for (const { draw } of state.trendsCards.cards) {
     draw()

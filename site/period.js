@@ -778,6 +778,15 @@ export function monthlyLeaders(history, key) {
 // The same month a year earlier ('YYYY-MM').
 export const monthYearBefore = (month) => `${Number(month.slice(0, 4)) - 1}${month.slice(4)}`
 
+// The months ('YYYY-MM', among `months`, in order) that a range touches, its start included and its end left out, in
+// Paris time: each one counts whole, however little of it the range covers.
+export function monthsTouched(months, { start, end }) {
+  const first = parisDay(start).slice(0, 7)
+  const last = parisDay(end - 1).slice(0, 7)
+
+  return months.filter((month) => month >= first && month <= last)
+}
+
 // The median of each value and of the ones just before it, `size` values in all: none until that many follow each
 // other, a missing value (null) breaking the run. Smooths the ups and downs of a monthly series without hiding a turn.
 export function rollingMedian(values, size) {
