@@ -116,7 +116,9 @@ paths:
   `lineChart()`: the months and their median over `TREND_ROLLING_MONTHS` (`rollingMedian()`, none until that many
   whole months follow each other, the current month left out), the current month joining its line lighter. The
   rolling median and the comparisons read the months before the period when they need them. The axis comes from
-  `trendAxis()`: shares in percents, long durations in working days. The CI has no month before `ciStart`.
+  `trendAxis()`: shares in percents, long durations in working days. The CI has no month before `ciStart`: when the
+  period starts earlier, its card says why (`ciTrendNote()`: GitHub forgets the runs after about 13 months, the
+  dashboard keeps them itself since `ciStart`).
 - **Person cards** (team page): `teamRows()` gathers each person's figures, `personCard()` draws one card, and
   `TEAM_STATS` lists its figures, their hints making the legend (`data-table-legend="team"`). Cards come most code
   pull requests first. The page's repository filter (`REPO_FILTERS.team`, no table behind it) narrows the figures, not

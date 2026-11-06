@@ -3314,7 +3314,7 @@ const TREND_FIGURES = [
   REPORT_FIGURES.get('Délai médian jusqu’en prod'),
   REPORT_FIGURES.get('Taux de reprise'),
   REPORT_FIGURES.get('Part de hotfix'),
-  { ...REPORT_FIGURES.get('En échec'), label: 'CI en échec' },
+  { ...REPORT_FIGURES.get('En échec'), label: 'CI en échec', ci: true },
 ]
 // A month's rolling median covers it and the months just before it, this many in all.
 const TREND_ROLLING_MONTHS = 3
@@ -3488,6 +3488,23 @@ function trendComparison(figure, value, against, text) {
   )
 }
 
+// Why the CI of a period that starts earlier has no figure for its first months: GitHub forgets the runs after about
+// 13 months, and the dashboard only keeps them itself since ciStart. A month counts from the first one the runs cover
+// whole, as monthStats() does. Nothing when the period starts after it.
+function ciTrendNote(months, shown) {
+  const first = months.find((month) => parisMidnight(`${month}-01`) >= ciStart())
+  if (!first || shown[0] >= first) {
+    return []
+  }
+
+  return [
+    el('p', {
+      className: 'card-note',
+      textContent: `Pas de chiffre avant ${monthName(first)} : GitHub efface les exécutions de CI après environ 13 mois, et le dashboard ne les garde lui-même que depuis le ${dateFormat.format(ciStart())}. L’historique s’allonge d’un mois chaque mois.`,
+    }),
+  ]
+}
+
 // One card per figure, over the months of the period (shown): the latest whole one against the same month a year
 // earlier and the median of the whole months up to it, then the chart and its data. The rolling median and these
 // comparisons read the months before the period when they need them: every month of the data (months) is worked out.
@@ -3549,6 +3566,7 @@ function trendCard(figure, months, shown) {
         )
       : '',
     chart,
+    ...(figure.ci ? ciTrendNote(months, shown) : []),
     el('details', { className: 'chart-data' }, el('summary', { textContent: 'Voir les données du graphique' }), table),
   )
   const ariaLabel = `${figure.label}, mois par mois, de ${monthName(shown[0])} à ${monthName(shown.at(-1))}, et sa médiane sur ${TREND_ROLLING_MONTHS} mois`
