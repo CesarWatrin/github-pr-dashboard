@@ -69,6 +69,7 @@ jobs:
           REPO_CATEGORIES: ${{ secrets.REPO_CATEGORIES }}
           BOT_USERS: ${{ secrets.BOT_USERS }}
           REQUIRED_APPROVALS: ${{ secrets.REQUIRED_APPROVALS }}
+          SQUADS: ${{ secrets.SQUADS }}
           DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
           FULL_SYNC_PASSWORD: ${{ secrets.FULL_SYNC_PASSWORD }}

@@ -14,10 +14,12 @@ paths:
   pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
   page of the hash (`ROUTES`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
-  team, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
+  team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
   method, report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
-  analysis and trends pages the period only (`search: false`).
+  analysis, trends and squads pages the period only (`search: false`). The Méthode page has no link among the pages: a
+  button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
+  screens, only the periods of the filters stack (`.filters .segmented`), the other segmented pickers keep their row.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
@@ -73,6 +75,28 @@ paths:
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
   `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
   by two, the forgotten pull requests beside those merged without approval.
+- **Squads** (`squads` of the stats, from `SQUADS`; nothing of them shows without any). The squad picker of the
+  filters (`[data-squad-filter]`, `renderSquadFilter()`, `state.squad` kept in `localStorage` by `SQUAD_STORAGE_KEY`,
+  tinted while active) scopes the pages with filters to the pull requests its members opened: `activeSquad()` is null
+  on the pages without filters, `scopedRecords()` feeds `currentPeriod()`, `comparedPeriod()`, `monthStats()` (so the
+  trends), `currentAnalysis()`, the unblock page and the unapproved merges, each cache keyed by `squadKey()` too;
+  `inSquad()` keeps the feed to the events of its pull requests and the team cards to its members. The CI stays that
+  of the organization (a note says so on DevOps), and the card of today hides (`[data-today-card]`): the sync counts it
+  for everyone. `render()` notes the squad it drew with (`state.renderedSquad`); `renderRoute()` draws everything again
+  when going to or from a page without filters changes it. The squads page (`renderSquads()`, drawn when it shows):
+  `squadRow()` for each squad and the whole organization over the period (`squadPeriod()`, cached per squad and range;
+  `squadRecords()` per squad): `SQUAD_FIGURES`, the volumes `perMember`, the reviews and comments its members gave
+  anywhere, « Relu en interne » the share of the reviews of its pull requests by its members. A card per squad
+  (`squadCard()`, the repository card's style) opens `openSquadDialog()`, the card dialog with its tilt, each figure
+  over the median of the squads. The ranking (`renderSquadRanking()`): sorted on the column clicked
+  (`state.squadSort`, best first by `better`, again to reverse), medals for the first three, the best of each column
+  marked, « Total / Par personne » (`state.squadPerMember`), the organization in a last row out of the ranking. Four charts under it (`renderSquadCharts()`, drawn again
+  as the page resizes): the column that ranks, squad by squad (`renderSquadComparison()`); the share of each stage of
+  the cycle (`shareChart()`, which takes other parts and tooltip rows than the stages); the share of their code pull
+  requests by repository type (`SQUAD_TYPES`, the colors of the types); who reads whom between squads, from the
+  `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
+  carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
+  `squadLead()`) shows on its card and dialog, its avatar first and ringed (`squadAvatars()`).
 - **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
@@ -230,6 +254,12 @@ paths:
   to 1535 px they stick to the top of the window instead, on a band of the page's background, underlined once stuck
   (`is-stuck`, set by an `IntersectionObserver`: their top sits one pixel above the window). Tables
   fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
+- Card dialogs (a person, a repository, a squad: `showCardDialog()`): never taller than the window; the head, its
+  first child, stays in place with the close button, the rest goes in `.person-dialog-body`, which scrolls only when
+  it does not fit (`fitCardDialog()`, `is-scrollable`, measured again by a `ResizeObserver`): a scrolling box
+  flattens the layers that come apart as the card leans. The dialog itself never scrolls. The filters at the top all
+  take the height of the periods (`.filters .search`, 41 px). The page clips what hangs past its right edge, such as
+  the hidden tip of a badge (`overflow-x: clip`, which keeps the filters sticky).
 - Touch screens: the fields (inputs, selects) take 16 px under `(pointer: coarse)`, a rule last in `style.css`, since
   Safari zooms into the page on a field under 16 px and leaves it zoomed; a new field needs nothing more. A double
   tap does not zoom either (`touch-action: manipulation`); pinching still does, never blocked (no `maximum-scale`). On
