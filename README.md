@@ -9,7 +9,9 @@ chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews ar
 
 Le dashboard est découpé en pages, dans une barre latérale (une barre en haut sur les écrans étroits). La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
-une colonne à droite, qui reste à portée quand la page défile. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
+une colonne à droite, qui reste à portée quand la page défile. Sur la vue d'ensemble, le cycle de vie, la TMA et
+DevOps, un choix « Comparer à » met chaque chiffre de la période face à la période d'avant ou à la même période l'an
+dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
 - **Vue d'ensemble** : l'activité du jour, puis celle de la période en trois volets, livraison (PR ouvertes et
@@ -27,6 +29,11 @@ une colonne à droite, qui reste à portée quand la page défile. Tous les dél
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
+- **Pour moi** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
+  dont GitHub lui demande encore la review (pas celles demandées à une équipe), puis les siennes, chacune dans une
+  seule liste et sans délai minimum : prêtes à merger, changements demandés, bloquées par un code owner, oubliées
+  (sans review ni commentaire depuis plus d'un mois, ce qui l'emporte sur le reste), et les autres, chacune avec où
+  elle en est et qui elle attend. D'après la dernière synchro.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;

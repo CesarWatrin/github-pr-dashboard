@@ -60,6 +60,12 @@
             </svg>
             À débloquer
           </a>
+          <a class="nav-link" href="#/pour-moi" data-route-link="me">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="5.5" r="2.5" /><path d="M3 13.5c.5-2.6 2.4-4 5-4s4.5 1.4 5 4" />
+            </svg>
+            Pour moi
+          </a>
           <a class="nav-link" href="#/bilan" data-route-link="report">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="2.5" y="3" width="11" height="10.5" rx="1.5" /><path d="M2.5 6.5h11M5.5 2v2M10.5 2v2M5.5 9.5h5M5.5 11.5h3" />
@@ -208,6 +214,14 @@
               <button class="button-primary" type="submit">Afficher</button>
             </form>
           </details>
+          <!-- Only on the pages whose tiles are about the period; the options are filled from COMPARISONS, the note with
+               the days compared to. -->
+          <div class="compare-field" data-compare-field>
+            <select class="search compare" name="compare" aria-label="Comparer à une autre période" data-compare>
+              <option value="none">Sans comparaison</option>
+            </select>
+            <p class="compare-note" data-compare-note hidden></p>
+          </div>
           <input
             class="search"
             type="search"
@@ -341,6 +355,63 @@
                   PR de code des 30 derniers jours, dépôts front, back et mobile : déjà mergées, à relire après coup
                 </p>
                 <ol class="feed" data-unapproved></ol>
+              </section>
+            </div>
+          </div>
+
+          <!-- Pour moi -->
+          <div class="route" data-route="me" hidden>
+            <section class="card" aria-labelledby="me-title">
+              <div class="card-toolbar">
+                <h2 id="me-title">En ce moment</h2>
+                <label class="me-picker">
+                  Je suis
+                  <select class="search" name="me" data-me-picker></select>
+                </label>
+              </div>
+              <div class="tiles" data-me-tiles></div>
+              <p class="card-note">
+                D’après la dernière synchro, hors brouillons et PR des personnes parties. Le choix de la personne reste
+                dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles
+                faites à la personne.
+              </p>
+            </section>
+
+            <div class="unblock-lists">
+              <section class="card" aria-labelledby="me-review-title">
+                <h2 id="me-review-title" data-me-title="toReview">Reviews qu’on m’a demandées</h2>
+                <p class="card-sub" data-me-sub="toReview"></p>
+                <ol class="feed" data-me="toReview"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-ready-title">
+                <h2 id="me-ready-title" data-me-title="ready">Prêtes à merger</h2>
+                <p class="card-sub" data-me-sub="ready"></p>
+                <ol class="feed" data-me="ready"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-changes-title">
+                <h2 id="me-changes-title" data-me-title="changes">Changements demandés</h2>
+                <p class="card-sub" data-me-sub="changes"></p>
+                <ol class="feed" data-me="changes"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-owners-title">
+                <h2 id="me-owners-title" data-me-title="owners">Bloquées par un code owner</h2>
+                <p class="card-sub" data-me-sub="owners"></p>
+                <ol class="feed" data-me="owners"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-forgotten-title">
+                <h2 id="me-forgotten-title" data-me-title="forgotten">Oubliées</h2>
+                <p class="card-sub" data-me-sub="forgotten"></p>
+                <ol class="feed" data-me="forgotten"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-open-title">
+                <h2 id="me-open-title" data-me-title="open">Mes PR ouvertes</h2>
+                <p class="card-sub" data-me-sub="open"></p>
+                <ol class="feed" data-me="open"></ol>
               </section>
             </div>
           </div>
@@ -727,6 +798,18 @@
                   Les PR et reviews des bots sont exclues. Les deux années avant la dernière se rechargent d’un mois à
                   chaque synchro : tant qu’elles ne sont pas toutes là, les périodes de 24 et 36 mois attendent.
                 </dd>
+                <dt>Comparaison</dt>
+                <dd>
+                  Sur la vue d’ensemble, le cycle de vie, la TMA et DevOps, les chiffres de la période peuvent se
+                  comparer à la période d’avant (la même durée, juste avant) ou à la même période l’an dernier (les
+                  mêmes jours, un an plus tôt ; pour 12 mois, les deux reviennent au même : seule la période d’avant est
+                  proposée ; au-delà d’un an, l’an dernier reprendrait une partie de la période et n’est pas proposé).
+                  Les jours comparés s’affichent sous le choix. Chaque chiffre affiche alors son évolution, comme dans le bilan du mois : en pourcentage, ou en points pour les parts, en vert
+                  quand elle va dans le bon sens, en orange sinon, les volumes restant neutres. Une comparaison que les
+                  36 mois synchronisés ne couvrent pas n’est pas proposée, et choisir une période qu’elle ne couvre plus
+                  (36 mois, par exemple) revient sans comparaison ; les exécutions de CI que GitHub a effacées n’ont pas
+                  d’évolution (« – »).
+                </dd>
                 <dt>PR de code</dt>
                 <dd>
                   Toutes les PR sauf celles de release (<code>release/*</code>, release-please, <code>develop</code> vers
@@ -897,6 +980,16 @@
                   jours ouvrés avec des changements demandés ou en discussion, comptés depuis cette décision,
                   l’ouverture ou le dernier échange. Sans aucune review ni commentaire depuis plus d’un
                   mois, elle est rangée à part, parmi les oubliées.
+                </dd>
+                <dt>Pour moi</dt>
+                <dd>
+                  Les mêmes PR de code ouvertes, vues par la personne choisie : celles des autres dont GitHub lui
+                  demande encore la review (une demande faite à une équipe ne compte pas, la synchro ne sait pas qui en
+                  fait partie ; elle s’efface dès que la personne a relu la PR), puis les siennes, chacune dans une
+                  seule liste, définie comme sur À débloquer mais sans délai minimum. Oubliée d’abord, sans aucune
+                  review ni commentaire depuis plus d’un mois, quoi qu’elle attende ; sinon prête à merger, approuvée
+                  par autant de personnes qu’il en faut, avec des changements demandés, bloquée par un code owner, ou,
+                  pour toutes les autres, dans ses PR ouvertes.
                 </dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>

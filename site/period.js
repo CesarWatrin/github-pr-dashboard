@@ -7,8 +7,9 @@
 // deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
 // checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update), draft (still open as one),
 // codeOwners (the code owners still asked to review it while GitHub does not let it merge: logins, teams as @slug, null
-// for one the sync could not read) and deleted (the lines a merged code pull request deletes, among its lines: the
-// others are added).
+// for one the sync could not read), requestedReviewers (the people still asked to review an open pull request that is
+// not a draft, code owners or not: logins only, teams and bots aside) and deleted (the lines a merged code pull request
+// deletes, among its lines: the others are added).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -825,7 +826,7 @@ export function lastMonthSummary(points, yearMonths = 12) {
 // (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
 // since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
 // the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
-// or comment, else its opening.
+// or comment, else its opening; requestedReviewers: the people still asked to review it.
 export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
   return records
     .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
@@ -867,8 +868,33 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
             : (pr.interventions.at(-1)?.[1] ?? pr.createdAt),
         by: owners ? pr.codeOwners : deciders.map(([login]) => login).sort(),
         lastAt: pr.interventions.at(-1)?.[1] ?? pr.createdAt,
+        requestedReviewers: pr.requestedReviewers ?? [],
       }
     })
+}
+
+// Where a person's own open pull request goes when it is not forgotten, by where it stands; the others go to open.
+const OWN_LISTS = { approved: 'ready', changes: 'changes', owners: 'owners' }
+
+// What stands for one person among the open pull requests of openPullRequests(): those of other people still asking
+// for their review (toReview), the oldest first; and theirs, each in one list only. Forgotten when nothing was
+// reviewed or commented since forgottenBefore (minutes since the epoch), whatever it stands, the longest forgotten
+// first; else after where it stands: approved by as many people as merging needs (ready), changes requested (changes),
+// blocked by code owners (owners), or any other stance (open), the longest where they stand first.
+export function personalQueue(open, login, { forgottenBefore = -Infinity } = {}) {
+  const own = open.filter((pr) => pr.author === login)
+  const lists = { ready: [], changes: [], owners: [], open: [] }
+  for (const pr of own.filter((other) => other.lastAt > forgottenBefore).sort((a, b) => a.since - b.since)) {
+    lists[OWN_LISTS[pr.stance] ?? 'open'].push(pr)
+  }
+
+  return {
+    toReview: open
+      .filter((pr) => pr.author !== login && pr.requestedReviewers.includes(login))
+      .sort((a, b) => a.createdAt - b.createdAt),
+    ...lists,
+    forgotten: own.filter((pr) => pr.lastAt <= forgottenBefore).sort((a, b) => a.lastAt - b.lastAt),
+  }
 }
 
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.
@@ -916,4 +942,48 @@ export function computeCi(workflows, { start, end, bucket }) {
     series: keys.map(({ key, partial }) => ({ key, partial, ...summary(buckets.get(key)) })),
     workflows: rows,
   }
+}
+
+// What a period can be compared to: the range of the same length right before it ('previous'), or the same Paris days
+// and hours one year earlier ('year'). A range of whole Paris days moves by whole days, whatever the changes of time
+// in between. Null for another mode, or when the data does not cover it: the window counts years of 365 days, so the
+// same days three calendar years earlier may start one day before the data, and the range then starts with the data.
+export function comparisonRange({ start, end, bucket }, mode, dataStart) {
+  let range
+  if (mode === 'previous') {
+    const firstDay = parisDay(start)
+    const wholeDays = parisMidnight(firstDay) === start && parisMidnight(parisDay(end)) === end
+    const earlierStart = wholeDays ? parisMidnight(addDays(firstDay, -Math.round((end - start) / DAY_MS))) : start - (end - start)
+    range = { start: earlierStart, end: start, bucket }
+  } else if (mode === 'year') {
+    range = { start: yearEarlier(start), end: yearEarlier(end), bucket }
+  } else {
+    return null
+  }
+  if (range.start < dataStart - DAY_MS) {
+    return null
+  }
+
+  return { ...range, start: Math.max(range.start, dataStart) }
+}
+
+// Whether two ranges cover the same days, within one: the year before 12 months is the 12 months before, a 29 February
+// between them aside. Null, a range the data does not cover, matches nothing.
+export function sameDays(a, b) {
+  return a !== null && b !== null && Math.abs(a.start - b.start) <= DAY_MS && Math.abs(a.end - b.end) <= DAY_MS
+}
+
+// Whether the range a period is compared to, before it, shares more than a day with it: the same period last year of
+// a period longer than a year takes back part of it, and both sides would count the same pull requests.
+export function overlapsPeriod(range, compared) {
+  return compared !== null && compared.end - range.start > DAY_MS
+}
+
+// The same time of the same Paris day, one year earlier: 29 February falls on the 28th.
+function yearEarlier(time) {
+  const day = parisDay(time)
+  const [year, month, date] = day.split('-')
+  const earlier = `${Number(year) - 1}-${month}-${month === '02' && date === '29' ? '28' : date}`
+
+  return parisMidnight(earlier) + (time - parisMidnight(day))
 }

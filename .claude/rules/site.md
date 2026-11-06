@@ -13,15 +13,26 @@ paths:
   `full-sync.js` with the same query string (`import.meta.url`). Any new module follows that pattern, so that the Pages
   cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, unblock, report, trends, analysis, authors, reviewers, cycle, collaboration,
+  page of the hash (`ROUTES`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
-  method, report and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about
-  what stands now, keeps the search only (`period: false`), the analysis and trends pages the period only
-  (`search: false`).
+  method, report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour
+  moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
+  analysis and trends pages the period only (`search: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
   the synced data.
+- **Comparison**: `state.compare` (`COMPARISONS`, or `NO_COMPARISON`; remembered with the period by `storePeriod()`)
+  sets the period against `comparisonRange()` of `site/period.js`: the range of the same length right before, or the
+  same Paris days a year earlier, null when the synced data does not cover it (the option is then marked « hors
+  données » and disabled; `renderComparePicker()` goes back to `NO_COMPARISON`, stored, when a new period leaves the
+  comparison picked uncovered). When the year before is the period before (`sameDays()`, as for 12 months), the year
+  option is left out and a year picked becomes the period before. It is left out too, and a year picked goes back to
+  no comparison, when it takes back part of the period (`overlapsPeriod()`, for a period longer than a year). The days compared to show under the picker
+  (`[data-compare-note]`). `comparedPeriod()` and `comparedCi()` work out its stats once per range and data, the CI only when the
+  runs cover it whole. `renderTiles()` takes those values as its last argument and `renderTileChange()` shows each
+  change with `reportChange()`, colored after the `better` of the tile definition; `compare: false` keeps a tile about
+  today out of it. The picker only shows on `COMPARED_ROUTES`, the pages whose tiles are about the period.
 - **CI**: the runs only go back to `ciStart` of the stats. `ciRange()` cuts the range of the CI there (`currentCi()`,
   `ciPerRepository()`), so that no chart starts with empty buckets, and `ciCut()` tells the DevOps page that the CI of
   the period starts later; a month of the report that starts before has no CI.
@@ -61,6 +72,14 @@ paths:
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
   `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
   by two, the forgotten pull requests beside those merged without approval.
+- **« Pour moi » page** (`renderMe()`): the same open pull requests, those of people still in the team, for one person
+  picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
+  `personalQueue()` of `site/period.js` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
+  others still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know
+  who is in a team), then theirs, each in one list only, named and defined as on the unblock page but without its
+  delays: forgotten first (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked
+  by code owners, and the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not
+  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking.
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added
