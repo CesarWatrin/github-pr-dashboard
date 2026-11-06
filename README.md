@@ -79,7 +79,10 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   part relue en interne), sa mise en prod, ses membres, qui relit son code et ses dépôts, chaque chiffre avec la
   médiane des squads. Dessous, le classement des squads, trié sur la colonne choisie, médailles pour les trois
   premières et meilleur chiffre de chaque colonne marqué, en totaux ou par personne pour comparer des squads de
-  tailles différentes, avec toute l'organisation en dernière ligne. Une squad compte les PR ouvertes par ses membres,
+  tailles différentes, avec toute l'organisation en dernière ligne. Puis quatre graphiques : la colonne qui classe,
+  squad par squad (il suit le classement) ; où passe le temps d'une PR de chaque squad, étape par étape ; ce que
+  chaque squad écrit, la part de ses PR par type de dépôt ; qui relit qui entre squads, la diagonale étant la
+  relecture interne. Les cartes et les fiches des personnes portent leurs squads. Une squad compte les PR ouvertes par ses membres,
   et ce que ses membres ont relu ou commenté dans toute l'organisation ; une personne de deux squads compte dans les
   deux.
 - **Équipe** : une carte par personne qui a écrit ou relu du code sur la période, triées par nombre de PR de code

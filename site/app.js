@@ -1928,8 +1928,17 @@ function barChart(container, { rows, label, value, format, max, color, ariaLabel
 
 // Bars cut into the stages of the cycle, one row per group of pull requests: each stage takes its share of their
 // time, written inside when it fits. rows are { label, shares, timed, ...medians }, shares null without any timed pull
-// request.
-function shareChart(container, { rows, ariaLabel }) {
+// request. Other parts than the stages ({ key, label, color }) may cut the bars, with the rows of their tooltip.
+const cycleShareRows = (row) => [
+  ...CYCLE_STAGES.map((stage) => ({
+    color: stage.color,
+    value: formatShare(row.shares[stage.key]),
+    label: `${stage.label.toLowerCase()}, médiane ${formatDuration(row[stage.key])}`,
+  })),
+  { label: 'PR relues arrivées en prod', value: formatNumber(row.timed) },
+]
+
+function shareChart(container, { rows, ariaLabel, stages = CYCLE_STAGES, tooltipRows = cycleShareRows }) {
   const width = container.clientWidth
   if (width === 0) {
     return
@@ -1955,11 +1964,11 @@ function shareChart(container, { rows, ariaLabel }) {
     const name = svg('text', { class: 'axis-label', x: labelWidth, y: y + rowHeight / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
     name.textContent = truncateText(row.label, labelMax)
     group.append(name)
-    const stages = CYCLE_STAGES.filter((stage) => row.shares[stage.key] > 0)
+    const present = stages.filter((stage) => row.shares[stage.key] > 0)
     let x = start
-    stages.forEach((stage, stageIndex) => {
+    present.forEach((stage, stageIndex) => {
       const stageWidth = row.shares[stage.key] * barWidth
-      const last = stageIndex === stages.length - 1
+      const last = stageIndex === present.length - 1
       const path = last ? barPath(x, y + 6, stageWidth, rowHeight - 12) : squarePath(x, y + 6, stageWidth, rowHeight - 12)
       group.append(svg('path', { class: 'bar', style: `fill: ${stage.color}`, d: path }))
       const text = formatShare(row.shares[stage.key])
@@ -1971,18 +1980,8 @@ function shareChart(container, { rows, ariaLabel }) {
       x += stageWidth
     })
 
-    const content = {
-      title: row.label,
-      rows: [
-        ...CYCLE_STAGES.map((stage) => ({
-          color: stage.color,
-          value: formatShare(row.shares[stage.key]),
-          label: `${stage.label.toLowerCase()}, médiane ${formatDuration(row[stage.key])}`,
-        })),
-        { label: 'PR relues arrivées en prod', value: formatNumber(row.timed) },
-      ],
-    }
-    const text = CYCLE_STAGES.map((stage) => `${stage.label.toLowerCase()} ${formatShare(row.shares[stage.key])}`).join(', ')
+    const content = { title: row.label, rows: tooltipRows(row) }
+    const text = stages.map((stage) => `${stage.label.toLowerCase()} ${formatShare(row.shares[stage.key])}`).join(', ')
     const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': `${row.label} : ${text}` })
     bindTooltip(
       hit,
@@ -3013,7 +3012,7 @@ function personCard(row, index) {
   const badges = badgeRow(row.login, 'person-badges', 'small', SHOWN_BADGES)
   // Above the button of the card for their hover, the badges still open the dialog.
   badges[0]?.addEventListener('click', () => open.click())
-  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...badges, statList(TEAM_STATS, row))
+  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...squadTags(row.login), ...badges, statList(TEAM_STATS, row))
   card.setAttribute('aria-label', name)
   card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
 
@@ -4547,7 +4546,9 @@ function personDetails(row) {
 
 // The dialog of a person or a repository shows its card, in place of the one shown if any. Closing gives the focus back
 // to what opened the first one, even where a click does not focus a button.
-function showCardDialog(children, opener) {
+// The head of the card, its first child, stays in place with the close button; the rest goes in a body that scrolls
+// when the window is too short for the whole card (fitCardDialog()).
+function showCardDialog([head, ...children], opener) {
   const close = el(
     'button',
     { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
@@ -4556,11 +4557,15 @@ function showCardDialog(children, opener) {
   close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
   close.setAttribute('aria-label', 'Fermer')
   close.addEventListener('click', () => $('[data-person-dialog]').close())
-  $('[data-person-dialog-card]').replaceChildren(close, ...children)
+  const body = el('div', { className: 'person-dialog-body' }, ...children)
+  $('[data-person-dialog-card]').replaceChildren(close, head, body)
+  cardDialogObserver.disconnect()
+  for (const node of [body, ...body.children]) {
+    cardDialogObserver.observe(node)
+  }
   resetPersonTilt()
   const dialog = $('[data-person-dialog]')
   if (dialog.open) {
-    dialog.scrollTop = 0
     close.focus()
 
     return
@@ -4568,6 +4573,19 @@ function showCardDialog(children, opener) {
   dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
   dialog.showModal()
 }
+
+// The body of the card scrolls only when it does not fit: a scrolling box flattens the layers that come apart as the
+// card leans, so they stay apart whenever the whole card fits. Measured again as the window or the content resizes.
+function fitCardDialog() {
+  const body = $('[data-person-dialog-card] .person-dialog-body')
+  if (!body) {
+    return
+  }
+  body.classList.remove('is-scrollable')
+  body.classList.toggle('is-scrollable', body.scrollHeight > body.clientHeight + 1)
+}
+
+const cardDialogObserver = new ResizeObserver(() => requestAnimationFrame(fitCardDialog))
 
 // A link to GitHub, at the right of the name, with the GitHub mark of the icon sprite.
 function githubPill(path, text) {
@@ -4608,6 +4626,7 @@ function openPersonDialog(row, opener) {
           ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
           ...(isFormer(row.login) ? formerText(row.login) : seniorityText('p', 'person-dialog-meta', row.login)),
           stackLine(row.stack),
+          ...squadTags(row.login),
           el('p', {
             className: 'person-dialog-meta',
             textContent: technologies.map(([technology, share]) => `${technology} ${formatShare(share)}`).join(' · '),
@@ -4727,6 +4746,7 @@ function renderCharts() {
   renderCycleCharts()
   renderCollaboration()
   renderTrends()
+  renderSquadCharts()
   if (state.person) {
     renderMiniCharts()
   }
@@ -6266,6 +6286,8 @@ const SQUAD_RANKING = squadFigures(
 const SQUAD_MEDALS = ['🥇', '🥈', '🥉']
 // The readers and repositories listed on a squad's dialog.
 const SQUAD_TOP = 5
+// Below this width, the matrix of the squads writes its thousands short.
+const SQUAD_MATRIX_COMPACT_WIDTH = 500
 
 // The pull requests the members of a squad opened, worked out once per stats; all of them without a squad.
 function squadRecords(squad) {
@@ -6330,6 +6352,7 @@ function squadRow(name, members, range, organization) {
     name,
     members: members ?? [],
     size: members ? members.length : mePeople().length,
+    period,
     code: repoTotal(period.authors, 'code'),
     merged: period.totals.merged,
     reviews: repoTotal(own(organization.reviewers), 'prs'),
@@ -6398,6 +6421,15 @@ function squadAvatars(members, size = 28) {
 }
 
 const membersText = (count) => `${formatNumber(count)} membre${count > 1 ? 's' : ''}`
+
+// The squads a person belongs to, as tags on their card and dialog: nothing outside any squad, or without squads.
+function squadTags(login) {
+  const squads = squadsOf().filter((squad) => squad.members.includes(login))
+
+  return squads.length
+    ? [el('div', { className: 'squad-tags', title: 'Squads' }, ...squads.map((squad) => el('span', { className: 'squad-tag', textContent: squad.name })))]
+    : []
+}
 
 function squadCard(row, index, rows) {
   // The whole card opens the squad's dialog: the button of its head stretches over it.
@@ -6534,6 +6566,108 @@ function renderSquadRanking(rows, organization) {
   }
 }
 
+// The squads side by side on the column that ranks them, per member when the ranking is: it follows the clicks.
+function renderSquadComparison(rows) {
+  const figure = SQUAD_FIGURES[state.squadSort.key]
+  const format = figure.key === 'members' ? formatNumber : rankingFormat(figure)
+  const perMember = state.squadPerMember && figure.perMember
+  $('[data-squads-compare-title]').textContent = `${figure.label}${perMember ? ' par personne' : ''}`
+  $('[data-squads-compare-sub]').textContent = `${figure.hint} Le graphique suit la colonne qui classe le classement.`
+  barChart($('[data-squads-compare]'), {
+    rows: rankedSquads(rows).filter((row) => !isMissing(rankingValue(row, figure))),
+    label: (row) => row.name,
+    value: (row) => rankingValue(row, figure),
+    format,
+    color: 'var(--series-1)',
+    ariaLabel: `${figure.label} de chaque squad${perMember ? ', par personne' : ''}, ${periodTitle()}`,
+    tooltip: (row) => ({
+      title: row.name,
+      rows: [
+        { label: figure.label.toLowerCase(), value: format(rankingValue(row, figure)) },
+        { label: 'membres', value: formatNumber(row.size) },
+      ],
+    }),
+  })
+}
+
+// Where the time of a code pull request goes, squad by squad, as on the cycle page: the whole organization first.
+function renderSquadStages(rows, organization) {
+  shareChart($('[data-squads-stages]'), {
+    rows: [organization, ...rows].map((row) => ({
+      label: row.name === '*' ? 'Toute l’organisation' : row.name,
+      ...cycleSummary(row.period.cycles),
+    })),
+    ariaLabel: 'Part de chaque étape dans le temps des PR de code, par squad',
+  })
+}
+
+// What each squad writes: the share of its code pull requests in each type of repository, in the colors of the types,
+// the whole organization first.
+const SQUAD_TYPES = CATEGORIES.map((category) => ({ key: category.key, label: category.label, color: category.color ?? 'var(--text-muted)' }))
+
+function renderSquadTypes(rows, organization) {
+  shareChart($('[data-squads-types]'), {
+    rows: [organization, ...rows].map((row) => {
+      const counts = Object.fromEntries(SQUAD_TYPES.map((type) => [type.key, 0]))
+      for (const author of row.period.authors) {
+        for (const [repo, stats] of Object.entries(author.repos)) {
+          counts[repoInfo(repo).category] += stats.code
+        }
+      }
+      const code = Object.values(counts).reduce((total, count) => total + count, 0)
+
+      return {
+        label: row.name === '*' ? 'Toute l’organisation' : row.name,
+        counts,
+        code,
+        shares: code ? Object.fromEntries(SQUAD_TYPES.map((type) => [type.key, counts[type.key] / code])) : null,
+      }
+    }),
+    stages: SQUAD_TYPES,
+    tooltipRows: (row) => [
+      ...SQUAD_TYPES.map((type) => ({ color: type.color, value: formatShare(row.shares[type.key]), label: `${type.label.toLowerCase()}, ${formatNumber(row.counts[type.key])} PR` })),
+      { label: 'PR de code', value: formatNumber(row.code) },
+    ],
+    ariaLabel: 'Part des PR de code de chaque squad par type de dépôt',
+  })
+}
+
+// Who reads whom between squads: a row per squad for its pull requests, a column per squad for their readers, each
+// cell the pull requests of the row its people read over the period. A person of two squads counts in both; the
+// diagonal is what a squad reads of itself.
+function renderSquadMatrix(rows, organization) {
+  const squadsOfLogin = new Map()
+  for (const row of rows) {
+    for (const login of row.members) {
+      squadsOfLogin.set(login, [...(squadsOfLogin.get(login) ?? []), row.name])
+    }
+  }
+  const cells = new Map()
+  for (const pair of organization.period.reviewPairs) {
+    const prs = Object.values(pair.repos).reduce((total, count) => total + count, 0)
+    for (const author of squadsOfLogin.get(pair.author) ?? []) {
+      for (const reviewer of squadsOfLogin.get(pair.reviewer) ?? []) {
+        const key = `${author}\n${reviewer}`
+        cells.set(key, (cells.get(key) ?? 0) + prs)
+      }
+    }
+  }
+  const axis = rows.map((row) => ({ key: row.name, label: row.name }))
+  const container = $('[data-squads-matrix]')
+  heatmapChart(container, {
+    rows: axis,
+    columns: axis,
+    value: (row, column) => cells.get(`${row.key}\n${column.key}`) ?? 0,
+    // Narrow cells, on a phone, take thousands short (« 1,2 k »): the tooltip keeps the whole number.
+    format: container.clientWidth < SQUAD_MATRIX_COMPACT_WIDTH ? formatLines : formatNumber,
+    ariaLabel: `Relectures entre squads, ${periodTitle()}`,
+    tooltip: (row, column, count) => ({
+      title: row.key === column.key ? `${row.label}, entre ses membres` : `${row.label}, relue par ${column.label}`,
+      rows: [{ label: count > 1 ? 'PR relues' : 'PR relue', value: formatNumber(count) }],
+    }),
+  })
+}
+
 function renderSquads() {
   const any = squadsOf().length > 0
   $('[data-squads-empty]').hidden = any
@@ -6547,6 +6681,19 @@ function renderSquads() {
     state.squadPerMember ? 'les volumes divisés par le nombre de membres de chaque squad' : 'en totaux'
   }. Un clic sur une colonne classe les squads sur elle, un second inverse le classement.`
   renderSquadRanking(squads, organization)
+  renderSquadCharts({ squads, organization })
+}
+
+// The charts of the squads page, drawn again as the page resizes, only when it shows.
+function renderSquadCharts(rows = null) {
+  if (!squadsOf().length || $('[data-route="squads"]').hidden) {
+    return
+  }
+  const { squads, organization } = rows ?? squadRows()
+  renderSquadComparison(squads)
+  renderSquadStages(squads, organization)
+  renderSquadTypes(squads, organization)
+  renderSquadMatrix(squads, organization)
 }
 
 // Sync status
@@ -7502,6 +7649,8 @@ renderPeriodSelector()
 renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)
 renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
+renderLegend($('[data-squads-stages-legend]'), CYCLE_STAGES)
+renderLegend($('[data-squads-types-legend]'), SQUAD_TYPES)
 renderStackLegends()
 renderTableLegends()
 setInterval(refresh, POLL_INTERVAL_MS)

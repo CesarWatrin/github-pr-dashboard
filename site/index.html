@@ -784,6 +784,39 @@
                   changent pas. Le nom d’une squad, comme sa carte, ouvre sa fiche.
                 </p>
               </section>
+              <div class="grid-2 grid-even">
+                <section class="card" aria-labelledby="squads-compare-title">
+                  <h2 id="squads-compare-title" data-squads-compare-title>Comparaison</h2>
+                  <p class="card-sub" data-squads-compare-sub></p>
+                  <div class="bar-chart" data-squads-compare></div>
+                </section>
+                <section class="card" aria-labelledby="squads-stages-title">
+                  <h2 id="squads-stages-title">Où passe le temps</h2>
+                  <p class="card-sub">
+                    Part de chaque étape dans le temps d’une PR de code de la squad, de son ouverture à son arrivée en
+                    prod, en moyenne
+                  </p>
+                  <div class="legend" data-squads-stages-legend></div>
+                  <div class="bar-chart" data-squads-stages></div>
+                </section>
+              </div>
+              <div class="grid-2 grid-even">
+                <section class="card" aria-labelledby="squads-types-title">
+                  <h2 id="squads-types-title">Ce que chaque squad écrit</h2>
+                  <p class="card-sub">Part des PR de code de la squad dans chaque type de dépôt, sur la période</p>
+                  <div class="legend" data-squads-types-legend></div>
+                  <div class="bar-chart" data-squads-types></div>
+                </section>
+                <section class="card" aria-labelledby="squads-matrix-title">
+                  <h2 id="squads-matrix-title">Qui relit qui, entre squads</h2>
+                  <p class="card-sub">
+                    En ligne, les PR de code d’une squad ; en colonne, les membres d’une squad qui les relisent : chaque
+                    case compte les PR de la ligne que ceux de la colonne ont relues sur la période. La diagonale, c’est
+                    la relecture interne ; une personne de deux squads compte dans les deux.
+                  </p>
+                  <div class="heatmap" data-squads-matrix></div>
+                </section>
+              </div>
             </div>
           </div>
 

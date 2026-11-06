@@ -90,7 +90,12 @@ paths:
   (`squadCard()`, the repository card's style) opens `openSquadDialog()`, the card dialog with its tilt, each figure
   over the median of the squads. The ranking (`renderSquadRanking()`): sorted on the column clicked
   (`state.squadSort`, best first by `better`, again to reverse), medals for the first three, the best of each column
-  marked, « Total / Par personne » (`state.squadPerMember`), the organization in a last row out of the ranking.
+  marked, « Total / Par personne » (`state.squadPerMember`), the organization in a last row out of the ranking. Four charts under it (`renderSquadCharts()`, drawn again
+  as the page resizes): the column that ranks, squad by squad (`renderSquadComparison()`); the share of each stage of
+  the cycle (`shareChart()`, which takes other parts and tooltip rows than the stages); the share of their code pull
+  requests by repository type (`SQUAD_TYPES`, the colors of the types); who reads whom between squads, from the
+  `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
+  carry their squads (`squadTags()`).
 - **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
@@ -248,6 +253,12 @@ paths:
   to 1535 px they stick to the top of the window instead, on a band of the page's background, underlined once stuck
   (`is-stuck`, set by an `IntersectionObserver`: their top sits one pixel above the window). Tables
   fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
+- Card dialogs (a person, a repository, a squad: `showCardDialog()`): never taller than the window; the head, its
+  first child, stays in place with the close button, the rest goes in `.person-dialog-body`, which scrolls only when
+  it does not fit (`fitCardDialog()`, `is-scrollable`, measured again by a `ResizeObserver`): a scrolling box
+  flattens the layers that come apart as the card leans. The dialog itself never scrolls. The filters at the top all
+  take the height of the periods (`.filters .search`, 41 px). The page clips what hangs past its right edge, such as
+  the hidden tip of a badge (`overflow-x: clip`, which keeps the filters sticky).
 - Touch screens: the fields (inputs, selects) take 16 px under `(pointer: coarse)`, a rule last in `style.css`, since
   Safari zooms into the page on a field under 16 px and leaves it zoomed; a new field needs nothing more. A double
   tap does not zoom either (`touch-action: manipulation`); pinching still does, never blocked (no `maximum-scale`). On

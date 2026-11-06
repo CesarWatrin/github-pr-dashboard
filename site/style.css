@@ -375,8 +375,11 @@ code {
   }
 }
 
-/* Beside the sidebar, the page starts right after it; above the narrow bar, it is centered. */
+/* Beside the sidebar, the page starts right after it; above the narrow bar, it is centered. What hangs past its right
+   edge, such as the hidden tip of a badge on the last card of a row, is clipped rather than widen the window: clip, not
+   hidden, so that the filters still stick as the window scrolls. */
 .page {
+  overflow-x: clip;
   width: 100%;
   max-width: 1320px;
   padding: 32px 40px 48px;
@@ -1132,6 +1135,12 @@ h3 {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 20px;
+}
+
+/* Every filter as tall as the periods beside them (3 px of padding, a 33 px button, the borders): the dates, the
+   comparison, the squad and the search alike. */
+.filters .search {
+  min-height: 41px;
 }
 
 /* The name of the filters, over their column on wide screens; at the top of the page they need none. */
@@ -2761,6 +2770,24 @@ main.is-loading {
   gap: 16px;
 }
 
+/* The squads of a person, under their stack on their card and dialog: one tag each, a person may have two. */
+.squad-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.squad-tag {
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--series-1) 35%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .squad-card-size {
   margin-left: auto;
   color: var(--text-secondary);
@@ -3170,12 +3197,11 @@ main.is-loading {
   color: var(--text-primary);
 }
 
-/* On a screen tall and wide enough for the whole card, nothing clips it as it leans; on a smaller one it scrolls. */
-@media (min-width: 761px) and (min-height: 761px) {
-  .person-dialog {
-    max-height: none;
-    overflow: visible;
-  }
+/* The card never outgrows the window (its body scrolls instead): nothing clips it as it leans, and the dialog itself
+   never scrolls. */
+.person-dialog {
+  max-height: none;
+  overflow: visible;
 }
 
 .person-dialog::backdrop {
@@ -3187,10 +3213,14 @@ main.is-loading {
   perspective: 1100px;
 }
 
+/* Never taller than the window, padding of the dialog aside: the head, with the close button, stays in view, and only
+   the body under it scrolls when the window is too short (is-scrollable, from app.js). */
 .person-dialog-card {
   position: relative;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
+  max-height: calc(100dvh - 80px);
   padding: 24px 26px;
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -3290,10 +3320,28 @@ main.is-loading {
 
 .person-dialog-head {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   padding-right: 40px;
+}
+
+/* Its layers keep their depth while the whole card fits; scrolling, the body flattens them, the head keeps its own. The
+   scrollbar sits in the padding of the card, not over the figures. */
+.person-dialog-body {
+  display: grid;
+  gap: 18px;
+  min-height: 0;
+  transform-style: preserve-3d;
+}
+
+.person-dialog-body.is-scrollable {
+  margin-right: -14px;
+  padding-right: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .person-dialog-avatar {
