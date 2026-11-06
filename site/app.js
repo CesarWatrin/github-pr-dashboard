@@ -3314,7 +3314,7 @@ const TREND_FIGURES = [
   REPORT_FIGURES.get('Délai médian jusqu’en prod'),
   REPORT_FIGURES.get('Taux de reprise'),
   REPORT_FIGURES.get('Part de hotfix'),
-  { ...REPORT_FIGURES.get('En échec'), label: 'CI en échec' },
+  { ...REPORT_FIGURES.get('En échec'), label: 'CI en échec', ci: true },
 ]
 // A month's rolling median covers it and the months just before it, this many in all.
 const TREND_ROLLING_MONTHS = 3
@@ -3488,6 +3488,23 @@ function trendComparison(figure, value, against, text) {
   )
 }
 
+// Why the CI of a period that starts earlier has no figure for its first months: GitHub forgets the runs after about
+// 13 months, and the dashboard only keeps them itself since ciStart. A month counts from the first one the runs cover
+// whole, as monthStats() does. Nothing when the period starts after it.
+function ciTrendNote(months, shown) {
+  const first = months.find((month) => parisMidnight(`${month}-01`) >= ciStart())
+  if (!first || shown[0] >= first) {
+    return []
+  }
+
+  return [
+    el('p', {
+      className: 'card-note',
+      textContent: `Pas de chiffre avant ${monthName(first)} : GitHub efface les exécutions de CI après environ 13 mois, et le dashboard ne les garde lui-même que depuis le ${dateFormat.format(ciStart())}. L’historique s’allonge d’un mois chaque mois.`,
+    }),
+  ]
+}
+
 // One card per figure, over the months of the period (shown): the latest whole one against the same month a year
 // earlier and the median of the whole months up to it, then the chart and its data. The rolling median and these
 // comparisons read the months before the period when they need them: every month of the data (months) is worked out.
@@ -3549,6 +3566,7 @@ function trendCard(figure, months, shown) {
         )
       : '',
     chart,
+    ...(figure.ci ? ciTrendNote(months, shown) : []),
     el('details', { className: 'chart-data' }, el('summary', { textContent: 'Voir les données du graphique' }), table),
   )
   const ariaLabel = `${figure.label}, mois par mois, de ${monthName(shown[0])} à ${monthName(shown.at(-1))}, et sa médiane sur ${TREND_ROLLING_MONTHS} mois`
@@ -5564,6 +5582,12 @@ function waitedFor(pr) {
 
 const minutesIso = (minutes) => new Date(minutes * 60_000).toISOString()
 
+// Unlike the unblock page, about the code, the « Pour moi » page lists releases and integrations too: they wait for
+// their reviews and code owners all the same. A tag tells them apart.
+const ME_KINDS = ['code', 'integration', 'release']
+const KIND_TAGS = { integration: 'intégration', release: 'release' }
+const kindTag = (pr) => (KIND_TAGS[pr.kind] ? [el('span', { className: 'feed-tag', textContent: KIND_TAGS[pr.kind] })] : [])
+
 const ME_ITEMS = {
   // Someone else's pull request, where it stands, since its opening.
   toReview: (pr) =>
@@ -5575,6 +5599,7 @@ const ME_ITEMS = {
         pullRequestLink(pr.repo, pr.number),
         document.createTextNode(' de '),
         personLink(pr.author, { withAvatar: false }),
+        ...kindTag(pr),
         el('span', { className: 'feed-tag', textContent: UNBLOCK_STANCES.find((stance) => stance.key === pr.stance).tag }),
       ),
       minutesIso(pr.createdAt),
@@ -5595,6 +5620,7 @@ function ownItem(pr, { tagged = false, forgotten = false } = {}) {
     'p',
     { className: 'feed-text' },
     pullRequestLink(pr.repo, pr.number),
+    ...kindTag(pr),
     ...(tagged ? [el('span', { className: 'feed-tag', textContent: stance.tag })] : []),
     ...(forgotten ? [] : waitedFor(pr)),
   )
@@ -5614,7 +5640,9 @@ function renderMe(mode) {
   picker.value = me ?? ''
 
   const required = requiredApprovals()
-  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required }).filter((pr) => isCurrent(pr.author))
+  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required, kinds: ME_KINDS }).filter((pr) =>
+    isCurrent(pr.author),
+  )
   // Forgotten as on the unblock page: no review nor comment for FORGOTTEN_AFTER_DAYS.
   const forgottenBefore = Date.now() / 60_000 - FORGOTTEN_AFTER_DAYS * 24 * 60
   const queue = me ? personalQueue(open, me, { forgottenBefore }) : null

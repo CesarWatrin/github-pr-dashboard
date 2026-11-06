@@ -820,16 +820,17 @@ export function lastMonthSummary(points, yearMonths = 12) {
   }
 }
 
-// The open code pull requests of people, drafts aside, and where each one stands after the latest decision of each
-// reviewer, as GitHub reckons it: changes requested by someone (changes), else blocked by code owners who have not
+// The open pull requests of people of the kinds asked for (code only by default: the unblock page; releases and
+// integrations wait for their reviews too, for the « Pour moi » page), drafts aside, each with its kind, and where each
+// one stands after the latest decision of each reviewer, as GitHub reckons it: changes requested by someone (changes), else blocked by code owners who have not
 // reviewed it yet (owners), else approved by as many people as merging needs (approved), else approved by fewer
 // (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
 // since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
 // the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
 // or comment, else its opening; requestedReviewers: the people still asked to review it.
-export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
+export function openPullRequests(records, { requiredApprovals = 1, kinds = ['code'] } = {}) {
   return records
-    .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
+    .filter((pr) => !pr.bot && kinds.includes(pr.kind) && pr.mergedAt === null && !pr.closed && !pr.draft)
     .map((pr) => {
       const decisions = new Map()
       for (const [login, at, state] of pr.interventions) {
@@ -858,6 +859,7 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
         repo: pr.repo,
         number: pr.number,
         author: pr.author,
+        kind: pr.kind,
         createdAt: pr.createdAt,
         lines: pr.lines,
         stance,
