@@ -1025,6 +1025,16 @@ main.is-loading {
   }
 }
 
+/* « Pour moi »: the person picker, named by its label. */
+.me-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 /* Three cards on two columns: the last one takes the whole second row rather than half of it. */
 @container (min-width: 776px) and (max-width: 1171px) {
   .grid-even > :nth-child(3):last-child {

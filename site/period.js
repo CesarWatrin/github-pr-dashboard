@@ -7,8 +7,9 @@
 // deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
 // checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update), draft (still open as one),
 // codeOwners (the code owners still asked to review it while GitHub does not let it merge: logins, teams as @slug, null
-// for one the sync could not read) and deleted (the lines a merged code pull request deletes, among its lines: the
-// others are added).
+// for one the sync could not read), requestedReviewers (the people still asked to review an open pull request that is
+// not a draft, code owners or not: logins only, teams and bots aside) and deleted (the lines a merged code pull request
+// deletes, among its lines: the others are added).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -781,7 +782,7 @@ export function monthlyLeaders(history, key) {
 // (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
 // since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
 // the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
-// or comment, else its opening.
+// or comment, else its opening; requestedReviewers: the people still asked to review it.
 export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
   return records
     .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
@@ -823,8 +824,33 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
             : (pr.interventions.at(-1)?.[1] ?? pr.createdAt),
         by: owners ? pr.codeOwners : deciders.map(([login]) => login).sort(),
         lastAt: pr.interventions.at(-1)?.[1] ?? pr.createdAt,
+        requestedReviewers: pr.requestedReviewers ?? [],
       }
     })
+}
+
+// Where a person's own open pull request goes when it is not forgotten, by where it stands; the others go to open.
+const OWN_LISTS = { approved: 'ready', changes: 'changes', owners: 'owners' }
+
+// What stands for one person among the open pull requests of openPullRequests(): those of other people still asking
+// for their review (toReview), the oldest first; and theirs, each in one list only. Forgotten when nothing was
+// reviewed or commented since forgottenBefore (minutes since the epoch), whatever it stands, the longest forgotten
+// first; else after where it stands: approved by as many people as merging needs (ready), changes requested (changes),
+// blocked by code owners (owners), or any other stance (open), the longest where they stand first.
+export function personalQueue(open, login, { forgottenBefore = -Infinity } = {}) {
+  const own = open.filter((pr) => pr.author === login)
+  const lists = { ready: [], changes: [], owners: [], open: [] }
+  for (const pr of own.filter((other) => other.lastAt > forgottenBefore).sort((a, b) => a.since - b.since)) {
+    lists[OWN_LISTS[pr.stance] ?? 'open'].push(pr)
+  }
+
+  return {
+    toReview: open
+      .filter((pr) => pr.author !== login && pr.requestedReviewers.includes(login))
+      .sort((a, b) => a.createdAt - b.createdAt),
+    ...lists,
+    forgotten: own.filter((pr) => pr.lastAt <= forgottenBefore).sort((a, b) => a.lastAt - b.lastAt),
+  }
 }
 
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.

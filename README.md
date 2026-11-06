@@ -29,6 +29,11 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
+- **Pour moi** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
+  dont GitHub lui demande encore la review (pas celles demandées à une équipe), puis les siennes, chacune dans une
+  seule liste et sans délai minimum : prêtes à merger, changements demandés, bloquées par un code owner, oubliées
+  (sans review ni commentaire depuis plus d'un mois, ce qui l'emporte sur le reste), et les autres, chacune avec où
+  elle en est et qui elle attend. D'après la dernière synchro.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;
