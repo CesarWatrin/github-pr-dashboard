@@ -230,6 +230,10 @@ paths:
   to 1535 px they stick to the top of the window instead, on a band of the page's background, underlined once stuck
   (`is-stuck`, set by an `IntersectionObserver`: their top sits one pixel above the window). Tables
   fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
+- Touch screens: the fields (inputs, selects) take 16 px under `(pointer: coarse)`, a rule last in `style.css`, since
+  Safari zooms into the page on a field under 16 px and leaves it zoomed; a new field needs nothing more. A double
+  tap does not zoom either (`touch-action: manipulation`); pinching still does, never blocked (no `maximum-scale`). On
+  a phone the search takes the whole line of the filters.
 - Hiding: the `hidden` attribute, which a rule of `style.css` makes win over any `display`; never a class of its own.
 - Motion: pages enter with `.is-entering` and a staggered `--delay`; everything stops under
   `prefers-reduced-motion`.
