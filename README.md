@@ -259,7 +259,9 @@ Le workflow `.github/workflows/deploy.yml` est planifié toutes les 15 minutes d
 20-21 h (heure de Paris), et tourne aussi à chaque push sur `main` et à la demande (avec une option de resynchro
 complète, qui demande la preuve du mot de passe de la synchro complète quand `FULL_SYNC_PASSWORD` est posé). Le
 snapshot est conservé d'un run à l'autre dans le cache Actions. Un run en échec peut se relancer (« Re-run ») : chaque
-tentative dépose et déploie son propre artefact, que GitHub Pages refuserait sinon de départager.
+tentative dépose et déploie son propre artefact, que GitHub Pages refuserait sinon de départager. Et quand GitHub
+Pages refuse un déploiement parce que le précédent n'est pas encore clos (deux runs qui se suivent de près), le run
+attend une minute et réessaie une fois.
 
 GitHub ne garantit pas les déclenchements planifiés : ils sont souvent retardés ou sautés. La page ouverte y supplée
 en lançant elle-même une synchro quand ses données ont plus de 10 minutes (voir « Bouton de synchro »). Sans page

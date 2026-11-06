@@ -4,7 +4,8 @@
 
 1. **Workflow** (`.github/workflows/deploy.yml`): restores the snapshot from the Actions cache, runs
    `node scripts/sync.mjs`, saves the snapshot, stamps the commit into `site/index.html` (`__BUILD__`), deploys `site/`
-   to Pages. Triggers: a weekday cron every 15 minutes (GitHub drops many scheduled runs: never rely on it), every push
+   to Pages (each attempt its own artifact; refused while the deployment before is still finishing, it waits a
+   minute and tries once more). Triggers: a weekday cron every 15 minutes (GitHub drops many scheduled runs: never rely on it), every push
    to `main`, manual runs (`workflow_dispatch`, with a `full` input and, for a full sync once `FULL_SYNC_PASSWORD` is
    set, a `proof` input, masked in the logs before the sync step). One run at a time (`concurrency: pages`, queued,
    never cancelled), 45 minutes at most.
