@@ -39,6 +39,11 @@ const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
 // Who the « Pour moi » page is for, in this browser.
 const ME_STORAGE_KEY = 'github-pr-dashboard:me'
+// Whether this browser notifies the reviews newly asked of that person.
+const NOTIFY_STORAGE_KEY = 'github-pr-dashboard:notify'
+// The reviews already asked of that person when the tab last looked (sessionStorage): a reload for a new build notifies
+// those asked meanwhile, a new tab none of those already there.
+const KNOWN_REVIEWS_STORAGE_KEY = 'github-pr-dashboard:known-reviews'
 const UNLOCK_DURATION_MS = 30 * 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const CUSTOM_PERIOD = 'custom'
@@ -475,6 +480,8 @@ const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: f
 const REPORT_YEAR_MONTHS = 12
 // The busiest repositories of a month, on the report.
 const REPORT_TOP_REPOS = 5
+// How long « Bilan copié » shows beside the button.
+const REPORT_COPIED_MS = 3000
 
 // Lines added over lines deleted, one above the other like a diff, rounded: narrow enough for the tables to fit.
 const LINES_COLUMN = {
@@ -1152,6 +1159,9 @@ const state = {
   seenUnapproved: null,
   // Who the « Pour moi » page is for, null until picked.
   me: readStoredMe(),
+  notify: readStoredNotify(),
+  // The open pull requests of others that still wait for that person's review, as of the last sync.
+  reviewsAsked: null,
   fetchFailed: false,
 }
 
@@ -1208,6 +1218,26 @@ function storeMe() {
     localStorage.setItem(ME_STORAGE_KEY, state.me)
   } catch {
     // Without storage, the person is picked again on the next visit.
+  }
+}
+
+function readStoredNotify() {
+  try {
+    return localStorage.getItem(NOTIFY_STORAGE_KEY) === 'on'
+  } catch {
+    return false
+  }
+}
+
+function storeNotify() {
+  try {
+    if (state.notify) {
+      localStorage.setItem(NOTIFY_STORAGE_KEY, 'on')
+    } else {
+      localStorage.removeItem(NOTIFY_STORAGE_KEY)
+    }
+  } catch {
+    // Without storage, notifications are turned on again on the next visit.
   }
 }
 
@@ -3187,7 +3217,9 @@ function reportChange(figure, value, previous) {
   return { text, tone }
 }
 
-function renderReport() {
+// What the report of the month shown says: its figures by group, against the month before and the median of the last
+// whole months, its champions, busiest repositories and arrivals. The page draws it; « Copier le bilan » writes it out.
+function reportContent() {
   const months = reportMonths()
   if (!months.includes(state.reportMonth)) {
     state.reportMonth = null
@@ -3199,6 +3231,41 @@ function renderReport() {
   const previous = months[months.indexOf(month) - 1] ?? null
   // The year a month is set against: the last whole months, whichever month is shown.
   const whole = months.slice(0, -1).slice(-REPORT_YEAR_MONTHS)
+  const stats = monthStats(month)
+  const before = previous ? monthStats(previous) : null
+  const groups = REPORT_GROUPS.map((group) => ({
+    label: group.label,
+    rows: group.figures.map((figure) => {
+      const value = figure.value(stats)
+      const earlier = before ? figure.value(before) : null
+
+      return {
+        figure,
+        format: REPORT_FORMATS[figure.kind],
+        value,
+        earlier,
+        // An unfinished month rests on too few pull requests to compare with a whole one.
+        change: current ? null : reportChange(figure, value, earlier),
+        yearly: median(whole.map((other) => figure.value(monthStats(other))).filter((other) => !isMissing(other))),
+      }
+    }),
+  }))
+
+  return {
+    months,
+    month,
+    current,
+    previous,
+    whole,
+    groups,
+    champions: reportChampions(month, current),
+    repos: reportRepositories(stats.period),
+    arrivals: reportArrivals(month),
+  }
+}
+
+function renderReport() {
+  const { months, month, current, previous, whole, groups, champions, repos, arrivals } = reportContent()
   const picker = $('[data-report-month]')
   picker.replaceChildren(
     ...months.toReversed().map((option) => new Option(`${capitalize(monthName(option))}${option === months.at(-1) ? ', en cours' : ''}`, option)),
@@ -3211,8 +3278,6 @@ function renderReport() {
       ? `Comparé à ${monthName(previous)}, et à ${against}`
       : `Premier mois complet des données synchronisées : comparé à ${against} seulement`
 
-  const stats = monthStats(month)
-  const before = previous ? monthStats(previous) : null
   const head = el(
     'thead',
     {},
@@ -3229,17 +3294,10 @@ function renderReport() {
   const body = el(
     'tbody',
     {},
-    ...REPORT_GROUPS.flatMap((group) => [
+    ...groups.flatMap((group) => [
       el('tr', { className: 'report-group' }, el('th', { scope: 'rowgroup', colSpan: 5, className: 'text', textContent: group.label })),
-      ...group.figures.map((figure) => {
-        const format = REPORT_FORMATS[figure.kind]
-        const value = figure.value(stats)
-        const earlier = before ? figure.value(before) : null
-        // An unfinished month rests on too few pull requests to compare with a whole one.
-        const change = current ? null : reportChange(figure, value, earlier)
-        const yearly = median(whole.map((other) => figure.value(monthStats(other))).filter((other) => !isMissing(other)))
-
-        return el(
+      ...group.rows.map(({ figure, format, value, earlier, change, yearly }) =>
+        el(
           'tr',
           {},
           el('th', { scope: 'row', className: 'text', textContent: figure.label }),
@@ -3247,60 +3305,30 @@ function renderReport() {
           el('td', { className: isMissing(earlier) ? 'muted' : '', textContent: format(earlier) }),
           el('td', {}, change ? el('span', { className: `report-change is-${change.tone}`, textContent: change.text }) : el('span', { className: 'muted', textContent: '–' })),
           el('td', { textContent: format(yearly) }),
-        )
-      }),
+        ),
+      ),
     ]),
   )
   $('[data-report-table]').replaceChildren(el('table', { className: 'report-table' }, head, body))
 
-  renderReportChampions(month, current)
-  renderReportRepositories(stats.period)
-  renderReportArrivals(month)
-}
-
-// The champions of each badge for the month: from the history, or so far for the current month.
-function renderReportChampions(month, current) {
-  const { leaders } = badgeStandings()
-  const ongoing = current ? { [month]: monthFigures(monthlyActivity(state.stats.pullRequests), month) } : null
   $('[data-report-champions]').replaceChildren(
-    ...BADGES.map((badge) =>
+    ...champions.map(({ badge, leader }) =>
       el(
         'li',
         {},
         el('span', { className: 'report-badge' }, el('span', { textContent: badge.icon, ariaHidden: 'true' }), document.createTextNode(badge.name)),
-        leadersLine(current ? monthlyLeaders(ongoing, badge.key)[0] : leaders.get(badge.key).find((leader) => leader.month === month), badge),
+        leadersLine(leader, badge),
       ),
     ),
   )
-}
-
-// The busiest repositories of the month, by code pull requests opened, and by deployments.
-function renderReportRepositories(period) {
-  const code = new Map()
-  for (const person of period.authors) {
-    for (const [repo, stats] of Object.entries(person.repos)) {
-      code.set(repo, (code.get(repo) ?? 0) + stats.code)
-    }
-  }
-  const top = (pairs) => pairs.filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, REPORT_TOP_REPOS)
   const list = (target, pairs, unit) =>
     renderList(
       $(target),
       pairs.map(([repo, count]) => el('li', {}, repoLink(repo), el('span', { className: 'pair-count', textContent: amountOf(count, unit) }))),
       'Aucun',
     )
-  list('[data-report-repos="code"]', top([...code]), ['PR de code', 'PR de code'])
-  list('[data-report-repos="deployments"]', top(period.delivery.repositories.map((row) => [row.repo, row.deployments])), ['déploiement', 'déploiements'])
-}
-
-// The people of the team who first showed in the month (firstShown()), those who may have been there before the
-// synced data aside.
-function renderReportArrivals(month) {
-  const arrivals = [...activities().keys()]
-    .filter(isCurrent)
-    .map((login) => ({ login, first: firstShown(login) }))
-    .filter(({ first }) => first.known && parisDay(first.at).slice(0, 7) === month)
-    .sort((a, b) => a.first.at - b.first.at)
+  list('[data-report-repos="code"]', repos.code, REPORT_REPO_UNITS.code)
+  list('[data-report-repos="deployments"]', repos.deployments, REPORT_REPO_UNITS.deployments)
   renderList(
     $('[data-report-arrivals]'),
     arrivals.map(({ login, first }) =>
@@ -3308,6 +3336,101 @@ function renderReportArrivals(month) {
     ),
     'Aucune arrivée ce mois-ci',
   )
+}
+
+// The champions of each badge for the month: from the history, or so far for the current month.
+function reportChampions(month, current) {
+  const { leaders } = badgeStandings()
+  const ongoing = current ? { [month]: monthFigures(monthlyActivity(state.stats.pullRequests), month) } : null
+
+  return BADGES.map((badge) => ({
+    badge,
+    leader: current ? monthlyLeaders(ongoing, badge.key)[0] : leaders.get(badge.key).find((leader) => leader.month === month),
+  }))
+}
+
+// The busiest repositories of the month, as [repo, count]: by code pull requests opened, and by deployments.
+const REPORT_REPO_UNITS = { code: ['PR de code', 'PR de code'], deployments: ['déploiement', 'déploiements'] }
+
+function reportRepositories(period) {
+  const code = new Map()
+  for (const person of period.authors) {
+    for (const [repo, stats] of Object.entries(person.repos)) {
+      code.set(repo, (code.get(repo) ?? 0) + stats.code)
+    }
+  }
+  const top = (pairs) => pairs.filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, REPORT_TOP_REPOS)
+
+  return { code: top([...code]), deployments: top(period.delivery.repositories.map((row) => [row.repo, row.deployments])) }
+}
+
+// The people of the team who first showed in the month (firstShown()), those who may have been there before the
+// synced data aside.
+function reportArrivals(month) {
+  return [...activities().keys()]
+    .filter(isCurrent)
+    .map((login) => ({ login, first: firstShown(login) }))
+    .filter(({ first }) => first.known && parisDay(first.at).slice(0, 7) === month)
+    .sort((a, b) => a.first.at - b.first.at)
+}
+
+// The report as text to paste in a chat or a meeting: *bold* titles and bullets, as Google Chat and Slack read them;
+// a change in green or orange on the page gets a dot of that color. Figures without a value, such as the CI of a month
+// GitHub had forgotten the runs of, are left out.
+const REPORT_TONE_MARKS = { better: ' 🟢', worse: ' 🟠', neutral: '' }
+
+function reportText({ month, current, previous, groups, champions, repos, arrivals }) {
+  const lines = [
+    `*Bilan de ${monthName(month)}*`,
+    current
+      ? 'Mois en cours, jusqu’à la dernière synchro : chiffres provisoires.'
+      : previous
+        ? `Évolutions par rapport à ${monthName(previous)}.`
+        : 'Premier mois complet des données synchronisées.',
+  ]
+  for (const group of groups) {
+    const rows = group.rows.filter((row) => !isMissing(row.value))
+    if (rows.length) {
+      lines.push(
+        '',
+        `*${group.label}*`,
+        ...rows.map(({ figure, format, value, change }) =>
+          `• ${figure.label} : ${format(value)}${change ? ` (${change.text}${REPORT_TONE_MARKS[change.tone]})` : ''}`,
+        ),
+      )
+    }
+  }
+  const person = (login) => (isCurrent(login) ? displayName(login) : 'une personne partie')
+  lines.push(
+    '',
+    '*Champions du mois*',
+    ...champions.map(({ badge, leader }) =>
+      `• ${badge.icon} ${badge.name} : ${leader ? `${leader.people.map(person).join(', ')} (${amountOf(leader.value, badge.units, badge.format)})` : 'personne'}`,
+    ),
+  )
+  const repoLine = (label, pairs) =>
+    `• ${label} : ${pairs.length ? pairs.map(([repo, count]) => `${repo} (${formatNumber(count)})`).join(', ') : 'aucun'}`
+  lines.push('', '*Dépôts les plus actifs*', repoLine('PR de code ouvertes', repos.code), repoLine('Déploiements', repos.deployments))
+  if (arrivals.length) {
+    lines.push('', `*Arrivées* : ${arrivals.map(({ login }) => displayName(login)).join(', ')}`)
+  }
+  lines.push('', `${location.origin}${location.pathname}${ROUTES.report.hash}`)
+
+  return lines.join('\n')
+}
+
+async function copyReport() {
+  const status = $('[data-report-copied]')
+  try {
+    await navigator.clipboard.writeText(reportText(reportContent()))
+    status.textContent = 'Bilan copié'
+  } catch {
+    status.textContent = 'Copie impossible dans ce navigateur'
+  }
+  clearTimeout(copyReport.timer)
+  copyReport.timer = setTimeout(() => {
+    status.textContent = ''
+  }, REPORT_COPIED_MS)
 }
 
 // Trends page
@@ -5638,9 +5761,24 @@ function ownItem(pr, { tagged = false, forgotten = false } = {}) {
     : listItem(pr.author, text, minutesIso(pr.since), `${stance.since} `)
 }
 
+// The person picked on « Pour moi », when still in the team, and their lists as of the last sync (null without one).
+function meQueue() {
+  const me = mePeople().includes(state.me) ? state.me : null
+  if (!me) {
+    return { me, queue: null }
+  }
+  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: requiredApprovals(), kinds: ME_KINDS }).filter(
+    (pr) => isCurrent(pr.author),
+  )
+  // Forgotten as on the unblock page: no review nor comment for FORGOTTEN_AFTER_DAYS.
+  const forgottenBefore = Date.now() / 60_000 - FORGOTTEN_AFTER_DAYS * 24 * 60
+
+  return { me, queue: personalQueue(open, me, { forgottenBefore }) }
+}
+
 function renderMe(mode) {
   const people = mePeople()
-  const me = people.includes(state.me) ? state.me : null
+  const { me, queue } = meQueue()
   const picker = $('[data-me-picker]')
   const placeholder = new Option('Choisir une personne', '')
   placeholder.disabled = true
@@ -5648,25 +5786,108 @@ function renderMe(mode) {
   picker.value = me ?? ''
 
   const required = requiredApprovals()
-  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required, kinds: ME_KINDS }).filter((pr) =>
-    isCurrent(pr.author),
-  )
-  // Forgotten as on the unblock page: no review nor comment for FORGOTTEN_AFTER_DAYS.
-  const forgottenBefore = Date.now() / 60_000 - FORGOTTEN_AFTER_DAYS * 24 * 60
-  const queue = me ? personalQueue(open, me, { forgottenBefore }) : null
   renderTiles($('[data-me-tiles]'), ME_TILES, Object.fromEntries(ME_TILES.map(({ key }) => [key, queue?.[key].length ?? null])), mode)
   for (const [key, list] of Object.entries(ME_LISTS)) {
     $(`[data-me-title="${key}"]`).textContent = queue ? `${list.label} (${formatNumber(queue[key].length)})` : list.label
     $(`[data-me-sub="${key}"]`).textContent = typeof list.hint === 'function' ? list.hint(required) : list.hint
     renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : 'Choisir une personne en haut de la page')
   }
+  state.reviewsAsked = queue ? queue.toReview : null
+  renderTitle()
+  renderNotifyToggle()
+  notifyNewReviews(me)
+}
+
+// The tab counts the reviews asked of the person picked on « Pour moi », whichever page it shows: (3) Stats PR.
+function renderTitle() {
+  const route = currentRoute()
+  const title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
+  const count = state.reviewsAsked?.length ?? 0
+  document.title = count ? `(${formatNumber(count)}) ${title}` : title
+}
+
+// Notifications of the reviews newly asked of the person picked on « Pour moi », once turned on in this browser and
+// allowed by it. Some browsers, on phones, have the API without the constructor: they show none.
+const notificationsSupported = () => 'Notification' in window
+const notificationsOn = () => state.notify && notificationsSupported() && Notification.permission === 'granted'
+
+function renderNotifyToggle() {
+  const button = $('[data-notify-toggle]')
+  button.hidden = !notificationsSupported()
+  if (button.hidden) {
+    return
+  }
+  const denied = Notification.permission === 'denied'
+  button.disabled = denied
+  button.setAttribute('aria-pressed', String(notificationsOn()))
+  $('[data-notify-denied]').hidden = !denied
+}
+
+async function toggleNotifications() {
+  if (notificationsOn()) {
+    state.notify = false
+  } else {
+    const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
+    state.notify = permission === 'granted'
+  }
+  storeNotify()
+  renderNotifyToggle()
+}
+
+const reviewKey = (pr) => `${pr.repo}#${pr.number}`
+
+function readKnownReviews() {
+  try {
+    return JSON.parse(sessionStorage.getItem(KNOWN_REVIEWS_STORAGE_KEY))
+  } catch {
+    return null
+  }
+}
+
+function storeKnownReviews(known) {
+  try {
+    sessionStorage.setItem(KNOWN_REVIEWS_STORAGE_KEY, JSON.stringify(known))
+  } catch {
+    // Without storage, the reviews of the next stats are set against none: they notify only from the following ones.
+  }
+}
+
+// The reviews asked of the person that the tab did not know yet notify, unless « Pour moi » is on screen, where they
+// show: one notification for several. The first stats of a tab, or a person picked anew, notify nothing.
+function notifyNewReviews(me) {
+  const reviews = state.reviewsAsked ?? []
+  const known = readKnownReviews()
+  const fresh = known?.me === me ? reviews.filter((pr) => !known.reviews.includes(reviewKey(pr))) : []
+  storeKnownReviews({ me, reviews: reviews.map(reviewKey) })
+  if (!fresh.length || !notificationsOn() || (document.visibilityState === 'visible' && currentRoute() === 'me')) {
+    return
+  }
+  const [first] = fresh
+  const shown = fresh.slice(0, 3).map(reviewKey).join(', ')
+  try {
+    const notification = new Notification(fresh.length > 1 ? `${formatNumber(fresh.length)} reviews demandées` : 'Review demandée', {
+      body: fresh.length > 1 ? `${shown}${fresh.length > 3 ? '…' : ''}` : `${reviewKey(first)} de ${displayName(first.author)}`,
+    })
+    notification.addEventListener('click', () => {
+      window.focus()
+      location.hash = ROUTES.me.hash
+      notification.close()
+    })
+  } catch {
+    // A browser that only notifies through a service worker: the tab title still counts them.
+  }
 }
 
 // Sync status
 
+// The status shows in the sidebar, and in the bar on top of narrower screens: both say the same.
 function renderSyncStatus() {
-  const status = $('[data-sync]')
-  const label = $('[data-sync-label]')
+  for (const status of document.querySelectorAll('[data-sync]')) {
+    renderSyncStatusIn(status, status.querySelector('[data-sync-label]'))
+  }
+}
+
+function renderSyncStatusIn(status, label) {
   status.classList.remove('is-live', 'is-stale', 'is-error')
   if (!state.stats) {
     status.classList.add('is-error')
@@ -5852,8 +6073,9 @@ function settleSyncRequest(newData) {
   }
 }
 
-// Once its data is older than AUTO_SYNC_AFTER_MS, a page that shows (not one in a background tab) starts a quick sync
-// on its own, as the sync button would (site/auto-sync.js): a page left open keeps fresh data, and pages opened at once
+// Once its data is older than AUTO_SYNC_AFTER_MS, a page that shows (not one in a background tab, unless it notifies the
+// reviews asked: they would come late) starts a quick sync on its own, as the sync button would (site/auto-sync.js): a
+// page left open keeps fresh data, and pages opened at once
 // start a single run. Never while a sync of the page is starting or awaited, and one try every AUTO_SYNC_AFTER_MS at
 // most, whatever the answer. Data old by the browser's clock is checked against the server's, as a clock that runs
 // ahead would find every run old. A failure goes unnoticed: the sync button tells it when used.
@@ -5861,7 +6083,7 @@ async function autoSync() {
   const local = Date.now()
   if (
     !state.stats?.syncTrigger ||
-    document.visibilityState !== 'visible' ||
+    (document.visibilityState !== 'visible' && !notificationsOn()) ||
     state.autoSyncing ||
     state.syncStarting !== null ||
     state.syncRequest !== null ||
@@ -5937,7 +6159,7 @@ function renderRoute() {
   $('[data-date-range]').hidden = ROUTES[route].period === false
   $('[data-search]').hidden = ROUTES[route].search === false
   $('[data-compare-field]').hidden = !COMPARED_ROUTES.has(route)
-  document.title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
+  renderTitle()
   // The charts of a hidden page cannot be measured: they are drawn when their page shows. So is the analysis, which
   // takes a moment to work out.
   renderCharts()
@@ -5948,6 +6170,46 @@ function renderRoute() {
 window.addEventListener('hashchange', () => {
   renderRoute()
   window.scrollTo(0, 0)
+})
+
+// Below 1280 px the sidebar opens as a drawer over the page (style.css): the page behind is out of reach meanwhile, and
+// the focus goes into it: on the page shown when opened from the keyboard, else on the drawer itself, without a ring
+// around a link just tapped. Closing gives it back to the menu button, unless a page was picked.
+function setNavOpen(open, { focus = true, keyboard = false } = {}) {
+  const app = $('[data-page]')
+  if (app.classList.contains('is-nav-open') === open) {
+    return
+  }
+  app.classList.toggle('is-nav-open', open)
+  const toggle = $('[data-nav-toggle]')
+  toggle.setAttribute('aria-expanded', String(open))
+  $('.page').inert = open
+  $('[data-topbar]').inert = open
+  if (open) {
+    const target = keyboard ? ($('[data-sidebar] [aria-current="page"]') ?? $('[data-nav-close]')) : $('[data-sidebar]')
+    target.focus()
+  } else if (focus) {
+    toggle.focus()
+  }
+}
+
+// A click the keyboard made (Enter or Space on the button) has no detail.
+$('[data-nav-toggle]').addEventListener('click', (event) => setNavOpen(true, { keyboard: event.detail === 0 }))
+$('[data-nav-close]').addEventListener('click', () => setNavOpen(false))
+$('[data-nav-backdrop]').addEventListener('click', () => setNavOpen(false))
+for (const link of document.querySelectorAll('[data-sidebar] a')) {
+  link.addEventListener('click', () => setNavOpen(false, { focus: false }))
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && $('[data-page]').classList.contains('is-nav-open')) {
+    setNavOpen(false)
+  }
+})
+// Wide enough for the sidebar beside the page: no drawer to close.
+window.matchMedia('(max-width: 1279px)').addEventListener('change', (event) => {
+  if (!event.matches) {
+    setNavOpen(false, { focus: false })
+  }
 })
 
 // Theme: follows the system until the toggle is used, then sticks to the chosen one.
@@ -6052,7 +6314,9 @@ function render(animate) {
   if (state.period === CUSTOM_PERIOD ? !state.range : !PERIODS[state.period] || !periodAvailable(state.period)) {
     state.period = DEFAULT_PERIOD
   }
-  $('[data-org]').textContent = state.stats.org
+  for (const org of document.querySelectorAll('[data-org]')) {
+    org.textContent = state.stats.org
+  }
   $('[data-empty]').hidden = true
   $('[data-main]').classList.remove('is-loading')
   renderPeriodSelector()
@@ -6169,6 +6433,7 @@ async function readStoredKey() {
 }
 
 function showLock(message = '') {
+  setNavOpen(false, { focus: false })
   $('[data-page]').hidden = true
   $('[data-lock]').hidden = false
   const error = $('[data-lock-error]')
@@ -6190,6 +6455,8 @@ function lock(message) {
   }
   state.key = null
   state.stats = null
+  state.reviewsAsked = null
+  renderTitle()
   showLock(message)
 }
 
@@ -6244,10 +6511,11 @@ function applyStats(stats) {
     playEntrance()
   }
   if (isUpdate) {
-    const status = $('[data-sync]')
-    status.classList.remove('is-pulsing')
-    void status.offsetWidth
-    status.classList.add('is-pulsing')
+    for (const status of document.querySelectorAll('[data-sync]')) {
+      status.classList.remove('is-pulsing')
+      void status.offsetWidth
+      status.classList.add('is-pulsing')
+    }
   }
 }
 
@@ -6437,6 +6705,7 @@ $('[data-person]').addEventListener('change', (event) => {
   state.person = event.target.value
   renderMiniCharts()
 })
+$('[data-report-copy]').addEventListener('click', copyReport)
 $('[data-report-month]').addEventListener('change', (event) => {
   const months = reportMonths()
   state.reportMonth = event.target.value === months.at(-1) ? null : event.target.value
@@ -6447,6 +6716,14 @@ $('[data-me-picker]').addEventListener('change', (event) => {
   storeMe()
   renderMe('enter')
 })
+$('[data-notify-toggle]').addEventListener('click', toggleNotifications)
+// Notifications allowed or blocked from the browser's settings while the page is open.
+navigator.permissions
+  ?.query({ name: 'notifications' })
+  .then((status) => status.addEventListener('change', renderNotifyToggle))
+  .catch(() => {
+    // Unknown permission name: the toggle is drawn again with the next stats.
+  })
 for (const button of document.querySelectorAll('[data-technology-measure]')) {
   button.addEventListener('click', () => {
     state.technologyMeasure = button.dataset.technologyMeasure
@@ -6483,6 +6760,15 @@ document.addEventListener('visibilitychange', () => {
     refresh()
   }
 })
+
+// The filters tell when they stick to the top of the window (style.css, between 1280 and 1535 px): their top, one
+// pixel above it, is then cut off.
+new IntersectionObserver(
+  ([entry]) => {
+    entry.target.classList.toggle('is-stuck', entry.intersectionRatio < 1 && entry.boundingClientRect.top < 0)
+  },
+  { threshold: [1] },
+).observe($('[data-filters]'))
 
 for (const name of REPO_FILTER_NAMES) {
   setupRepoFilter(name)
