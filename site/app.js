@@ -11,6 +11,10 @@ const { deriveFullSyncKey, fullSyncProof, fullSyncVerifier } = await import(
   `./full-sync.js${new URL(import.meta.url).search}`
 )
 
+const { ACTIVE_RUN_STATUSES, AUTO_SYNC_AFTER_MS, autoSyncAction, dataStale } = await import(
+  `./auto-sync.js${new URL(import.meta.url).search}`
+)
+
 const DATA_URL = 'data/stats.enc.json'
 const VERSION_URL = 'data/version.json'
 const POLL_INTERVAL_MS = 60_000
@@ -79,14 +83,15 @@ const CHART_FONT = '12px system-ui, -apple-system, "Segoe UI", sans-serif'
 const PAGE_BUILD = document.querySelector('meta[name="build"]')?.content.replace('__BUILD__', '') || null
 const ICONS_URL = `technology-icons.svg${PAGE_BUILD ? `?v=${PAGE_BUILD}` : ''}`
 
-// The two syncs the page can start: the workflow's incremental one, or a full refetch of the rolling window.
+// The two syncs the page can start: the workflow's incremental one, or a full refetch of the rolling window. The page
+// starts the quick one on its own too, once its data gets old (autoSync()).
 const SYNC_KINDS = {
   quick: { full: false, label: 'Synchro rapide en cours…', timeoutMs: 6 * 60_000 },
+  auto: { full: false, label: 'Synchro automatique en cours…', timeoutMs: 6 * 60_000 },
   // Up to the workflow's own timeout.
   full: { full: true, label: 'Synchro complète en cours, 15 à 20 min…', timeoutMs: 45 * 60_000 },
   running: { label: 'Une synchro est déjà en cours…', timeoutMs: 45 * 60_000 },
 }
-const ACTIVE_RUN_STATUSES = ['requested', 'queued', 'pending', 'waiting', 'in_progress']
 
 // Pages of the dashboard, one per hash: links can be shared and the browser history works. The period and the search
 // apply to every page but the method; the analysis page has the period only.
@@ -1130,6 +1135,9 @@ const state = {
   syncRequest: null,
   // A full sync started with the proof of its password, until new stats tell whether the run took it.
   fullSyncAsked: false,
+  // When the page last looked at the runs to start a sync on its own (browser clock), and whether it is doing so.
+  autoSyncTriedAt: 0,
+  autoSyncing: false,
   // When each person first and last shows in the stats, worked out once per stats: seniority, and who left the team.
   activity: null,
   // The badges of each person, worked out once per stats.
@@ -5704,10 +5712,30 @@ function renderSyncMenu() {
   }
 }
 
+// The last runs of the workflow, newest first.
+async function recentRuns() {
+  const response = await githubApi(`/actions/workflows/${state.stats.syncTrigger.workflow}/runs?per_page=5`)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+
+  return (await response.json()).workflow_runs
+}
+
+async function dispatchSync(full, proof = null) {
+  const { workflow, ref } = state.stats.syncTrigger
+  const response = await githubApi(`/actions/workflows/${workflow}/dispatches`, {
+    method: 'POST',
+    body: JSON.stringify({ ref, inputs: { full: String(full), ...(proof ? { proof } : {}) } }),
+  })
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+}
+
 // A sync already queued or running is waited for rather than doubled. A full sync carries the proof of its password,
 // when it has one.
 async function startSync(kind, proof = null) {
-  const { workflow, ref } = state.stats.syncTrigger
   const menu = $('[data-sync-menu]')
   const error = $('[data-sync-error]')
   error.hidden = true
@@ -5717,20 +5745,9 @@ async function startSync(kind, proof = null) {
   renderSyncMenu()
   renderSyncStatus()
   try {
-    const runs = await githubApi(`/actions/workflows/${workflow}/runs?per_page=5`)
-    if (!runs.ok) {
-      throw new Error(`HTTP ${runs.status}`)
-    }
-    const { workflow_runs: recent } = await runs.json()
-    const running = recent.some((run) => ACTIVE_RUN_STATUSES.includes(run.status))
+    const running = (await recentRuns()).some((run) => ACTIVE_RUN_STATUSES.includes(run.status))
     if (!running) {
-      const response = await githubApi(`/actions/workflows/${workflow}/dispatches`, {
-        method: 'POST',
-        body: JSON.stringify({ ref, inputs: { full: String(SYNC_KINDS[kind].full), ...(proof ? { proof } : {}) } }),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
+      await dispatchSync(SYNC_KINDS[kind].full, proof)
       // Its stats will say whether the run refused it (checkFullSyncRefused()).
       state.fullSyncAsked = proof !== null
     }
@@ -5833,6 +5850,47 @@ function settleSyncRequest(newData) {
     state.syncRequest = null
     renderSyncMenu()
   }
+}
+
+// Once its data is older than AUTO_SYNC_AFTER_MS, a page that shows (not one in a background tab) starts a quick sync
+// on its own, as the sync button would (site/auto-sync.js): a page left open keeps fresh data, and pages opened at once
+// start a single run. Never while a sync of the page is starting or awaited, and one try every AUTO_SYNC_AFTER_MS at
+// most, whatever the answer. Data old by the browser's clock is checked against the server's, as a clock that runs
+// ahead would find every run old. A failure goes unnoticed: the sync button tells it when used.
+async function autoSync() {
+  const local = Date.now()
+  if (
+    !state.stats?.syncTrigger ||
+    document.visibilityState !== 'visible' ||
+    state.autoSyncing ||
+    state.syncStarting !== null ||
+    state.syncRequest !== null ||
+    local - state.autoSyncTriedAt < AUTO_SYNC_AFTER_MS ||
+    !dataStale(state.stats.generatedAt, local)
+  ) {
+    return
+  }
+  state.autoSyncing = true
+  try {
+    const now = (await serverNow()) * 1000
+    if (!dataStale(state.stats.generatedAt, now) || state.syncStarting !== null || state.syncRequest !== null) {
+      return
+    }
+    state.autoSyncTriedAt = local
+    const action = autoSyncAction(await recentRuns(), now)
+    if (action === 'start') {
+      await dispatchSync(SYNC_KINDS.auto.full)
+    }
+    if (action !== 'skip' && state.syncRequest === null) {
+      state.syncRequest = { kind: action === 'start' ? 'auto' : 'running', at: Date.now() }
+    }
+  } catch {
+    // Expired token, GitHub unreachable: the next try comes AUTO_SYNC_AFTER_MS later.
+  } finally {
+    state.autoSyncing = false
+  }
+  renderSyncMenu()
+  renderSyncStatus()
 }
 
 function refreshClock() {
@@ -6169,6 +6227,7 @@ async function unlock(form) {
     showDashboard()
     applyStats(stats)
     renderSyncStatus()
+    autoSync()
   } catch {
     showLock('Données indisponibles pour le moment, réessaie dans un instant.')
   } finally {
@@ -6230,6 +6289,7 @@ async function refresh() {
   }
   settleSyncRequest(stats !== null)
   renderSyncStatus()
+  autoSync()
 }
 
 for (const button of document.querySelectorAll('[data-period]')) {

@@ -9,9 +9,9 @@ paths:
 
 - Vanilla ES module, no framework, no bundler, no external script: logos come from the local sprite through
   `<use href>`.
-- `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js`, `analysis.js` and
-  `full-sync.js` with the same query string (`import.meta.url`). Any new module follows that pattern, so that the Pages
-  cache (10 minutes) never mixes versions.
+- `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js`, `analysis.js`,
+  `full-sync.js` and `auto-sync.js` with the same query string (`import.meta.url`). Any new module follows that
+  pattern, so that the Pages cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
   page of the hash (`ROUTES`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
@@ -204,6 +204,12 @@ paths:
 - The key derived from the password stays in `localStorage` for 30 days; locking asks for confirmation and forgets
   it. Never log it or print it.
 - The sync button uses `DISPATCH_TOKEN` from the decrypted stats; a full sync asks for confirmation first.
+- `autoSync()`, after each `refresh()` and the unlocking, starts a quick sync with the same token once the data is
+  older than `AUTO_SYNC_AFTER_MS` (10 minutes), from a page that shows only (`visibilityState`), never while a sync of
+  the page is starting or awaited, and one try per `AUTO_SYNC_AFTER_MS` at most. The age is checked again with
+  `serverNow()`, a browser clock running ahead finding every run old. `autoSyncAction()` of `site/auto-sync.js` reads
+  the last runs: one queued or going is waited for (`running`), one started within `AUTO_SYNC_AFTER_MS` is left to
+  publish, otherwise a quick sync starts (`auto`). Failures stay silent: the sync button tells them.
 - When the stats carry `syncTrigger.fullSync` (`FULL_SYNC_PASSWORD`), the confirmation asks for the full sync password
   too, `autocomplete="new-password"` so that password managers do not fill the dashboard password in (they ignore
   `off`). `confirmFullSync()` derives its key with `site/full-sync.js` (loaded like `period.js`), compares the

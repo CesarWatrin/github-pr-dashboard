@@ -143,6 +143,15 @@ secret `DISPATCH_TOKEN` existe : un token fine-grained limité à ce repo, avec 
 lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a le mot de passe peut s'en servir,
 pour lancer ou annuler des runs de ce workflow et rien d'autre.
 
+Avec ce token, la page lance aussi une synchro rapide d'elle-même dès que ses données ont plus de 10 minutes, tant
+qu'elle est affichée (pas dans un onglet en arrière-plan) : GitHub saute la plupart des déclenchements planifiés, et
+le cron seul laisse les données vieillir des heures. Elle regarde d'abord les derniers runs du workflow : une synchro
+en attente ou en cours est attendue, et rien n'est lancé si un run a démarré dans les 10 dernières minutes, depuis
+n'importe quelle page. Plusieurs pages ouvertes en même temps ne lancent donc qu'un run. Chaque page n'essaie qu'une
+fois toutes les 10 minutes, et juge l'âge des données à l'heure du serveur, pas à celle du navigateur. Un échec
+passe inaperçu : le bouton ⟳ dit pourquoi quand on s'en sert. Personne sur la page, aucune synchro : le cron reste là
+pour le reste.
+
 La synchro complète peut avoir son propre mot de passe, distinct de celui de la page : `FULL_SYNC_PASSWORD`, dans le
 `.env` et dans un secret (`gh secret set FULL_SYNC_PASSWORD --env github-pages`). Choisir là aussi une valeur longue
 et aléatoire. Une fois le secret posé, la synchro suivante publie de quoi le vérifier, et la page le demande à chaque
@@ -218,8 +227,9 @@ Le workflow `.github/workflows/deploy.yml` est planifié toutes les 15 minutes d
 complète, qui demande la preuve du mot de passe de la synchro complète quand `FULL_SYNC_PASSWORD` est posé). Le
 snapshot est conservé d'un run à l'autre dans le cache Actions.
 
-GitHub ne garantit pas les déclenchements planifiés : ils sont souvent retardés ou sautés. Pour des données à jour
-tout de suite, lance le workflow depuis Actions → _Sync and deploy_ → _Run workflow_, ou avec
+GitHub ne garantit pas les déclenchements planifiés : ils sont souvent retardés ou sautés. La page ouverte y supplée
+en lançant elle-même une synchro quand ses données ont plus de 10 minutes (voir « Bouton de synchro »). Sans page
+ouverte, lance le workflow depuis Actions → _Sync and deploy_ → _Run workflow_, ou avec
 `gh workflow run deploy.yml`.
 
 Prérequis :
