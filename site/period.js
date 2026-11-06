@@ -7,8 +7,9 @@
 // deployment (merged into master or main), revert (of a deployment), deployedAt (of a code pull request),
 // checksFailed (at its last commit), dependency (the ecosystem of a Dependabot update), draft (still open as one),
 // codeOwners (the code owners still asked to review it while GitHub does not let it merge: logins, teams as @slug, null
-// for one the sync could not read) and deleted (the lines a merged code pull request deletes, among its lines: the
-// others are added).
+// for one the sync could not read), requestedReviewers (the people still asked to review an open pull request that is
+// not a draft, code owners or not: logins only, teams and bots aside) and deleted (the lines a merged code pull request
+// deletes, among its lines: the others are added).
 
 export const TIMEZONE = 'Europe/Paris'
 export const DAY_MS = 86_400_000
@@ -781,7 +782,7 @@ export function monthlyLeaders(history, key) {
 // (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
 // since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
 // the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
-// or comment, else its opening.
+// or comment, else its opening; requestedReviewers: the people still asked to review it.
 export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
   return records
     .filter((pr) => !pr.bot && pr.kind === 'code' && pr.mergedAt === null && !pr.closed && !pr.draft)
@@ -823,8 +824,24 @@ export function openPullRequests(records, { requiredApprovals = 1 } = {}) {
             : (pr.interventions.at(-1)?.[1] ?? pr.createdAt),
         by: owners ? pr.codeOwners : deciders.map(([login]) => login).sort(),
         lastAt: pr.interventions.at(-1)?.[1] ?? pr.createdAt,
+        requestedReviewers: pr.requestedReviewers ?? [],
       }
     })
+}
+
+// What stands for one person among the open pull requests of openPullRequests(): those of other people still asking
+// for their review, the oldest first; theirs not approved enough yet, and theirs approved by as many people as merging
+// needs, waiting for their merge, both the longest where they stand first.
+export function personalQueue(open, login) {
+  const own = open.filter((pr) => pr.author === login).sort((a, b) => a.since - b.since)
+
+  return {
+    toReview: open
+      .filter((pr) => pr.author !== login && pr.requestedReviewers.includes(login))
+      .sort((a, b) => a.createdAt - b.createdAt),
+    open: own.filter((pr) => pr.stance !== 'approved'),
+    ready: own.filter((pr) => pr.stance === 'approved'),
+  }
 }
 
 // CI stats of the range [start, end), from the runs per workflow and Paris day of the sync: a day counts whole.

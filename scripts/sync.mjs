@@ -485,12 +485,22 @@ async function toRecord(node) {
     // State of the checks of the last commit: SUCCESS, FAILURE, ERROR, PENDING or EXPECTED, null without checks.
     checks: node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
     // GitHub's verdict on the reviews the base branch requires (APPROVED, CHANGES_REQUESTED, REVIEW_REQUIRED, null
-    // without such rules), and the code owners still asked to review.
+    // without such rules), the code owners still asked to review, and the people still asked to review, code owners
+    // or not.
     reviewDecision: node.reviewDecision ?? null,
     codeOwnerRequests: (node.reviewRequests?.nodes ?? [])
       .filter((request) => request.asCodeOwner)
       .map((request) => codeOwnerOf(request.requestedReviewer)),
+    reviewRequests: requestedPeople(node.reviewRequests?.nodes),
   }
+}
+
+// The people still asked to review a pull request, code owners or not: logins only. A team, an app or a reviewer the
+// token cannot read is left out: none is someone a review waits for.
+function requestedPeople(requests) {
+  return (requests ?? [])
+    .filter((request) => request.requestedReviewer?.__typename === 'User')
+    .map((request) => request.requestedReviewer.login)
 }
 
 // A code owner asked to review: a login, a team as @slug, null when the token cannot read it.
@@ -1081,6 +1091,8 @@ function toPeriodRecord(pr, index) {
   if (bot && !deployment && !dependency) {
     return null
   }
+  // Only an open pull request ready for review waits for the people asked to review it.
+  const requestedReviewers = pr.state === 'OPEN' && !pr.draft ? (pr.reviewRequests ?? []).filter((login) => !isBot(login)) : []
 
   return {
     repo: pr.repo,
@@ -1108,6 +1120,7 @@ function toPeriodRecord(pr, index) {
     ...(pr.state === 'OPEN' && pr.draft && { draft: true }),
     // An open pull request GitHub does not let merge yet, while code owners are still asked to review it.
     ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && pr.codeOwnerRequests?.length > 0 && { codeOwners: pr.codeOwnerRequests }),
+    ...(requestedReviewers.length > 0 && { requestedReviewers }),
   }
 }
 
@@ -1364,6 +1377,7 @@ export {
   readPublishedHistory,
   repositoryCategory,
   request,
+  requestedPeople,
   requiredApprovals,
   peopleToLookUp,
   snapshotCoverage,

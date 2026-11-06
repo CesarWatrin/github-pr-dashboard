@@ -14,6 +14,7 @@ import {
   openPullRequests,
   parisDay,
   parisMidnight,
+  personalQueue,
   reviewNetwork,
   workHoursBetween,
 } from '../site/period.js'
@@ -767,6 +768,54 @@ describe('openPullRequests', () => {
       [3, 'changes', '2026-03-02T11:00:00.000Z', ['carol'], '2026-03-02T11:00:00.000Z'],
       [4, 'approved', '2026-03-03T12:00:00.000Z', ['bob', 'carol'], '2026-03-04T10:00:00.000Z'],
     ])
+  })
+
+  test('the people still asked to review it, none when the sync published none', () => {
+    const asked = openPullRequests([open(1, { requestedReviewers: ['bob', 'carol'] }), open(2)])
+    assert.deepEqual(
+      asked.map(({ number, requestedReviewers }) => [number, requestedReviewers]),
+      [
+        [1, ['bob', 'carol']],
+        [2, []],
+      ],
+    )
+  })
+})
+
+describe('personalQueue', () => {
+  const open = (number, fields) => record({ repo: 'web', number, author: 'alice', createdAt: at('2026-03-02T09:00:00Z'), ...fields })
+  const queue = personalQueue(
+    openPullRequests([
+      // Bob's, asking for Alice's review: the older one first.
+      open(1, { author: 'bob', createdAt: at('2026-03-04T09:00:00Z'), requestedReviewers: ['alice', 'carol'] }),
+      open(2, { author: 'bob', createdAt: at('2026-03-03T09:00:00Z'), requestedReviewers: ['alice'] }),
+      // Bob's, asking someone else: not for Alice.
+      open(3, { author: 'bob', requestedReviewers: ['carol'] }),
+      // Alice's own: waiting since its opening, changes requested later, approved enough to merge.
+      open(4, { createdAt: at('2026-03-04T09:00:00Z'), requestedReviewers: ['bob'] }),
+      open(5, { interventions: [['bob', at('2026-03-03T10:00:00Z'), 'CHANGES_REQUESTED', 1]] }),
+      open(6, { interventions: [['carol', at('2026-03-02T15:00:00Z'), 'APPROVED', 0]] }),
+      // A draft waits for no one: neither in her lists nor in Carol's.
+      open(7, { draft: true, author: 'bob', requestedReviewers: ['alice'] }),
+    ]),
+    'alice',
+  )
+  const numbers = (prs) => prs.map((pr) => pr.number)
+
+  test('the reviews still asked of the person on other people’s pull requests, the oldest first', () => {
+    assert.deepEqual(numbers(queue.toReview), [2, 1])
+  })
+
+  test('their own pull requests not approved enough yet, the longest where they stand first', () => {
+    assert.deepEqual(numbers(queue.open), [5, 4])
+  })
+
+  test('their own approved pull requests, waiting for their merge', () => {
+    assert.deepEqual(numbers(queue.ready), [6])
+  })
+
+  test('someone without anything open has empty lists', () => {
+    assert.deepEqual(personalQueue([], 'alice'), { toReview: [], open: [], ready: [] })
   })
 })
 

@@ -994,6 +994,21 @@ main.is-loading {
   }
 }
 
+/* « Pour moi »: the picker named by its label; the person's own pull requests take the whole width under the two
+   shorter lists. */
+.me-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.me-lists > :last-child {
+  grid-column: 1 / -1;
+}
+
 /* Three cards on two columns: the last one takes the whole second row rather than half of it. */
 @container (min-width: 776px) and (max-width: 1171px) {
   .grid-even > :nth-child(3):last-child {

@@ -38,6 +38,7 @@ const {
   readPublishedHistory,
   repositoryCategory,
   request,
+  requestedPeople,
   requiredApprovals,
   peopleToLookUp,
   snapshotCoverage,
@@ -282,6 +283,9 @@ describe('toPeriodRecord', () => {
     ownersApproved: pullRequest({ number: 13, reviewDecision: 'APPROVED', codeOwnerRequests: ['carol'] }),
     ownersMerged: pullRequest({ number: 14, mergedAt: '2026-03-02T15:00:00Z', reviewDecision: 'REVIEW_REQUIRED', codeOwnerRequests: ['carol'] }),
     closedDraft: pullRequest({ number: 11, draft: true, state: 'CLOSED', closedAt: '2026-03-02T09:00:00Z' }),
+    asked: pullRequest({ number: 15, reviewRequests: ['bob', 'robot', 'carol'] }),
+    askedDraft: pullRequest({ number: 16, draft: true, reviewRequests: ['bob'] }),
+    askedClosed: pullRequest({ number: 17, state: 'CLOSED', closedAt: '2026-03-02T09:00:00Z', reviewRequests: ['bob'] }),
   }
   const index = deliveryIndex(Object.values(PULL_REQUESTS))
   const recordOf = (name) => toPeriodRecord(PULL_REQUESTS[name], index)
@@ -348,11 +352,37 @@ describe('toPeriodRecord', () => {
     assert.equal(recordOf('feature').codeOwners, undefined)
   })
 
+  test('the people still asked to review an open pull request ready for review, bots aside', () => {
+    assert.deepEqual(recordOf('asked').requestedReviewers, ['bob', 'carol'])
+    assert.equal(recordOf('askedDraft').requestedReviewers, undefined)
+    assert.equal(recordOf('askedClosed').requestedReviewers, undefined)
+    // A pull request of an older snapshot, read before the requests were kept, has none.
+    assert.equal(recordOf('feature').requestedReviewers, undefined)
+  })
+
   test('nothing but what the stats need: no title, no branch', () => {
     const record = recordOf('feature')
     assert.equal('title' in record, false)
     assert.equal('head' in record, false)
     assert.equal('base' in record, false)
+  })
+})
+
+describe('requestedPeople', () => {
+  test('the people asked to review, code owners or not; teams, apps and unreadable reviewers aside', () => {
+    const requests = [
+      { asCodeOwner: false, requestedReviewer: { __typename: 'User', login: 'bob' } },
+      { asCodeOwner: true, requestedReviewer: { __typename: 'User', login: 'carol' } },
+      { asCodeOwner: true, requestedReviewer: { __typename: 'Team', slug: 'backend' } },
+      { asCodeOwner: false, requestedReviewer: { __typename: 'Bot' } },
+      { asCodeOwner: true, requestedReviewer: null },
+    ]
+    assert.deepEqual(requestedPeople(requests), ['bob', 'carol'])
+  })
+
+  test('none asked, or an answer without the requests', () => {
+    assert.deepEqual(requestedPeople([]), [])
+    assert.deepEqual(requestedPeople(undefined), [])
   })
 })
 

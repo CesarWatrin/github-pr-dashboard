@@ -60,6 +60,12 @@
             </svg>
             À débloquer
           </a>
+          <a class="nav-link" href="#/pour-moi" data-route-link="me">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="5.5" r="2.5" /><path d="M3 13.5c.5-2.6 2.4-4 5-4s4.5 1.4 5 4" />
+            </svg>
+            Pour moi
+          </a>
           <a class="nav-link" href="#/bilan" data-route-link="report">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="2.5" y="3" width="11" height="10.5" rx="1.5" /><path d="M2.5 6.5h11M5.5 2v2M10.5 2v2M5.5 9.5h5M5.5 11.5h3" />
@@ -337,6 +343,45 @@
                   PR de code des 30 derniers jours, dépôts front, back et mobile : déjà mergées, à relire après coup
                 </p>
                 <ol class="feed" data-unapproved></ol>
+              </section>
+            </div>
+          </div>
+
+          <!-- Pour moi -->
+          <div class="route" data-route="me" hidden>
+            <section class="card" aria-labelledby="me-title">
+              <div class="card-toolbar">
+                <h2 id="me-title">En ce moment</h2>
+                <label class="me-picker">
+                  Je suis
+                  <select class="search" name="me" data-me-picker></select>
+                </label>
+              </div>
+              <div class="tiles" data-me-tiles></div>
+              <p class="card-note">
+                D’après la dernière synchro, hors brouillons et PR des personnes parties. Le choix de la personne reste
+                dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles
+                faites à la personne.
+              </p>
+            </section>
+
+            <div class="unblock-lists me-lists">
+              <section class="card" aria-labelledby="me-review-title">
+                <h2 id="me-review-title" data-me-title="toReview">Reviews qu’on m’a demandées</h2>
+                <p class="card-sub">PR des autres qui attendent encore ma review, les plus anciennes d’abord</p>
+                <ol class="feed" data-me="toReview"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-ready-title">
+                <h2 id="me-ready-title" data-me-title="ready">Prêtes à merger</h2>
+                <p class="card-sub" data-me-sub="ready"></p>
+                <ol class="feed" data-me="ready"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-open-title">
+                <h2 id="me-open-title" data-me-title="open">Mes PR ouvertes</h2>
+                <p class="card-sub">Où en est chacune, ce qu’elle attend et depuis quand, les plus longues d’abord</p>
+                <ol class="feed" data-me="open"></ol>
               </section>
             </div>
           </div>
@@ -863,6 +908,14 @@
                   jours ouvrés avec des changements demandés ou en discussion, comptés depuis cette décision,
                   l’ouverture ou le dernier échange. Sans aucune review ni commentaire depuis plus d’un
                   mois, elle est rangée à part, parmi les oubliées.
+                </dd>
+                <dt>Pour moi</dt>
+                <dd>
+                  Les mêmes PR de code ouvertes, vues par la personne choisie, sans délai minimum : celles des autres
+                  dont GitHub lui demande encore la review (une demande faite à une équipe ne compte pas, la synchro ne
+                  sait pas qui en fait partie), les siennes qui ne sont pas encore assez approuvées, classées comme sur
+                  À débloquer, et les siennes approuvées par autant de personnes qu’il en faut pour merger. Une demande
+                  de review s’efface dès que la personne a relu la PR.
                 </dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>

@@ -13,9 +13,10 @@ paths:
   `full-sync.js` with the same query string (`import.meta.url`). Any new module follows that pattern, so that the Pages
   cache (10 minutes) never mixes versions.
 - Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, unblock, report, analysis, authors, reviewers, cycle, collaboration, team,
+  page of the hash (`ROUTES`: overview, unblock, me, report, analysis, authors, reviewers, cycle, collaboration, team,
   awards, repositories, tma, devops, method). The period selector and the search apply to every page but the method,
-  report and awards ones (`filters: false`): the report has a month picker of its own; the unblock page, about what
+  report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour moi » a
+  person picker; the unblock page, about what
   stands now, keeps the search only (`period: false`), the analysis page the period only (`search: false`).
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
@@ -59,6 +60,12 @@ paths:
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
   `FORGOTTEN_AFTER_DAYS`. Drafts stay out, through the `draft` flag of the records. Every list shows, empty or not, two
   by two, the forgotten pull requests beside those merged without approval.
+- **« Pour moi » page** (`renderMe()`): the same open pull requests, those of people still in the team, for one person
+  picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
+  `personalQueue()` of `site/period.js` gives the lists of `ME_LISTS`, without any delay: the pull requests of others
+  still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know who is
+  in a team), theirs not approved enough yet, and theirs approved, each with where it stands (the tags of
+  `UNBLOCK_STANCES`) and who it waits for (`waitedFor()`). No score, no ranking.
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added

@@ -27,6 +27,10 @@ une colonne à droite, qui reste à portée quand la page défile. Tous les dél
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
+- **Pour moi** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
+  dont GitHub lui demande encore la review (pas celles demandées à une équipe), ses PR ouvertes avec où en est chacune
+  et qui elle attend, et les siennes approuvées qu'il ne reste qu'à merger. Sans délai minimum, d'après la dernière
+  synchro.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;

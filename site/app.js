@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, WORK_DAY_HOURS, workHoursBetween } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, personalQueue, reviewNetwork, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -32,6 +32,8 @@ const RELOAD_STORAGE_KEY = 'github-pr-dashboard:reloaded-build'
 // Also read by the inline script of index.html, which applies the theme before the first paint.
 const THEME_STORAGE_KEY = 'github-pr-dashboard:theme'
 const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
+// Who the « Pour moi » page is for, in this browser.
+const ME_STORAGE_KEY = 'github-pr-dashboard:me'
 const UNLOCK_DURATION_MS = 30 * 24 * 60 * 60_000
 const DEFAULT_PERIOD = '365d'
 const CUSTOM_PERIOD = 'custom'
@@ -83,6 +85,7 @@ const ACTIVE_RUN_STATUSES = ['requested', 'queued', 'pending', 'waiting', 'in_pr
 const ROUTES = {
   overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
   unblock: { hash: '#/a-debloquer', title: 'À débloquer', subtitle: 'Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord', period: false },
+  me: { hash: '#/pour-moi', title: 'Pour moi', subtitle: 'Les reviews qu’on me demande, mes PR ouvertes et celles prêtes à merger', filters: false },
   authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
   reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
   cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
@@ -355,6 +358,14 @@ const UNBLOCK_TILES = [
   ...[...UNBLOCK_STANCES, FORGOTTEN].map(({ key, label }) => ({ key, label })),
   { key: 'open', label: 'PR de code ouvertes' },
 ]
+
+// The lists of the « Pour moi » page, from personalQueue() of site/period.js.
+const ME_LISTS = {
+  toReview: { label: 'Reviews qu’on m’a demandées', tile: 'Reviews demandées', empty: 'Aucune review demandée en attente' },
+  ready: { label: 'Prêtes à merger', tile: 'Prêtes à merger', empty: 'Aucune PR approuvée qui attend son merge' },
+  open: { label: 'Mes PR ouvertes', tile: 'Mes PR ouvertes', empty: 'Aucune PR ouverte en attente' },
+}
+const ME_TILES = Object.entries(ME_LISTS).map(([key, { tile }]) => ({ key, label: tile }))
 
 const TMA_TILES = [
   { key: 'opened', label: 'Hotfix ouverts' },
@@ -1081,6 +1092,8 @@ const state = {
   reportCache: null,
   seenEvents: null,
   seenUnapproved: null,
+  // Who the « Pour moi » page is for, null until picked.
+  me: readStoredMe(),
   fetchFailed: false,
 }
 
@@ -1110,6 +1123,22 @@ function storePeriod() {
     }
   } catch {
     // Storage can be unavailable (private browsing): the period is simply not remembered.
+  }
+}
+
+function readStoredMe() {
+  try {
+    return localStorage.getItem(ME_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function storeMe() {
+  try {
+    localStorage.setItem(ME_STORAGE_KEY, state.me)
+  } catch {
+    // Without storage, the person is picked again on the next visit.
   }
 }
 
@@ -5033,6 +5062,88 @@ function renderUnblock(mode) {
   }
 }
 
+// « Pour moi » page
+
+// Who the page can be for: the people still in the team, by name.
+function mePeople() {
+  return [...activities().keys()]
+    .filter(isCurrent)
+    .sort((a, b) => displayName(a).localeCompare(displayName(b), 'fr', { sensitivity: 'base' }))
+}
+
+// The people a pull request of the person waits for, after where it stands: those who decided or the code owners, else
+// those still asked to review it.
+function waitedFor(pr) {
+  const stance = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
+  const [label, logins] = stance.by && pr.by.length ? [stance.by, pr.by] : ['en attente de', pr.requestedReviewers]
+  if (!logins.length) {
+    return []
+  }
+
+  return [
+    el(
+      'span',
+      { className: 'feed-by' },
+      document.createTextNode(` · ${label} `),
+      ...logins.flatMap((login, index) => [...(index ? [document.createTextNode(', ')] : []), reviewerName(login)]),
+    ),
+  ]
+}
+
+const minutesIso = (minutes) => new Date(minutes * 60_000).toISOString()
+
+const ME_ITEMS = {
+  // Someone else's pull request, where it stands, since its opening.
+  toReview: (pr) =>
+    listItem(
+      pr.author,
+      el(
+        'p',
+        { className: 'feed-text' },
+        pullRequestLink(pr.repo, pr.number),
+        document.createTextNode(' de '),
+        personLink(pr.author, { withAvatar: false }),
+        el('span', { className: 'feed-tag', textContent: UNBLOCK_STANCES.find((stance) => stance.key === pr.stance).tag }),
+      ),
+      minutesIso(pr.createdAt),
+      'ouverte ',
+    ),
+  // The person's own, where it stands and since when, and who it waits for.
+  open: (pr) => {
+    const stance = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
+
+    return listItem(
+      pr.author,
+      el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), el('span', { className: 'feed-tag', textContent: stance.tag }), ...waitedFor(pr)),
+      minutesIso(pr.since),
+      `${stance.since} `,
+    )
+  },
+  ready: (pr) =>
+    listItem(pr.author, el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), ...waitedFor(pr)), minutesIso(pr.since), 'approuvée '),
+}
+
+function renderMe(mode) {
+  const people = mePeople()
+  const me = people.includes(state.me) ? state.me : null
+  const picker = $('[data-me-picker]')
+  const placeholder = new Option('Choisir une personne', '')
+  placeholder.disabled = true
+  picker.replaceChildren(placeholder, ...people.map((login) => new Option(displayName(login), login)))
+  picker.value = me ?? ''
+
+  const required = requiredApprovals()
+  const open = openPullRequests(state.stats.pullRequests, { requiredApprovals: required }).filter((pr) => isCurrent(pr.author))
+  const queue = me ? personalQueue(open, me) : null
+  renderTiles($('[data-me-tiles]'), ME_TILES, Object.fromEntries(ME_TILES.map(({ key }) => [key, queue?.[key].length ?? null])), mode)
+  $('[data-me-sub="ready"]').textContent =
+    `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)}, sans demande de changements en cours : il ne reste qu’à merger`
+  for (const [key, list] of Object.entries(ME_LISTS)) {
+    $(`[data-me-title="${key}"]`).textContent = queue ? `${list.label} (${formatNumber(queue[key].length)})` : list.label
+    renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : 'Choisir une personne en haut de la page')
+  }
+}
+
 // Sync status
 
 function renderSyncStatus() {
@@ -5355,6 +5466,7 @@ function render(animate) {
   renderRepositories()
   renderFeed(animate)
   renderUnblock(tileMode)
+  renderMe(tileMode)
   renderUnapproved(animate)
   renderSyncMenu()
 }
@@ -5704,6 +5816,11 @@ $('[data-report-month]').addEventListener('change', (event) => {
   const months = reportMonths()
   state.reportMonth = event.target.value === months.at(-1) ? null : event.target.value
   renderReport()
+})
+$('[data-me-picker]').addEventListener('change', (event) => {
+  state.me = event.target.value
+  storeMe()
+  renderMe('enter')
 })
 for (const button of document.querySelectorAll('[data-technology-measure]')) {
   button.addEventListener('click', () => {
