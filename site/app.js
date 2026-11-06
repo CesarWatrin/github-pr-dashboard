@@ -6167,7 +6167,9 @@ function renderRoute() {
   playEntrance()
 }
 
+// Whatever changes the page (a link, the browser's back button, a notification clicked) closes the drawer over it.
 window.addEventListener('hashchange', () => {
+  setNavOpen(false, { focus: false })
   renderRoute()
   window.scrollTo(0, 0)
 })
@@ -6197,6 +6199,7 @@ function setNavOpen(open, { focus = true, keyboard = false } = {}) {
 $('[data-nav-toggle]').addEventListener('click', (event) => setNavOpen(true, { keyboard: event.detail === 0 }))
 $('[data-nav-close]').addEventListener('click', () => setNavOpen(false))
 $('[data-nav-backdrop]').addEventListener('click', () => setNavOpen(false))
+// The link of the page already shown changes nothing: it closes the drawer all the same.
 for (const link of document.querySelectorAll('[data-sidebar] a')) {
   link.addEventListener('click', () => setNavOpen(false, { focus: false }))
 }
