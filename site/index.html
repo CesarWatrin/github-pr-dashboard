@@ -364,17 +364,32 @@
             <section class="card" aria-labelledby="me-title">
               <div class="card-toolbar">
                 <h2 id="me-title">En ce moment</h2>
-                <label class="me-picker">
-                  Je suis
-                  <select class="search" name="me" data-me-picker></select>
-                </label>
+                <div class="me-controls">
+                  <!-- Hidden where the browser has no notifications. -->
+                  <button type="button" class="notify-toggle" aria-pressed="false" data-notify-toggle hidden>
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M4 11.5V7a4 4 0 0 1 8 0v4.5l1 1.5H3z" />
+                      <path d="M6.5 14.5a1.6 1.6 0 0 0 3 0" />
+                    </svg>
+                    Me prévenir des reviews demandées
+                  </button>
+                  <label class="me-picker">
+                    Je suis
+                    <select class="search" name="me" data-me-picker></select>
+                  </label>
+                </div>
               </div>
+              <p class="notify-denied" role="status" data-notify-denied hidden>
+                Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur.
+              </p>
               <div class="tiles" data-me-tiles></div>
               <p class="card-note">
                 D’après la dernière synchro, hors brouillons et PR des personnes parties. Les PR de release et
                 d’intégration y figurent aussi, étiquetées : elles attendent leurs reviews comme les autres. Le choix de
                 la personne reste dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles
-                faites à la personne.
+                faites à la personne. Le titre de l’onglet compte les reviews demandées, sur toutes les pages. Avec la
+                cloche, le navigateur affiche une notification à chaque nouvelle demande, tant qu’un onglet du dashboard
+                reste ouvert, même en arrière-plan.
               </p>
             </section>
 
@@ -422,7 +437,17 @@
             <section class="card" aria-labelledby="report-title">
               <div class="card-toolbar">
                 <h2 id="report-title">Les chiffres du mois</h2>
-                <select class="search" name="month" aria-label="Mois du bilan" data-report-month></select>
+                <div class="report-actions">
+                  <span class="report-copied" role="status" data-report-copied></span>
+                  <button type="button" class="button-secondary report-copy" data-report-copy>
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+                      <path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" />
+                    </svg>
+                    Copier le bilan
+                  </button>
+                  <select class="search" name="month" aria-label="Mois du bilan" data-report-month></select>
+                </div>
               </div>
               <p class="card-sub" data-report-sub></p>
               <div class="table-wrap" data-report-table></div>
@@ -1012,8 +1037,9 @@
 
         <footer class="page-footer">
           <p>
-            Données GitHub actualisées automatiquement : tant qu’elle est affichée, la page lance une synchro rapide dès
-            qu’elles ont plus de 10 minutes, et le workflow tourne aussi en semaine, à intervalles irréguliers. Pour les
+            Données GitHub actualisées automatiquement : tant qu’elle est affichée, ou en arrière-plan avec les
+            notifications de « Pour moi », la page lance une synchro rapide dès qu’elles ont plus de 10 minutes, et le
+            workflow tourne aussi en semaine, à intervalles irréguliers. Pour les
             mettre à jour tout de suite, utilise le bouton ⟳ de la navigation, ou ouvre le workflow
             <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a>
             puis clique sur « Run workflow » (accès en écriture au dépôt requis).

@@ -9,7 +9,8 @@ chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews ar
 
 Le dashboard est découpé en pages, dans une barre latérale (une barre en haut sur les écrans étroits). La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
-une colonne à droite, qui reste à portée quand la page défile. Sur la vue d'ensemble, le cycle de vie, la TMA et
+une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1535 px, elles restent collées en haut de
+la fenêtre. Sur la vue d'ensemble, le cycle de vie, la TMA et
 DevOps, un choix « Comparer à » met chaque chiffre de la période face à la période d'avant ou à la même période l'an
 dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
@@ -34,12 +35,17 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   seule liste et sans délai minimum : prêtes à merger, changements demandés, bloquées par un code owner, oubliées
   (sans review ni commentaire depuis plus d'un mois, ce qui l'emporte sur le reste), et les autres, chacune avec où
   elle en est et qui elle attend. Les PR de release et d'intégration y figurent aussi, étiquetées. D'après la dernière
-  synchro.
+  synchro. Le titre de l'onglet compte les reviews demandées à la personne, sur toutes les pages : « (3) Stats PR ».
+  Avec la cloche « Me prévenir des reviews demandées », le navigateur affiche une notification à chaque nouvelle
+  demande, tant qu'un onglet du dashboard reste ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand
+  « Pour moi » est à l'écran, aucune pour les demandes déjà là à l'ouverture de l'onglet.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs et les arrivées. Il s'ouvre sur le mois en cours, provisoire et
-  sans comparaison ; les mois complets se choisissent dans la liste.
+  sans comparaison ; les mois complets se choisissent dans la liste. « Copier le bilan » le copie en texte, prêt à
+  coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec son évolution, 🟢 ou 🟠 quand elle va
+  dans le bon ou le mauvais sens, puis le lien de la page.
 - **Tendances** : les indicateurs clés du bilan (PR de code mergées, délai de merge, attente de la première review,
   commentaires par PR relue, délai jusqu'en prod, taux de reprise, part de hotfix, CI en échec) mois après mois, sur
   les mois que touche la période choisie (36 mois : tout l'historique), avec leur médiane sur 3 mois ; pour chacun, le
@@ -144,7 +150,8 @@ lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a
 pour lancer ou annuler des runs de ce workflow et rien d'autre.
 
 Avec ce token, la page lance aussi une synchro rapide d'elle-même dès que ses données ont plus de 10 minutes, tant
-qu'elle est affichée (pas dans un onglet en arrière-plan) : GitHub saute la plupart des déclenchements planifiés, et
+qu'elle est affichée (pas dans un onglet en arrière-plan, sauf avec les notifications de « Pour moi », qui sinon
+arriveraient en retard) : GitHub saute la plupart des déclenchements planifiés, et
 le cron seul laisse les données vieillir des heures. Elle regarde d'abord les derniers runs du workflow : une synchro
 en attente ou en cours est attendue, et rien n'est lancé si un run a démarré dans les 10 dernières minutes, depuis
 n'importe quelle page. Plusieurs pages ouvertes en même temps ne lancent donc qu'un run. Chaque page n'essaie qu'une

@@ -80,7 +80,15 @@ paths:
   who is in a team), then theirs, each in one list only, named and defined as on the unblock page but without its
   delays: forgotten first (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked
   by code owners, and the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not
-  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking.
+  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking. Its lists keep to what they hold, up to
+  the height of a feed, so that an empty one leaves a short card. `meQueue()` works the lists out for `renderMe()`,
+  which keeps the reviews asked (`state.reviewsAsked`): `renderTitle()` counts them in the tab title of every page,
+  « (3) Stats PR ». The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
+  blocks it) turns notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first);
+  `notifyNewReviews()` then shows one for the reviews asked since the tab last looked (`KNOWN_REVIEWS_STORAGE_KEY`,
+  in `sessionStorage`: a reload for a new build misses none, a new tab or another person notifies none of those
+  already there), one for several, none while « Pour moi » is on screen. A browser with the API but without the
+  constructor (phones) shows none: the title still counts.
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added
@@ -103,7 +111,9 @@ paths:
   median of the last `REPORT_YEAR_MONTHS` whole months, whichever month is shown; the months come from
   `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change. The page
   opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month
-  picked.
+  picked. `reportContent()` works out what the report says, once for the page (`renderReport()`) and for « Copier le
+  bilan » (`reportText()`): the same figures as text, `*bold*` titles and bullets as Google Chat and Slack read them,
+  🟢 or 🟠 after a change with a better way, the figures without a value left out, then the link of the page.
 - **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), from `monthStats()`,
   over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/period.js`: each month
   whole, the first month of the data, cut by its start, left out); the period selector applies, not the search. 30 or
@@ -191,7 +201,9 @@ paths:
 - Layout: a sidebar from 1280 px, a top bar below. From 1536 px the filters (`[data-filters]`) move from the top of
   the page to a sticky column on its right, under the name « Filtres », the period shown tinted like the current page
   of the sidebar; the column stays on the pages without filters so that the content keeps its width;
-  beside it the content is as wide as beside the sidebar at 1280 px, so whatever fits there fits there too. Tables
+  beside it the content is as wide as beside the sidebar at 1280 px, so whatever fits there fits there too. From 1280
+  to 1535 px they stick to the top of the window instead, on a band of the page's background, underlined once stuck
+  (`is-stuck`, set by an `IntersectionObserver`: their top sits one pixel above the window). Tables
   fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
 - Hiding: the `hidden` attribute, which a rule of `style.css` makes win over any `display`; never a class of its own.
 - Motion: pages enter with `.is-entering` and a staggered `--delay`; everything stops under
@@ -205,7 +217,8 @@ paths:
   it. Never log it or print it.
 - The sync button uses `DISPATCH_TOKEN` from the decrypted stats; a full sync asks for confirmation first.
 - `autoSync()`, after each `refresh()` and the unlocking, starts a quick sync with the same token once the data is
-  older than `AUTO_SYNC_AFTER_MS` (10 minutes), from a page that shows only (`visibilityState`), never while a sync of
+  older than `AUTO_SYNC_AFTER_MS` (10 minutes), from a page that shows only (`visibilityState`), or one in the
+  background that notifies the reviews asked (`notificationsOn()`: they would come late otherwise), never while a sync of
   the page is starting or awaited, and one try per `AUTO_SYNC_AFTER_MS` at most. The age is checked again with
   `serverNow()`, a browser clock running ahead finding every run old. `autoSyncAction()` of `site/auto-sync.js` reads
   the last runs: one queued or going is waited for (`running`), one started within `AUTO_SYNC_AFTER_MS` is left to
