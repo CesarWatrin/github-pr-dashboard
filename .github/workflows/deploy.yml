@@ -87,10 +87,15 @@ jobs:
 
       - uses: actions/configure-pages@v6
 
+      # A re-run keeps the artifacts of the attempts before it, and the deployment refuses to pick among several of the
+      # same name: each attempt uploads and deploys its own.
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+          name: github-pages-${{ github.run_attempt }}
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
