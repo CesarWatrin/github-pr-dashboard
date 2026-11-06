@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 45
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-again.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -94,8 +94,22 @@ jobs:
           path: site
           name: github-pages-${{ github.run_attempt }}
 
+      # GitHub Pages refuses a deployment while the one before is still finishing, as when two runs follow each other
+      # closely: then the run waits a minute and tries once more, rather than fail.
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+      - name: Wait for the deployment before
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy to GitHub Pages, once more
+        id: deployment-again
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
