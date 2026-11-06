@@ -50,7 +50,8 @@ paths:
   - Every column whose meaning is not obvious has a `hint`: the legend under the table is built from these.
 - **Charts**: `columnChart()` over time buckets (series side by side, partial buckets lighter, tooltip on hover, an
   optional `format` for durations), `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows ×
-  columns, `color-mix` on `--series-1`), `shareChart()` for bars cut into shares that fill the width, `lineChart()`
+  columns, `color-mix` on `--series-1`; on cells too narrow for its tilted column labels side by side, one in two or
+  three keeps its label, the last one always: `TILTED_LABEL_SPACING`), `shareChart()` for bars cut into shares that fill the width, `lineChart()`
   for lines over months (trends page: broken where a month has no value, the unfinished month lighter, a crosshair on
   hover), `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
@@ -80,8 +81,9 @@ paths:
   who is in a team), then theirs, each in one list only, named and defined as on the unblock page but without its
   delays: forgotten first (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked
   by code owners, and the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not
-  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking. Its lists keep to what they hold, up to
-  the height of a feed, so that an empty one leaves a short card. `meQueue()` works the lists out for `renderMe()`,
+  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking. Its lists, like those of the unblock
+  page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a
+  short card, and no blank on a phone where they stack. `meQueue()` works the lists out for `renderMe()`,
   which keeps the reviews asked (`state.reviewsAsked`): `renderTitle()` counts them in the tab title of every page,
   « (3) Stats PR ». The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
   blocks it) turns notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first);
@@ -113,7 +115,8 @@ paths:
   opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month
   picked. `reportContent()` works out what the report says, once for the page (`renderReport()`) and for « Copier le
   bilan » (`reportText()`): the same figures as text, `*bold*` titles and bullets as Google Chat and Slack read them,
-  🟢 or 🟠 after a change with a better way, the figures without a value left out, then the link of the page.
+  🟢 or 🟠 after a change with a better way, the figures without a value left out, then the link of the page. On a
+  phone the names of the figures wrap, so that the month shown fits beside them and the other months scroll.
 - **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), from `monthStats()`,
   over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/period.js`: each month
   whole, the first month of the data, cut by its start, left out); the period selector applies, not the search. 30 or
@@ -191,7 +194,8 @@ paths:
   (`--diff-deleted`), gold dot ringed with `--gold-ring` while the checks run or wait, pulsing but still under
   `prefers-reduced-motion`, slashed grey circle without any (`--text-muted`). The dialog closes
   from its button, with Escape or on the backdrop, and gives the focus back to the link; a name in it opens the
-  person's dialog over it.
+  person's dialog over it. Taller than the window, only its body scrolls (`.pr-dialog-body`, a column under the head):
+  the head, with the close button, stays in place.
 - **Former people**, on every page: a person without any pull request, review, comment or merge for
   `FORMER_AFTER_DAYS` (`isFormer()`, from the last activity of `activityBounds()`) has left the team. Any new list of
   people leaves them out: `authorRows()`, `reviewerRows()`, `teamRows()`, the TMA people, the person picker, the
@@ -216,7 +220,9 @@ paths:
   status, which `renderSyncStatus()` keeps like the first) opens the same sidebar as a drawer over the page
   (`setNavOpen()`: `is-nav-open` on `.app`, the page and the bar `inert` meanwhile, the page not scrolling). It closes
   with its button, the backdrop, Escape, any change of page (a link, the back button, a notification), or the screen
-  growing past 1280 px; opened from the keyboard, the focus goes to the current page, else to the drawer itself.
+  growing past 1280 px; opened from the keyboard, the focus goes to the current page, else to the drawer itself. In
+  the drawer the sync menu spans the width of the buttons. Beside the page as in the drawer, a window too short for
+  the whole sidebar scrolls the list of pages only (`.nav`), the brand and the actions staying in place.
   From 1536 px the filters (`[data-filters]`) move from the top of
   the page to a sticky column on its right, under the name « Filtres », the period shown tinted like the current page
   of the sidebar; the column stays on the pages without filters so that the content keeps its width;
