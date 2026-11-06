@@ -16,6 +16,7 @@ import {
   parisDay,
   parisMidnight,
   reviewNetwork,
+  sameDays,
   workHoursBetween,
 } from '../site/period.js'
 
@@ -862,5 +863,30 @@ describe('comparisonRange', () => {
 
   test('no mode, no comparison', () => {
     assert.equal(comparisonRange(PRESET, 'none', 0), null)
+  })
+})
+
+describe('sameDays', () => {
+  // 12 months up to a sync in the morning, with no 29 February within the two years before.
+  const YEAR = { start: Date.parse('2025-11-06T09:30:00Z'), end: Date.parse('2026-11-06T09:30:00Z'), bucket: 'month' }
+  const MONTH = { start: Date.parse('2026-10-07T09:30:00Z'), end: Date.parse('2026-11-06T09:30:00Z'), bucket: 'day' }
+
+  test('for 12 months, the period before is the same period last year', () => {
+    assert.equal(sameDays(comparisonRange(YEAR, 'previous', 0), comparisonRange(YEAR, 'year', 0)), true)
+  })
+
+  test('within a day, as when a 29 February lies between them', () => {
+    const range = { start: 0, end: 10 * DAY_MS }
+    assert.equal(sameDays(range, { start: DAY_MS, end: 11 * DAY_MS }), true)
+    assert.equal(sameDays(range, { start: 2 * DAY_MS, end: 12 * DAY_MS }), false)
+  })
+
+  test('for 30 days, the period before and last year differ', () => {
+    assert.equal(sameDays(comparisonRange(MONTH, 'previous', 0), comparisonRange(MONTH, 'year', 0)), false)
+  })
+
+  test('a range the data does not cover matches nothing', () => {
+    assert.equal(sameDays(null, comparisonRange(YEAR, 'year', 0)), false)
+    assert.equal(sameDays(null, null), false)
   })
 })

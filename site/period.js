@@ -897,6 +897,12 @@ export function comparisonRange({ start, end, bucket }, mode, dataStart) {
   return { ...range, start: Math.max(range.start, dataStart) }
 }
 
+// Whether two ranges cover the same days, within one: the year before 12 months is the 12 months before, a 29 February
+// between them aside. Null, a range the data does not cover, matches nothing.
+export function sameDays(a, b) {
+  return a !== null && b !== null && Math.abs(a.start - b.start) <= DAY_MS && Math.abs(a.end - b.end) <= DAY_MS
+}
+
 // The same time of the same Paris day, one year earlier: 29 February falls on the 28th.
 function yearEarlier(time) {
   const day = parisDay(time)

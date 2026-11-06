@@ -1,5 +1,5 @@
 // Loaded with the version stamp of this script: the page and the stats computation always come from the same deploy.
-const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, WORK_DAY_HOURS, workHoursBetween } = await import(
+const { DAY_MS, activityBounds, addDays, busFactor, comparisonRange, computeCi, computePeriod, monthlyActivity, monthlyLeaders, openPullRequests, parisDay, parisMidnight, reviewNetwork, sameDays, WORK_DAY_HOURS, workHoursBetween } = await import(
   `./period.js${new URL(import.meta.url).search}`
 )
 
@@ -38,7 +38,8 @@ const DEFAULT_PERIOD = '365d'
 const CUSTOM_PERIOD = 'custom'
 // What the tiles of a period may be compared to (comparisonRange() of period.js): the option of each in the filters.
 const NO_COMPARISON = 'none'
-const COMPARISONS = { previous: 'Comparer à la période d’avant', year: 'Comparer à l’an dernier' }
+const NO_COMPARISON_LABEL = 'Sans comparaison'
+const COMPARISONS ={ previous: 'Comparer à la période d’avant', year: 'Comparer à l’an dernier' }
 const COMPARED_PHRASES = { previous: 'sur la période précédente', year: 'sur la même période l’an dernier' }
 // The pages whose tiles are about the period: the comparison is only offered there.
 const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
@@ -5358,7 +5359,7 @@ function renderRoute() {
   $('[data-periods]').hidden = ROUTES[route].period === false
   $('[data-date-range]').hidden = ROUTES[route].period === false
   $('[data-search]').hidden = ROUTES[route].search === false
-  $('[data-compare]').hidden = !COMPARED_ROUTES.has(route)
+  $('[data-compare-field]').hidden = !COMPARED_ROUTES.has(route)
   document.title = route === 'overview' ? 'Stats PR' : `${ROUTES[route].title} · Stats PR`
   // The charts of a hidden page cannot be measured: they are drawn when their page shows. So is the analysis, which
   // takes a moment to work out.
@@ -5401,27 +5402,40 @@ function toggleTheme() {
 
 // Main
 
-// A comparison the synced data does not cover for the period shown is marked so, and cannot be picked. Picking a
-// period it no longer covers, such as 36 months, goes back to no comparison: called before the tiles are drawn.
+// A comparison the synced data does not cover for the period shown is marked so, and cannot be picked. The same period
+// last year is left out when it is the period before, as for 12 months. Picking a period changes the comparison picked
+// accordingly: to the period before when last year is the same, to none when the data no longer covers it, such as for
+// 36 months. Called before the tiles are drawn. Under the picker, the days compared to.
 function renderComparePicker() {
   const picker = $('[data-compare]')
-  if (picker.options.length === 1) {
-    picker.append(...Object.entries(COMPARISONS).map(([mode, label]) => new Option(label, mode)))
-  }
-  if (state.stats && state.compare !== NO_COMPARISON && comparedRange() === null) {
-    state.compare = NO_COMPARISON
+  const sameAsBefore = state.stats !== null && sameDays(comparedRange('previous'), comparedRange('year'))
+  const compare = sameAsBefore && state.compare === 'year' ? 'previous' : state.compare
+  const shown = state.stats && compare !== NO_COMPARISON && comparedRange(compare) === null ? NO_COMPARISON : compare
+  if (shown !== state.compare) {
+    state.compare = shown
     storePeriod()
   }
-  for (const option of picker.options) {
-    if (option.value === NO_COMPARISON || !state.stats) {
-      continue
-    }
-    const covered = comparedRange(option.value) !== null
-    option.disabled = !covered
-    option.textContent = covered ? COMPARISONS[option.value] : `${COMPARISONS[option.value]} (hors données)`
-    option.title = covered ? '' : 'Les données synchronisées ne remontent pas jusque-là pour cette période.'
-  }
+  const modes = Object.keys(COMPARISONS).filter((mode) => !(sameAsBefore && mode === 'year'))
+  picker.replaceChildren(
+    new Option(NO_COMPARISON_LABEL, NO_COMPARISON),
+    ...modes.map((mode) => {
+      const option = new Option(COMPARISONS[mode], mode)
+      if (state.stats && comparedRange(mode) === null) {
+        option.disabled = true
+        option.textContent = `${COMPARISONS[mode]} (hors données)`
+        option.title = 'Les données synchronisées ne remontent pas jusque-là pour cette période.'
+      }
+
+      return option
+    }),
+  )
   picker.value = state.compare
+  const range = state.stats && state.compare !== NO_COMPARISON ? comparedRange() : null
+  const note = $('[data-compare-note]')
+  note.hidden = range === null
+  if (range) {
+    note.textContent = `Comparé au ${rangeShortFormat.formatRange(dayDate(parisDay(range.start)), dayDate(parisDay(range.end - 1)))}`
+  }
 }
 
 function renderPeriodSelector() {
