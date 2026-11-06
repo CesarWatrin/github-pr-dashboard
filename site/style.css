@@ -20,8 +20,9 @@
   --diff-added: #1a7f37;
   --diff-deleted: #d1242f;
   --shadow: 0 8px 24px rgba(11, 11, 11, 0.12);
-  /* The light a tilted person card catches, and its faint rainbow sheen */
-  --glare: rgba(255, 255, 255, 0.7);
+  /* The light a tilted person card catches, and its faint rainbow sheen: a soft spot, which never washes the figures
+     under the pointer out */
+  --glare: rgba(255, 255, 255, 0.22);
   --sheen-blend: multiply;
   --sheen-opacity: 0.16;
   /* The metals of the badges, lit from the top left; they read on both themes */
@@ -3285,7 +3286,7 @@ main.is-loading {
 }
 
 .person-dialog-card::after {
-  background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), var(--glare), transparent 55%);
+  background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), var(--glare), transparent 40%);
 }
 
 .person-dialog-card.is-tilting::before {

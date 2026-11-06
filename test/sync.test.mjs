@@ -165,6 +165,12 @@ describe('parseSquads', () => {
     assert.deepEqual(parseSquads(' ; '), [])
   })
 
+  test('the quotes around a value copied from .env are left out', () => {
+    const expected = [{ name: 'Blue team', members: ['ada', 'grace'] }]
+    assert.deepEqual(parseSquads('"Blue team:ada,grace"'), expected)
+    assert.deepEqual(parseSquads(" 'Blue team:ada,grace' "), expected)
+  })
+
   test('each team with its members, in order, a person allowed in several teams', () => {
     assert.deepEqual(parseSquads('Blue team: ada, grace ;Red team:linus,grace,linus'), [
       { name: 'Blue team', members: ['ada', 'grace'] },
