@@ -172,8 +172,15 @@ describe('parseSquads', () => {
     ])
   })
 
-  test('a team without a name or members, or named twice, is refused', () => {
-    for (const value of ['ada,grace', ':ada', 'Blue team:', 'Blue team:ada;Blue team:grace']) {
+  test('a star before a login marks the lead, who stays a member', () => {
+    assert.deepEqual(parseSquads('Blue team:ada,*grace;Red team:linus'), [
+      { name: 'Blue team', members: ['ada', 'grace'], lead: 'grace' },
+      { name: 'Red team', members: ['linus'] },
+    ])
+  })
+
+  test('a team without a name or members, named twice, or with two leads, is refused', () => {
+    for (const value of ['ada,grace', ':ada', 'Blue team:', 'Blue team:ada;Blue team:grace', 'Blue team:*ada,*grace', 'Blue team:*']) {
       assert.throws(() => parseSquads(value), /SQUADS/)
     }
   })

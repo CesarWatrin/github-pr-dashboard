@@ -20,7 +20,7 @@
      is derived from `DASHBOARD_PASSWORD` with PBKDF2-SHA256 (600 000 iterations) and a salt made of the first 16
      bytes of `sha256("github-pr-dashboard:" + ORG)`, so it stays the same from one sync to the next.
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
-     today's counters, the 7-day activity feed, the squads (`squads`, from `SQUADS`: `[{ name, members }]`), the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
+     today's counters, the 7-day activity feed, the squads (`squads`, from `SQUADS`: `[{ name, members, lead? }]`), the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
      `fullSync`: `{ salt, iterations, verifier }`, what the page checks the full sync password against), and above all
      `pullRequests` (one compact record per pull request, no content; the title and the state of the checks only for
      the pull requests the page opens the timeline of: open, or active over the last 30 days) since `windowStart` (the start of the
@@ -55,7 +55,7 @@ deploy to: no workflow of another branch can read them.
 | `REPO_CATEGORIES` | `.env`, secret | `repo:front\|back\|mobile\|other` overrides when the languages misjudge a repository |
 | `REQUIRED_APPROVALS` | `.env`, secret | Approvals a pull request needs before it can be merged, 1 by default: the unblock page tells those ready to merge |
 | `BOT_USERS` | `.env`, secret | Organization user accounts acting as bots, logins separated by commas |
-| `SQUADS` | `.env`, secret | The squads, `name:login,login;name:login,…`, a person may be in several: the squads page and the squad filter; none without it |
+| `SQUADS` | `.env`, secret | The squads, `name:*lead,login,login;name:login,…` (a star marks the head of the squad, one at most), a person may be in several: the squads page and the squad filter; none without it |
 | `DISPATCH_TOKEN` | `.env`, secret | Fine-grained token, this repository only, Actions read and write: the sync button of the page |
 | `DISPATCH_REPOSITORY` | `.env` | `owner/repo` of the dashboard, for `DISPATCH_TOKEN` outside CI |
 | `FULL_SYNC_PASSWORD` | `.env`, secret | Password of the full sync started from the page, apart from `DASHBOARD_PASSWORD` (optional: without it, no password asked) |

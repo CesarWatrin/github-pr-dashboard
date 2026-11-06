@@ -74,7 +74,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
   repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
 - **Squads** (quand `SQUADS` en déclare) : une carte par squad, comme celles des personnes et des dépôts, avec ses
-  membres et ses chiffres de la période : PR de code, mergées, relectures, attente de la première review, délai de
+  membres, son chef de squad en tête, et ses chiffres de la période : PR de code, mergées, relectures, attente de la première review, délai de
   merge, PR en attente. Un clic ouvre sa fiche, qui s'incline vers la souris : ce qu'elle écrit, sa revue (dont la
   part relue en interne), sa mise en prod, ses membres, qui relit son code et ses dépôts, chaque chiffre avec la
   médiane des squads. Dessous, le classement des squads, trié sur la colonne choisie, médailles pour les trois
@@ -279,8 +279,8 @@ Prérequis :
    - `REPO_CATEGORIES` (facultatif) : les corrections de type de dépôt ;
    - `BOT_USERS` (facultatif) : les comptes utilisateurs de l'org qui agissent en bots, séparés par des virgules ;
    - `REQUIRED_APPROVALS` (facultatif) : le nombre d'approbations qu'il faut pour merger une PR, 1 par défaut ;
-   - `SQUADS` (facultatif) : les squads, `nom:login,login;nom:login,…`, une personne pouvant être dans plusieurs ;
-     sans lui, ni page Squads ni filtre de squad ;
+   - `SQUADS` (facultatif) : les squads, `nom:*chef,login,login;nom:login,…`, une personne pouvant être dans plusieurs,
+     une étoile devant le login du chef de squad (un au plus) ; sans lui, ni page Squads ni filtre de squad ;
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro ;
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).

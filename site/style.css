@@ -2788,6 +2788,28 @@ main.is-loading {
   white-space: nowrap;
 }
 
+.squad-tag.is-lead {
+  border-color: var(--series-1);
+}
+
+/* « Chef de squad », and who: on the card of a squad, over its people, and on its dialog. */
+.squad-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+}
+
+.squad-lead-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.squad-avatars img.is-lead {
+  border-color: var(--series-1);
+}
+
 .squad-card-size {
   margin-left: auto;
   color: var(--text-secondary);

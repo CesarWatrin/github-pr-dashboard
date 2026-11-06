@@ -6379,7 +6379,7 @@ function squadRows() {
   const organization = squadPeriod('*', state.stats.pullRequests, range)
 
   return {
-    squads: squadsOf().map((squad) => squadRow(squad.name, squad.members, range, organization)),
+    squads: squadsOf().map((squad) => ({ ...squadRow(squad.name, squad.members, range, organization), lead: squad.lead ?? null })),
     organization: squadRow('*', null, range, organization),
   }
 }
@@ -6410,15 +6410,22 @@ function rankedSquads(rows) {
 }
 
 // The avatars of the members still in the team, overlapping, as on a team photo.
-function squadAvatars(members, size = 28) {
-  const current = members.filter(isCurrent)
+// The head of the squad comes first, ringed.
+function squadAvatars(members, size = 28, lead = null) {
+  const current = members.filter(isCurrent).sort((a, b) => (b === lead) - (a === lead))
 
   return el(
     'span',
     { className: 'squad-avatars', title: current.map(displayName).join(', ') },
-    ...current.map((login) => el('img', { src: avatarUrl(login, size * 2), alt: '', loading: 'lazy', width: size, height: size })),
+    ...current.map((login) =>
+      el('img', { className: login === lead ? 'is-lead' : '', src: avatarUrl(login, size * 2), alt: '', loading: 'lazy', width: size, height: size }),
+    ),
   )
 }
+
+// « Chef de squad », and who, on the card and the dialog of a squad that has one.
+const squadLead = (row, className) =>
+  row.lead ? [el('p', { className }, el('span', { className: 'squad-lead-label', textContent: 'Chef de squad' }), personLink(row.lead))] : []
 
 const membersText = (count) => `${formatNumber(count)} membre${count > 1 ? 's' : ''}`
 
@@ -6426,9 +6433,13 @@ const membersText = (count) => `${formatNumber(count)} membre${count > 1 ? 's' :
 function squadTags(login) {
   const squads = squadsOf().filter((squad) => squad.members.includes(login))
 
-  return squads.length
-    ? [el('div', { className: 'squad-tags', title: 'Squads' }, ...squads.map((squad) => el('span', { className: 'squad-tag', textContent: squad.name })))]
-    : []
+  // The head of a squad: a star on its tag, and the words on hover.
+  const tag = (squad) =>
+    squad.lead === login
+      ? el('span', { className: 'squad-tag is-lead', textContent: `★ ${squad.name}`, title: `Chef de squad, ${squad.name}` })
+      : el('span', { className: 'squad-tag', textContent: squad.name })
+
+  return squads.length ? [el('div', { className: 'squad-tags', title: 'Squads' }, ...squads.map(tag))] : []
 }
 
 function squadCard(row, index, rows) {
@@ -6445,7 +6456,8 @@ function squadCard(row, index, rows) {
     'article',
     { className: `repo-card squad-card${row.name === state.squad ? ' is-selected' : ''}` },
     open,
-    squadAvatars(row.members),
+    ...squadLead(row, 'squad-lead'),
+    squadAvatars(row.members, 28, row.lead),
     statList(SQUAD_CARD_STATS, row),
   )
   card.setAttribute('aria-label', row.name)
@@ -6469,7 +6481,8 @@ function openSquadDialog(row, rows, opener) {
           { className: 'person-dialog-identity' },
           el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: row.name, title: row.name })),
           el('p', { className: 'person-dialog-meta', textContent: membersText(row.size) }),
-          squadAvatars(row.members, 36),
+          ...squadLead(row, 'squad-lead'),
+          squadAvatars(row.members, 36, row.lead),
         ),
       ),
       el('p', {

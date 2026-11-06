@@ -95,7 +95,8 @@ paths:
   the cycle (`shareChart()`, which takes other parts and tooltip rows than the stages); the share of their code pull
   requests by repository type (`SQUAD_TYPES`, the colors of the types); who reads whom between squads, from the
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
-  carry their squads (`squadTags()`).
+  carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
+  `squadLead()`) shows on its card and dialog, its avatar first and ringed (`squadAvatars()`).
 - **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.

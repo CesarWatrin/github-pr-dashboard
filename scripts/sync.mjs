@@ -178,18 +178,21 @@ const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
 
 // The squads of the organization, as "name:login,login;name:login,…": from SQUADS, none without it. Their names and
 // members are private, so they come from the environment, and only travel inside the encrypted stats, for the squads
-// page and the squad filter. A person may belong to several squads; the order is kept, the page lists them so.
+// page and the squad filter. A person may belong to several squads; the order is kept, the page lists them so. A star
+// before a login marks the lead of the squad, one at most: "name:*login,login".
 function parseSquads(value = '') {
   const squads = []
   for (const entry of value.split(';').map((part) => part.trim()).filter(Boolean)) {
     const separator = entry.indexOf(':')
     const name = entry.slice(0, separator).trim()
-    const members = [...new Set(entry.slice(separator + 1).split(',').map((login) => login.trim()).filter(Boolean))]
-    if (separator === -1 || !name || !members.length || squads.some((squad) => squad.name === name)) {
+    const logins = entry.slice(separator + 1).split(',').map((login) => login.trim()).filter(Boolean)
+    const leads = logins.filter((login) => login.startsWith('*')).map((login) => login.slice(1).trim())
+    const members = [...new Set(logins.map((login) => login.replace(/^\*\s*/, '')).filter(Boolean))]
+    if (separator === -1 || !name || !members.length || leads.length > 1 || leads.includes('') || squads.some((squad) => squad.name === name)) {
       // The entry holds names of the organization: the public CI logs do not show it.
-      throw new Error(`SQUADS: ${process.env.CI ? 'an entry' : `"${entry}"`} should be name:login,login, each name once`)
+      throw new Error(`SQUADS: ${process.env.CI ? 'an entry' : `"${entry}"`} should be name:*lead,login,login, each name once, one lead at most`)
     }
-    squads.push({ name, members })
+    squads.push({ name, members, ...(leads.length && { lead: leads[0] }) })
   }
 
   return squads
