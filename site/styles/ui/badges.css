@@ -1,0 +1,227 @@
+/* Badges, like GitHub achievements: a round medal of its tier's metal, its icon in the middle, the length of its run of
+   months on a tab. On a card they sit in a row under the stack; in the dialog, larger, on the right of the head. */
+.person-badges,
+.person-dialog-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.person-dialog-badges {
+  gap: 14px;
+  margin-left: auto;
+  padding-right: 4px;
+}
+
+/* On a card, the badges sit above the button that covers it: they show what they mean on hover, and a click on them
+   still opens the dialog. Over a medal the pointer stays the classic arrow. */
+.person-card .person-badges {
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+}
+
+.badge-medal {
+  cursor: default;
+}
+
+.person-card:hover,
+.person-card:focus-within,
+.repo-card:hover,
+.repo-card:focus-within {
+  z-index: 1;
+}
+
+/* A medal: a brushed ring of its tier's metal around a domed face, lit from the top left, its icon in the middle. */
+.badge-medal {
+  --metal: var(--bronze);
+  --metal-light: var(--bronze-light);
+  --metal-ring: var(--bronze-ring);
+  --size: 34px;
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  padding: 3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 200deg,
+    var(--metal-light),
+    var(--metal) 18%,
+    var(--metal-ring) 32%,
+    var(--metal) 46%,
+    var(--metal-light) 58%,
+    var(--metal) 72%,
+    var(--metal-ring) 86%,
+    var(--metal-light)
+  );
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 18px -8px rgba(0, 0, 0, 0.3);
+  outline-offset: 3px;
+}
+
+.badge-medal.is-silver {
+  --metal: var(--silver);
+  --metal-light: var(--silver-light);
+  --metal-ring: var(--silver-ring);
+}
+
+.badge-medal.is-gold {
+  --metal: var(--gold);
+  --metal-light: var(--gold-light);
+  --metal-ring: var(--gold-ring);
+}
+
+.badge-medal.is-large {
+  --size: 58px;
+  padding: 4px;
+}
+
+.badge-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, var(--metal-light), var(--metal) 58%, var(--metal-ring));
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.35),
+    inset 0 -2px 3px rgba(255, 255, 255, 0.3);
+}
+
+/* The light on the dome */
+.badge-face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 46%);
+  pointer-events: none;
+}
+
+.badge-icon {
+  position: relative;
+  font-size: 15px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.is-large .badge-icon {
+  font-size: 26px;
+}
+
+/* The run of months, on a tab of the same metal */
+.badge-streak {
+  position: absolute;
+  right: -8px;
+  bottom: -5px;
+  padding: 0 5px;
+  border: 1px solid var(--metal-ring);
+  border-radius: 999px;
+  background: linear-gradient(var(--metal-light), var(--metal));
+  color: #1f1a12;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.is-large .badge-streak {
+  font-size: 12px;
+  line-height: 17px;
+}
+
+/* What a badge means, over it on hover or focus, at once, like the tooltips of the charts: its name and tier, then
+   what won it. On a card it opens from the medal's left edge towards the right: centred, it ran under the sidebar for
+   the medals at the left of a card. */
+.badge-tip {
+  position: absolute;
+  z-index: 2;
+  bottom: calc(100% + 12px);
+  left: -6px;
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  max-width: 250px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  box-shadow: var(--shadow);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.badge-medal:hover .badge-tip,
+.badge-medal:focus-visible .badge-tip,
+.badge-more:hover .badge-tip,
+.badge-more:focus-visible .badge-tip {
+  visibility: visible;
+}
+
+/* The medals left out: "+N" in a plain disc the size of a medal, their names in its tooltip. */
+.badge-more {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.badge-more.is-large {
+  width: 58px;
+  height: 58px;
+  font-size: 16px;
+}
+
+/* In the dialog the medals sit at the top right, near the close button, which comes forward as the card leans: their
+   tooltip opens below them, on their right edge. */
+.person-dialog-badges .badge-tip {
+  top: calc(100% + 12px);
+  right: -6px;
+  bottom: auto;
+  left: auto;
+}
+
+.badge-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.badge-tier {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(var(--metal-light), var(--metal));
+  color: #1f1a12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.badge-tip-text {
+  color: var(--text-secondary);
+}
+

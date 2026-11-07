@@ -11,7 +11,13 @@
     "sync:full": "node --env-file-if-exists=.env scripts/sync.mjs --full",
     "serve": "node scripts/serve.mjs",
     "dev": "node --env-file-if-exists=.env scripts/sync.mjs --watch & node scripts/serve.mjs",
-    "check": "for file in scripts/*.mjs site/*.js test/*.mjs; do node --check \"$file\" || exit 1; done",
+    "modules": "node scripts/module-map.mjs",
+    "check": "find scripts site tests -name '*.js' -not -path 'site/data/*' -o -name '*.mjs' | xargs -n 1 node --check",
+    "typecheck": "tsc -p .",
     "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
   }
 }

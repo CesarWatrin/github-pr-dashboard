@@ -1,0 +1,386 @@
+/* A person's details: a larger card in a dialog. It leans towards the pointer, its layers come apart and it catches
+   the light, a spot under the pointer and a faint rainbow sheen. At rest it lies flat, its text crisp. The dialog is
+   transparent and padded so that a leaning card never touches its edges. */
+.person-dialog {
+  width: min(100% - 16px, 900px);
+  max-width: none;
+  padding: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* The card never outgrows the window (its body scrolls instead): nothing clips it as it leans, and the dialog itself
+   never scrolls. */
+.person-dialog {
+  max-height: none;
+  overflow: visible;
+}
+
+.person-dialog::backdrop {
+  background: rgba(11, 11, 11, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.person-dialog-scene {
+  perspective: 1100px;
+}
+
+/* Never taller than the window, padding of the dialog aside: the head, with the close button, stays in view, and only
+   the body under it scrolls when the window is too short (is-scrollable, from ui/dialogs/card-dialog.js). */
+.person-dialog-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: calc(100dvh - 80px);
+  padding: 24px 26px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow:
+    var(--shadow),
+    0 30px 60px -24px rgba(0, 0, 0, 0.35);
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 500ms var(--ease-out);
+}
+
+.person-dialog-card.is-tilting {
+  transition: transform 90ms linear;
+}
+
+.person-dialog-card::before,
+.person-dialog-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.person-dialog-card::before {
+  background: linear-gradient(
+    115deg,
+    transparent 25%,
+    #ff4fa3 38%,
+    #4fd8ff 50%,
+    #ffe14f 62%,
+    transparent 75%
+  );
+  background-position: var(--glare-x, 50%) var(--glare-y, 50%);
+  background-size: 250% 250%;
+  mix-blend-mode: var(--sheen-blend);
+}
+
+.person-dialog-card::after {
+  background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), var(--glare), transparent 40%);
+}
+
+.person-dialog-card.is-tilting::before {
+  opacity: var(--sheen-opacity);
+}
+
+.person-dialog-card.is-tilting::after {
+  opacity: 1;
+}
+
+/* The layers of the card come apart while it leans: the head nearest, the figures below it. */
+.person-dialog-head,
+.person-dialog-section {
+  transition: transform 500ms var(--ease-out);
+}
+
+.person-dialog-card.is-tilting .person-dialog-head {
+  transform: translateZ(18px);
+}
+
+.person-dialog-card.is-tilting .person-dialog-section {
+  transform: translateZ(8px);
+}
+
+.person-dialog-close {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  right: 14px;
+  transition: transform 500ms var(--ease-out);
+}
+
+/* The head comes forward as the card leans: the close button comes further still, or the head would take its clicks. */
+.person-dialog-card.is-tilting .person-dialog-close {
+  transform: translateZ(26px);
+}
+
+/* It takes clicks well around what it shows: as the card leans, it drifts a little under the pointer. */
+.person-dialog-close::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+}
+
+.person-dialog-close svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.person-dialog-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding-right: 40px;
+}
+
+/* Its layers keep their depth while the whole card fits; scrolling, the body flattens them, the head keeps its own. The
+   scrollbar sits in the padding of the card, not over the figures. */
+.person-dialog-body {
+  display: grid;
+  gap: 18px;
+  min-height: 0;
+  transform-style: preserve-3d;
+}
+
+.person-dialog-body.is-scrollable {
+  margin-right: -14px;
+  padding-right: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.person-dialog-avatar {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--gridline);
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.person-dialog-identity {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The name, and the GitHub profile at its right: under it when the name is too long for both. */
+.person-dialog-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  min-width: 0;
+}
+
+.person-dialog-identity h2 {
+  margin: 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.person-dialog-meta,
+.person-dialog-scope {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Someone who left the team: said on a tag of its own, then when they were last active. */
+.person-dialog-former {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.former-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Next to a name, in the repositories that rest on someone who left the team. */
+.former-tag.is-small {
+  flex: none;
+  padding: 0 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.fragile-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* In the dialog of a repository, its main technology stands where a person's photo would. */
+.repo-dialog-logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: var(--surface-hover);
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.person-dialog-github {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.person-dialog-github:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.person-dialog-github svg {
+  fill: currentColor;
+}
+
+.person-dialog-scope {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.person-dialog-section {
+  display: grid;
+  gap: 10px;
+}
+
+.person-dialog-section h3 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.person-dialog-section .person-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* A label may take two lines in the dialog: the values of a row, and the medians under them, stay aligned. */
+.person-dialog-section .person-stats div {
+  grid-template-rows: 1fr auto auto;
+}
+
+.person-dialog-section .person-stats dt {
+  white-space: normal;
+}
+
+.person-stats-peer {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.person-dialog-columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 24px;
+  margin-top: 6px;
+}
+
+/* Two lists only, in the dialog of a repository: each takes half the width. */
+.person-dialog-columns.is-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .person-dialog-section .person-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .person-dialog-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.person-dialog-list-title {
+  margin: 0 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.person-dialog-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person-dialog-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.person-dialog-list-name,
+.person-dialog-list .person-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.person-dialog-list-name,
+.person-dialog-list .person-link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .person-dialog {
+    padding: 8px;
+  }
+
+  .person-dialog-card {
+    padding: 20px 18px;
+  }
+
+  .person-dialog-head {
+    gap: 14px;
+  }
+
+  .person-dialog-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .person-dialog-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

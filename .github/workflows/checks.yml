@@ -1,6 +1,7 @@
 name: Checks
 
-# Every pull request: syntax and tests, on made-up data. No environment, so no secret: a pull request cannot read them.
+# Every pull request: syntax, types and tests, on made-up data, the page included in the Chrome of the runner. No
+# environment, so no secret: a pull request cannot read them.
 on:
   pull_request:
 
@@ -14,7 +15,7 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -22,8 +23,15 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      # TypeScript, only to check the types of the JSDoc: the page runs the same files, without any build.
+      - name: Install the type checker
+        run: npm ci
+
       - name: Syntax
         run: npm run check
+
+      - name: Types
+        run: npm run typecheck
 
       - name: Tests
         run: npm test

@@ -1,0 +1,201 @@
+/* Tables */
+.table-wrap {
+  margin-top: 12px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Compact enough for both tables to fit from a 1080 px wide window, without scrolling sideways. */
+th,
+td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--gridline);
+  text-align: right;
+  white-space: nowrap;
+}
+
+th:first-child,
+td:first-child,
+th.text,
+td.text {
+  text-align: left;
+}
+
+td.text {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Lines added over lines deleted, within the height of a row, in the colors of a diff on GitHub. */
+.lines-cell span {
+  display: block;
+  color: var(--diff-added);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.lines-cell span + span {
+  color: var(--diff-deleted);
+}
+
+/* The person stays visible while a wide table scrolls sideways. */
+th:first-child,
+td.person {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+}
+
+thead th:first-child {
+  z-index: 2;
+}
+
+/* The sticky cell is opaque, so it repeats the row background and its transition. */
+tbody tr:hover td.person {
+  background: var(--surface-hover);
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+thead th button {
+  width: 100%;
+  min-width: 64px;
+  padding: 8px 10px;
+  white-space: normal;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+thead th button:hover,
+thead th[aria-sort] button {
+  color: var(--text-primary);
+}
+
+thead th[aria-sort] button {
+  font-weight: 600;
+}
+
+.sort-icon {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+}
+
+tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+tbody tr.is-updated,
+tbody tr.is-updated td.person {
+  animation: flash 4s ease-out;
+}
+
+@keyframes flash {
+  from {
+    background: var(--highlight);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+/* A person's name opens their dialog wherever it shows: a button that looks like the name. */
+.person-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person-link:hover .person-link-name {
+  text-decoration: underline;
+}
+
+/* A repository, wherever it shows: a button that looks like the link it replaced, and opens its dialog. */
+.repo-link {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.person .person-link,
+.person-secondary .person-link {
+  max-width: 150px;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.feed-text .person-link {
+  display: inline;
+  font-weight: 600;
+}
+
+.person-secondary {
+  text-align: left;
+}
+
+.bar-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.inline-bar {
+  width: 40px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gridline);
+}
+
+.inline-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--series-1);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.page-footer {
+  margin-top: 24px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+

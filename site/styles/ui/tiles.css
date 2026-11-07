@@ -1,0 +1,74 @@
+/* Stat tiles */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px 24px;
+  margin-top: 14px;
+}
+
+.tile-group {
+  margin-top: 18px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tile-group + .tiles {
+  margin-top: 8px;
+}
+
+/* The label on top, the value at the bottom: values line up across a row whatever the lines of their labels. */
+.tile {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 2px;
+}
+
+.tile-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.tile-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tile-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.tile-bump {
+  color: var(--success-text);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 300ms ease,
+    transform 400ms var(--ease-out);
+}
+
+.tile-bump.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* The change against the range compared to, under the value: a pill like those of the monthly report. */
+.tile-change {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.tile-change.is-missing {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+

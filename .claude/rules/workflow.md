@@ -19,9 +19,10 @@
 
 ## Before shipping
 
-- `npm run check` and `npm test`. The "Checks" workflow runs them on every pull request, and the "Protect main"
+- `npm run check`, `npm run typecheck` and `npm test` (its browser tests need Chrome: `CHROME_PATH` if it is not
+  where it usually lives). The "Checks" workflow runs them on every pull request, and the "Protect main"
   ruleset requires it to pass.
-- A change in a computation or a sync rule comes with tests in `test/`, on made-up data only: invented repositories,
+- A change in a computation or a sync rule comes with tests in `tests/` (`structure.md`), on made-up data only: invented repositories,
   people and figures, never anything taken from the snapshot.
 - A change in a computation: before and after comparison on the same snapshot (see `sync.md`).
 - A visible change: a preview with real data, outside the repository.

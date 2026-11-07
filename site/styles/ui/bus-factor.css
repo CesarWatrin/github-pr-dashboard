@@ -1,0 +1,56 @@
+/* The bus factor of a repository: quiet, unless the repository rests on a single person or on people who left. */
+.bus-factor {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bus-factor.is-fragile {
+  background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
+  color: var(--text-primary);
+}
+
+/* The repositories that rest on a single person: the repository, the person, the share they wrote. */
+.fragile-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fragile-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
+}
+
+.fragile-repo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fragile-repo .repo-link {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .fragile-list li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fragile-share {
+    grid-column: 1 / -1;
+  }
+}
+

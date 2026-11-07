@@ -1,0 +1,8 @@
+{
+  // The rules, shared by the page and the sync, and the sync itself: strictly typed, no implicit any.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true
+  },
+  "include": ["site/domain/*.js", "site/lib/*.js", "site/model/*.js", "scripts/**/*.mjs", "types/*.d.ts"]
+}

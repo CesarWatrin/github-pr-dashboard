@@ -1,0 +1,50 @@
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  z-index: 10;
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.tooltip-title {
+  margin: 0 0 6px;
+  color: var(--text-secondary);
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltip-row strong {
+  min-width: 2.5em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-row span {
+  color: var(--text-secondary);
+}
+
+.line-key {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--series-1);
+}
+
+.line-key.is-empty {
+  background: transparent;
+}
+
+.tooltip-note {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+

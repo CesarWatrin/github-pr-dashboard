@@ -1,0 +1,125 @@
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-hover: #f0efec;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  /* The chevron of the pickers (select.search), in the secondary ink. */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2352514e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --highlight: rgba(42, 120, 214, 0.14);
+  --success-text: #006300;
+  --status-good: #0ca30c;
+  --status-serious: #ec835a;
+  /* The colors of a diff on GitHub, for the lines added and deleted */
+  --diff-added: #1a7f37;
+  --diff-deleted: #d1242f;
+  --shadow: 0 8px 24px rgba(11, 11, 11, 0.12);
+  /* The light a tilted person card catches, and its faint rainbow sheen: a soft spot, which never washes the figures
+     under the pointer out */
+  --glare: rgba(255, 255, 255, 0.22);
+  --sheen-blend: multiply;
+  --sheen-opacity: 0.16;
+  /* The metals of the badges, lit from the top left; they read on both themes */
+  --bronze: #b4682e;
+  --bronze-light: #f3c79a;
+  --bronze-ring: #7d4318;
+  --silver: #9aa3ad;
+  --silver-light: #f4f6f8;
+  --silver-ring: #626b75;
+  --gold: #dda21a;
+  --gold-light: #fff1a8;
+  --gold-ring: #9c6c00;
+  --radius: 12px;
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-hover: #242423;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23c3c2b7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --highlight: rgba(57, 135, 229, 0.22);
+    --success-text: #0ca30c;
+    --diff-added: #3fb950;
+    --diff-deleted: #f85149;
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --glare: rgba(255, 255, 255, 0.16);
+    --sheen-blend: screen;
+    --sheen-opacity: 0.15;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-hover: #242423;
+  --text-primary: #f0efec;
+  --text-secondary: #c3c2b7;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23c3c2b7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --text-muted: #898781;
+  --gridline: #2c2c2a;
+  --baseline: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --highlight: rgba(57, 135, 229, 0.22);
+  --success-text: #0ca30c;
+  --diff-added: #3fb950;
+  --diff-deleted: #f85149;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --glare: rgba(255, 255, 255, 0.16);
+  --sheen-blend: screen;
+  --sheen-opacity: 0.15;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Hidden means hidden, whatever display the element's own rules give it: a card or a tile shown as a grid or a flex box
+   would otherwise stay visible. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font: 14px/1.5 var(--font);
+}
+
+/* A double tap does not zoom into the page, as in an app; pinching still does, for whoever needs larger text. */
+html {
+  touch-action: manipulation;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-size: 0.95em;
+}
+

@@ -1,0 +1,264 @@
+/* Charts */
+.chart {
+  position: relative;
+  height: 260px;
+  margin-top: 12px;
+}
+
+.chart.chart-sm {
+  height: 170px;
+  margin-top: 4px;
+}
+
+.bar-chart {
+  margin-top: 12px;
+}
+
+.chart svg,
+.bar-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.gridline {
+  stroke: var(--gridline);
+  stroke-width: 1;
+}
+
+.baseline {
+  stroke: var(--baseline);
+  stroke-width: 1;
+}
+
+.tick,
+.axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-chart .axis-label {
+  fill: var(--text-secondary);
+  font-size: 12px;
+}
+
+.value-label {
+  fill: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-chart .value-label {
+  font-size: 12px;
+}
+
+.bar {
+  fill: var(--series-1);
+  transition: opacity 0.15s;
+}
+
+.bar-group.is-partial .bar {
+  opacity: 0.45;
+}
+
+.bar-group.is-active .bar {
+  opacity: 0.75;
+}
+
+.hit {
+  fill: transparent;
+}
+
+.chart-empty {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* What the columns of a table count: there to be found, quieter than the data. */
+.table-legend {
+  columns: 2 320px;
+  column-gap: 32px;
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.table-legend div {
+  margin-bottom: 3px;
+  break-inside: avoid;
+}
+
+.table-legend dt,
+.table-legend dd {
+  display: inline;
+  margin: 0;
+}
+
+.table-legend dt {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.table-legend dt::after {
+  content: '\00a0: ';
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.minis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 16px 24px;
+  margin-top: 14px;
+}
+
+.mini {
+  min-width: 0;
+}
+
+/* Four small charts: in a row on a wide screen, two by two below, one by one on a phone. */
+.minis.minis-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 1440px) {
+  .minis.minis-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .minis.minis-four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.chart-data {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.chart-data summary {
+  cursor: pointer;
+}
+
+.chart-data .table-wrap {
+  max-height: 280px;
+  margin-top: 8px;
+}
+
+/* Review matrix: the intensity of a cell says how many pull requests of the row its column reviewed. */
+.heatmap {
+  margin-top: 12px;
+}
+
+.heatmap svg {
+  display: block;
+  overflow: visible;
+}
+
+.heatmap .axis-label {
+  fill: var(--text-secondary);
+  font-size: 12px;
+}
+
+.heat-cell {
+  transition: opacity 0.15s;
+}
+
+.heat-cell.is-empty {
+  fill: var(--surface-hover);
+}
+
+.heat-group {
+  outline: none;
+}
+
+.heat-group.is-active .heat-cell,
+.heat-group:focus-visible .heat-cell {
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+}
+
+.heat-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.heat-label.is-strong {
+  fill: #fff;
+}
+
+/* The median of a stage, inside its part of the bar: dark on every series color, in both themes. */
+.stage-label {
+  fill: #141413;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.card-note {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* On a phone, the most frequent pairs replace the matrix. */
+.pairs {
+  margin: 12px -8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pair-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+
+.pair-avatars {
+  display: flex;
+}
+
+.pair-avatars .avatar + .avatar {
+  margin-left: -6px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.pair-count {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
