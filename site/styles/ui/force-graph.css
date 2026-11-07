@@ -30,7 +30,7 @@
 }
 
 /* A node: an avatar on a disc of the surface, so that the links stop at its edge, in a ring of colored shares; or the
-   filled square of a repository, ringed by the surface where links meet it. */
+   filled square of a repository. */
 .force-graph-node {
   cursor: pointer;
   outline: none;
@@ -58,9 +58,10 @@
   stroke: var(--text-muted);
 }
 
+/* No border: the square is its colour alone; the halo of a merge grows from nothing. */
 .force-graph-square {
-  stroke: var(--page);
-  stroke-width: 2;
+  stroke: transparent;
+  stroke-width: 0;
 }
 
 .force-graph-label {
