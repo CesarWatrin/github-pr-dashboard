@@ -6,9 +6,16 @@ import { state } from '../../site/model/state.js'
 export const GENERATED_AT = '2026-06-15T10:00:00Z'
 export const WINDOW_START = '2023-06-16T10:00:00Z'
 
+/** @param {string} iso */
 export const minutes = (iso) => Date.parse(iso) / 60_000
 
 let number = 0
+/**
+ * @param {string} author
+ * @param {string} createdAt
+ * @param {Partial<PullRequestRecord>} [fields]
+ * @returns {PullRequestRecord}
+ */
 export function record(author, createdAt, fields = {}) {
   return {
     repo: 'web',
