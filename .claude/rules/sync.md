@@ -4,7 +4,12 @@ paths:
   - ".github/**"
 ---
 
-# Sync (`scripts/sync.mjs`)
+# Sync (`scripts/sync.mjs`, `scripts/sync/`)
+
+Each part has its module in `scripts/sync/` (`structure.md`): the fetching below lives in `pull-requests.mjs`,
+`runs.mjs`, `people.mjs`, `repositories.mjs` and `backfill.mjs`, on top of `github.mjs` and `queries.mjs`; the
+classification and the records in `records.mjs`; the monthly history in `history.mjs`; what is written in
+`publish.mjs`; the configuration in `config.mjs`; one sync end to end in `run.mjs`.
 
 ## Fetching
 
@@ -72,7 +77,7 @@ paths:
   `updatedAt`, so the incremental sync reads it again; until then, one read before these fields were kept has none.
   `toPeriodRecord()` publishes the `reviewRequests` of an open pull request that is not a draft as
   `requestedReviewers`, bots aside. `graphql()` lets through the errors on a
-  `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/period.js` documents the shape and is the only consumer.
+  `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/domain/period.js` documents the shape; `site/domain/` is the only consumer.
 - `squads`: `parseSquads()` of `SQUADS` (`name:*lead,login,login;name:login,…`, refused when an entry has no name, no
   member, a name already given or two leads, the entry shown only outside CI), published as `[{ name, members, lead? }]`
   when any: a star before a login marks the head of the squad, who stays a member.
@@ -83,7 +88,7 @@ paths:
   records only.
 - `computeCi()`: per repository, workflow and Paris day, `[runs, failed, rerun, durations in seconds]`, for runs on pull
   requests and pushes that reached a verdict (cancelled and skipped ones left out).
-- `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/period.js`) since the first
+- `mergeMonthlyHistory()`: each person's monthly figures (`monthlyActivity()` of `site/domain/months.js`) since the first
   sync, published as `monthly` for the badges. The sync works out the months from `HISTORY_LEAD_DAYS` after the start
   of the data: a month needs the month before it, whose pull requests its reviews and merges are mostly about. So the
   backfill adds the older months to the history as it reaches them. A whole month of the window is worked out until a week after its end
@@ -106,7 +111,7 @@ paths:
 ## Full sync password
 
 - With `FULL_SYNC_PASSWORD` and a sync trigger, `publishedSyncTrigger()` adds `fullSync: { salt, iterations, verifier }`
-  to `syncTrigger` (`fullSyncSettings()`, from `site/full-sync.js`, which the page shares): never the key, which signs
+  to `syncTrigger` (`fullSyncSettings()`, from `site/domain/full-sync.js`, which the page shares): never the key, which signs
   the proofs. Without it, `syncTrigger` stays as before and nothing is asked.
 - `chooseFullSync()` decides, before the sync, whether it is a full one: `--full` on the command line always (whoever
   runs it holds the `.env`); `FULL_SYNC=true` from the workflow only with a `FULL_SYNC_PROOF` that
@@ -122,9 +127,11 @@ paths:
 - A change in the snapshot shape bumps `SNAPSHOT_VERSION` (comment why): the next run reads everything again. Measure
   that run and keep it well under the workflow timeout. An optional field an older snapshot can do without, like
   `monthly`, needs no bump.
-- The pure parts of the sync are exported for the tests; the sync itself only runs when the file is executed
-  (`import.meta.main`). Keep new rules pure and exported, with their tests in `test/sync.test.mjs`.
+- The rules of the sync are pure functions exported by their module of `scripts/sync/`; only `scripts/sync.mjs` runs
+  a sync. Keep new rules pure and exported, with their tests in the matching file of `tests/sync/`, which imports
+  `./environment.mjs` first.
 - A change in a computation is also checked against real data, outside the repository: run the old and new code on
   the same snapshot (both importable) and diff the results. The existing stats must stay identical unless the change
   means them to move. Never copy anything of that data into a test.
-- The page and `site/period.js` read what the sync publishes: change them together, in the same pull request.
+- The page and `site/domain/` read what the sync publishes: change them together, in the same pull request, with the
+  made-up stats of `tests/fixtures/stats.mjs` when the shape changes.

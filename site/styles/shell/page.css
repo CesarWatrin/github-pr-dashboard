@@ -1,0 +1,173 @@
+/* Beside the sidebar, the page starts right after it; above the narrow bar, it is centered. What hangs past its right
+   edge, such as the hidden tip of a badge on the last card of a row, is clipped rather than widen the window: clip, not
+   hidden, so that the filters still stick as the window scrolls. */
+.page {
+  overflow-x: clip;
+  width: 100%;
+  max-width: 1320px;
+  padding: 32px 40px 48px;
+}
+
+@media (max-width: 1279px) {
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+}
+
+.route {
+  display: grid;
+  gap: 16px;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+h1 .org {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+h2,
+h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mini h3 {
+  font-size: 13px;
+}
+
+.card-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.definitions {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  gap: 8px 24px;
+  margin: 14px 0 0;
+}
+
+.definitions dt {
+  font-weight: 600;
+}
+
+.definitions dd {
+  max-width: 75ch;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .definitions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .definitions dd {
+    margin-bottom: 8px;
+  }
+}
+
+.subtitle,
+.card-sub {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+}
+
+.card-sub {
+  font-size: 13px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* The method's button, a link to its page: tinted like the current page of the sidebar while it shows. */
+.icon-button[aria-current='page'] {
+  border-color: color-mix(in srgb, var(--series-1) 45%, var(--border));
+  background: color-mix(in srgb, var(--series-1) 12%, var(--surface));
+  color: var(--series-1);
+}
+
+/* Label of an icon button, shown at once on hover or keyboard focus, aligned on its right edge to stay on screen. */
+.icon-button[data-label] {
+  position: relative;
+}
+
+.icon-button[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 6px);
+  right: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--text-primary);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+.icon-button[data-label]:hover::after,
+.icon-button[data-label]:focus-visible::after {
+  opacity: 1;
+}
+
+.sync-menu[open] .icon-button::after {
+  display: none;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+

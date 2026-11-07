@@ -1,0 +1,42 @@
+/* Confirmation before a heavy action */
+.confirm {
+  width: min(100% - 32px, 440px);
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+}
+
+.confirm::backdrop {
+  background: rgba(11, 11, 11, 0.45);
+}
+
+.confirm h2 {
+  font-size: 17px;
+}
+
+.confirm p {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+}
+
+/* A password the confirmation asks for, such as the full sync's. */
+.confirm-field {
+  margin-top: 18px;
+}
+
+.confirm .lock-error {
+  margin-top: 12px;
+  color: var(--text-primary);
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 22px;
+}
+

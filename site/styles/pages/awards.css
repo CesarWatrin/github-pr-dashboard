@@ -1,0 +1,175 @@
+/* Hall of fame: one block per badge, three by three on a wide screen, two by two below, one by one on a phone; the
+   months in a table. */
+.awards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 32px;
+  margin-top: 16px;
+}
+
+@media (min-width: 1440px) {
+  .awards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .awards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.award {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.award-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.award-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.award-name {
+  display: grid;
+  min-width: 0;
+}
+
+.award-name span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.award-months {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+/* The champions of the badges line up month by month, whatever the length of their names: each block spans three
+   rows of the grid, shared with the blocks beside it. */
+.awards.is-aligned > .award {
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+}
+
+.awards.is-aligned .award-months {
+  display: contents;
+}
+
+.award-months dt {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.award-months dd {
+  margin: 4px 0 0;
+}
+
+/* Each leader on a line, then how much: the same everywhere, whatever the width. */
+.award-leaders {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.award-value {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.award-former {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Each badge's holders scroll past five and a half of them, so that the page does not grow as months go by; the
+   padding keeps focus rings inside, and the medals take the tooltip of the charts (theirs would be cut). */
+.award-holders {
+  display: grid;
+  gap: 12px;
+  max-height: 320px;
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+}
+
+.award-holders .badge-tip {
+  display: none;
+}
+
+.award-holders li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* The person, then how long: a long name gets the whole width, cut short rather than over the figure. */
+.award-holder {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.award-holder .person-link,
+.award-leaders .person-link {
+  max-width: 100%;
+}
+
+.award-holder .person-link-name,
+.award-leaders .person-link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A column per badge, all as wide, the month a little narrower: long names are cut short and amounts take two lines
+   when they must, so that the table fits from 1080 px; narrower, it scrolls sideways. */
+.awards-table {
+  table-layout: fixed;
+  min-width: 840px;
+}
+
+.awards-table thead th:first-child {
+  width: 120px;
+}
+
+.awards-table td {
+  vertical-align: top;
+}
+
+.awards-table .award-value {
+  white-space: normal;
+}
+
+/* Its heads are plain text, not the sort buttons of the other tables: they take the padding of the cells. */
+.awards-table thead th {
+  padding: 8px 6px;
+}
+
+.awards-table tbody th {
+  font-weight: 600;
+}
+
+/* The month stays visible while the table scrolls sideways: its cell is opaque, so it takes the row's hover too, and
+   its transition. */
+.awards-table tbody tr:hover th {
+  background: var(--surface-hover);
+}
+

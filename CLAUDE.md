@@ -4,37 +4,41 @@ Dashboard of the pull requests, reviews, deployments and CI of a **private** Git
 **public** repository to GitHub Pages. The stats are only ever published encrypted: the page asks for a password and
 decrypts them in the browser.
 
-Static site, no build step, no npm dependency, Node 24 (`.nvmrc`). The interface is in French; code and comments are in
-English.
+Static site, no build step, no runtime dependency (TypeScript is the only dev dependency, to check the JSDoc types),
+Node 24 (`.nvmrc`). The interface is in French; code and comments are in English.
 
 ## Map
 
-| File | Role |
+| Path | Role |
 |---|---|
-| `scripts/sync.mjs` | Sync: reads GitHub (GraphQL for pull requests, REST for Actions runs), keeps the snapshot, publishes the encrypted data |
-| `site/period.js` | Module shared by the sync and the page: computes the stats of a date range |
-| `site/analysis.js` | The rules of the analysis page: what stands out of a date range, and where to act |
-| `site/full-sync.js` | Module shared by the sync and the page: the password of the full sync, its verifier and the signed proof |
-| `site/app.js` | The whole page: unlocking, routes, tiles, charts, tables, starting a sync from the page |
-| `site/index.html`, `site/style.css` | Markup of the pages and styles (light and dark themes) |
-| `site/technology-icons.svg` | Technology logos (Simple Icons, CC0) |
-| `scripts/serve.mjs` | Local static server (port 4173, `PORT` to change it) |
+| `site/index.html` | Markup of every page, its styles in order, and the module block (`npm run modules`) |
+| `site/app.js` | Composition root of the page: registers, wires and starts everything |
+| `site/domain/` | Rules shared by the sync and the page, pure: stats of a range (`period.js`, its tallies in `period/`), CI, open pull requests, timeline, months, comparisons, analysis (`analysis.js`, its rules in `analysis/`), full sync password, auto sync |
+| `site/lib/`, `site/model/` | Formats; the state of the page and what it reads of the stats for the filters picked. No DOM |
+| `site/services/` | Published stats and their key, build, GitHub API, notifications |
+| `site/ui/`, `site/pages/`, `site/shell/` | Building blocks of the view; one module per page; the frame (router, filters, render, session, sync, theme) |
+| `site/styles/`, `site/assets/` | Styles by part (light and dark themes); technology logos (Simple Icons, CC0) |
+| `scripts/sync.mjs`, `scripts/sync/` | The sync: reads GitHub (GraphQL for pull requests, REST for Actions runs), keeps the snapshot, publishes the encrypted data |
+| `scripts/serve.mjs`, `scripts/module-map.mjs` | Local static server (port 4173, `PORT` to change it); the module block of `index.html` |
 | `.github/workflows/deploy.yml` | Sync then deploy to Pages: weekday cron, every push to `main`, manual runs |
-| `.github/workflows/checks.yml` | Syntax and tests of every pull request, without any secret |
-| `test/` | Tests of `site/period.js`, `site/analysis.js`, `site/full-sync.js` and of the sync rules, on made-up data (`node --test`) |
+| `.github/workflows/checks.yml` | Syntax, types and tests of every pull request, without any secret |
+| `tests/` | One test file per module of rules, the page in Chrome, the architecture; made-up data only (`node --test`) |
 
 ## Commands
 
 - `npm run sync`: incremental sync (needs `.env`); `npm run sync:full`: full sync.
-- `npm run serve`: serves `site/` on http://localhost:4173.
-- `npm run dev`: a sync every minute, plus the server.
-- `npm run check`: syntax of every script; `npm test`: the tests. Both run on every pull request.
+- `npm run serve`: serves `site/` on http://localhost:4173; `npm run dev`: a sync every minute, plus the server.
+- `npm test`: every test (`npm run test:unit`: the rules and the architecture; `npm run test:browser`: the page in
+  Chrome); `npm run check`: syntax; `npm run typecheck`: types, strict on the
+  rules, never `any` (after `npm install`). All three run on every pull request.
+- `npm run modules`: writes the module block of `site/index.html`, after adding, moving or removing a module.
 
 ## Rules
 
 The detailed rules live in `.claude/rules/` and load automatically:
 
 - `sensitive-data.md`: **no data of the organization in clear text**, anywhere. Read it first.
+- `structure.md`: the layers of the code, where each thing goes, and the tests.
 - `architecture.md`: data flow, encryption, configuration.
 - `sync.md`: the sync (loaded when working on `scripts/` or the workflow).
 - `site.md`: conventions of the page (loaded when working on `site/`).

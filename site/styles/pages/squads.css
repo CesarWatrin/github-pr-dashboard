@@ -1,0 +1,160 @@
+/* Squads: their cards, like those of the repositories, then their ranking. */
+.squads-content {
+  display: grid;
+  gap: 16px;
+}
+
+/* The squads of a person, under their stack on their card and dialog: one tag each, a person may have two. */
+.squad-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.squad-tag {
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--series-1) 35%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.squad-tag.is-lead {
+  border-color: var(--series-1);
+}
+
+/* « Chef de squad », and who: on the card of a squad, over its people, and on its dialog. */
+.squad-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+}
+
+.squad-lead-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.squad-avatars img.is-lead {
+  border-color: var(--series-1);
+}
+
+.squad-card-size {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* The squad picked in the filters stands out among the cards and in the ranking. */
+.squad-card.is-selected {
+  border-color: var(--series-1);
+}
+
+/* The members, overlapping like a team photo; each keeps a ring of the card's background around it. */
+.squad-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  padding-left: 6px;
+}
+
+.squad-avatars img {
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--gridline);
+}
+
+.squad-ranking .squad-rank {
+  width: 2.5em;
+  text-align: center;
+}
+
+/* The rank leads the rows, not a person: no column stays in place as the table scrolls sideways. */
+.squad-ranking th:first-child {
+  left: auto;
+}
+
+.squad-ranking tbody th {
+  font-weight: 500;
+}
+
+.squad-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.squad-pick:hover {
+  text-decoration: underline;
+}
+
+/* The best figure of each column, among the squads. */
+.squad-ranking td.is-best {
+  color: var(--diff-added);
+  font-weight: 650;
+}
+
+.squad-ranking tr.is-selected > * {
+  background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
+}
+
+/* The whole organization, out of the ranking: under a line, in the secondary ink. */
+.squad-ranking .squad-total > * {
+  border-top: 1px solid var(--baseline);
+  color: var(--text-secondary);
+}
+
+.repo-card-people {
+  display: grid;
+  gap: 8px;
+}
+
+.repo-card-people-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.repo-card-people ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repo-card-people li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.repo-card-people p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.repo-card-share,
+.fragile-share {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+

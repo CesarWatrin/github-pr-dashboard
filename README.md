@@ -202,7 +202,7 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
 
 ## Fonctionnement
 
-- `scripts/sync.mjs` interroge l'API GraphQL de GitHub :
+- `scripts/sync.mjs` (et ses parties, dans `scripts/sync/`) interroge l'API GraphQL de GitHub :
   - premier passage : toutes les PR créées sur les 12 derniers mois, repo par repo (environ 7 min pour une centaine de repos) ;
   - passages suivants : uniquement les PR modifiées depuis la dernière synchro, via l'API de recherche (quelques
     secondes) ;
@@ -224,15 +224,15 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   qui sont ouvertes ou ont bougé dans les 30 derniers jours, puisque le titre de toutes les PR alourdirait les stats
   de moitié ; exécutions regroupées par workflow et par jour), publiée chiffrée dans
   `site/data/stats.enc.json`. La page en calcule les stats de la période choisie
-  (`site/period.js`) : n'importe quelles dates des 36 derniers mois, et les chiffres de chaque personne détaillés par
-  dépôt pour le filtre des tableaux.
+  (`site/domain/`, les règles qu'elle partage avec la synchro) : n'importe quelles dates des 36 derniers mois, et les
+  chiffres de chaque personne détaillés par dépôt pour le filtre des tableaux.
   `site/data/version.json` porte seulement la date de génération : la page le relit chaque minute et ne
   retélécharge les stats que lorsqu'elle change.
 - Le type de chaque dépôt (front, back, mobile ou autres : docs, infra, outillage) est déduit des langages que
   GitHub y détecte. Les dépôts mal jugés se corrigent avec `REPO_CATEGORIES` (`repo:type,repo:type`), gardée dans le
   `.env` et dans un secret plutôt que dans le code, puisque les noms des dépôts de l'org sont privés.
 - Les logos des technologies viennent de [Simple Icons](https://simpleicons.org) (CC0), embarqués dans
-  `site/technology-icons.svg` : la page n'appelle aucun service tiers.
+  `site/assets/technology-icons.svg` : la page n'appelle aucun service tiers.
 - Les bots sont exclus partout : comptes de type bot (GitHub Apps, détectés via l'API) et comptes de service listés
   dans `BOT_USERS`.
 - Les noms affichés sont ceux des profils GitHub (identifiant à défaut).
@@ -252,6 +252,36 @@ npm run serve       # http://localhost:4173
 npm run dev         # synchro toutes les 60 s + serveur, pour un affichage en direct
 npm run sync:full   # force une resynchro complète, sans demander FULL_SYNC_PASSWORD
 ```
+
+## Code et tests
+
+Le site reste statique, sans étape de build : le navigateur charge les fichiers du dépôt tels quels. Le code est
+découpé en petits modules, en couches qui ne dépendent que de celles d'en dessous :
+
+- `site/domain/` : les règles partagées avec la synchro (stats d'une période, CI, PR ouvertes, frise, mois,
+  comparaisons, analyse) ;
+- `site/lib/`, `site/model/` : les formats, et l'état de la page avec ce qu'elle lit des stats ;
+- `site/services/` : les stats publiées et leur clé, l'API GitHub, les notifications ;
+- `site/ui/`, `site/pages/`, `site/shell/` : les briques de l'affichage, une page par module, et le cadre (navigation,
+  filtres, session, synchro, thème) ; `site/app.js` les assemble ;
+- `site/styles/` : les styles, par partie.
+
+`index.html` charge chaque module avec la version du déploiement et les précharge tous d'un coup : après avoir
+ajouté, déplacé ou supprimé un module, `npm run modules` met ce bloc à jour (les tests le vérifient).
+
+```bash
+npm install         # TypeScript, seulement pour vérifier les types de la JSDoc
+npm test            # tous les tests ; ceux de la page tournent dans Chrome (CHROME_PATH s'il n'est pas trouvé)
+npm run test:unit   # seulement les règles et l'architecture, en quelques secondes
+npm run test:browser # seulement la page dans Chrome
+npm run check       # la syntaxe de tous les fichiers
+npm run typecheck   # les types
+```
+
+Les tests vivent dans `tests/`, un fichier par module de règles (`tests/domain/`, `tests/lib/`, `tests/model/`,
+`tests/sync/`), plus un test de la page dans Chrome sur des données inventées (chaque page s'affiche sans erreur et
+remplit tout ce qu'elle dessine, les dialogues s'ouvrent, les filtres s'appliquent) et un test de l'architecture
+(couches, cycles d'import, modules et styles chargés par la page).
 
 ## Déploiement (GitHub Actions + Pages)
 
@@ -288,8 +318,9 @@ Prérequis :
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
-Les tests (`npm test`, sur des données inventées) et la vérification de syntaxe (`npm run check`) tournent sur
-chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de protection de `main` exige qu'ils passent.
+Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types
+(`npm run typecheck`) tournent sur chaque PR dans le workflow « Checks », sans accès aux secrets ; la règle de
+protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
 `REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,

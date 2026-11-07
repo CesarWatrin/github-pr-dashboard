@@ -21,7 +21,254 @@
         }
       } catch {}
     </script>
-    <link rel="stylesheet" href="style.css?v=__BUILD__" />
+    <!-- The styles, in the order of the cascade: a later file wins over an earlier one at the same specificity, and
+         touch.css comes last. -->
+    <link rel="stylesheet" href="styles/base.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/sidebar.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/page.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/sync-menu.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/lock.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/confirm.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/pull-request-dialog.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/sync-status.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/filters.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/layout.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/tiles.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/charts.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/team.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/report.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/trends.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/analysis.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/awards.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/repositories.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/squads.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/bus-factor.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/badges.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/card-dialog.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/tooltip.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/lists.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/repo-filter.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/stack.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/tables.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/motion.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/touch.css?v=__BUILD__" />
+    <!-- modules: written by scripts/module-map.mjs -->
+    <script type="importmap">
+    {
+      "imports": {
+        "./domain/analysis.js": "./domain/analysis.js?v=__BUILD__",
+        "./domain/analysis/ci-rules.js": "./domain/analysis/ci-rules.js?v=__BUILD__",
+        "./domain/analysis/drift-rules.js": "./domain/analysis/drift-rules.js?v=__BUILD__",
+        "./domain/analysis/measures.js": "./domain/analysis/measures.js?v=__BUILD__",
+        "./domain/analysis/review-rules.js": "./domain/analysis/review-rules.js?v=__BUILD__",
+        "./domain/analysis/thresholds.js": "./domain/analysis/thresholds.js?v=__BUILD__",
+        "./domain/auto-sync.js": "./domain/auto-sync.js?v=__BUILD__",
+        "./domain/buckets.js": "./domain/buckets.js?v=__BUILD__",
+        "./domain/ci.js": "./domain/ci.js?v=__BUILD__",
+        "./domain/comparison.js": "./domain/comparison.js?v=__BUILD__",
+        "./domain/full-sync.js": "./domain/full-sync.js?v=__BUILD__",
+        "./domain/math.js": "./domain/math.js?v=__BUILD__",
+        "./domain/months.js": "./domain/months.js?v=__BUILD__",
+        "./domain/open-pull-requests.js": "./domain/open-pull-requests.js?v=__BUILD__",
+        "./domain/period.js": "./domain/period.js?v=__BUILD__",
+        "./domain/period/authors.js": "./domain/period/authors.js?v=__BUILD__",
+        "./domain/period/cycle.js": "./domain/period/cycle.js?v=__BUILD__",
+        "./domain/period/delivery.js": "./domain/period/delivery.js?v=__BUILD__",
+        "./domain/period/dependencies.js": "./domain/period/dependencies.js?v=__BUILD__",
+        "./domain/period/hotfixes.js": "./domain/period/hotfixes.js?v=__BUILD__",
+        "./domain/period/reviewers.js": "./domain/period/reviewers.js?v=__BUILD__",
+        "./domain/period/series.js": "./domain/period/series.js?v=__BUILD__",
+        "./domain/period/sizes.js": "./domain/period/sizes.js?v=__BUILD__",
+        "./domain/team.js": "./domain/team.js?v=__BUILD__",
+        "./domain/time.js": "./domain/time.js?v=__BUILD__",
+        "./domain/timeline.js": "./domain/timeline.js?v=__BUILD__",
+        "./lib/dates.js": "./lib/dates.js?v=__BUILD__",
+        "./lib/format.js": "./lib/format.js?v=__BUILD__",
+        "./lib/math.js": "./lib/math.js?v=__BUILD__",
+        "./model/badges.js": "./model/badges.js?v=__BUILD__",
+        "./model/contributors.js": "./model/contributors.js?v=__BUILD__",
+        "./model/cycle.js": "./model/cycle.js?v=__BUILD__",
+        "./model/months.js": "./model/months.js?v=__BUILD__",
+        "./model/people.js": "./model/people.js?v=__BUILD__",
+        "./model/periods.js": "./model/periods.js?v=__BUILD__",
+        "./model/pull-requests.js": "./model/pull-requests.js?v=__BUILD__",
+        "./model/repositories.js": "./model/repositories.js?v=__BUILD__",
+        "./model/repository-rows.js": "./model/repository-rows.js?v=__BUILD__",
+        "./model/routes.js": "./model/routes.js?v=__BUILD__",
+        "./model/selection.js": "./model/selection.js?v=__BUILD__",
+        "./model/squads.js": "./model/squads.js?v=__BUILD__",
+        "./model/state.js": "./model/state.js?v=__BUILD__",
+        "./model/team.js": "./model/team.js?v=__BUILD__",
+        "./pages/analysis/analysis.js": "./pages/analysis/analysis.js?v=__BUILD__",
+        "./pages/analysis/evidence.js": "./pages/analysis/evidence.js?v=__BUILD__",
+        "./pages/analysis/findings.js": "./pages/analysis/findings.js?v=__BUILD__",
+        "./pages/authors.js": "./pages/authors.js?v=__BUILD__",
+        "./pages/awards.js": "./pages/awards.js?v=__BUILD__",
+        "./pages/collaboration.js": "./pages/collaboration.js?v=__BUILD__",
+        "./pages/cycle.js": "./pages/cycle.js?v=__BUILD__",
+        "./pages/devops.js": "./pages/devops.js?v=__BUILD__",
+        "./pages/me.js": "./pages/me.js?v=__BUILD__",
+        "./pages/overview.js": "./pages/overview.js?v=__BUILD__",
+        "./pages/report.js": "./pages/report.js?v=__BUILD__",
+        "./pages/repositories.js": "./pages/repositories.js?v=__BUILD__",
+        "./pages/reviewers.js": "./pages/reviewers.js?v=__BUILD__",
+        "./pages/squads/cards.js": "./pages/squads/cards.js?v=__BUILD__",
+        "./pages/squads/charts.js": "./pages/squads/charts.js?v=__BUILD__",
+        "./pages/squads/figures.js": "./pages/squads/figures.js?v=__BUILD__",
+        "./pages/squads/squads.js": "./pages/squads/squads.js?v=__BUILD__",
+        "./pages/team.js": "./pages/team.js?v=__BUILD__",
+        "./pages/tma.js": "./pages/tma.js?v=__BUILD__",
+        "./pages/trends.js": "./pages/trends.js?v=__BUILD__",
+        "./pages/unblock.js": "./pages/unblock.js?v=__BUILD__",
+        "./services/build.js": "./services/build.js?v=__BUILD__",
+        "./services/github.js": "./services/github.js?v=__BUILD__",
+        "./services/notifications.js": "./services/notifications.js?v=__BUILD__",
+        "./services/stats-key.js": "./services/stats-key.js?v=__BUILD__",
+        "./services/stats-source.js": "./services/stats-source.js?v=__BUILD__",
+        "./shell/filters.js": "./shell/filters.js?v=__BUILD__",
+        "./shell/render.js": "./shell/render.js?v=__BUILD__",
+        "./shell/router.js": "./shell/router.js?v=__BUILD__",
+        "./shell/session.js": "./shell/session.js?v=__BUILD__",
+        "./shell/sync.js": "./shell/sync.js?v=__BUILD__",
+        "./shell/tables.js": "./shell/tables.js?v=__BUILD__",
+        "./shell/theme.js": "./shell/theme.js?v=__BUILD__",
+        "./ui/badges.js": "./ui/badges.js?v=__BUILD__",
+        "./ui/charts/axis.js": "./ui/charts/axis.js?v=__BUILD__",
+        "./ui/charts/bar-chart.js": "./ui/charts/bar-chart.js?v=__BUILD__",
+        "./ui/charts/column-chart.js": "./ui/charts/column-chart.js?v=__BUILD__",
+        "./ui/charts/data-table.js": "./ui/charts/data-table.js?v=__BUILD__",
+        "./ui/charts/geometry.js": "./ui/charts/geometry.js?v=__BUILD__",
+        "./ui/charts/heatmap-chart.js": "./ui/charts/heatmap-chart.js?v=__BUILD__",
+        "./ui/charts/legend.js": "./ui/charts/legend.js?v=__BUILD__",
+        "./ui/charts/line-chart.js": "./ui/charts/line-chart.js?v=__BUILD__",
+        "./ui/charts/measure.js": "./ui/charts/measure.js?v=__BUILD__",
+        "./ui/charts/share-chart.js": "./ui/charts/share-chart.js?v=__BUILD__",
+        "./ui/dialogs/card-dialog.js": "./ui/dialogs/card-dialog.js?v=__BUILD__",
+        "./ui/dialogs/person-dialog.js": "./ui/dialogs/person-dialog.js?v=__BUILD__",
+        "./ui/dialogs/pull-request-dialog.js": "./ui/dialogs/pull-request-dialog.js?v=__BUILD__",
+        "./ui/dialogs/repository-dialog.js": "./ui/dialogs/repository-dialog.js?v=__BUILD__",
+        "./ui/dom.js": "./ui/dom.js?v=__BUILD__",
+        "./ui/icons.js": "./ui/icons.js?v=__BUILD__",
+        "./ui/links.js": "./ui/links.js?v=__BUILD__",
+        "./ui/list.js": "./ui/list.js?v=__BUILD__",
+        "./ui/motion.js": "./ui/motion.js?v=__BUILD__",
+        "./ui/people.js": "./ui/people.js?v=__BUILD__",
+        "./ui/repo-filter.js": "./ui/repo-filter.js?v=__BUILD__",
+        "./ui/stances.js": "./ui/stances.js?v=__BUILD__",
+        "./ui/tables/cells.js": "./ui/tables/cells.js?v=__BUILD__",
+        "./ui/tables/table.js": "./ui/tables/table.js?v=__BUILD__",
+        "./ui/tiles.js": "./ui/tiles.js?v=__BUILD__",
+        "./ui/title.js": "./ui/title.js?v=__BUILD__",
+        "./ui/tooltip.js": "./ui/tooltip.js?v=__BUILD__"
+      }
+    }
+    </script>
+    <link rel="modulepreload" href="app.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/ci-rules.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/drift-rules.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/measures.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/review-rules.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/thresholds.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/auto-sync.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/buckets.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/ci.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/comparison.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/full-sync.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/math.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/months.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/open-pull-requests.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/authors.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/cycle.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/delivery.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/dependencies.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/hotfixes.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/reviewers.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/series.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/period/sizes.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/team.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/time.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/timeline.js?v=__BUILD__" />
+    <link rel="modulepreload" href="lib/dates.js?v=__BUILD__" />
+    <link rel="modulepreload" href="lib/format.js?v=__BUILD__" />
+    <link rel="modulepreload" href="lib/math.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/badges.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/contributors.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/cycle.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/months.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/people.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/periods.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/pull-requests.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/repositories.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/repository-rows.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/routes.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/selection.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/squads.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/state.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/team.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/analysis/analysis.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/analysis/evidence.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/analysis/findings.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/authors.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/awards.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/collaboration.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/cycle.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/devops.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/me.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/overview.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/report.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/repositories.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/reviewers.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/squads/cards.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/squads/charts.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/squads/figures.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/squads/squads.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/team.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/tma.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/trends.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/unblock.js?v=__BUILD__" />
+    <link rel="modulepreload" href="services/build.js?v=__BUILD__" />
+    <link rel="modulepreload" href="services/github.js?v=__BUILD__" />
+    <link rel="modulepreload" href="services/notifications.js?v=__BUILD__" />
+    <link rel="modulepreload" href="services/stats-key.js?v=__BUILD__" />
+    <link rel="modulepreload" href="services/stats-source.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/filters.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/render.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/router.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/session.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/sync.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/tables.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/theme.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/badges.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/axis.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/bar-chart.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/column-chart.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/data-table.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/geometry.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/heatmap-chart.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/legend.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/line-chart.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/measure.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/share-chart.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/dialogs/card-dialog.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/dialogs/person-dialog.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/dialogs/pull-request-dialog.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/dialogs/repository-dialog.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/dom.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/icons.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/links.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/list.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/motion.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/people.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/repo-filter.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/stances.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/tables/cells.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/tables/table.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/tiles.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/title.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/tooltip.js?v=__BUILD__" />
+    <!-- /modules -->
     <script type="module" src="app.js?v=__BUILD__"></script>
   </head>
   <body>

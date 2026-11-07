@@ -1,0 +1,165 @@
+/* Team page: the people who left, with their last activity. */
+.former-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px 24px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.former-list li {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+/* Under the name, past the avatar. */
+.former-last {
+  padding-left: 32px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Team page: the repository filter, then one card per person, as many columns as fit. */
+.team-toolbar {
+  display: flex;
+}
+
+.person-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 16px;
+}
+
+/* The whole card opens the person's details: the button of its head stretches over it. Its figures sit at its bottom,
+   in line with those of the cards beside it, with or without badges above them. The cards of repositories share it. */
+.person-card,
+.repo-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms var(--ease-out);
+}
+
+.person-card:hover,
+.repo-card:hover {
+  border-color: var(--baseline);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.person-card:has(.person-card-head:focus-visible),
+.repo-card:has(.repo-card-head:focus-visible) {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+.person-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person-card-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.person-card-head:focus-visible {
+  outline: none;
+}
+
+.person-card-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gridline);
+}
+
+.person-card-name {
+  display: grid;
+  min-width: 0;
+}
+
+.person-card-name strong,
+.person-card-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-card-name strong {
+  font-size: 16px;
+}
+
+.person-card-name span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.person-card-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.person-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.person-card > .person-stats {
+  margin-top: auto;
+}
+
+.person-stats div {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.person-stats dt {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+

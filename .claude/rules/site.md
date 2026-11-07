@@ -9,11 +9,14 @@ paths:
 
 - Vanilla ES module, no framework, no bundler, no external script: logos come from the local sprite through
   `<use href>`.
-- `index.html` loads `app.js?v=__BUILD__` (stamped at deploy); `app.js` imports `period.js`, `analysis.js`,
-  `full-sync.js` and `auto-sync.js` with the same query string (`import.meta.url`). Any new module follows that
-  pattern, so that the Pages cache (10 minutes) never mixes versions.
-- Helpers: `$()`, `el()`, `svg()`. One `state` object; `render(animate)` redraws everything, `renderRoute()` shows the
-  page of the hash (`ROUTES`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
+- Layers and folders: `structure.md`. `index.html` loads the styles of `styles/` and `app.js?v=__BUILD__` (stamped at
+  deploy); its import map gives every module the same `?v=__BUILD__` and preloads them all, so that the Pages cache (10
+  minutes) never mixes versions and the page loads at once. Imports are plain relative paths; `npm run modules` after
+  adding, moving or removing a module.
+- Helpers: `$()` and `$$()` (with the kind of element when the code needs more than an `HTMLElement`), `el()`, `svg()`
+  (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
+  (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
+  `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
   method, report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
@@ -25,7 +28,7 @@ paths:
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to
   the synced data.
 - **Comparison**: `state.compare` (`COMPARISONS`, or `NO_COMPARISON`; remembered with the period by `storePeriod()`)
-  sets the period against `comparisonRange()` of `site/period.js`: the range of the same length right before, or the
+  sets the period against `comparisonRange()` of `site/domain/`: the range of the same length right before, or the
   same Paris days a year earlier, null when the synced data does not cover it (the option is then marked « hors
   données » and disabled; `renderComparePicker()` goes back to `NO_COMPARISON`, stored, when a new period leaves the
   comparison picked uncovered). When the year before is the period before (`sameDays()`, as for 12 months), the year
@@ -38,13 +41,14 @@ paths:
 - **CI**: the runs only go back to `ciStart` of the stats. `ciRange()` cuts the range of the CI there (`currentCi()`,
   `ciPerRepository()`), so that no chart starts with empty buckets, and `ciCut()` tells the DevOps page that the CI of
   the period starts later; a month of the report that starts before has no CI.
-- `site/period.js` is pure and covered by `test/period.test.mjs`, `site/analysis.js` too, by `test/analysis.test.mjs`:
-  a change in a computation updates or adds a test, on made-up records.
+- `site/domain/` is pure and covered by `tests/domain/`, one test file per module; `site/lib/` and `site/model/` by
+  `tests/lib/` and `tests/model/`: a change in a computation updates or adds a test, on made-up records. A change in
+  what a page shows keeps `tests/browser/pages.test.mjs` passing, with what fills it in `tests/fixtures/stats.mjs`.
 
 ## Building blocks
 
 - **Tiles**: a `*_TILES` array (`key`, `label`, optional `format` and `route`) drawn by `renderTiles()`.
-- **Tables**: an entry in `TABLES` (`columns`, `rows`, `rowKey`, `searchTexts`, optional `repoCounts` for the
+- **Tables**: an entry of `registerTables()` (`shell/tables.js`; the columns live with their page) (`columns`, `rows`, `rowKey`, `searchTexts`, optional `repoCounts` for the
   repository filter), a `[data-<name>]` container, a `<dl data-table-legend="<name>">` under it, and entries in
   `state.sort` and `state.previousRows`.
   - Each table needs exactly one `kind: 'bar'` column.
@@ -65,10 +69,10 @@ paths:
   median of each stage over the pull requests that went through it, and the average share of each stage in the time
   of the reviewed ones that reached production, each weighing the same: stage medians never add up, so no chart
   stacks them. The repository filter of its table (`REPO_FILTERS.cycle`) applies to the whole page.
-- **Working time**: every delay counts working hours only, through `workHoursBetween()` of `site/period.js` (Monday to
+- **Working time**: every delay counts working hours only, through `workHoursBetween()` of `site/domain/` (Monday to
   Friday, 9 to 18, Paris time; `WORK_DAY_HOURS` a day), and `formatDuration()` shows them in hours, then in working
   days. Only the durations of CI runs stay in real time; dates and ages (« il y a 3 jours ») stay on the calendar.
-- **Unblock page**: `openPullRequests()` of `site/period.js` tells where each open code pull request stands, after the
+- **Unblock page**: `openPullRequests()` of `site/domain/` tells where each open code pull request stands, after the
   latest decision of each reviewer, as GitHub does, the code owners it still waits for (`codeOwners` of the records),
   and the approvals merging needs (`requiredApprovals` of the stats, from `REQUIRED_APPROVALS`, 1 without it).
   `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`, those of the people still in the team that have stood
@@ -100,7 +104,7 @@ paths:
 - **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
-  `personalQueue()` of `site/period.js` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
+  `personalQueue()` of `site/domain/` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
   others still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know
   who is in a team), then theirs, each in one list only, named and defined as on the unblock page but without its
   delays: forgotten first (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked
@@ -120,14 +124,15 @@ paths:
   `formatLines()` everywhere but in the monthly report. Tables show both in one narrow column (`LINES_COLUMN`, added
   over deleted, in the colors of a diff on GitHub: `--diff-added`, `--diff-deleted`), sorted on the lines added. The technologies chart weighs, at the viewer's choice
   (`TECHNOLOGY_MEASURES`), the code pull requests or these lines added.
-- **Analysis page**: `analyze()` of `site/analysis.js` runs `RULES`, fixed rules each crossing the figures of the period
+- **Analysis page**: `analyze()` of `site/domain/analysis.js` runs `RULES`, fixed rules each crossing the figures of the period
   (pull requests, cycles of `computePeriod()`, CI of `computeCi()`) against thresholds exported with them, and says
   for each one: found (with its level, `high`, `watch` or `good`, and its facts), clear, or few (too little to go on:
   `MIN_PRS`, `MIN_REPOSITORY_PRS`, `MIN_RUNS`, `MIN_HALF_PRS`). `currentAnalysis()` works it out once per stats and
-  range, only when the page shows (`renderAnalysis()`, also called by `renderRoute()`). `FINDINGS` in `app.js` turns
+  range, only when the page shows (`renderAnalysis()`, also called by `renderRoute()`). `FINDINGS` in `pages/analysis/findings.js` turns
   each finding into its card: area, title, text, evidence (`findingBars()`, `findingRows()`, `findingStages()`,
   `findingChanges()`), a lead to act on and the page that details it; `RULE_LABELS` names the rules that found
-  nothing. A new rule goes into `RULES` with its test, into `FINDINGS` and `RULE_LABELS`, and its threshold into the
+  nothing. A new rule goes into the module of its family in `site/domain/analysis/` (review, CI, drift) with its test,
+  into `RULES`, into `FINDINGS` and `RULE_LABELS`, and its threshold into `site/domain/analysis/thresholds.js` and the
   method page. Rules stay at the level of the team and the repositories: a person only shows as the one the reviews of
   a repository wait for, never as a score. The time from the merge to production follows when each repository
   deploys, not the review: no rule judges it.
@@ -142,7 +147,7 @@ paths:
   🟢 or 🟠 after a change with a better way, the figures without a value left out, then the link of the page. On a
   phone the names of the figures wrap, so that the month shown fits beside them and the other months scroll.
 - **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), from `monthStats()`,
-  over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/period.js`: each month
+  over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/domain/`: each month
   whole, the first month of the data, cut by its start, left out); the period selector applies, not the search. 30 or
   90 days give two to four months: the page says that a trend reads better over 12 months or more (under
   `TREND_FEW_MONTHS`). `renderTrends()` only runs when the page shows, from `renderCharts()`: a first visit works out
@@ -173,8 +178,8 @@ paths:
     the whole years of the synced data. The arrivals of the monthly report come from `firstShown()` too, known ones
     only.
 - **Badges** (team cards and dialog, awards page): `BADGES` names each one after a monthly figure of
-  `monthlyActivity()` in `site/period.js`, with its units and, for the lines, a `format`. `badgeStandings()` works
-  out, once per stats, the leaders of each month with `monthlyLeaders()` of `site/period.js` over the history the sync
+  `monthlyActivity()` in `site/domain/months.js`, with its units and, for the lines, a `format`. `badgeStandings()` works
+  out, once per stats, the leaders of each month with `monthlyLeaders()` of `site/domain/` over the history the sync
   publishes (`stats.monthly`, since the first sync; without it, the whole months of the window), ties sharing, the
   people who left included in the race; `badgesOf()` gives each person's badges, the tier coming from the longest run
   of calendar months in a row. `badgeMedal()` draws a medal with its own tooltip (`.badge-tip`): the tooltip of the
@@ -192,7 +197,7 @@ paths:
   `repositoryCard()` draws one card with the figures of `REPOSITORY_STATS`, all of `REPOSITORY_FIGURES` making the
   legend (`data-table-legend="repositories"`). Cards come most code pull requests first, filtered by the page's
   repository filter (`REPO_FILTERS.repositories`) and the search. The bus factor comes from `busFactor()` of
-  `site/period.js`, over the people still in the team only; the repositories that rest on a single person, or on
+  `site/domain/team.js`, over the people still in the team only; the repositories that rest on a single person, or on
   people who left, with at least `FRAGILE_MIN_PRS` code pull requests, are listed above the cards.
   - A click on a card opens `openRepoDialog()`, in the dialog of people (`showCardDialog()`, shared): the figures of
     `REPOSITORY_WRITTEN`, `REPOSITORY_REVIEWED` and `REPOSITORY_DELIVERED`, each with the median of the repositories of
@@ -210,7 +215,7 @@ paths:
   confirmations) when the records have it (`pullRequestOf()`, a map per stats); a click with a modifier key, the middle
   button or the link's menu still open GitHub, as the « Voir sur GitHub » pill of the dialog does. The steps, the
   working hours waited before each, unrounded (one pull request reads to the minute), what it still waits for at the
-  last sync, and the people who intervened come from `pullRequestTimeline()` of `site/period.js`. The head shows the
+  last sync, and the people who intervened come from `pullRequestTimeline()` of `site/domain/`. The head shows the
   title (`title` of the record, else the repository and number) and the state of the checks of the last commit
   (`checksTag()`, `CHECK_STATES`; from `checksFailed` alone on an older record), both published for the pull requests
   the page opens the timeline of only. The state shows an icon like GitHub's checks, drawn in the page's 16×16 stroke
@@ -260,11 +265,11 @@ paths:
   flattens the layers that come apart as the card leans. The dialog itself never scrolls. The filters at the top all
   take the height of the periods (`.filters .search`, 41 px). The page clips what hangs past its right edge, such as
   the hidden tip of a badge (`overflow-x: clip`, which keeps the filters sticky).
-- Touch screens: the fields (inputs, selects) take 16 px under `(pointer: coarse)`, a rule last in `style.css`, since
+- Touch screens: the fields (inputs, selects) take 16 px under `(pointer: coarse)`, a rule of `styles/touch.css`, the last style, since
   Safari zooms into the page on a field under 16 px and leaves it zoomed; a new field needs nothing more. A double
   tap does not zoom either (`touch-action: manipulation`); pinching still does, never blocked (no `maximum-scale`). On
   a phone the search takes the whole line of the filters.
-- Hiding: the `hidden` attribute, which a rule of `style.css` makes win over any `display`; never a class of its own.
+- Hiding: the `hidden` attribute, which a rule of `styles/base.css` makes win over any `display`; never a class of its own.
 - Motion: pages enter with `.is-entering` and a staggered `--delay`; everything stops under
   `prefers-reduced-motion`.
 - Text is French, with French typography: typographic apostrophes (’), « » quotes, a non-breaking space before
@@ -279,12 +284,12 @@ paths:
   older than `AUTO_SYNC_AFTER_MS` (10 minutes), from a page that shows only (`visibilityState`), or one in the
   background that notifies the reviews asked (`notificationsOn()`: they would come late otherwise), never while a sync of
   the page is starting or awaited, and one try per `AUTO_SYNC_AFTER_MS` at most. The age is checked again with
-  `serverNow()`, a browser clock running ahead finding every run old. `autoSyncAction()` of `site/auto-sync.js` reads
+  `serverNow()`, a browser clock running ahead finding every run old. `autoSyncAction()` of `site/domain/auto-sync.js` reads
   the last runs: one queued or going is waited for (`running`), one started within `AUTO_SYNC_AFTER_MS` is left to
   publish, otherwise a quick sync starts (`auto`). Failures stay silent: the sync button tells them.
 - When the stats carry `syncTrigger.fullSync` (`FULL_SYNC_PASSWORD`), the confirmation asks for the full sync password
   too, `autocomplete="new-password"` so that password managers do not fill the dashboard password in (they ignore
-  `off`). `confirmFullSync()` derives its key with `site/full-sync.js` (loaded like `period.js`), compares the
+  `off`). `confirmFullSync()` derives its key with `site/domain/full-sync.js`, compares the
   verifier, and only then dispatches with the `proof` input, dated by `serverNow()` (the `Date` header of the page's
   server, the browser's clock only without it); a wrong password keeps the dialog open and dispatches nothing. The key and the password are kept
   nowhere, never logged: each full sync asks again, and closing the dialog clears the field. The check in the page only

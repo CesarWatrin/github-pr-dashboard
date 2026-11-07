@@ -1,0 +1,53 @@
+/* Repositories page: one card per repository, like those of people but wider, for their nine figures. The whole card
+   opens the repository's dialog: the button of its head stretches over it, under the people, who open their own. */
+.repo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+}
+
+.repo-card > .person-stats {
+  margin-top: auto;
+}
+
+.repo-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repo-card-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.repo-card-head:focus-visible {
+  outline: none;
+}
+
+.repo-card-name {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-card .person-link {
+  position: relative;
+  z-index: 1;
+}
+
+.repo-card-head .stack-logos {
+  margin-left: auto;
+}
+
