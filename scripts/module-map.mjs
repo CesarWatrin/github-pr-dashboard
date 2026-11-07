@@ -27,23 +27,48 @@ export function importsOf(path, source = readFileSync(join(SITE, path), 'utf8'))
   return specifiers.filter((specifier) => specifier.startsWith('.')).map((specifier) => posix.join(dirname(path), specifier))
 }
 
-// Every module the page loads, from the entry, in the order they are first met.
-export function pageModules() {
-  const modules = [ENTRY]
-  for (let index = 0; index < modules.length; index++) {
-    for (const path of importsOf(modules[index])) {
-      if (!modules.includes(path)) {
-        modules.push(path)
-      }
-    }
-  }
-
-  return modules
+// The modules a module loads on demand, import('./…'), as paths from site/: the English, say, only in English.
+/**
+ * @param {string} path
+ * @param {string} [source]
+ * @returns {string[]}
+ */
+export function lazyImportsOf(path, source = readFileSync(join(SITE, path), 'utf8')) {
+  return [...source.matchAll(/\bimport\(\s*'(\.[^']+)'\s*\)/g)].map((match) => posix.join(dirname(path), match[1]))
 }
 
-// The block of index.html that loads them, sorted so that it reads like the folders.
-export function moduleBlock(modules = pageModules(), indent = '    ') {
-  const imported = modules.filter((path) => path !== ENTRY).sort()
+// The modules the page loads with the entry (eager), in the order they are first met, and those it loads on demand,
+// with what they import (lazy).
+export function pageModules() {
+  /**
+   * @param {string[]} modules
+   * @param {Set<string>} [known]
+   */
+  const closure = (modules, known = new Set()) => {
+    for (let index = 0; index < modules.length; index++) {
+      for (const path of importsOf(modules[index])) {
+        if (!modules.includes(path) && !known.has(path)) {
+          modules.push(path)
+        }
+      }
+    }
+
+    return modules
+  }
+  const eager = closure([ENTRY])
+  const lazy = closure(
+    [...new Set(eager.flatMap((path) => lazyImportsOf(path)))].filter((path) => !eager.includes(path)),
+    new Set(eager),
+  )
+
+  return { eager, lazy }
+}
+
+// The block of index.html that loads them, sorted so that it reads like the folders: every module in the import map,
+// those loaded with the entry preloaded too.
+export function moduleBlock({ eager, lazy } = pageModules(), indent = '    ') {
+  const imported = [...eager, ...lazy].filter((path) => path !== ENTRY).sort()
+  const preloaded = eager.filter((path) => path !== ENTRY).sort()
   const map = JSON.stringify({ imports: Object.fromEntries(imported.map((path) => [`./${path}`, `./${path}?v=__BUILD__`])) }, null, 2)
 
   return [
@@ -51,7 +76,7 @@ export function moduleBlock(modules = pageModules(), indent = '    ') {
     '<script type="importmap">',
     ...map.split('\n'),
     '</script>',
-    ...[ENTRY, ...imported].map((path) => `<link rel="modulepreload" href="${path}?v=__BUILD__" />`),
+    ...[ENTRY, ...preloaded].map((path) => `<link rel="modulepreload" href="${path}?v=__BUILD__" />`),
     END,
   ]
     .map((line) => `${indent}${line}`)
@@ -79,5 +104,6 @@ if (import.meta.main) {
     throw new Error(`No ${START} … ${END} block in ${relative(process.cwd(), path)}`)
   }
   writeFileSync(path, html.replace(current, moduleBlock()))
-  console.log(`${pageModules().length} modules in ${relative(process.cwd(), path)}`)
+  const { eager, lazy } = pageModules()
+  console.log(`${eager.length} modules preloaded, ${lazy.length} on demand, in ${relative(process.cwd(), path)}`)
 }

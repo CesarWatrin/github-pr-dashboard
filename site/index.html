@@ -12,12 +12,18 @@
     />
     <!-- The deploy workflow stamps the build placeholder with the commit, so a new deploy never mixes old and new files. -->
     <meta name="build" content="__BUILD__" />
-    <!-- Applies the remembered theme before the first paint, so that the page never flashes in the other one. -->
+    <!-- Applies the remembered theme before the first paint, so that the page never flashes in the other one; in
+         English, the page waits for its English (ui/translate.js), three seconds at most. -->
     <script>
       try {
         const theme = localStorage.getItem('github-pr-dashboard:theme')
         if (theme === 'light' || theme === 'dark') {
           document.documentElement.dataset.theme = theme
+        }
+        if (localStorage.getItem('github-pr-dashboard:language') === 'en') {
+          document.documentElement.lang = 'en'
+          document.documentElement.dataset.language = 'en'
+          setTimeout(() => document.documentElement.classList.add('is-translated'), 3000)
         }
       } catch {}
     </script>
@@ -83,7 +89,13 @@
         "./domain/time.js": "./domain/time.js?v=__BUILD__",
         "./domain/timeline.js": "./domain/timeline.js?v=__BUILD__",
         "./lib/dates.js": "./lib/dates.js?v=__BUILD__",
+        "./lib/english.js": "./lib/english.js?v=__BUILD__",
+        "./lib/english/blocks.js": "./lib/english/blocks.js?v=__BUILD__",
+        "./lib/english/frame.js": "./lib/english/frame.js?v=__BUILD__",
+        "./lib/english/method.js": "./lib/english/method.js?v=__BUILD__",
+        "./lib/english/pages.js": "./lib/english/pages.js?v=__BUILD__",
         "./lib/format.js": "./lib/format.js?v=__BUILD__",
+        "./lib/i18n.js": "./lib/i18n.js?v=__BUILD__",
         "./lib/math.js": "./lib/math.js?v=__BUILD__",
         "./model/badges.js": "./model/badges.js?v=__BUILD__",
         "./model/contributors.js": "./model/contributors.js?v=__BUILD__",
@@ -126,6 +138,7 @@
         "./services/stats-key.js": "./services/stats-key.js?v=__BUILD__",
         "./services/stats-source.js": "./services/stats-source.js?v=__BUILD__",
         "./shell/filters.js": "./shell/filters.js?v=__BUILD__",
+        "./shell/language.js": "./shell/language.js?v=__BUILD__",
         "./shell/render.js": "./shell/render.js?v=__BUILD__",
         "./shell/router.js": "./shell/router.js?v=__BUILD__",
         "./shell/session.js": "./shell/session.js?v=__BUILD__",
@@ -159,7 +172,8 @@
         "./ui/tables/table.js": "./ui/tables/table.js?v=__BUILD__",
         "./ui/tiles.js": "./ui/tiles.js?v=__BUILD__",
         "./ui/title.js": "./ui/title.js?v=__BUILD__",
-        "./ui/tooltip.js": "./ui/tooltip.js?v=__BUILD__"
+        "./ui/tooltip.js": "./ui/tooltip.js?v=__BUILD__",
+        "./ui/translate.js": "./ui/translate.js?v=__BUILD__"
       }
     }
     </script>
@@ -192,6 +206,7 @@
     <link rel="modulepreload" href="domain/timeline.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/dates.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/format.js?v=__BUILD__" />
+    <link rel="modulepreload" href="lib/i18n.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/math.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/badges.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/contributors.js?v=__BUILD__" />
@@ -234,6 +249,7 @@
     <link rel="modulepreload" href="services/stats-key.js?v=__BUILD__" />
     <link rel="modulepreload" href="services/stats-source.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/filters.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/language.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/render.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/router.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/session.js?v=__BUILD__" />
@@ -268,6 +284,7 @@
     <link rel="modulepreload" href="ui/tiles.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/title.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/tooltip.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/translate.js?v=__BUILD__" />
     <!-- /modules -->
     <script type="module" src="app.js?v=__BUILD__"></script>
   </head>
@@ -453,6 +470,8 @@
                 <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
               </svg>
             </button>
+            <!-- The language of the page, English or French, kept in this browser (shell/language.js). -->
+            <button type="button" class="icon-button language-toggle" data-language-toggle></button>
             <!-- A page like the others, as a button beside the actions: tinted while it shows. -->
             <a class="icon-button" href="#/methode" aria-label="Méthode" data-label="Méthode" data-route-link="method">
               <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7.5L13 5v8.5H3Z" /><path d="M5.5 7h5M5.5 9.5h5" /></svg>

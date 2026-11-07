@@ -110,7 +110,8 @@ describe('the page', () => {
   })
 
   test('the page loads every module, at the version of the deploy (npm run modules)', () => {
-    assert.deepEqual(siteModules.filter((path) => !pageModules().includes(path)), [], 'a module the page never imports')
+    const { eager, lazy } = pageModules()
+    assert.deepEqual(siteModules.filter((path) => !eager.includes(path) && !lazy.includes(path)), [], 'a module the page never imports')
     assert.equal(currentBlock(readFileSync(join(SITE, 'index.html'), 'utf8')), moduleBlock(), 'index.html is out of date: npm run modules')
   })
 

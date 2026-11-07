@@ -20,6 +20,7 @@ import { SQUAD_TYPES } from './pages/squads/charts.js'
 import { setupSquads } from './pages/squads/squads.js'
 import { readStoredKey } from './services/stats-key.js'
 import { renderPeriodSelector, setupFilters } from './shell/filters.js'
+import { renderLanguageToggle, setupLanguage } from './shell/language.js'
 import { render, setupResize } from './shell/render.js'
 import { renderRoute, setupNavigation } from './shell/router.js'
 import { refresh, setupSession, showDashboard, showLock } from './shell/session.js'
@@ -34,17 +35,21 @@ import { setupRepositoryDialog } from './ui/dialogs/repository-dialog.js'
 import { $ } from './ui/dom.js'
 import { repoFilterNames, setupRepoFilter } from './ui/repo-filter.js'
 import { renderStackLegends } from './ui/tables/table.js'
+import { translatePage } from './ui/translate.js'
 
 const POLL_INTERVAL_MS = 60_000
 // While a sync started from the page runs, new data is looked for more often.
 const SYNC_POLL_INTERVAL_MS = 10_000
 const CLOCK_INTERVAL_MS = 30_000
 
+// The static texts first, before anything writes in the page.
+translatePage()
 registerTables()
 
 setupNavigation()
 setupFilters({ render })
 setupTheme()
+setupLanguage()
 setupSync()
 setupSession()
 setupSquads()
@@ -62,6 +67,7 @@ for (const name of repoFilterNames()) {
 }
 
 renderThemeToggle()
+renderLanguageToggle()
 renderRoute()
 renderPeriodSelector()
 renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)

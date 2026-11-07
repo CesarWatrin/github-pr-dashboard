@@ -97,6 +97,11 @@
   box-sizing: border-box;
 }
 
+/* In English, the page shows once translated (ui/translate.js), rather than in French first. */
+:root[data-language='en']:not(.is-translated) body {
+  visibility: hidden;
+}
+
 /* Hidden means hidden, whatever display the element's own rules give it: a card or a tile shown as a grid or a flex box
    would otherwise stay visible. */
 [hidden] {
