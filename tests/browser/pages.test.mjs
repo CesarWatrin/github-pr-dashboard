@@ -19,6 +19,9 @@ const stats = madeUpStats()
 const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-collaboration-pairs', 'data-ci-cut'])
 
 const skip = !browserPath() && !process.env.CI && 'Chrome not found: set CHROME_PATH'
+// What reads as French: accented letters, French quotes, common French words. The made-up stats have none (plain ASCII
+// names and titles): in English, whatever shows with any of them is a text left in French, wrapped in t() or not.
+const FRENCH = /[àâçéèêëîïôûùüÿœæ«»]|\b(?:les|des|une|avec|sans|pour|dans|aucun|aucune|depuis|jours|mois|personnes)\b/i
 
 for (const language of ['fr', 'en']) {
   describe(`the page in a browser, in ${language === 'en' ? 'English' : 'French'}`, { skip }, () => {
@@ -29,6 +32,8 @@ for (const language of ['fr', 'en']) {
     let browser
     let page
     const errors = []
+    // In English, the texts left in French, page by page.
+    const french = []
 
     before(async () => {
       site = await serveSite(stats)
@@ -97,6 +102,25 @@ for (const language of ['fr', 'en']) {
       await page.waitFor(`!document.querySelector('[data-route="${route}"]').hidden`)
       await pause(400)
     }
+    // The texts and labels of what shows under a selector that read as French.
+    /** @param {string} selector */
+    const frenchIn = (selector) =>
+      page.evaluate(`(() => {
+        const root = document.querySelector(${JSON.stringify(selector)})
+        const labels = [...root.querySelectorAll('[title], [aria-label], [placeholder], [data-label]')]
+          .filter((element) => element.checkVisibility())
+          .flatMap((element) => ['title', 'aria-label', 'placeholder', 'data-label'].map((name) => element.getAttribute(name) ?? ''))
+        return [...root.innerText.split('\\n'), ...labels].filter((text) => ${FRENCH}.test(text))
+      })()`)
+    /**
+     * @param {string} where
+     * @param {string} selector
+     */
+    const noteFrench = async (where, selector) => {
+      if (language === 'en') {
+        french.push(...(await frenchIn(selector)).map((text) => `${where}: ${text}`))
+      }
+    }
     // The containers of a page its script draws into, that it left empty.
     const emptyContainers = (route) =>
       page.evaluate(`[...document.querySelectorAll('[data-route="${route}"] [data-filled]')]
@@ -121,6 +145,7 @@ for (const language of ['fr', 'en']) {
         assert.ok(route === 'method' || marked > 0, 'no container marked')
         const empty = (await emptyContainers(route)).filter((name) => !EMPTY_ON_PURPOSE.has(name))
         assert.deepEqual(empty, [])
+        await noteFrench(route, '[data-page]')
       })
     }
 
@@ -135,6 +160,7 @@ for (const language of ['fr', 'en']) {
         await page.evaluate(`document.querySelector('[data-route="${route}"] ${opener}').click()`)
         assert.equal(await page.evaluate(`document.querySelector('${dialog}').open`), true, `${route}: ${opener}`)
         assert.ok(await page.evaluate(`document.querySelector('${dialog}').textContent.trim().length > 0`))
+        await noteFrench(`${route} dialog`, dialog)
         await page.evaluate(`document.querySelector('${dialog}').close()`)
       }
     })
@@ -161,7 +187,7 @@ for (const language of ['fr', 'en']) {
         search.value = ''
         search.dispatchEvent(new Event('input'))
         const squad = document.querySelector('[data-squad-filter]')
-        squad.value = 'Boutique'
+        squad.value = 'Shop'
         squad.dispatchEvent(new Event('change'))
       })()`)
       await pause(400)
@@ -193,6 +219,8 @@ for (const language of ['fr', 'en']) {
       test('every text has its English', async () => {
         assert.equal(await page.evaluate(`document.documentElement.lang`), 'en')
         assert.deepEqual(await page.evaluate(`import('./lib/i18n.js').then(({ missing }) => [...missing])`), [])
+        // Beside the texts through t(), what shows: a text written without t() would stay in French.
+        assert.deepEqual([...new Set(french)], [])
       })
     } else {
       test('the language button switches the page to English, still unlocked', async () => {

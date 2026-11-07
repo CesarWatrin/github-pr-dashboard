@@ -47,9 +47,9 @@ describe('the English of the page', () => {
   })
 
   test('reads as English: no French quotes, no space before a colon, a question mark or a percent', () => {
-    // The text read, outside the tags and the code.
+    // The text read, outside the tags; code reads as a word.
     /** @param {string} text */
-    const prose = (text) => text.replace(/<code>[\s\S]*?<\/code>/g, '').replace(/<[^>]+>/g, '')
+    const prose = (text) => text.replace(/<code>[\s\S]*?<\/code>/g, 'code').replace(/<[^>]+>/g, '')
     const french = entries.filter(({ text }) => /[«»]|[\s  ][:;?!%](?=\s|$|[)<,.])/.test(prose(text)))
     assert.deepEqual(french.map(({ part, french: key }) => `${part}: ${key}`), [])
   })

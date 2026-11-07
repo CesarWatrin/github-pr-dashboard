@@ -1,5 +1,6 @@
 // Theme: follows the system until the toggle is used, then sticks to the chosen one.
 
+import { t } from '../lib/i18n.js'
 import { $ } from '../ui/dom.js'
 
 const THEME_TRANSITION_MS = 350
@@ -15,7 +16,7 @@ export function renderThemeToggle() {
   const dark = currentTheme() === 'dark'
   const button = $('[data-theme-toggle]')
   button.setAttribute('aria-pressed', String(dark))
-  button.dataset.label = dark ? 'Passer en mode clair' : 'Passer en mode sombre'
+  button.dataset.label = dark ? t('Passer en mode clair') : t('Passer en mode sombre')
 }
 
 /** @type {ReturnType<typeof setTimeout> | undefined} */

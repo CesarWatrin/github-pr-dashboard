@@ -4,6 +4,7 @@
 import { ACTIVE_RUN_STATUSES, AUTO_SYNC_AFTER_MS, autoSyncAction, dataStale } from '../domain/auto-sync.js'
 import { deriveFullSyncKey, fullSyncProof, fullSyncVerifier } from '../domain/full-sync.js'
 import { dateTimeFormat, formatRelative } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { state } from '../model/state.js'
 import { dispatchSync, recentRuns } from '../services/github.js'
 import { notificationsOn } from '../services/notifications.js'
@@ -16,11 +17,11 @@ const STALE_AFTER_MS = 2 * 60 * 60_000
 // The two syncs the page can start: the workflow's incremental one, or a full refetch of the rolling window. The page
 // starts the quick one on its own too, once its data gets old (autoSync()).
 const SYNC_KINDS = {
-  quick: { full: false, label: 'Synchro rapide en cours…', timeoutMs: 6 * 60_000 },
-  auto: { full: false, label: 'Synchro automatique en cours…', timeoutMs: 6 * 60_000 },
+  quick: { full: false, label: t('Synchro rapide en cours…'), timeoutMs: 6 * 60_000 },
+  auto: { full: false, label: t('Synchro automatique en cours…'), timeoutMs: 6 * 60_000 },
   // Up to the workflow's own timeout.
-  full: { full: true, label: 'Synchro complète en cours, 15 à 20 min…', timeoutMs: 45 * 60_000 },
-  running: { label: 'Une synchro est déjà en cours…', timeoutMs: 45 * 60_000 },
+  full: { full: true, label: t('Synchro complète en cours, 15 à 20 min…'), timeoutMs: 45 * 60_000 },
+  running: { label: t('Une synchro est déjà en cours…'), timeoutMs: 45 * 60_000 },
 }
 
 // The status shows in the sidebar, and in the bar on top of narrower screens: both say the same.
@@ -34,7 +35,7 @@ function renderSyncStatusIn(status, label) {
   status.classList.remove('is-live', 'is-stale', 'is-error')
   if (!state.stats) {
     status.classList.add('is-error')
-    label.textContent = state.fetchFailed ? 'Données indisponibles' : 'Chargement…'
+    label.textContent = state.fetchFailed ? t('Données indisponibles') : t('Chargement…')
 
     return
   }
@@ -43,12 +44,12 @@ function renderSyncStatusIn(status, label) {
   const stale = Date.now() - Date.parse(generatedAt) > STALE_AFTER_MS
   status.classList.add(state.fetchFailed ? 'is-error' : stale ? 'is-stale' : 'is-live')
   status.classList.toggle('is-syncing', state.syncStarting !== null || state.syncRequest !== null)
-  status.title = `Données générées le ${dateTimeFormat.format(new Date(generatedAt))}`
+  status.title = t('Données générées le {date}', { date: dateTimeFormat.format(new Date(generatedAt)) })
   label.textContent = state.syncStarting
-    ? 'Lancement de la synchro…'
+    ? t('Lancement de la synchro…')
     : state.syncRequest
       ? SYNC_KINDS[state.syncRequest.kind].label
-      : `${state.fetchFailed ? 'Hors ligne · ' : ''}Mis à jour ${formatRelative(generatedAt)}`
+      : `${state.fetchFailed ? `${t('Hors ligne')} · ` : ''}${t('Mis à jour {when}', { when: formatRelative(generatedAt) })}`
 }
 
 export function renderSyncMenu() {
@@ -82,7 +83,7 @@ async function startSync(kind, proof = null) {
     state.syncRequest = { kind: running ? 'running' : kind, at: Date.now() }
     menu.open = false
   } catch {
-    error.textContent = 'La synchro n’a pas pu être lancée : le token est peut-être expiré.'
+    error.textContent = t('La synchro n’a pas pu être lancée : le token est peut-être expiré.')
     error.hidden = false
     menu.open = true
   }
@@ -101,8 +102,9 @@ export function checkFullSyncRefused(stats) {
   state.fullSyncAsked = false
   if (stats.fullSyncRefused) {
     const error = $('[data-sync-error]')
-    error.textContent =
-      'La synchro complète a été refusée (mot de passe changé depuis la dernière synchro, ou demande expirée) : une synchro rapide a été faite à la place.'
+    error.textContent = t(
+      'La synchro complète a été refusée (mot de passe changé depuis la dernière synchro, ou demande expirée) : une synchro rapide a été faite à la place.',
+    )
     error.hidden = false
     $('[data-sync-menu]', HTMLDetailsElement).open = true
   }
@@ -132,7 +134,7 @@ async function confirmFullSync() {
   try {
     const key = await deriveFullSyncKey(password.value, fromBase64(fullSync.salt), fullSync.iterations)
     if ((await fullSyncVerifier(key)) !== fullSync.verifier) {
-      error.textContent = 'Mot de passe incorrect.'
+      error.textContent = t('Mot de passe incorrect.')
       error.hidden = false
       password.select()
 
@@ -145,7 +147,7 @@ async function confirmFullSync() {
       startSync('full', proof)
     }
   } catch {
-    error.textContent = 'Le mot de passe n’a pas pu être vérifié, réessaie dans un instant.'
+    error.textContent = t('Le mot de passe n’a pas pu être vérifié, réessaie dans un instant.')
     error.hidden = false
   } finally {
     button.disabled = false
