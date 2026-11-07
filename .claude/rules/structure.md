@@ -23,7 +23,9 @@ enforces what can be checked; the rest is for review.
   (`OPEN_PERSON`, `OPEN_REPOSITORY`, `OPEN_PULL_REQUEST`) that the dialog listens to; `setupFilters({ render })` gets
   `render()` from `app.js`.
 - What two pages share goes down to `ui/` (view) or `model/` (data), never from one page to the other.
-- Every file starts with a comment that says what it is for. Aim for files under about 300 lines, cut by feature.
+- Every file starts with a comment that says what it is for. Aim for files under about 300 lines, cut by feature: a
+  module that outgrows it becomes a folder of the same name, the module keeping its entry point (`domain/period.js` and
+  its tallies in `domain/period/`, `domain/analysis.js` and its rules in `domain/analysis/`, `pages/squads/`).
 - Imports are plain relative paths (`'../model/state.js'`). `index.html` gives every module the version of the deploy
   through an import map, and preloads them all at once so that the page loads fast: `npm run modules` writes that
   block after adding, moving or removing a module, and the tests fail until it is done.

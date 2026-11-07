@@ -13,7 +13,7 @@ Node 24 (`.nvmrc`). The interface is in French; code and comments are in English
 |---|---|
 | `site/index.html` | Markup of every page, its styles in order, and the module block (`npm run modules`) |
 | `site/app.js` | Composition root of the page: registers, wires and starts everything |
-| `site/domain/` | Rules shared by the sync and the page, pure: stats of a range (`period.js`), CI, open pull requests, timeline, months, comparisons, analysis, full sync password, auto sync |
+| `site/domain/` | Rules shared by the sync and the page, pure: stats of a range (`period.js`, its tallies in `period/`), CI, open pull requests, timeline, months, comparisons, analysis (`analysis.js`, its rules in `analysis/`), full sync password, auto sync |
 | `site/lib/`, `site/model/` | Formats; the state of the page and what it reads of the stats for the filters picked. No DOM |
 | `site/services/` | Published stats and their key, build, GitHub API, notifications |
 | `site/ui/`, `site/pages/`, `site/shell/` | Building blocks of the view; one module per page; the frame (router, filters, render, session, sync, theme) |

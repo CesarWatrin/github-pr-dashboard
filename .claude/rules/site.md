@@ -131,7 +131,8 @@ paths:
   range, only when the page shows (`renderAnalysis()`, also called by `renderRoute()`). `FINDINGS` in `pages/analysis/findings.js` turns
   each finding into its card: area, title, text, evidence (`findingBars()`, `findingRows()`, `findingStages()`,
   `findingChanges()`), a lead to act on and the page that details it; `RULE_LABELS` names the rules that found
-  nothing. A new rule goes into `RULES` with its test, into `FINDINGS` and `RULE_LABELS`, and its threshold into the
+  nothing. A new rule goes into the module of its family in `site/domain/analysis/` (review, CI, drift) with its test,
+  into `RULES`, into `FINDINGS` and `RULE_LABELS`, and its threshold into `site/domain/analysis/thresholds.js` and the
   method page. Rules stay at the level of the team and the repositories: a person only shows as the one the reviews of
   a repository wait for, never as a score. The time from the merge to production follows when each repository
   deploys, not the review: no rule judges it.
