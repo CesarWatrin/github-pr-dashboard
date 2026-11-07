@@ -65,7 +65,7 @@ export const FRAME = {
   'Champions du mois': 'Champions of the month',
   'Les badges du Palmarès': 'The badges of the Awards',
   'Dépôts les plus actifs': 'Most active repositories',
-  'PR de code ouvertes': 'Open code PRs',
+  'PR de code ouvertes': 'Code PRs opened',
   'Déploiements': 'Deployments',
   'Arrivées': 'Arrivals',
   'Première PR dans l’organisation ce mois-ci, ou première review ou premier commentaire s’ils sont plus anciens':

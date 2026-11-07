@@ -49,6 +49,18 @@ export function t(french, values) {
   return values ? text.replace(/\{(\w+)\}/g, (placeholder, name) => (name in values ? String(values[name]) : placeholder)) : text
 }
 
+/**
+ * A text whose English depends on where it shows, its French the same everywhere: « personne » is a person in a count
+ * but nobody in a sentence. Its English has the key « personne (aucune) », French and context; in French, the French.
+ * @param {string} context
+ * @param {string} french
+ * @param {Record<string, string | number>} [values]
+ * @returns {string}
+ */
+export function inContext(context, french, values) {
+  return t(english ? `${french} (${context})` : french, values)
+}
+
 // Keeps the language picked in this browser; the page then loads again in it.
 /** @param {Language} picked */
 export function storeLanguage(picked) {

@@ -18,6 +18,8 @@
   --success-text: #006300;
   --status-good: #0ca30c;
   --status-serious: #ec835a;
+  /* The red of a badge that counts what waits, white figures on it on both themes */
+  --notification: #d92d20;
   /* The colors of a diff on GitHub, for the lines added and deleted */
   --diff-added: #1a7f37;
   --diff-deleted: #d1242f;

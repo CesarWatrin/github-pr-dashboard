@@ -2,6 +2,7 @@
 
 import { analyze } from '../../domain/analysis.js'
 import { capitalize, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { isCurrent } from '../../model/people.js'
 import { currentRoute } from '../../model/routes.js'
 import { periodRange, periodTitle } from '../../model/selection.js'
@@ -29,15 +30,18 @@ export function renderAnalysis() {
   const urgent = findings.filter((finding) => finding.level === 'high').length
   const issues = findings.filter((finding) => finding.level !== 'good').length
   $('[data-analysis-title]').textContent = capitalize(periodTitle())
+  const counts = { findings: plural(issues, 'constat'), urgent: plural(urgent, 'prioritaire'), rules: plural(Object.keys(RULE_LABELS).length, 'règle') }
   $('[data-analysis-sub]').textContent = issues
-    ? `${plural(issues, 'constat')}${urgent ? `, dont ${plural(urgent, 'prioritaire')}` : ''}, sur ${plural(Object.keys(RULE_LABELS).length, 'règle')} vérifiées`
-    : 'Rien ne ressort sur la période'
+    ? urgent
+      ? t('{findings}, dont {urgent}, sur {rules} vérifiées', counts)
+      : t('{findings}, sur {rules} vérifiées', counts)
+    : t('Rien ne ressort sur la période')
   $('[data-findings]').replaceChildren(...findings.map(findingCard))
   $('[data-analysis-clear-card]').hidden = clear.length + few.length === 0
   $('[data-analysis-clear]').replaceChildren(
     ...clear.map((key) => el('li', {}, el('span', { className: 'analysis-check', textContent: '✓', ariaHidden: 'true' }), RULE_LABELS[key])),
     ...few.map((key) =>
-      el('li', { className: 'is-few' }, el('span', { className: 'analysis-check', textContent: '–', ariaHidden: 'true' }), `${RULE_LABELS[key]} : pas assez de PR ou d’exécutions sur la période`),
+      el('li', { className: 'is-few' }, el('span', { className: 'analysis-check', textContent: '–', ariaHidden: 'true' }), t('{rule} : pas assez de PR ou d’exécutions sur la période', { rule: RULE_LABELS[key] })),
     ),
   )
 }

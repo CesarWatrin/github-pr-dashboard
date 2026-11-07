@@ -113,7 +113,8 @@ paths:
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a
   short card, and no blank on a phone where they stack. `meQueue()` works the lists out for `renderMe()`,
   which keeps the reviews asked (`state.reviewsAsked`): `renderTitle()` counts them in the tab title of every page,
-  « (3) Stats PR ». The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
+  « (3) Stats PR », and on a red badge (`[data-reviews-badge]`, `--notification`) at the end of the link of « Pour moi »
+  and on the corner of the menu button of narrow screens, hidden at 0. The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
   blocks it) turns notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first);
   `notifyNewReviews()` then shows one for the reviews asked since the tab last looked (`KNOWN_REVIEWS_STORAGE_KEY`,
   in `sessionStorage`: a reload for a new build misses none, a new tab or another person notifies none of those

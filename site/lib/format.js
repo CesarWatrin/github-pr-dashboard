@@ -2,7 +2,7 @@
 
 import { isMissing } from '../domain/math.js'
 import { WORK_DAY_HOURS } from '../domain/time.js'
-import { language, LOCALE, t } from './i18n.js'
+import { inContext, language, LOCALE, t } from './i18n.js'
 
 const numberFormat = new Intl.NumberFormat(LOCALE)
 export const decimalFormat = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 })
@@ -90,8 +90,19 @@ export const SIZE_LABELS = ['< 10', t('10 à 100'), t('100 à 500'), t('500 à 1
 /** @type {(month: string) => string} */
 export const monthName = (month) => monthLongFormat.format(new Date(`${month}-15T12:00:00Z`))
 
-// A count and its noun, both in the language of the page: French takes the plural from two, English from anything but
-// one.
+// The noun of a count, in the language of the page: French takes the plural from two, English from anything but one.
+// A noun the same in both numbers in French (PR, hotfix, mois) has an English for each, « PR (singulier) » and
+// « PR (pluriel) » (inContext()): the bare French may be a label elsewhere, « PR de code » the head of a column.
 /** @type {(count: number, singular: string, several?: string) => string} */
-export const plural = (count, singular, several = `${singular}s`) =>
-  `${formatNumber(count)} ${t((language === 'en' ? count !== 1 : count > 1) ? several : singular)}`
+export function noun(count, singular, several = `${singular}s`) {
+  const many = language === 'en' ? count !== 1 : count > 1
+  if (several === singular) {
+    return inContext(many ? 'pluriel' : 'singulier', singular)
+  }
+
+  return t(many ? several : singular)
+}
+
+// A count and its noun.
+/** @type {(count: number, singular: string, several?: string) => string} */
+export const plural = (count, singular, several = `${singular}s`) => `${formatNumber(count)} ${noun(count, singular, several)}`

@@ -224,6 +224,7 @@ for (const language of ['fr', 'en']) {
       })
     } else {
       test('the language button switches the page to English, still unlocked', async () => {
+        await show('overview')
         await page.evaluate(`document.querySelector('[data-language-toggle]').click()`)
         await page.waitFor(`document.documentElement.lang === 'en' && document.documentElement.classList.contains('is-translated')`)
         await page.waitFor(`document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`)

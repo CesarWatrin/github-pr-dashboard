@@ -3,41 +3,51 @@
 import { parisDay } from '../../domain/time.js'
 import { dayDate } from '../../lib/dates.js'
 import { dayMonthFormat, formatDecimal, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
+import { language, t } from '../../lib/i18n.js'
 import { CYCLE_STAGES } from '../../model/cycle.js'
 import { renderLegend } from '../../ui/charts/legend.js'
-import { el } from '../../ui/dom.js'
+import { el, withNodes } from '../../ui/dom.js'
 import { repoLink } from '../../ui/links.js'
 
 export const strong = (text) => el('strong', { textContent: text })
-export const times = (ratio) => `${formatDecimal(Math.round(ratio * 10) / 10)} fois`
+// A ratio as the findings say it, rounded to a tenth: « 2,5 » fois plus.
+export const ratioOf = (ratio) => formatDecimal(Math.round(ratio * 10) / 10)
+
+// A sentence of a finding in the language of the page, with nodes in it, its figures in bold say: a placeholder given a
+// node takes it, the others their text.
+export function sentence(french, values) {
+  const texts = Object.fromEntries(Object.entries(values).filter(([, value]) => !(value instanceof Node)))
+
+  return withNodes(t(french, texts), values)
+}
 
 // Where the time goes before the merge, for the finding about the stage that takes the most of it.
 export const STAGE_FINDINGS = {
   pickup: {
-    title: 'Les PR attendent leur première review',
-    where: 'à attendre une première review',
-    action: 'Des créneaux de review dans la journée, ou une rotation de relecteurs, pour qu’une PR trouve vite quelqu’un.',
+    title: t('Les PR attendent leur première review'),
+    where: t('à attendre une première review'),
+    action: t('Des créneaux de review dans la journée, ou une rotation de relecteurs, pour qu’une PR trouve vite quelqu’un.'),
   },
   review: {
-    title: 'La relecture traîne',
-    where: 'en relecture, de la première intervention à l’approbation',
-    action: 'Des PR plus petites et mieux décrites ; pour les plus grosses, une relecture à deux, en direct.',
+    title: t('La relecture traîne'),
+    where: t('en relecture, de la première intervention à l’approbation'),
+    action: t('Des PR plus petites et mieux décrites ; pour les plus grosses, une relecture à deux, en direct.'),
   },
   merge: {
-    title: 'Les PR approuvées attendent leur merge',
-    where: 'entre l’approbation et le merge',
-    action: 'Merger dès l’approbation, ou activer l’auto-merge de GitHub.',
+    title: t('Les PR approuvées attendent leur merge'),
+    where: t('entre l’approbation et le merge'),
+    action: t('Merger dès l’approbation, ou activer l’auto-merge de GitHub.'),
   },
 }
 
 // The figures that can drift from one half of the period to the other, as the page names them.
 const DRIFT_FIGURES = {
-  medianSize: { label: 'Taille médiane des PR', format: (value) => `${formatNumber(value)} lignes` },
-  pickupHours: { label: 'Attente médiane de la 1re review', format: formatDuration },
-  timeToMergeHours: { label: 'Délai médian de merge', format: formatDuration },
-  unreviewedShare: { label: 'Mergées sans review', format: formatShare },
-  hotfixShare: { label: 'Part de hotfix', format: formatShare },
-  checksFailedShare: { label: 'Mergées avec un check rouge', format: formatShare },
+  medianSize: { label: t('Taille médiane des PR'), format: (value) => t('{value} lignes', { value: formatNumber(value) }) },
+  pickupHours: { label: t('Attente médiane de la 1re review'), format: formatDuration },
+  timeToMergeHours: { label: t('Délai médian de merge'), format: formatDuration },
+  unreviewedShare: { label: t('Mergées sans review'), format: formatShare },
+  hotfixShare: { label: t('Part de hotfix'), format: formatShare },
+  checksFailedShare: { label: t('Mergées avec un check rouge'), format: formatShare },
 }
 
 // A few values side by side, their figure at the end of each bar: small enough not to need a chart.
@@ -93,7 +103,7 @@ export function findingStages(shares) {
   bar.setAttribute('role', 'img')
   bar.setAttribute('aria-label', stages.map((stage) => `${stage.label.toLowerCase()} ${formatShare(shares[stage.key])}`).join(', '))
   for (const stage of stages) {
-    const part = el('span', { title: `${stage.label} : ${formatShare(shares[stage.key])}` })
+    const part = el('span', { title: t('{label} : {value}', { label: stage.label, value: formatShare(shares[stage.key]) }) })
     part.style.flexGrow = shares[stage.key]
     part.style.background = stage.color
     bar.append(part)
@@ -104,7 +114,7 @@ export function findingStages(shares) {
     stages.map((stage) => ({ color: stage.color, label: `${stage.label} ${formatShare(shares[stage.key])}` })),
   )
 
-  return el('figure', { className: 'finding-figure' }, el('figcaption', { textContent: 'Part de chaque étape jusqu’au merge, en moyenne' }), bar, legend)
+  return el('figure', { className: 'finding-figure' }, el('figcaption', { textContent: t('Part de chaque étape jusqu’au merge, en moyenne') }), bar, legend)
 }
 
 export function findingChanges(metrics) {
@@ -119,9 +129,15 @@ export function findingChanges(metrics) {
   )
 }
 
-// The first day of a month reads « 1er ».
-const dayInText = (time) => dayMonthFormat.format(dayDate(parisDay(time))).replace(/^1 /, '1er ')
+// In French, the first day of a month reads « 1er ».
+const dayInText = (time) => {
+  const day = dayMonthFormat.format(dayDate(parisDay(time)))
+
+  return language === 'fr' ? day.replace(/^1 /, '1er ') : day
+}
 
 export const driftText = ({ middle }) => [
-  `La seconde moitié de la période, depuis le ${dayInText(middle)}, comparée à la première. La dernière semaine reste à part : ses PR ne sont pas encore toutes relues ou mergées.`,
+  t('La seconde moitié de la période, depuis le {day}, comparée à la première. La dernière semaine reste à part : ses PR ne sont pas encore toutes relues ou mergées.', {
+    day: dayInText(middle),
+  }),
 ]

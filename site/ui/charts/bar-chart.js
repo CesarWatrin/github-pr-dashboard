@@ -1,5 +1,6 @@
 // Horizontal bars, for rankings.
 
+import { t } from '../../lib/i18n.js'
 import { el, svg } from '../dom.js'
 import { ICON_SIZE, technologyIcon } from '../icons.js'
 import { STAGGER_SPREAD_MS } from '../motion.js'
@@ -28,7 +29,7 @@ export function barChart(container, { rows, label, value, format, max, color, ar
     return
   }
   if (rows.length === 0) {
-    container.replaceChildren(el('p', { className: 'chart-empty', textContent: 'Aucune donnée sur la période' }))
+    container.replaceChildren(el('p', { className: 'chart-empty', textContent: t('Aucune donnée sur la période') }))
 
     return
   }
@@ -58,7 +59,7 @@ export function barChart(container, { rows, label, value, format, max, color, ar
     amount.textContent = format(value(row))
     group.append(name, svg('path', { class: 'bar', style: `fill: ${color}`, d: barPath(start, y + 7, barWidth, rowHeight - 14) }), amount)
 
-    const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': `${label(row)} : ${format(value(row))}` })
+    const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': t('{label} : {value}', { label: label(row), value: format(value(row)) }) })
     bindTooltip(
       hit,
       (x, pointerY) => {

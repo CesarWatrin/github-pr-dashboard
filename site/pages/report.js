@@ -5,6 +5,7 @@ import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
 import { parisDay } from '../domain/time.js'
 import { dayDate } from '../lib/dates.js'
 import { capitalize, dayMonthFormat, formatNumber, monthName } from '../lib/format.js'
+import { inContext, t } from '../lib/i18n.js'
 import { BADGES, badgeStandings, monthFigures } from '../model/badges.js'
 import {
   monthStats,
@@ -78,15 +79,15 @@ export function renderReport() {
   const { months, month, current, previous, whole, groups, champions, repos, arrivals } = reportContent()
   const picker = $('[data-report-month]', HTMLSelectElement)
   picker.replaceChildren(
-    ...months.toReversed().map((option) => new Option(`${capitalize(monthName(option))}${option === months.at(-1) ? ', en cours' : ''}`, option)),
+    ...months.toReversed().map((option) => new Option(option === months.at(-1) ? t('{month}, en cours', { month: capitalize(monthName(option)) }) : capitalize(monthName(option)), option)),
   )
   picker.value = month
-  const against = `la médiane des ${formatNumber(whole.length)} derniers mois complets`
+  const against = t('la médiane des {count} derniers mois complets', { count: formatNumber(whole.length) })
   $('[data-report-sub]').textContent = current
-    ? 'Mois en cours, jusqu’à la dernière synchro : provisoire, trop tôt pour le comparer au mois précédent'
+    ? t('Mois en cours, jusqu’à la dernière synchro : provisoire, trop tôt pour le comparer au mois précédent')
     : previous
-      ? `Comparé à ${monthName(previous)}, et à ${against}`
-      : `Premier mois complet des données synchronisées : comparé à ${against} seulement`
+      ? t('Comparé à {previous}, et à {against}', { previous: monthName(previous), against })
+      : t('Premier mois complet des données synchronisées : comparé à {against} seulement', { against })
 
   const head = el(
     'thead',
@@ -94,11 +95,11 @@ export function renderReport() {
     el(
       'tr',
       {},
-      el('th', { scope: 'col', className: 'text', textContent: 'Indicateur' }),
+      el('th', { scope: 'col', className: 'text', textContent: t('Indicateur') }),
       el('th', { scope: 'col', textContent: capitalize(monthName(month)) }),
-      el('th', { scope: 'col', textContent: previous ? capitalize(monthName(previous)) : 'Mois précédent' }),
-      el('th', { scope: 'col', textContent: 'Évolution' }),
-      el('th', { scope: 'col', textContent: 'Médiane sur 12 mois' }),
+      el('th', { scope: 'col', textContent: previous ? capitalize(monthName(previous)) : t('Mois précédent') }),
+      el('th', { scope: 'col', textContent: t('Évolution') }),
+      el('th', { scope: 'col', textContent: t('Médiane sur 12 mois') }),
     ),
   )
   const body = el(
@@ -135,16 +136,16 @@ export function renderReport() {
     renderList(
       $(target),
       pairs.map(([repo, count]) => el('li', {}, repoLink(repo), el('span', { className: 'pair-count', textContent: amountOf(count, unit) }))),
-      'Aucun',
+      t('Aucun'),
     )
   list('[data-report-repos="code"]', repos.code, REPORT_REPO_UNITS.code)
   list('[data-report-repos="deployments"]', repos.deployments, REPORT_REPO_UNITS.deployments)
   renderList(
     $('[data-report-arrivals]'),
     arrivals.map(({ login, first }) =>
-      el('li', {}, personLink(login), el('span', { className: 'pair-count', textContent: `le ${dayMonthFormat.format(dayDate(parisDay(first.at)))}` })),
+      el('li', {}, personLink(login), el('span', { className: 'pair-count', textContent: t('le {date}', { date: dayMonthFormat.format(dayDate(parisDay(first.at))) }) })),
     ),
-    'Aucune arrivée ce mois-ci',
+    t('Aucune arrivée ce mois-ci'),
   )
 }
 
@@ -191,12 +192,12 @@ const REPORT_TONE_MARKS = { better: ' 🟢', worse: ' 🟠', neutral: '' }
 
 function reportText({ month, current, previous, groups, champions, repos, arrivals }) {
   const lines = [
-    `*Bilan de ${monthName(month)}*`,
+    `*${t('Bilan de {month}', { month: monthName(month) })}*`,
     current
-      ? 'Mois en cours, jusqu’à la dernière synchro : chiffres provisoires.'
+      ? t('Mois en cours, jusqu’à la dernière synchro : chiffres provisoires.')
       : previous
-        ? `Évolutions par rapport à ${monthName(previous)}.`
-        : 'Premier mois complet des données synchronisées.',
+        ? t('Évolutions par rapport à {month}.', { month: monthName(previous) })
+        : t('Premier mois complet des données synchronisées.'),
   ]
   for (const group of groups) {
     const rows = group.rows.filter((row) => !isMissing(row.value))
@@ -205,24 +206,35 @@ function reportText({ month, current, previous, groups, champions, repos, arriva
         '',
         `*${group.label}*`,
         ...rows.map(({ figure, format, value, change }) =>
-          `• ${figure.label} : ${format(value)}${change ? ` (${change.text}${REPORT_TONE_MARKS[change.tone]})` : ''}`,
+          `• ${t('{label} : {value}', { label: figure.label, value: format(value) })}${change ? ` (${change.text}${REPORT_TONE_MARKS[change.tone]})` : ''}`,
         ),
       )
     }
   }
-  const person = (login) => (isCurrent(login) ? displayName(login) : 'une personne partie')
+  const person = (login) => (isCurrent(login) ? displayName(login) : t('une personne partie'))
   lines.push(
     '',
-    '*Champions du mois*',
+    `*${t('Champions du mois')}*`,
     ...champions.map(({ badge, leader }) =>
-      `• ${badge.icon} ${badge.name} : ${leader ? `${leader.people.map(person).join(', ')} (${amountOf(leader.value, badge.units, badge.format)})` : 'personne'}`,
+      `• ${badge.icon} ${t('{label} : {value}', {
+        label: badge.name,
+        // « personne » is nobody here, not the noun of a count: its English has a key of its own.
+        value: leader
+          ? `${leader.people.map(person).join(', ')} (${amountOf(leader.value, badge.units, badge.format)})`
+          : inContext('aucune', 'personne'),
+      })}`,
     ),
   )
   const repoLine = (label, pairs) =>
-    `• ${label} : ${pairs.length ? pairs.map(([repo, count]) => `${repo} (${formatNumber(count)})`).join(', ') : 'aucun'}`
-  lines.push('', '*Dépôts les plus actifs*', repoLine('PR de code ouvertes', repos.code), repoLine('Déploiements', repos.deployments))
+    `• ${t('{label} : {value}', { label, value: pairs.length ? pairs.map(([repo, count]) => `${repo} (${formatNumber(count)})`).join(', ') : t('aucun') })}`
+  lines.push(
+    '',
+    `*${t('Dépôts les plus actifs')}*`,
+    repoLine(t('PR de code ouvertes'), repos.code),
+    repoLine(t('Déploiements'), repos.deployments),
+  )
   if (arrivals.length) {
-    lines.push('', `*Arrivées* : ${arrivals.map(({ login }) => displayName(login)).join(', ')}`)
+    lines.push('', t('{label} : {value}', { label: `*${t('Arrivées')}*`, value: arrivals.map(({ login }) => displayName(login)).join(', ') }))
   }
   lines.push('', `${location.origin}${location.pathname}${ROUTES.report.hash}`)
 
@@ -236,9 +248,9 @@ async function copyReport() {
   const status = $('[data-report-copied]')
   try {
     await navigator.clipboard.writeText(reportText(reportContent()))
-    status.textContent = 'Bilan copié'
+    status.textContent = t('Bilan copié')
   } catch {
-    status.textContent = 'Copie impossible dans ce navigateur'
+    status.textContent = t('Copie impossible dans ce navigateur')
   }
   clearTimeout(copiedTimer)
   copiedTimer = setTimeout(() => {

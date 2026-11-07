@@ -2,6 +2,7 @@
 
 import { WORK_DAY_HOURS } from '../domain/time.js'
 import { capitalize, formatDuration, formatNumber, SIZE_LABELS } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { inSelection } from '../model/contributors.js'
 import { CYCLE_STAGES, cycleSummary } from '../model/cycle.js'
 import { BUCKET_TITLES } from '../model/periods.js'
@@ -18,20 +19,20 @@ import { renderTiles } from '../ui/tiles.js'
 
 const CYCLE_STAGE_TILES = CYCLE_STAGES.map(({ key, label }) => ({ key, label, format: formatDuration, better: 'down' }))
 const CYCLE_END_TO_END_TILES = [
-  { key: 'toMerge', label: 'De l’ouverture au merge', format: formatDuration, better: 'down' },
-  { key: 'toProduction', label: 'De l’ouverture à la prod', format: formatDuration, better: 'down' },
-  { key: 'prs', label: 'PR de code ouvertes' },
+  { key: 'toMerge', label: t('De l’ouverture au merge'), format: formatDuration, better: 'down' },
+  { key: 'toProduction', label: t('De l’ouverture à la prod'), format: formatDuration, better: 'down' },
+  { key: 'prs', label: t('PR de code ouvertes') },
 ]
 
 export const CYCLE_COLUMNS = [
-  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
-  { key: 'prs', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
+  { key: 'repo', label: t('Dépôt'), kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'prs', label: t('PR de code'), kind: 'bar', hint: t('PR ouvertes sur la période, hors release et synchronisation de branches.') },
   ...CYCLE_STAGES.map(({ key, label, hint }) => ({ key, label, format: (row) => formatDuration(row[key]), hint })),
   {
     key: 'toProduction',
-    label: 'Jusqu’en prod',
+    label: t('Jusqu’en prod'),
     format: (row) => formatDuration(row.toProduction),
-    hint: 'Médiane, de l’ouverture à l’arrivée en prod, pour les PR ouvertes sur la période.',
+    hint: t('Médiane, de l’ouverture à l’arrivée en prod, pour les PR ouvertes sur la période.'),
   },
 ]
 
@@ -74,29 +75,29 @@ export function renderCycleCharts() {
   const byType = groupCycles(cycles, (cycle) => repoInfo(cycle.repo).category)
   shareChart($('[data-cycle-types]'), {
     rows: [
-      { label: 'Tous les dépôts', ...cycleSummary(cycles) },
+      { label: t('Tous les dépôts'), ...cycleSummary(cycles) },
       ...CATEGORIES.filter((category) => byType.has(category.key)).map((category) => ({
         label: category.label,
         ...cycleSummary(byType.get(category.key)),
       })),
     ],
-    ariaLabel: 'Part de chaque étape dans le temps des PR, par type de dépôt',
+    ariaLabel: t('Part de chaque étape dans le temps des PR, par type de dépôt'),
   })
   const bySize = groupCycles(cycles, (cycle) => cycle.size)
   shareChart($('[data-cycle-sizes]'), {
-    rows: SIZE_LABELS.flatMap((label, index) => (bySize.has(index) ? [{ label: `${label} lignes`, ...cycleSummary(bySize.get(index)) }] : [])),
-    ariaLabel: 'Part de chaque étape dans le temps des PR, selon leur taille',
+    rows: SIZE_LABELS.flatMap((label, index) => (bySize.has(index) ? [{ label: t('{size} lignes', { size: label }), ...cycleSummary(bySize.get(index)) }] : [])),
+    ariaLabel: t('Part de chaque étape dans le temps des PR, selon leur taille'),
   })
 
   const { series, bucket } = currentPeriod()
   const byBucket = groupCycles(cycles, (cycle) => cycle.bucket)
   const points = series.map(({ key, partial }) => ({ key, partial, ...cycleSummary(byBucket.get(key) ?? []) }))
-  $('[data-cycle-charts-title]').textContent = `Médiane de chaque étape ${BUCKET_TITLES[bucket]}`
+  $('[data-cycle-charts-title]').textContent = t('Médiane de chaque étape {bucket}', { bucket: BUCKET_TITLES[bucket] })
   for (const stage of CYCLE_STAGES) {
     // Long stages read in working days, short ones in working hours.
     const hoursPerUnit = Math.max(0, ...points.map((point) => point[stage.key] ?? 0)) > 2 * WORK_DAY_HOURS ? WORK_DAY_HOURS : 1
     $(`[data-cycle-chart-title="${stage.key}"]`).textContent =
-      `${stage.label}, en ${hoursPerUnit === WORK_DAY_HOURS ? 'jours ouvrés' : 'heures ouvrées'}`
+      t('{stage}, en {unit}', { stage: stage.label, unit: hoursPerUnit === WORK_DAY_HOURS ? t('jours ouvrés') : t('heures ouvrées') })
     columnChart($(`[data-cycle-chart="${stage.key}"]`), {
       points,
       bucket,
@@ -104,22 +105,22 @@ export function renderCycleCharts() {
       format: (value) => formatDuration(value === null ? null : value * hoursPerUnit),
       series: [
         {
-          label: 'médiane',
+          label: t('médiane'),
           color: stage.color,
           value: (point) => (point[stage.key] === null ? null : point[stage.key] / hoursPerUnit),
         },
       ],
-      ariaLabel: `${stage.label}, médiane ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
-      extraRows: (point) => [{ label: 'PR de code ouvertes', value: formatNumber(point.prs) }],
+      ariaLabel: t('{stage}, médiane {bucket}, {period}', { stage: stage.label, bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
+      extraRows: (point) => [{ label: t('PR de code ouvertes'), value: formatNumber(point.prs) }],
     })
   }
   dataTable(
     $('[data-cycle-chart-table]'),
-    ['Période', 'PR de code', ...CYCLE_STAGES.map((stage) => stage.label), 'Jusqu’en prod'],
+    [t('Période'), t('PR de code'), ...CYCLE_STAGES.map((stage) => stage.label), t('Jusqu’en prod')],
     points
       .toReversed()
       .map((point) => [
-        bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : ''),
+        point.partial ? t('{bucket} (incomplète)', { bucket: bucketTitle(point.key, bucket) }) : bucketTitle(point.key, bucket),
         formatNumber(point.prs),
         ...CYCLE_STAGES.map((stage) => formatDuration(point[stage.key])),
         formatDuration(point.toProduction),

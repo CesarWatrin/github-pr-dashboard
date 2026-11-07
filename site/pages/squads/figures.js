@@ -3,6 +3,7 @@
 import { isMissing, median } from '../../domain/math.js'
 import { openPullRequests } from '../../domain/open-pull-requests.js'
 import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { isCurrent, mePeople } from '../../model/people.js'
 import { requiredApprovals } from '../../model/pull-requests.js'
 import { periodRange } from '../../model/selection.js'
@@ -13,76 +14,76 @@ import { state } from '../../model/state.js'
 // members did on any pull request of the organization, reviews and comments. perMember: a volume, divided by the number
 // of members when the ranking compares squads per person; better: the way that ranks a squad first.
 export const SQUAD_FIGURES = {
-  members: { key: 'members', label: 'Membres', hint: 'Personnes de la squad, parties comprises.' },
-  code: { key: 'code', label: 'PR de code', perMember: true, better: 'up', hint: 'PR de code ouvertes sur la période par les membres.' },
-  merged: { key: 'merged', label: 'Mergées', perMember: true, better: 'up', hint: 'Parmi ces PR, celles qui ont été mergées.' },
+  members: { key: 'members', label: t('Membres'), hint: t('Personnes de la squad, parties comprises.') },
+  code: { key: 'code', label: t('PR de code'), perMember: true, better: 'up', hint: t('PR de code ouvertes sur la période par les membres.') },
+  merged: { key: 'merged', label: t('Mergées'), perMember: true, better: 'up', hint: t('Parmi ces PR, celles qui ont été mergées.') },
   reviews: {
     key: 'reviews',
-    label: 'Relectures',
+    label: t('Relectures'),
     perMember: true,
     better: 'up',
-    hint: 'PR relues par les membres, dans toute l’organisation : une par personne et par PR, review ou commentaire.',
+    hint: t('PR relues par les membres, dans toute l’organisation : une par personne et par PR, review ou commentaire.'),
   },
   comments: {
     key: 'comments',
-    label: 'Commentaires',
+    label: t('Commentaires'),
     perMember: true,
     better: 'up',
-    hint: 'Commentaires et reviews « commentaire » des membres, sur toutes les PR de l’organisation.',
+    hint: t('Commentaires et reviews « commentaire » des membres, sur toutes les PR de l’organisation.'),
   },
-  lines: { key: 'lines', label: 'Lignes', perMember: true, format: formatLines, hint: 'Lignes ajoutées et supprimées par les PR mergées de la squad.' },
+  lines: { key: 'lines', label: t('Lignes'), perMember: true, format: formatLines, hint: t('Lignes ajoutées et supprimées par les PR mergées de la squad.') },
   // The ranking shows them one above the other, in green and red, as the other tables: sorted on the lines added.
   added: {
     key: 'added',
-    label: 'Lignes',
-    chartLabel: 'Lignes ajoutées',
+    label: t('Lignes'),
+    chartLabel: t('Lignes ajoutées'),
     perMember: true,
     format: formatLines,
-    hint: 'Lignes ajoutées (+) et supprimées (−) par les PR mergées de la squad, au total, arrondies (k : milliers, M : millions). Le tri suit les lignes ajoutées.',
+    hint: t('Lignes ajoutées (+) et supprimées (−) par les PR mergées de la squad, au total, arrondies (k : milliers, M : millions). Le tri suit les lignes ajoutées.'),
   },
   medianTimeToFirstReviewHours: {
     key: 'medianTimeToFirstReviewHours',
-    label: '1re review',
+    label: t('1re review'),
     format: formatDuration,
     better: 'down',
-    hint: 'Médiane, de la création d’une PR de la squad à la première review ou au premier commentaire d’une autre personne.',
+    hint: t('Médiane, de la création d’une PR de la squad à la première review ou au premier commentaire d’une autre personne.'),
   },
-  medianTimeToMergeHours: { key: 'medianTimeToMergeHours', label: 'Merge en', format: formatDuration, better: 'down', hint: 'Médiane, de la création au merge.' },
+  medianTimeToMergeHours: { key: 'medianTimeToMergeHours', label: t('Merge en'), format: formatDuration, better: 'down', hint: t('Médiane, de la création au merge.') },
   medianLeadTimeHours: {
     key: 'medianLeadTimeHours',
-    label: 'Jusqu’en prod',
+    label: t('Jusqu’en prod'),
     format: formatDuration,
     better: 'down',
-    hint: 'Médiane, de la création d’une PR de la squad à son arrivée en production.',
+    hint: t('Médiane, de la création d’une PR de la squad à son arrivée en production.'),
   },
   unreviewedRate: {
     key: 'unreviewedRate',
-    label: 'Sans review',
+    label: t('Sans review'),
     format: formatShare,
     better: 'down',
-    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+    hint: t('Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.'),
   },
   insideReviewRate: {
     key: 'insideReviewRate',
-    label: 'Relu en interne',
+    label: t('Relu en interne'),
     format: formatShare,
-    hint: 'Part des relectures des PR de la squad faites par ses membres ; le reste vient d’autres personnes.',
+    hint: t('Part des relectures des PR de la squad faites par ses membres ; le reste vient d’autres personnes.'),
   },
-  commentsPerPr: { key: 'commentsPerPr', label: 'Comm. / PR', format: formatDecimal, hint: 'Commentaires et reviews « commentaire », par PR relue.' },
-  hotfixShare: { key: 'hotfixShare', label: 'Hotfix', format: formatShare, better: 'down', hint: 'Part des PR de code ouvertes depuis une branche hotfix.' },
+  commentsPerPr: { key: 'commentsPerPr', label: t('Comm. / PR'), format: formatDecimal, hint: t('Commentaires et reviews « commentaire », par PR relue.') },
+  hotfixShare: { key: 'hotfixShare', label: t('Hotfix'), format: formatShare, better: 'down', hint: t('Part des PR de code ouvertes depuis une branche hotfix.') },
   reworkRate: {
     key: 'reworkRate',
-    label: 'Reprise',
+    label: t('Reprise'),
     format: formatShare,
     better: 'down',
-    hint: 'Part des mises en production de la squad suivies d’un correctif.',
+    hint: t('Part des mises en production de la squad suivies d’un correctif.'),
   },
   open: {
     key: 'open',
-    label: 'En attente',
+    label: t('En attente'),
     perMember: true,
     better: 'down',
-    hint: 'PR de code des membres encore ouvertes à la dernière synchro, hors brouillons.',
+    hint: t('PR de code des membres encore ouvertes à la dernière synchro, hors brouillons.'),
   },
 }
 export const squadFigures = (...keys) => keys.map((key) => SQUAD_FIGURES[key])
