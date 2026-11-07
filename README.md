@@ -144,6 +144,11 @@ Chaque page a son adresse (`#/a-debloquer`, `#/bilan`, `#/auteurs`, `#/relecteur
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
 
+Le bouton **EN** / **FR**, à gauche de « Méthode », passe tout le site en anglais, ou le ramène en français : le choix
+est retenu par le navigateur, et la page se recharge dans la langue choisie, sans redemander le mot de passe. Les
+nombres et les dates suivent la langue ; ce qui vient de GitHub (noms, dépôts, titres des PR) reste tel quel. Le site
+est écrit en français, l'anglais vit dans `site/lib/english/` et ne se charge qu'en anglais.
+
 ## Accès protégé
 
 Les stats sont publiées **chiffrées** : le site est public, mais sans le mot de passe ses données sont illisibles,
