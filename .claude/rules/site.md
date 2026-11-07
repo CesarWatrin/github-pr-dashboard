@@ -104,21 +104,25 @@ paths:
 - **« Mes PR » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
-  `personalQueue()` of `site/domain/` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
-  others still asking for the person's review (`requestedReviewers` of the records, people only: the sync does not know
-  who is in a team), then theirs, each in one list only, named and defined as on the unblock page but without its
-  delays: forgotten first (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked
-  by code owners, and the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not
-  say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking. Its lists, like those of the unblock
+  `personalQueue()` of `site/domain/` gives the lists of `ME_LISTS`: the pull requests of others still asking for the
+  person's review (`requestedReviewers` of the records, people only: the sync does not know who is in a team), then
+  theirs, each in one list only, named and defined as on the unblock page but without its delays: forgotten first
+  (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked by code owners, and
+  the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not say, where it stands
+  (the tags of `UNBLOCK_STANCES`); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out.
+  The page shows first the lists whose pull requests wait on the person (`urgent` in `ME_LISTS`: reviews asked, ready,
+  changes requested, forgotten), then the others. No score, no ranking. Its lists, like those of the unblock
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a
   short card, and no blank on a phone where they stack. `meQueue()` works the lists out for `renderMe()`,
-  which keeps the pull requests of every list (`state.forMe`, each in one list only): `renderTitle()` counts them all
+  which keeps the pull requests of the urgent lists (`state.forMe`, each in one list only): `renderTitle()` counts them
   in the tab title of every page, « (5) Stats PR », and on a red badge (`[data-reviews-badge]`, `--notification`) at
-  the end of the link of « Mes PR » and on the corner of the menu button of narrow screens, hidden at 0. The bell
+  the end of the link of « Mes PR » and on the corner of the menu button of narrow screens, hidden at 0. A grey badge
+  (`[data-own-badge]`), right after the name of the link, counts the person's own pull requests, every list but the
+  reviews asked, drafts included (`state.meOwn`). Both explain what they count on hover. The bell
   (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser blocks it) turns
   notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first); `notifyNewItems()` then shows
-  one for the pull requests new in any list since the tab last looked, one moved to another list (ready to merge, say)
-  being new there (`KNOWN_ITEMS_STORAGE_KEY`, in `sessionStorage`: a reload for a new build misses none, a new tab or
+  one for the pull requests new in any urgent list since the tab last looked, one moved to another list (ready to
+  merge, say) being new there (`KNOWN_ITEMS_STORAGE_KEY`, in `sessionStorage`: a reload for a new build misses none, a new tab or
   another person notifies none of those already there), counting them all as the tab does, one for several, none
   while « Mes PR » is on screen. A browser with the API but without the
   constructor (phones) shows none: the title still counts.

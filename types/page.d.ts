@@ -67,7 +67,9 @@ interface State {
   squadPerMember: boolean
   me: string | null
   notify: boolean
-  // The pull requests of every list of « Mes PR » for the person picked there, as of the last sync.
+  // The pull requests of the lists of « Mes PR » the person picked there has to act on, as of the last sync.
   forMe: { list: string; pr: PersonalQueue['toReview'][number] }[] | null
+  // How many open pull requests of their own, drafts included.
+  meOwn: number
   fetchFailed: boolean
 }

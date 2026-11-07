@@ -36,6 +36,7 @@ function lock(message) {
   state.key = null
   state.stats = null
   state.forMe = null
+  state.meOwn = 0
   renderTitle()
   showLock(message)
 }

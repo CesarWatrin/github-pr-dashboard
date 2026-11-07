@@ -1,4 +1,4 @@
-// Where the open pull requests stand now: for the unblock page, and for one person (« Mes PR »).
+// Where the open pull requests stand now: for the unblock page, and for one person (« Mes PR »), their drafts too.
 
 // The open pull requests of people of the kinds asked for (code only by default: the unblock page; releases and
 // integrations wait for their reviews too, for the « Mes PR » page), drafts aside, each with its kind, and where each
@@ -93,4 +93,18 @@ export function personalQueue(open, login, { forgottenBefore = -Infinity } = {})
     ...lists,
     forgotten: own.filter((pr) => pr.lastAt <= forgottenBefore).sort((a, b) => a.lastAt - b.lastAt),
   }
+}
+
+// The open drafts of one person among the records, of the kinds asked for, the oldest first: they wait for no one yet,
+// so openPullRequests() leaves them out.
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {string} login
+ * @param {{ kinds?: PullRequestKind[] }} [options]
+ */
+export function ownDrafts(records, login, { kinds = ['code'] } = {}) {
+  return records
+    .filter((pr) => pr.author === login && !pr.bot && kinds.includes(pr.kind) && pr.mergedAt === null && !pr.closed && pr.draft)
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map(({ repo, number, author, kind, createdAt }) => ({ repo, number, author, kind, createdAt }))
 }

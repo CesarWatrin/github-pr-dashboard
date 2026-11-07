@@ -442,4 +442,7 @@ export const BLOCKS = {
   'mois (pluriel)': 'months',
   'PR à traiter (singulier)': 'PR to handle',
   'PR à traiter (pluriel)': 'PRs to handle',
+  '{count} : les reviews qu’on m’a demandées, et mes PR prêtes à merger, à corriger ou oubliées':
+    '{count}: the reviews asked of me, and my PRs ready to merge, to fix or forgotten',
+  '{count} à moi : toutes mes PR ouvertes, brouillons compris': '{count} of mine: all my open PRs, drafts included',
 }
