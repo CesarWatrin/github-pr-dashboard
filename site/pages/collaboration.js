@@ -1,6 +1,6 @@
 // Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen).
 
-import { formatNumber, formatShare, plural } from '../lib/format.js'
+import { elides, formatNumber, formatShare, plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { matchesQuery, periodTitle } from '../model/selection.js'
@@ -103,7 +103,6 @@ function getOrCreatePerson(people, login) {
 }
 
 // French elision: « d’Ana », « de Ben ».
-const elides = (name) => /^[aeiouyàâéèêëîïôöùûü]/i.test(name)
 const ofName = (name) => (elides(name) ? t('d’{name}', { name }) : t('de {name}', { name }))
 // A text with nodes in it, links say: the placeholders of the text take them.
 const withNodes = (text, nodes) =>

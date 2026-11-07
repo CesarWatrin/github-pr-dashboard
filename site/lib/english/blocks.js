@@ -445,4 +445,6 @@ export const BLOCKS = {
   '{count} : les reviews qu’on m’a demandées, et mes PR prêtes à merger, à corriger ou oubliées':
     '{count}: the reviews asked of me, and my PRs ready to merge, to fix or forgotten',
   '{count} à moi : toutes mes PR ouvertes, brouillons compris': '{count} of mine: all my open PRs, drafts included',
+  'Cartographie': 'Map',
+  'L’équipe en réseau : qui relit qui, et qui écrit où': 'The team as a network: who reviews whom, and who writes where',
 }

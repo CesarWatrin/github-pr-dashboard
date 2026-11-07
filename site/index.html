@@ -48,6 +48,7 @@
     <link rel="stylesheet" href="styles/pages/awards.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/repositories.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/squads.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/force-graph.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/bus-factor.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/badges.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/card-dialog.css?v=__BUILD__" />
@@ -94,10 +95,12 @@
         "./lib/english/frame.js": "./lib/english/frame.js?v=__BUILD__",
         "./lib/english/method.js": "./lib/english/method.js?v=__BUILD__",
         "./lib/english/pages.js": "./lib/english/pages.js?v=__BUILD__",
+        "./lib/force-layout.js": "./lib/force-layout.js?v=__BUILD__",
         "./lib/format.js": "./lib/format.js?v=__BUILD__",
         "./lib/i18n.js": "./lib/i18n.js?v=__BUILD__",
         "./lib/math.js": "./lib/math.js?v=__BUILD__",
         "./model/badges.js": "./model/badges.js?v=__BUILD__",
+        "./model/cartography.js": "./model/cartography.js?v=__BUILD__",
         "./model/contributors.js": "./model/contributors.js?v=__BUILD__",
         "./model/cycle.js": "./model/cycle.js?v=__BUILD__",
         "./model/months.js": "./model/months.js?v=__BUILD__",
@@ -116,6 +119,7 @@
         "./pages/analysis/findings.js": "./pages/analysis/findings.js?v=__BUILD__",
         "./pages/authors.js": "./pages/authors.js?v=__BUILD__",
         "./pages/awards.js": "./pages/awards.js?v=__BUILD__",
+        "./pages/cartography.js": "./pages/cartography.js?v=__BUILD__",
         "./pages/collaboration.js": "./pages/collaboration.js?v=__BUILD__",
         "./pages/cycle.js": "./pages/cycle.js?v=__BUILD__",
         "./pages/devops.js": "./pages/devops.js?v=__BUILD__",
@@ -150,6 +154,7 @@
         "./ui/charts/bar-chart.js": "./ui/charts/bar-chart.js?v=__BUILD__",
         "./ui/charts/column-chart.js": "./ui/charts/column-chart.js?v=__BUILD__",
         "./ui/charts/data-table.js": "./ui/charts/data-table.js?v=__BUILD__",
+        "./ui/charts/force-graph.js": "./ui/charts/force-graph.js?v=__BUILD__",
         "./ui/charts/geometry.js": "./ui/charts/geometry.js?v=__BUILD__",
         "./ui/charts/heatmap-chart.js": "./ui/charts/heatmap-chart.js?v=__BUILD__",
         "./ui/charts/legend.js": "./ui/charts/legend.js?v=__BUILD__",
@@ -205,10 +210,12 @@
     <link rel="modulepreload" href="domain/time.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/timeline.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/dates.js?v=__BUILD__" />
+    <link rel="modulepreload" href="lib/force-layout.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/format.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/i18n.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/math.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/badges.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/cartography.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/contributors.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/cycle.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/months.js?v=__BUILD__" />
@@ -227,6 +234,7 @@
     <link rel="modulepreload" href="pages/analysis/findings.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/authors.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/awards.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/cartography.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/collaboration.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/cycle.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/devops.js?v=__BUILD__" />
@@ -261,6 +269,7 @@
     <link rel="modulepreload" href="ui/charts/bar-chart.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/charts/column-chart.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/charts/data-table.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/charts/force-graph.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/charts/geometry.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/charts/heatmap-chart.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/charts/legend.js?v=__BUILD__" />
@@ -394,6 +403,13 @@
               <path d="M1.8 13c.4-2.3 1.9-3.7 3.7-3.7s3.3 1.4 3.7 3.7M10 9.8c.3-.1.7-.2 1-.2 1.6 0 2.8 1.2 3.1 3.4" />
             </svg>
             Collaboration
+          </a>
+          <a class="nav-link" href="#/cartographie" data-route-link="cartography">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="3.5" cy="4" r="1.8" /><circle cx="12.5" cy="5" r="1.8" /><circle cx="7" cy="12.5" r="1.8" />
+              <path d="M5.3 4.2l5.4.6M4.3 5.6l1.9 5.2M11.4 6.4l-3.3 4.6" />
+            </svg>
+            Cartographie
           </a>
           <a class="nav-link" href="#/equipe" data-route-link="team">
             <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -974,6 +990,51 @@
             </section>
           </div>
 
+          <!-- Cartographie -->
+          <div class="route" data-route="cartography" hidden>
+            <section class="card" aria-labelledby="map-reviews-title" data-map-reviews-card>
+              <h2 id="map-reviews-title">Réseau des reviews</h2>
+              <p class="card-sub">
+                Une personne par rond, son anneau coloré selon où elle écrit ; un trait entre deux personnes qui relisent
+                les PR de code l’une de l’autre, plus épais quand c’est souvent
+              </p>
+              <div class="legend" data-map-reviews-legend></div>
+              <div class="force-graph-wrap" data-map-reviews></div>
+              <p class="card-note">
+                PR de code ouvertes sur la période, hors personnes parties. Un rond grossit avec les PR qu’il relit et
+                celles qu’on lui relit ; pour rester lisible, seuls restent les quatre liens les plus forts de chaque
+                rond, et le tableau des données les donne tous. Les groupes se forment seuls : des personnes qui se relisent entre
+                elles sans lien vers le reste montrent un savoir qui circule peu. Pour repérer les silos et les ponts,
+                pas pour classer des personnes. Glisser un rond le déplace ; Ctrl ou ⌘ et la molette, ou deux doigts,
+                zooment ; glisser le fond déplace la vue, un double-clic la remet. Un clic ouvre la fiche de la personne.
+              </p>
+              <details class="chart-data">
+                <summary>Voir les données du réseau</summary>
+                <div class="table-wrap" data-map-reviews-table></div>
+              </details>
+            </section>
+
+            <section class="card" aria-labelledby="map-repositories-title">
+              <h2 id="map-repositories-title">Qui écrit où</h2>
+              <p class="card-sub">
+                Les dépôts en carrés, de la couleur de leur type, les personnes en ronds ; un trait relie une personne
+                aux dépôts où elle a ouvert des PR de code, plus épais quand elle y en a ouvert beaucoup
+              </p>
+              <div class="legend" data-map-repositories-legend></div>
+              <div class="force-graph-wrap" data-map-repositories></div>
+              <p class="card-note">
+                PR de code ouvertes sur la période, hors personnes parties, dans les 30 dépôts les plus actifs ; seuls
+                restent les quatre liens les plus forts de chaque rond, et le tableau des données les donne tous. Un dépôt
+                relié à une seule personne dépend d’elle ; une personne au centre de plusieurs dépôts les fait tenir
+                ensemble. Le nom d’une personne s’affiche au survol ; un clic ouvre sa fiche, ou celle du dépôt.
+              </p>
+              <details class="chart-data">
+                <summary>Voir les données du réseau</summary>
+                <div class="table-wrap" data-map-repositories-table></div>
+              </details>
+            </section>
+          </div>
+
           <!-- Équipe -->
           <div class="route" data-route="team" hidden>
             <div class="team-toolbar">
@@ -1406,6 +1467,18 @@
                   code d’un dépôt sur la période. À 1, le dépôt repose sur une seule personne ; « Auteurs partis » : les
                   personnes encore là en ont écrit moins de la moitié. Il ne dit rien de la qualité du code, seulement
                   du risque de le voir n’être connu de personne.
+                </dd>
+                <dt>Cartographie</dt>
+                <dd>
+                  Deux réseaux des PR de code ouvertes sur la période, hors personnes parties, disposés par des forces :
+                  les ronds se repoussent, les traits les rapprochent comme des ressorts. Réseau des reviews : un trait
+                  entre deux personnes pour les PR de l’une que l’autre a relues ou commentées, dans les deux sens, comme
+                  les binômes ; un rond grossit avec ces PR. Qui écrit où : un trait entre une personne et chaque dépôt
+                  où elle a ouvert des PR de code, de la couleur du type du dépôt. L’anneau d’une personne partage sa
+                  stack entre front, back et mobile. Pour rester lisibles, les réseaux ne gardent que les quatre liens
+                  les plus forts de chaque rond, et Qui écrit où les 30 dépôts les plus actifs : les données de chaque
+                  carte donnent tout. La position d’un rond ne veut rien dire en soi : seuls comptent les liens et les
+                  groupes qu’ils forment.
                 </dd>
                 <dt>À débloquer</dt>
                 <dd>

@@ -103,6 +103,10 @@ export function noun(count, singular, several = `${singular}s`) {
   return t(many ? several : singular)
 }
 
+// Whether French elides « de » before a name: « d’Ana », « de Ben ».
+/** @type {(name: string) => boolean} */
+export const elides = (name) => /^[aeiouyàâéèêëîïôöùûü]/i.test(name)
+
 // A count and its noun.
 /** @type {(count: number, singular: string, several?: string) => string} */
 export const plural = (count, singular, several = `${singular}s`) => `${formatNumber(count)} ${noun(count, singular, several)}`

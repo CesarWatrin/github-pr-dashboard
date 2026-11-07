@@ -1,0 +1,105 @@
+/* The networks laid out by forces (ui/charts/force-graph.js): the map page. */
+.force-graph-wrap {
+  margin-top: 12px;
+}
+
+.force-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: var(--page);
+  cursor: grab;
+  user-select: none;
+}
+
+.force-graph.is-panning {
+  cursor: grabbing;
+}
+
+.force-graph-link {
+  stroke: var(--text-muted);
+  stroke-linecap: round;
+  transition: opacity 150ms ease;
+}
+
+.force-graph-link-hit {
+  stroke: transparent;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+/* A node: an avatar on a disc of the surface, so that the links stop at its edge, in a ring of colored shares; or the
+   filled square of a repository, ringed by the surface where links meet it. */
+.force-graph-node {
+  cursor: pointer;
+  outline: none;
+  touch-action: none;
+  transition: opacity 150ms ease;
+}
+
+.force-graph-node.is-dragged {
+  cursor: grabbing;
+}
+
+.force-graph-disc {
+  fill: var(--surface-hover);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.force-graph-ring {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.force-graph-ring.is-empty {
+  stroke: var(--text-muted);
+}
+
+.force-graph-square {
+  stroke: var(--page);
+  stroke-width: 2;
+}
+
+.force-graph-label {
+  fill: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 550;
+  paint-order: stroke;
+  stroke: var(--page);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.force-graph-node.is-unlabelled .force-graph-label {
+  display: none;
+}
+
+/* A node pointed at, or a found one, lights up with its neighbours and their links; the rest fades. */
+.force-graph.is-focused .force-graph-node:not(.is-near),
+.force-graph.has-search:not(.is-focused) .force-graph-node:not(.is-found) {
+  opacity: 0.18;
+}
+
+.force-graph.is-focused .force-graph-link:not(.is-near),
+.force-graph.has-search:not(.is-focused) .force-graph-link {
+  opacity: 0.08;
+}
+
+.force-graph.is-focused .force-graph-node.is-near .force-graph-label,
+.force-graph.has-search .force-graph-node.is-found .force-graph-label {
+  display: block;
+}
+
+.force-graph.is-focused .force-graph-link.is-near {
+  stroke: var(--text-secondary);
+}
+
+.force-graph-node:focus-visible .force-graph-disc,
+.force-graph-node:focus-visible .force-graph-square {
+  stroke: var(--series-1);
+  stroke-width: 3;
+}

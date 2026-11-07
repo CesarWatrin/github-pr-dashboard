@@ -69,6 +69,29 @@ export function teamRows({ withFormer = false } = {}) {
   }
   const reviewersOf = new Map(reviewNetwork(withoutFormer(period), state.repos.team).authors.map((author) => [author.login, author.reviewers]))
   // The stack is the person's own, over every repository: the selection only narrows the figures.
+  const stackFor = stacksOf(period)
+
+  return [...rows.values()]
+    .map((totals) => ({
+      login: totals.login,
+      code: totals.code,
+      merged: totals.code ? totals.merged : null,
+      medianTimeToMergeHours: median(totals.timesToMerge),
+      reviewed: totals.reviewed,
+      commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
+      reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
+      stack: stackFor(totals.login),
+    }))
+    .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
+}
+
+// Each person's stack over a period and every repository: from their code pull requests, else from the ones they
+// reviewed.
+/**
+ * @param {Pick<PeriodStats, 'authors' | 'reviewers'>} period
+ * @returns {(login: string) => import('./repositories.js').Stack}
+ */
+export function stacksOf(period) {
   /**
    * @template {string} Key
    * @param {{ login: string, repos: Record<string, Record<Key, number>> }[]} people
@@ -84,25 +107,12 @@ export function teamRows({ withFormer = false } = {}) {
     )
   const codeRepos = perRepo(period.authors, 'code')
   const reviewedRepos = perRepo(period.reviewers, 'prs')
-  /** @param {string} login */
-  const stackFor = (login) => {
+
+  return (login) => {
     const code = codeRepos.get(login) ?? []
 
     return stackOf(code.some(([, prs]) => prs > 0) ? code : (reviewedRepos.get(login) ?? []))
   }
-
-  return [...rows.values()]
-    .map((totals) => ({
-      login: totals.login,
-      code: totals.code,
-      merged: totals.code ? totals.merged : null,
-      medianTimeToMergeHours: median(totals.timesToMerge),
-      reviewed: totals.reviewed,
-      commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
-      reviewers: totals.code ? (reviewersOf.get(totals.login) ?? 0) : null,
-      stack: stackFor(totals.login),
-    }))
-    .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
 }
 
 // The details of a person over the period and the repositories selected on the team page, with those of their peers:

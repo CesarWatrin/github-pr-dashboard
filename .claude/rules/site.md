@@ -101,6 +101,22 @@ paths:
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
   carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
   `squadLead()`) shows on its card and dialog, its avatar first and ringed (`squadAvatars()`).
+- **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the
+  squad picked, from `site/model/cartography.js`: `reviewMap()` (a link per pair of people, how many code pull requests
+  each way, from `reviewNetwork()`) and `repositoryMap()` (a link per person and repository of their code pull
+  requests). Both give every link (`links`, for the tooltips and the data tables) and those drawn (`shown`):
+  `strongestLinks()` keeps the `LINKS_PER_NODE` heaviest links of each node, and the repository network its
+  `MAX_REPOSITORIES` busiest repositories, else both are tangles. `forceGraph()` of `ui/charts/` draws them in SVG (the
+  colours stay CSS variables, so the theme applies without a redraw), laid out by `forceLayout()` of `site/lib/` (a
+  d3-force-like simulation: links as springs, nodes pushing each other within a reach, a pull toward the middle,
+  no overlap, deterministic, no dependency). It animates the layout until it settles (at once under reduced motion),
+  keeps the places of the nodes per container so that new filters or a new width move them from where they were,
+  drags a node (it floats again once let go), zooms with Ctrl or ⌘ and the wheel (a pinch), pans by dragging the
+  background with a mouse (a finger scrolls the page), puts the view back on a double click; a node pointed at or
+  focused lights up with its neighbours and their links, the search (`found`) lights up what it finds, a click or Enter
+  opens the dialog of the person or repository (`askToOpen()`). People show their avatar in a ring of their stack
+  (`stacksOf()`, shared with `teamRows()`), repositories a square in the colour of their type; labels show for the
+  heaviest nodes (`MAX_LABELS`), or those asked for (the repositories), and for the neighbours of the node pointed at.
 - **« Mes PR » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
