@@ -362,6 +362,8 @@ export function nodeShapes(node, size, clipId) {
   if (!node.image) {
     const square = svg('rect', { class: 'force-graph-square', x: -size, y: -size, width: 2 * size, height: 2 * size, rx: size * 0.35 })
     if (node.fill) {
+      // Its colour, for what lights the square up too.
+      square.style.setProperty('--node-color', node.fill)
       square.style.fill = node.fill
     }
 

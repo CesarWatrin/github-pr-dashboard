@@ -2,7 +2,7 @@
 // when they act and leave when they no longer do, and each event travels from a person to a repository. The page
 // drives it (play, pause, the moment shown); the layout keeps moving between frames, by forces (lib/force-layout.js).
 
-import { forceLayout } from '../../lib/force-layout.js'
+import { forceLayout, startPlace } from '../../lib/force-layout.js'
 import { svg } from '../dom.js'
 import { reducedMotion } from '../motion.js'
 import { addCircleClip, graphHeight, nodeShapes, onHover, RING_WIDTH, showDetails } from './force-graph.js'
@@ -111,8 +111,15 @@ export function replayGraph(container, options) {
       },
     )
     nodeLayer.append(group)
+    // Beside what it is linked to, each at an angle of its own, else on the spiral the layouts start from: nodes put
+    // at the same place would hardly part.
     const anchor = near ? places.get(near) : null
-    places.set(id, anchor ? { x: anchor.x + 12, y: anchor.y + 12 } : { x: width / 2, y: height / 2 })
+    const count = places.size
+    const angle = count * Math.PI * (3 - Math.sqrt(5))
+    places.set(
+      id,
+      anchor ? { x: anchor.x + 24 * Math.cos(angle), y: anchor.y + 24 * Math.sin(angle) } : startPlace(count, { width, height }),
+    )
     const entry = { group, size, kind }
     shown.set(id, entry)
 
@@ -183,6 +190,8 @@ export function replayGraph(container, options) {
     // The layout follows the nodes shown: when they change, it starts again from where they are, a little warm.
     const nextOrder = [...shown.keys()]
     if (nextOrder.join('\n') !== order.join('\n')) {
+      // The first layout of the film starts hot, the next ones only adjust it.
+      const heat = order.length ? 0.3 : 1
       order = nextOrder
       const index = new Map(order.map((id, position) => [id, position]))
       layout = forceLayout(
@@ -194,7 +203,7 @@ export function replayGraph(container, options) {
           return source === undefined || target === undefined ? [] : [{ source, target, weight: 1 }]
         }),
         { width, height, margin: 10, bottom: 18 },
-        { heat: 0.3 },
+        { heat },
       )
     } else {
       layout?.reheat(0.08)

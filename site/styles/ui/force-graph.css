@@ -136,7 +136,7 @@
 
 /* The film (ui/charts/replay-graph.js): a node shows its name a few days after something happened to it, the biggest
    repositories always, any node pointed at; a review travels hollow, a pull request opened full; a merge lights its
-   repository up. */
+   repository up with a halo of its own colour. */
 .replay-node .force-graph-label {
   display: none;
 }
@@ -167,7 +167,8 @@
 
 @keyframes replay-merge {
   from {
-    stroke: var(--status-good);
-    stroke-width: 8;
+    stroke: var(--node-color, var(--text-muted));
+    stroke-opacity: 0.45;
+    stroke-width: 12;
   }
 }
