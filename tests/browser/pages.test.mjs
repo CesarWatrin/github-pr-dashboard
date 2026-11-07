@@ -216,6 +216,16 @@ for (const language of ['fr', 'en']) {
       assert.equal(await page.evaluate(`document.querySelector('[data-own-badge]').textContent`), String(own))
     })
 
+    test('the film of the map page plays from the start, and pauses', async () => {
+      await show('cartography')
+      const date = `document.querySelector('[data-replay-date]').textContent`
+      const end = await page.evaluate(date)
+      await page.evaluate(`document.querySelector('[data-replay-play]').click()`)
+      await page.waitFor(`${date} !== ${JSON.stringify(end)} && document.querySelectorAll('[data-replay-feed] li').length > 0`)
+      await page.evaluate(`document.querySelector('[data-replay-play]').click()`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-replay-play]').getAttribute('aria-pressed')`), 'false')
+    })
+
     test('the theme toggles, and locking asks first', async () => {
       const theme = await page.evaluate(`document.documentElement.dataset.theme ?? ''`)
       await page.evaluate(`document.querySelector('[data-theme-toggle]').click()`)

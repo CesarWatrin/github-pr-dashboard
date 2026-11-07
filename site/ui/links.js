@@ -14,7 +14,7 @@ export const OPEN_PERSON = 'dashboard:open-person'
 export const OPEN_REPOSITORY = 'dashboard:open-repository'
 export const OPEN_PULL_REQUEST = 'dashboard:open-pull-request'
 
-const askToOpen = (opener, type, detail) => opener.dispatchEvent(new CustomEvent(type, { bubbles: true, detail }))
+export const askToOpen = (opener, type, detail) => opener.dispatchEvent(new CustomEvent(type, { bubbles: true, detail }))
 
 export const githubUrl = (path) => `https://github.com/${path}`
 // GitHub serves the avatar at twice its displayed size, for sharp high-density screens.

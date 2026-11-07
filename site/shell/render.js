@@ -7,6 +7,7 @@ import { state } from '../model/state.js'
 import { renderAnalysis } from '../pages/analysis/analysis.js'
 import { renderSizeCharts } from '../pages/authors.js'
 import { renderAwards } from '../pages/awards.js'
+import { renderCartography } from '../pages/cartography/cartography.js'
 import { renderCollaboration } from '../pages/collaboration.js'
 import { renderCycleCharts, renderCycleTiles } from '../pages/cycle.js'
 import { renderDevopsCharts, renderDevopsTiles } from '../pages/devops.js'
@@ -45,6 +46,7 @@ export function renderCharts() {
   renderDevopsCharts()
   renderCycleCharts()
   renderCollaboration()
+  renderCartography()
   renderTrends()
   renderSquadCharts()
   if (state.person) {

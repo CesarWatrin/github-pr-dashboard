@@ -21,6 +21,7 @@ export const ROUTES = {
   reviewers: { hash: '#/relecteurs', title: t('Relecteurs'), subtitle: t('Qui relit, et avec quelle profondeur') },
   cycle: { hash: '#/cycle', title: t('Cycle de vie'), subtitle: t('Où passe le temps d’une PR, de son ouverture à la prod') },
   collaboration: { hash: '#/collaboration', title: t('Collaboration'), subtitle: t('Qui relit qui, et qui connaît quel dépôt') },
+  cartography: { hash: '#/cartographie', title: t('Cartographie'), subtitle: t('L’équipe en réseau : qui relit qui, et qui écrit où') },
   team: { hash: '#/equipe', title: t('Équipe'), subtitle: t('Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit') },
   squads: { hash: '#/squads', title: t('Squads'), subtitle: t('Les squads classées et comparées, puis le détail de celle choisie'), search: false },
   report: { hash: '#/bilan', title: t('Bilan du mois'), subtitle: t('Un mois comparé au précédent et au reste de l’année'), filters: false },

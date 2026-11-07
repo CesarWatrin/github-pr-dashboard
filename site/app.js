@@ -11,6 +11,7 @@
 
 import { CYCLE_STAGES } from './model/cycle.js'
 import { state } from './model/state.js'
+import { setupReplay } from './pages/cartography/replay.js'
 import { DEPLOYMENT_SERIES } from './pages/devops.js'
 import { setupMe } from './pages/me.js'
 import { ACTIVITY_SERIES, setupOverview } from './pages/overview.js'
@@ -56,6 +57,7 @@ setupSquads()
 setupReviewers()
 setupReport()
 setupMe()
+setupReplay()
 setupOverview()
 setupCardDialog()
 setupPersonDialog()
