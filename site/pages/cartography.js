@@ -82,6 +82,8 @@ function renderReviewMap(stackFor) {
     nodes: drawnNodes(nodes, shown).map((node) => personNode(node.name, node.value, stackFor)),
     links: shown,
     ariaLabel: t('Réseau des reviews, {period}', { period: periodTitle() }),
+    details: $('[data-map-reviews-details]'),
+    hint: t('Survoler un rond ou un trait pour voir ses chiffres'),
     found: state.query ? (node) => found(loginOf(node.id)) : undefined,
     open: openNode,
     tooltip: (node) => {
@@ -144,6 +146,8 @@ function renderRepositoryMap(stackFor) {
     ),
     links: shown.map((link) => ({ ...link, color: typeColor(repoInfo(link.target.slice('repo:'.length)).category) })),
     ariaLabel: t('Personnes et dépôts, {period}', { period: periodTitle() }),
+    details: $('[data-map-repositories-details]'),
+    hint: t('Survoler un rond ou un trait pour voir ses chiffres'),
     // The repositories are the landmarks; people show their avatar, and their name once pointed at.
     labelled: (node) => node.id.startsWith('repo:'),
     found: state.query ? (node) => (node.id.startsWith('person:') ? found(loginOf(node.id)) : matchesQuery(node.label)) : undefined,

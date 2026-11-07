@@ -1,11 +1,11 @@
 // A network laid out by forces (lib/force-layout.js), as react-force-graph draws one: nodes that push each other away,
-// links that pull theirs together. The nodes can be dragged, the view zoomed and moved; a node lights up its neighbours.
+// links that pull theirs together. The nodes can be dragged, the view zoomed and moved; a node lights up its neighbours,
+// and its figures show in a strip under the network rather than in a tooltip, which would hide the nodes around it.
 
 import { ALPHA_MIN, forceLayout, settle } from '../../lib/force-layout.js'
 import { t } from '../../lib/i18n.js'
 import { el, svg } from '../dom.js'
 import { reducedMotion } from '../motion.js'
-import { bindTooltip, hideTooltip, showTooltip } from '../tooltip.js'
 
 /**
  * A node to draw: an avatar in a ring of colored shares (a person), or a filled square (a repository).
@@ -44,6 +44,8 @@ let clipCount = 0
  *   nodes: GraphNode[],
  *   links: GraphLink[],
  *   ariaLabel: string,
+ *   details: HTMLElement,
+ *   hint: string,
  *   tooltip: (node: GraphNode) => import('../tooltip.js').Tooltip,
  *   linkTooltip: (link: GraphLink) => import('../tooltip.js').Tooltip,
  *   open: (node: GraphNode, element: Element) => void,
@@ -51,13 +53,14 @@ let clipCount = 0
  *   labelled?: (node: GraphNode) => boolean,
  * }} options
  */
-export function forceGraph(container, { nodes, links, ariaLabel, tooltip, linkTooltip, open, found, labelled: label }) {
+export function forceGraph(container, { nodes, links, ariaLabel, details, hint, tooltip, linkTooltip, open, found, labelled: label }) {
   const width = container.clientWidth
   const previous = graphs.get(container)
   previous?.stop()
   if (width === 0) {
     return
   }
+  showDetails(details, null, hint)
   if (nodes.length === 0) {
     container.replaceChildren(el('p', { className: 'chart-empty', textContent: t('Aucune donnée sur la période') }))
 
@@ -93,6 +96,10 @@ export function forceGraph(container, { nodes, links, ariaLabel, tooltip, linkTo
     (label ? nodes.filter(label) : nodes.slice().sort((a, b) => b.value - a.value).slice(0, MAX_LABELS)).map((node) => node.id),
   )
   const searched = found ? new Set(nodes.filter(found).map((node) => node.id)) : null
+  const leave = () => {
+    focus(null)
+    showDetails(details, null, hint)
+  }
 
   const clipId = `force-graph-clip-${(clipCount += 1)}`
   const chart = svg('svg', { class: 'force-graph', viewBox: `0 0 ${width} ${height}`, width, height, role: 'group', 'aria-label': ariaLabel })
@@ -116,16 +123,13 @@ export function forceGraph(container, { nodes, links, ariaLabel, tooltip, linkTo
     }
     // A wider, invisible line under the pointer: a thin link is hard to point at.
     const hit = svg('line', { class: 'force-graph-link-hit' })
-    bindTooltip(
+    onHover(
       hit,
-      (x, y) => {
-        focus([link.source, link.target], [link])
-        showTooltip(linkTooltip(link), x, y)
-      },
       () => {
-        focus(null)
-        hideTooltip()
+        focus([link.source, link.target], [link])
+        showDetails(details, linkTooltip(link), hint)
       },
+      leave,
     )
     linkLayer.append(line, hit)
 
@@ -155,18 +159,15 @@ export function forceGraph(container, { nodes, links, ariaLabel, tooltip, linkTo
     group.append(label)
     group.classList.toggle('is-unlabelled', !labelled.has(node.id))
     group.classList.toggle('is-found', searched?.has(node.id) ?? false)
-    bindTooltip(
+    onHover(
       group,
-      (x, y) => {
+      () => {
         if (!dragged) {
           focus([...(neighbours.get(node.id) ?? [])], kept.filter((link) => link.source === node.id || link.target === node.id))
-          showTooltip(tooltip(node), x, y)
+          showDetails(details, tooltip(node), hint)
         }
       },
-      () => {
-        focus(null)
-        hideTooltip()
-      },
+      leave,
     )
     group.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
@@ -284,7 +285,6 @@ export function forceGraph(container, { nodes, links, ariaLabel, tooltip, linkTo
       if (!dragged) {
         dragged = true
         group.classList.add('is-dragged')
-        hideTooltip()
       }
       const { graphX, graphY } = toChart(event.clientX, event.clientY)
       Object.assign(layout.nodes[position], { fx: graphX, fy: graphY })
@@ -386,4 +386,36 @@ function ringArcs(ring, r) {
 
     return arc
   })
+}
+
+// Pointed at or focused, and no longer.
+/**
+ * @param {Element} target
+ * @param {() => void} enter
+ * @param {() => void} leave
+ */
+function onHover(target, enter, leave) {
+  target.addEventListener('pointerenter', enter)
+  target.addEventListener('pointerleave', leave)
+  target.addEventListener('focus', enter)
+  target.addEventListener('blur', leave)
+}
+
+// The figures of what is pointed at on one line under the network, else what to point at.
+/**
+ * @param {HTMLElement} details
+ * @param {import('../tooltip.js').Tooltip | null} content
+ * @param {string} hint
+ */
+function showDetails(details, content, hint) {
+  if (!content) {
+    details.replaceChildren(el('span', { className: 'force-graph-hint', textContent: hint }))
+
+    return
+  }
+  details.replaceChildren(
+    el('strong', { textContent: content.title }),
+    ...content.rows.map((row) => el('span', { className: 'force-graph-figure' }, el('b', { textContent: row.value }), document.createTextNode(` ${row.label}`))),
+    ...(content.note ? [el('span', { className: 'force-graph-note', textContent: content.note })] : []),
+  )
 }

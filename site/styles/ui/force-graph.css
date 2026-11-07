@@ -81,12 +81,12 @@
 /* A node pointed at, or a found one, lights up with its neighbours and their links; the rest fades. */
 .force-graph.is-focused .force-graph-node:not(.is-near),
 .force-graph.has-search:not(.is-focused) .force-graph-node:not(.is-found) {
-  opacity: 0.18;
+  opacity: 0.4;
 }
 
 .force-graph.is-focused .force-graph-link:not(.is-near),
 .force-graph.has-search:not(.is-focused) .force-graph-link {
-  opacity: 0.08;
+  opacity: 0.2;
 }
 
 .force-graph.is-focused .force-graph-node.is-near .force-graph-label,
@@ -103,3 +103,33 @@
   stroke: var(--series-1);
   stroke-width: 3;
 }
+
+/* The figures of what is pointed at, on a line under the network: a tooltip would hide the nodes around it. Two lines
+   high at least, so that the card does not jump as they change. */
+.force-graph-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+  min-height: 2.6em;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.force-graph-details strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.force-graph-figure b {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.force-graph-note,
+.force-graph-hint {
+  color: var(--text-muted);
+}
+

@@ -373,4 +373,5 @@ export const PAGES = {
   'Dépôt {type}': '{type} repository',
   '{person} sur {repository}': '{person} on {repository}',
   'ouvertes sur la période': 'opened over the period',
+  'Survoler un rond ou un trait pour voir ses chiffres': 'Point at a circle or a line to see its figures',
 }
