@@ -28,7 +28,8 @@ Node 24 (`.nvmrc`). The interface is in French; code and comments are in English
 
 - `npm run sync`: incremental sync (needs `.env`); `npm run sync:full`: full sync.
 - `npm run serve`: serves `site/` on http://localhost:4173; `npm run dev`: a sync every minute, plus the server.
-- `npm test`: every test (the browser ones need Chrome); `npm run check`: syntax; `npm run typecheck`: types, strict on the
+- `npm test`: every test (`npm run test:unit`: the rules and the architecture; `npm run test:browser`: the page in
+  Chrome); `npm run check`: syntax; `npm run typecheck`: types, strict on the
   rules, never `any` (after `npm install`). All three run on every pull request.
 - `npm run modules`: writes the module block of `site/index.html`, after adding, moving or removing a module.
 

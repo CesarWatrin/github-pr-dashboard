@@ -1,7 +1,8 @@
 name: Checks
 
-# Every pull request: syntax, types and tests, on made-up data, the page included in the Chrome of the runner. No
-# environment, so no secret: a pull request cannot read them.
+# Every pull request: syntax, types, the rules and the architecture, then the page in the Chrome of the runner, on
+# made-up data. No environment, so no secret: a pull request cannot read them. Each check is a step of its own, so that
+# the one that fails shows at once.
 on:
   pull_request:
 
@@ -22,6 +23,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          cache: npm
 
       # TypeScript, only to check the types of the JSDoc: the page runs the same files, without any build.
       - name: Install the type checker
@@ -30,8 +32,15 @@ jobs:
       - name: Syntax
         run: npm run check
 
+      # Strict on the rules, never any.
       - name: Types
         run: npm run typecheck
 
-      - name: Tests
-        run: npm test
+      # The rules of the page and of the sync, the module block of index.html, the layers, cycles and headers.
+      - name: Rules and architecture
+        run: npm run test:unit
+
+      # Every page in Chrome, preinstalled on the runner: shown without error, filled, dialogs and filters working.
+      - name: The page in Chrome
+        timeout-minutes: 5
+        run: npm run test:browser

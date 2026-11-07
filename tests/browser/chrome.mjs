@@ -56,10 +56,16 @@ export async function launch() {
 
   return {
     page,
+    // Closes Chrome, by force after a few seconds: a browser left behind would keep the tests from ending.
     async close() {
       page.close()
-      chrome.kill()
-      await /** @type {Promise<void>} */ (new Promise((resolve) => (chrome.exitCode === null ? chrome.on('exit', () => resolve()) : resolve())))
+      if (chrome.exitCode === null) {
+        const exited = /** @type {Promise<void>} */ (new Promise((resolve) => chrome.on('exit', () => resolve())))
+        chrome.kill()
+        const forced = setTimeout(() => chrome.kill('SIGKILL'), 5000)
+        await exited
+        clearTimeout(forced)
+      }
       await rm(profile, { recursive: true, force: true })
     },
   }
@@ -110,12 +116,22 @@ async function connect(url) {
 
       return result.value
     },
-    // Waits until an expression of the page is true.
+    // Waits until an expression of the page is true. An expression that fails counts as not yet: the document may
+    // still be the blank one, or loading.
     async waitFor(expression, timeoutMs = 15_000) {
       const until = Date.now() + timeoutMs
-      while (!(await page.evaluate(`Boolean(${expression})`))) {
+      let failure = null
+      for (;;) {
+        try {
+          if (await page.evaluate(`Boolean(${expression})`)) {
+            return
+          }
+          failure = null
+        } catch (error) {
+          failure = error
+        }
         if (Date.now() > until) {
-          throw new Error(`Timed out waiting for ${expression}`)
+          throw new Error(`Timed out waiting for ${expression}${failure ? `: ${failure.message}` : ''}`)
         }
         await new Promise((resolve) => setTimeout(resolve, 50))
       }

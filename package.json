@@ -14,7 +14,9 @@
     "modules": "node scripts/module-map.mjs",
     "check": "find scripts site tests -name '*.js' -not -path 'site/data/*' -o -name '*.mjs' | xargs -n 1 node --check",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.strict.json",
-    "test": "node --test"
+    "test": "node --test --test-timeout=120000 --test-force-exit",
+    "test:unit": "node --test --test-timeout=120000 'tests/{domain,lib,model,sync}/*.test.mjs' tests/architecture.test.mjs",
+    "test:browser": "node --test --test-timeout=120000 --test-force-exit 'tests/browser/*.test.mjs'"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

@@ -39,6 +39,8 @@ export async function serveSite(stats, { source = join(import.meta.dirname, '..'
   return {
     url: `http://127.0.0.1:${/** @type {import('node:net').AddressInfo} */ (server.address()).port}/`,
     async close() {
+      // The browser keeps its connections open: closed with the server, or the server would wait for them.
+      server.closeAllConnections()
       await new Promise((resolve) => server.close(resolve))
       await rm(root, { recursive: true, force: true })
     },

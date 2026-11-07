@@ -61,6 +61,14 @@ describe('the page in a browser', { skip }, () => {
     await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
     await resize(1536)
     await page.send('Page.navigate', { url: site.url })
+    await page.waitFor(`document.readyState === 'complete' && !document.querySelector('[data-lock]').hidden`)
+    // Marks what the script fills, before it does: whatever has a data attribute and nothing in it in index.html.
+    await page.evaluate(`document.querySelectorAll('[data-route] *').forEach((node) => {
+      const named = [...node.attributes].some((attribute) => attribute.name.startsWith('data-'))
+      if (named && node.childElementCount === 0 && !node.textContent.trim() && !['INPUT', 'SELECT', 'IMG'].includes(node.tagName) && !node.closest('svg')) {
+        node.dataset.filled = ''
+      }
+    })`)
   })
 
   after(async () => {
@@ -83,14 +91,6 @@ describe('the page in a browser', { skip }, () => {
       .map((node) => [...node.attributes].find((attribute) => attribute.name.startsWith('data-') && attribute.name !== 'data-filled').name)`)
 
   test('asks for the password, then unlocks', async () => {
-    await page.waitFor(`!document.querySelector('[data-lock]').hidden`)
-    // Marks what the script fills, before it does: whatever has a data attribute and nothing in it in index.html.
-    await page.evaluate(`document.querySelectorAll('[data-route] *').forEach((node) => {
-      const named = [...node.attributes].some((attribute) => attribute.name.startsWith('data-'))
-      if (named && node.childElementCount === 0 && !node.textContent.trim() && !['INPUT', 'SELECT', 'IMG'].includes(node.tagName) && !node.closest('svg')) {
-        node.dataset.filled = ''
-      }
-    })`)
     await page.evaluate(`(() => {
       document.querySelector('[data-lock-password]').value = ${JSON.stringify(TEST_PASSWORD)}
       document.querySelector('[data-lock-form]').requestSubmit()
@@ -103,6 +103,9 @@ describe('the page in a browser', { skip }, () => {
     test(`${title}: shows and fills everything it draws`, async () => {
       await show(route)
       assert.equal(await page.evaluate(`document.querySelector('[data-route-title]').textContent`), title)
+      // Every page but the method draws something: no container marked would check nothing.
+      const marked = await page.evaluate(`document.querySelectorAll('[data-route="${route}"] [data-filled]').length`)
+      assert.ok(route === 'method' || marked > 0, 'no container marked')
       const empty = (await emptyContainers(route)).filter((name) => !EMPTY_ON_PURPOSE.has(name))
       assert.deepEqual(empty, [])
     })

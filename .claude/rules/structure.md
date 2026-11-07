@@ -52,7 +52,10 @@ records), `backfill.mjs`, `history.mjs` (monthly history), `publish.mjs` (snapsh
 
 ## Tests (`tests/`)
 
-`node --test` runs every `*.test.mjs` of `tests/`; the other files there are helpers. One test file per module of
+`npm test` runs every `*.test.mjs` of `tests/` (`npm run test:unit` the rules and the architecture, `npm run test:browser`
+the page in Chrome, each a step of the "Checks" workflow); the other files there are helpers. A test that waits on the
+page polls for what it needs (`page.waitFor()`), never for a fixed time, and the browser always closes: the tests
+never hang. One test file per module of
 rules, next to the layer it covers:
 
 - `tests/domain/`, `tests/lib/`, `tests/model/`: the rules of the page, on made-up records (`tests/domain/records.mjs`,

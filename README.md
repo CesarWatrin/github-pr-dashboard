@@ -272,6 +272,8 @@ ajouté, déplacé ou supprimé un module, `npm run modules` met ce bloc à jour
 ```bash
 npm install         # TypeScript, seulement pour vérifier les types de la JSDoc
 npm test            # tous les tests ; ceux de la page tournent dans Chrome (CHROME_PATH s'il n'est pas trouvé)
+npm run test:unit   # seulement les règles et l'architecture, en quelques secondes
+npm run test:browser # seulement la page dans Chrome
 npm run check       # la syntaxe de tous les fichiers
 npm run typecheck   # les types
 ```
