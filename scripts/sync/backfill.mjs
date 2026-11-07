@@ -18,6 +18,10 @@ const BACKFILL_MIN_POINTS = 2500
 // What a snapshot covers: every pull request, and every run, created since these times has been read. A snapshot kept
 // before it told covers the year before its sync, the window then; without a snapshot, the sync starts from the year
 // before now (recentStartIso), and so do the runs without any.
+/**
+ * @param {Pick<Snapshot, 'syncedAt' | 'pullRequestsSince' | 'runs' | 'runsSince'> | null} snapshot
+ * @param {string} recentStartIso
+ */
 export function snapshotCoverage(snapshot, recentStartIso) {
   if (!snapshot) {
     return { pullRequests: recentStartIso, runs: recentStartIso }
@@ -33,6 +37,10 @@ export function snapshotCoverage(snapshot, recentStartIso) {
 // The next slice of the backfill: the days (UTC, included) of the BACKFILL_DAYS before what the snapshot covers
 // (sinceIso), back to the start of the window at most, and what the snapshot covers once they are read. Null once it
 // covers the window. Whole days, so that each slice starts where the previous one ended.
+/**
+ * @param {string} sinceIso
+ * @param {string} windowStartIso
+ */
 export function backfillSlice(sinceIso, windowStartIso) {
   if (sinceIso <= windowStartIso) {
     return null
@@ -44,9 +52,15 @@ export function backfillSlice(sinceIso, windowStartIso) {
 }
 
 // Whole days from one day to another (UTC, included) cut into at most `parts` ranges of about the same length, in order.
+/**
+ * @param {string} from
+ * @param {string} to
+ * @param {number} parts
+ */
 export function splitDays(from, to, parts) {
   const days = Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS) + 1
   const count = Math.min(parts, days)
+  /** @type {[from: string, to: string][]} */
   const ranges = []
   let start = from
   for (let index = 0; index < count; index++) {
@@ -61,13 +75,18 @@ export function splitDays(from, to, parts) {
 // One slice of the backfill, when the token can spare it: the pull requests read, what the snapshot then covers, and
 // whether the slice was read, waits for the quota, or the snapshot already covers the window. A page of the search
 // takes seconds: the slice is read in CONCURRENCY ranges at once, as the full sync reads repositories.
+/**
+ * @param {string} sinceIso
+ * @param {string} windowStartIso
+ * @returns {Promise<{ pullRequests: SnapshotPullRequest[], since: string, status: 'read' | 'waiting' | 'done' }>}
+ */
 export async function backfill(sinceIso, windowStartIso) {
   const slice = backfillSlice(sinceIso, windowStartIso)
   if (!slice) {
     return { pullRequests: [], since: sinceIso, status: 'done' }
   }
   // Asking for the quota does not count against it.
-  const limits = await rest('/rate_limit')
+  const limits = /** @type {GithubRateLimit | null} */ (await rest('/rate_limit'))
   if ((limits?.resources?.graphql?.remaining ?? 0) < BACKFILL_MIN_POINTS) {
     return { pullRequests: [], since: sinceIso, status: 'waiting' }
   }

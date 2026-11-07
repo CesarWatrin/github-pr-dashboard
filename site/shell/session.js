@@ -147,12 +147,12 @@ export function setupSession() {
   })
   // Locking forgets the key on this device: it is only done once confirmed.
   $('[data-lock-now]').addEventListener('click', () => {
-    const dialog = $('[data-lock-dialog]')
+    const dialog = $('[data-lock-dialog]', HTMLDialogElement)
     dialog.returnValue = ''
     dialog.showModal()
   })
   $('[data-lock-dialog]').addEventListener('close', (event) => {
-    if (event.currentTarget.returnValue === 'confirm') {
+    if (/** @type {HTMLDialogElement} */ (event.currentTarget).returnValue === 'confirm') {
       lock()
     }
   })

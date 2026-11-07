@@ -217,6 +217,7 @@ function renderDeploymentCalendar() {
   const sorted = deploymentCalendar.toSorted((a, b) => total(b.buckets) - total(a.buckets) || a.repo.localeCompare(b.repo))
   const shown = sorted.slice(0, CALENDAR_REPOS)
   const others = sorted.slice(CALENDAR_REPOS)
+  /** @type {{ key: string, label: string, buckets: number[][], grouped?: boolean }[]} */
   const rows = shown.map(({ repo, buckets }) => ({ key: repo, label: repo, buckets }))
   if (others.length) {
     rows.push({

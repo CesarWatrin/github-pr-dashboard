@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
 
+/** @type {Record<string, string>} */
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -14,9 +15,14 @@ const CONTENT_TYPES = {
 }
 
 // Starts serving `root` on `port` (0 for any free one); resolves with the server once it listens.
+/**
+ * @param {string} root
+ * @param {number} port
+ * @returns {Promise<import('node:http').Server>}
+ */
 export function serve(root, port) {
   const server = createServer(async (request, response) => {
-    const path = normalize(decodeURIComponent(new URL(request.url, 'http://localhost').pathname))
+    const path = normalize(decodeURIComponent(new URL(/** @type {string} */ (request.url), 'http://localhost').pathname))
     const file = join(root, path.endsWith('/') ? `${path}index.html` : path)
     try {
       const body = await readFile(file)
@@ -36,5 +42,5 @@ export function serve(root, port) {
 
 if (import.meta.main) {
   const server = await serve('site', Number(process.env.PORT ?? 4173))
-  console.log(`Dashboard available on http://localhost:${server.address().port}`)
+  console.log(`Dashboard available on http://localhost:${/** @type {import('node:net').AddressInfo} */ (server.address()).port}`)
 }

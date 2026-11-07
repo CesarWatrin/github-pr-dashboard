@@ -35,13 +35,14 @@ function record(fields) {
 // count pull requests alike, merged the given number of hours after their opening.
 /**
  * @param {number} count
- * @param {{ hours?: number, [field: string]: any }} [fields]
+ * @param {{ hours?: number } & Partial<PullRequestRecord>} [fields]
  */
 function merged(count, { hours = 1, ...fields } = {}) {
   return Array.from({ length: count }, () => record({ mergedAt: MONDAY + hours * HOUR, ...fields }))
 }
 
 // A review of someone, the given number of hours after the opening on Monday.
+/** @type {(login: string, hours: number, state?: ReviewState | null, comments?: number) => Intervention} */
 const review = (login, hours, state = 'COMMENTED', comments = 1) => [login, MONDAY + hours * HOUR, state, comments]
 
 const findingOf = (result, key) => result.findings.find((finding) => finding.key === key)
@@ -172,6 +173,7 @@ describe('reviewers and repositories', () => {
 
 describe('workflows', () => {
   // Runs per Paris day, as [runs, failed, rerun, durations in seconds].
+  /** @type {(name: string, runs: number, failed: number, seconds: number) => WorkflowRuns} */
   const workflow = (name, runs, failed, seconds) => ({
     repo: 'web',
     workflow: name,

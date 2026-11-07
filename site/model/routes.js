@@ -5,6 +5,12 @@ export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
 
 // Pages of the dashboard, one per hash: links can be shared and the browser history works. The period and the search
 // apply to every page but the method; the analysis page has the period only.
+/**
+ * A page: its hash, its title, and the filters it leaves out (false).
+ * @typedef {{ hash: string, title: string, subtitle: string, filters?: boolean, period?: boolean, search?: boolean }} Route
+ */
+
+/** @type {Record<string, Route>} */
 export const ROUTES = {
   overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
   unblock: { hash: '#/a-debloquer', title: 'À débloquer', subtitle: 'Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord', period: false },
@@ -25,4 +31,5 @@ export const ROUTES = {
   method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
 }
 
+/** @type {() => string} */
 export const currentRoute = () => Object.keys(ROUTES).find((key) => ROUTES[key].hash === location.hash) ?? 'overview'

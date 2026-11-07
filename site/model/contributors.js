@@ -9,15 +9,23 @@ import { state } from './state.js'
 
 const TOP_REPOS_PER_REVIEWER = 3
 
+/** @type {(selection: Set<string> | null | undefined, repo: string) => boolean} */
 export const inSelection = (selection, repo) => !selection || selection.has(repo)
 
 // The sync script sends each person's figures per repository: rows add them up over the selected ones.
+/**
+ * @template RepoStats
+ * @param {{ repos: Record<string, RepoStats> }} person
+ * @param {string} name the table or page whose repository filter applies
+ * @returns {[repo: string, stats: RepoStats][]}
+ */
 export function selectedEntries(person, name) {
   return Object.entries(person.repos).filter(([repo]) => inSelection(state.repos[name], repo))
 }
 
 // The rows of the authors table, over the repositories selected on a page: the table's own by default. Like every list
 // of people, it leaves out those who left the team.
+/** @param {string} [name] */
 export function authorRows(name = 'authors') {
   return currentPeriod().authors.flatMap((person) => {
     if (isFormer(person.login)) {
@@ -50,6 +58,7 @@ export function authorRows(name = 'authors') {
   })
 }
 
+/** @param {string} [name] */
 export function reviewerRows(name = 'reviewers') {
   return currentPeriod().reviewers.flatMap((person) => {
     if (isFormer(person.login)) {
@@ -76,7 +85,7 @@ export function reviewerRows(name = 'reviewers') {
         merges,
         topRepos: entries
           .filter(([, stats]) => stats.prs > 0)
-          .map(([repo, stats]) => [repo, stats.prs])
+          .map(([repo, stats]) => /** @type {[repo: string, prs: number]} */ ([repo, stats.prs]))
           .sort((a, b) => b[1] - a[1])
           .slice(0, TOP_REPOS_PER_REVIEWER),
       },

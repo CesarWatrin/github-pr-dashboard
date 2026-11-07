@@ -40,9 +40,29 @@ export const DRIFT_RATIO = 1.5
 export const DRIFT_POINTS = 0.05
 export const DRIFT_SHARE_RATIO = 4 / 3
 
+// A code pull request merged, and the cycle of one (computePeriod()).
+/** @typedef {PullRequestRecord & { mergedAt: number }} MergedRecord */
+/** @typedef {ReturnType<typeof computePeriod>['cycles'][number]} Cycle */
+// The CI of the range, and one of its workflows, with a median and rates once it has runs.
+/** @typedef {ReturnType<typeof computeCi>} Ci */
+/** @typedef {Ci['workflows'][number] & { failureRate: number, medianSeconds: number }} BusyWorkflow */
+// What every rule reads: the code pull requests opened in the range and those merged, their cycles, the CI, who is still
+// in the team, and both halves of the range, worked out on demand.
+/**
+ * @typedef {{ code: PullRequestRecord[], merged: MergedRecord[], cycles: Cycle[], ci: Ci,
+ *   isCurrent: (login: string) => boolean, halves: () => Halves | null }} Context
+ */
+/** @typedef {'high' | 'watch' | 'good'} Level */
+
 // The stages up to the merge: what follows depends on when each repository deploys, not on the review.
+/** @type {('pickup' | 'review' | 'merge')[]} */
 const STAGES = ['pickup', 'review', 'merge']
 // The figures of each half that can drift, all better lower: medians with their smallest change worth telling.
+/**
+ * @typedef {{ key: 'medianSize' | 'pickupHours' | 'timeToMergeHours', kind: 'median', minimum: number }
+ *   | { key: 'unreviewedShare' | 'hotfixShare' | 'checksFailedShare', kind: 'share' }} DriftMetric
+ */
+/** @type {DriftMetric[]} */
 export const DRIFT_METRICS = [
   { key: 'medianSize', kind: 'median', minimum: 20 },
   { key: 'pickupHours', kind: 'median', minimum: 0.5 },
@@ -52,6 +72,10 @@ export const DRIFT_METRICS = [
   { key: 'checksFailedShare', kind: 'share' },
 ]
 
+/**
+ * @param {number[]} values
+ * @returns {number | null}
+ */
 function median(values) {
   if (values.length === 0) {
     return null
@@ -62,27 +86,71 @@ function median(values) {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
 }
 
-const round = (value, digits = 1) => (value === null ? null : Number(value.toFixed(digits)))
+/**
+ * @overload
+ * @param {number} value
+ * @param {number} [digits]
+ * @returns {number}
+ */
+/**
+ * @overload
+ * @param {number | null} value
+ * @param {number} [digits]
+ * @returns {number | null}
+ */
+/**
+ * @param {number | null} value
+ * @param {number} [digits]
+ */
+function round(value, digits = 1) {
+  return value === null ? null : Number(value.toFixed(digits))
+}
+/**
+ * @param {number} part
+ * @param {number} total
+ */
 const share = (part, total) => (total ? round(part / total, 3) : null)
+/** @param {PullRequestRecord} pr */
 const comments = (pr) => pr.interventions.reduce((total, [, , , count]) => total + count, 0)
+/** @param {MergedRecord} pr */
 const timeToMerge = (pr) => workHoursBetween(pr.createdAt, pr.mergedAt)
+/** @param {PullRequestRecord} pr */
 const pickup = (pr) => workHoursBetween(pr.createdAt, pr.interventions[0][1])
-const top = (rows, by, count = TOP_ROWS) => rows.toSorted((a, b) => b[by] - a[by]).slice(0, count)
+// The rows highest on a figure, a missing value counting as zero.
+/**
+ * @template {string} Key
+ * @template {Record<Key, number | null>} Row
+ * @param {Row[]} rows
+ * @param {Key} by
+ * @param {number} [count]
+ */
+const top = (rows, by, count = TOP_ROWS) => rows.toSorted((a, b) => Number(b[by]) - Number(a[by])).slice(0, count)
 
+/**
+ * @template Value, Key
+ * @param {Value[]} values
+ * @param {(value: Value) => Key} keyOf
+ */
 function groupBy(values, keyOf) {
+  /** @type {Map<Key, Value[]>} */
   const groups = new Map()
   for (const value of values) {
     const key = keyOf(value)
     if (!groups.has(key)) {
       groups.set(key, [])
     }
-    groups.get(key).push(value)
+    /** @type {Value[]} */ (groups.get(key)).push(value)
   }
 
   return groups
 }
 
+/**
+ * @template Value
+ * @param {Value[]} values
+ */
 function countBy(values) {
+  /** @type {Map<Value, number>} */
   const counts = new Map()
   for (const value of values) {
     counts.set(value, (counts.get(value) ?? 0) + 1)
@@ -91,6 +159,7 @@ function countBy(values) {
   return counts
 }
 
+/** @param {MergedRecord[]} prs */
 function sizeSummary(prs) {
   const lines = prs.reduce((total, pr) => total + pr.lines, 0)
 
@@ -102,11 +171,20 @@ function sizeSummary(prs) {
   }
 }
 
+/** @type {{ status: 'few' }} */
 const FEW = { status: 'few' }
+/** @type {{ status: 'clear' }} */
 const CLEAR = { status: 'clear' }
+/**
+ * @template {object} Facts
+ * @param {Level} level
+ * @param {Facts} facts
+ * @returns {{ status: 'found', level: Level } & Facts}
+ */
 const found = (level, facts) => ({ status: 'found', level, ...facts })
 
 // Reviewed big pull requests take longer to merge than small ones, and get fewer comments for their size.
+/** @param {Context} context */
 function sizeRule({ merged, cycles }) {
   const reviewed = merged.filter((pr) => pr.interventions.length > 0)
   const small = reviewed.filter((pr) => pr.lines < SMALL_PR_LINES)
@@ -116,7 +194,9 @@ function sizeRule({ merged, cycles }) {
   }
   const smallSummary = sizeSummary(small)
   const bigSummary = sizeSummary(big)
-  const ratio = smallSummary.timeToMergeHours > 0 ? bigSummary.timeToMergeHours / smallSummary.timeToMergeHours : null
+  // Medians of MIN_PRS pull requests at least.
+  const [smallHours, bigHours] = /** @type {[number, number]} */ ([smallSummary.timeToMergeHours, bigSummary.timeToMergeHours])
+  const ratio = smallHours > 0 ? bigHours / smallHours : null
   if (ratio === null || ratio < SIZE_RATIO) {
     return CLEAR
   }
@@ -124,7 +204,7 @@ function sizeRule({ merged, cycles }) {
   const buckets = SIZE_BUCKETS.map((max, index) => {
     const hours = cycles
       .filter((cycle) => cycle.size === index && cycle.pickup !== null && cycle.toMerge !== null)
-      .map((cycle) => cycle.toMerge)
+      .map((cycle) => /** @type {number} */ (cycle.toMerge))
 
     return { max: Number.isFinite(max) ? max : null, prs: hours.length, timeToMergeHours: round(median(hours)) }
   })
@@ -140,6 +220,7 @@ function sizeRule({ merged, cycles }) {
 
 // Huge pull requests merged without anyone looking at them more often than the others: the riskiest ones get the
 // least review.
+/** @param {Context} context */
 function hugeUnreviewedRule({ merged }) {
   const huge = merged.filter((pr) => pr.lines >= HUGE_PR_LINES)
   const others = merged.filter((pr) => pr.lines < HUGE_PR_LINES)
@@ -167,6 +248,7 @@ function hugeUnreviewedRule({ merged }) {
 
 // The stage that takes the largest share of the time of the reviewed pull requests up to their merge, when they take
 // half a working day or more to get merged: each pull request weighs the same, as in cycleSummary() on the cycle page.
+/** @param {Context} context */
 function bottleneckRule({ cycles }) {
   const timed = cycles.flatMap((cycle) => {
     const total = STAGES.reduce((sum, stage) => sum + (cycle[stage] ?? 0), 0)
@@ -181,10 +263,12 @@ function bottleneckRule({ cycles }) {
     share: timed.reduce((sum, { cycle, total }) => sum + (cycle[stage] ?? 0) / total, 0) / timed.length,
   }))
   const main = shares.toSorted((a, b) => b.share - a.share)[0]
-  const toMergeHours = median(timed.map(({ cycle }) => cycle.toMerge))
+  // Of MIN_PRS cycles at least, each merged.
+  const toMergeHours = /** @type {number} */ (median(timed.map(({ cycle }) => /** @type {number} */ (cycle.toMerge))))
   if (main.share < BOTTLENECK_SHARE || toMergeHours < WORK_DAY_HOURS / 2) {
     return CLEAR
   }
+  /** @param {Cycle[]} rows */
   const stageHours = (rows) => median(rows.map((cycle) => cycle[main.stage]).filter((hours) => hours !== null))
   const byRepository = groupBy(
     cycles.filter((cycle) => cycle[main.stage] !== null),
@@ -208,7 +292,9 @@ function bottleneckRule({ cycles }) {
 }
 
 // Repositories where one person, still in the team, takes part in most reviews: the reviews wait for them.
+/** @param {Context} context */
 function mainReviewerRule({ code, isCurrent }) {
+  /** @type {{ repo: string, reviewer: string | undefined, reviewed: number, share: number }[]} */
   const rows = []
   for (const [repo, prs] of groupBy(
     code.filter((pr) => pr.interventions.length > 0),
@@ -219,7 +305,7 @@ function mainReviewerRule({ code, isCurrent }) {
     }
     const counts = countBy(prs.flatMap((pr) => [...new Set(pr.interventions.map(([login]) => login))]))
     const [reviewer, count] = [...counts].filter(([login]) => isCurrent(login)).sort((a, b) => b[1] - a[1])[0] ?? []
-    rows.push({ repo, reviewer, reviewed: prs.length, share: reviewer ? count / prs.length : 0 })
+    rows.push({ repo, reviewer, reviewed: prs.length, share: reviewer ? /** @type {number} */ (count) / prs.length : 0 })
   }
   if (rows.length === 0) {
     return FEW
@@ -244,6 +330,7 @@ function mainReviewerRule({ code, isCurrent }) {
 }
 
 // Repositories that merge most of their pull requests without any review.
+/** @param {Context} context */
 function unreviewedRepositoriesRule({ merged }) {
   const rows = [...groupBy(merged, (pr) => pr.repo)]
     .filter(([, prs]) => prs.length >= MIN_REPOSITORY_PRS)
@@ -272,8 +359,9 @@ function unreviewedRepositoriesRule({ merged }) {
 }
 
 // Workflows that fail often: a broken job or flaky tests, a run in five or more.
+/** @param {Context} context */
 function failingWorkflowsRule({ ci }) {
-  const busy = ci.workflows.filter((workflow) => workflow.runs >= MIN_RUNS)
+  const busy = /** @type {BusyWorkflow[]} */ (ci.workflows.filter((workflow) => workflow.runs >= MIN_RUNS))
   if (busy.length === 0) {
     return FEW
   }
@@ -299,8 +387,9 @@ function failingWorkflowsRule({ ci }) {
 
 // Workflows whose median run takes SLOW_MEDIAN_SECONDS or more: the median, as a run waiting for an approval or a
 // runner would stretch the slowest ones.
+/** @param {Context} context */
 function slowWorkflowsRule({ ci }) {
-  const busy = ci.workflows.filter((workflow) => workflow.runs >= MIN_RUNS)
+  const busy = /** @type {BusyWorkflow[]} */ (ci.workflows.filter((workflow) => workflow.runs >= MIN_RUNS))
   if (busy.length === 0) {
     return FEW
   }
@@ -319,6 +408,7 @@ function slowWorkflowsRule({ ci }) {
 }
 
 // Work dropped: code pull requests closed without being merged.
+/** @param {Context} context */
 function abandonedRule({ code, merged }) {
   if (code.length < MIN_PRS) {
     return FEW
@@ -338,6 +428,10 @@ function abandonedRule({ code, merged }) {
 }
 
 // The figures of DRIFT_METRICS over one half of the range.
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {{ start: number, end: number }} range
+ */
 function halfFigures(records, range) {
   const period = computePeriod(records, { ...range, bucket: 'month' })
 
@@ -353,6 +447,11 @@ function halfFigures(records, range) {
 }
 
 // How one figure moved from the first half to the second: 1 worse, -1 better, 0 not enough to tell.
+/**
+ * @param {DriftMetric} metric
+ * @param {number | null} before
+ * @param {number | null} after
+ */
 function driftOf(metric, before, after) {
   if (before === null || after === null) {
     return 0
@@ -368,6 +467,7 @@ function driftOf(metric, before, after) {
 
 // The second half of the range against the first, its last SETTLE_DAYS aside: what got worse (drift), and apart what
 // got better (progress).
+/** @param {{ records: PullRequestRecord[], start: number, end: number }} range */
 function halves({ records, start, end }) {
   const settled = end - SETTLE_DAYS * DAY_MS
   if (settled <= start) {
@@ -389,10 +489,17 @@ function halves({ records, start, end }) {
   return { middle, moves }
 }
 
+/** @typedef {NonNullable<ReturnType<typeof halves>>} Halves */
+
 // The figures that moved one way: 1 worse, -1 better.
+/**
+ * @param {Halves} split
+ * @param {number} way
+ */
 const movesOf = (split, way) =>
   split.moves.filter((move) => move.way === way).map(({ key, before, after }) => ({ key, before, after }))
 
+/** @param {Context} context */
 function driftRule(context) {
   const split = context.halves()
   if (!split) {
@@ -406,6 +513,7 @@ function driftRule(context) {
   return found(worse.length >= 2 ? 'high' : 'watch', { middle: split.middle, metrics: worse })
 }
 
+/** @param {Context} context */
 function progressRule(context) {
   const split = context.halves()
   if (!split) {
@@ -432,14 +540,17 @@ export const RULES = [
   { key: 'abandoned', check: abandonedRule },
   { key: 'progress', check: progressRule },
 ]
+/** @type {Level[]} */
 const LEVELS = ['high', 'watch', 'good']
+// What a rule says: too little to go on, nothing, or a finding with its facts.
+/** @typedef {ReturnType<(typeof RULES)[number]['check']>} RuleResult */
 
 // The findings of the range [start, end), in milliseconds, most urgent first, and the rules that found nothing (clear)
 // or had too little to go on (few). records: the pull requests of the stats; workflows: their CI runs; isCurrent:
 // whether a person is still in the team, for the reviewers a finding names.
 /**
- * @param {any[]} records
- * @param {any[]} workflows
+ * @param {PullRequestRecord[]} records
+ * @param {WorkflowRuns[]} workflows
  * @param {{ start: number, end: number, isCurrent?: (login: string) => boolean }} range
  */
 export function analyze(records, workflows, { start, end, isCurrent = () => true }) {
@@ -447,17 +558,24 @@ export function analyze(records, workflows, { start, end, isCurrent = () => true
   const endAt = Math.ceil(end / MINUTE_MS)
   const code = records.filter((pr) => !pr.bot && pr.kind === 'code' && pr.createdAt >= startAt && pr.createdAt < endAt)
   // Both halves of the range, worked out once for the rules that compare them.
+  /** @type {Halves | null | undefined} */
   let split
+  /** @type {Context} */
   const context = {
     code,
-    merged: code.filter((pr) => pr.mergedAt !== null),
+    merged: /** @type {MergedRecord[]} */ (code.filter((pr) => pr.mergedAt !== null)),
     cycles: computePeriod(records, { start, end, bucket: 'month' }).cycles,
     ci: computeCi(workflows, { start, end, bucket: 'month' }),
     isCurrent,
     halves: () => (split === undefined ? (split = halves({ records, start, end })) : split),
   }
   const results = RULES.map(({ key, check }) => ({ key, ...check(context) }))
-  const of = (status) => results.filter((result) => result.status === status)
+  /**
+   * @template {RuleResult['status']} Status
+   * @param {Status} status
+   */
+  const of = (status) =>
+    /** @type {({ key: string } & Extract<RuleResult, { status: Status }>)[]} */ (results.filter((result) => result.status === status))
 
   return {
     findings: of('found')

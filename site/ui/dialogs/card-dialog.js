@@ -72,7 +72,7 @@ export function showCardDialog([head, ...children], opener) {
   )
   close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
   close.setAttribute('aria-label', 'Fermer')
-  close.addEventListener('click', () => $('[data-person-dialog]').close())
+  close.addEventListener('click', () => $('[data-person-dialog]', HTMLDialogElement).close())
   const body = el('div', { className: 'person-dialog-body' }, ...children)
   $('[data-person-dialog-card]').replaceChildren(close, head, body)
   cardDialogObserver.disconnect()
@@ -80,7 +80,7 @@ export function showCardDialog([head, ...children], opener) {
     cardDialogObserver.observe(node)
   }
   resetPersonTilt()
-  const dialog = $('[data-person-dialog]')
+  const dialog = $('[data-person-dialog]', HTMLDialogElement)
   if (dialog.open) {
     close.focus()
 
@@ -138,7 +138,7 @@ export function setupCardDialog() {
   // gets here.
   $('[data-person-dialog]').addEventListener('click', (event) => {
     if (!event.composedPath().includes($('[data-person-dialog-card]'))) {
-      event.currentTarget.close()
+      /** @type {HTMLDialogElement} */ (event.currentTarget).close()
     }
   })
   $('[data-person-dialog]').addEventListener('close', resetPersonTilt)

@@ -1,7 +1,7 @@
 // The repositories: their type (front, back, mobile, other) and technologies, and the stack of a person that follows
 // from them.
 
-import { state } from './state.js'
+import { loadedStats } from './state.js'
 
 export const STACK_TECHNOLOGIES = 3
 const MIN_STACK_TECHNOLOGY_SHARE = 0.05
@@ -10,6 +10,7 @@ const FULL_STACK_MIN_SHARE = 0.3
 
 // Repository types sent by the sync script, in the order of the stack bars. Docs, infrastructure and tooling
 // repositories ("Autres") stay out of the stacks: they are neither front nor back.
+/** @type {{ key: Category, label: string, color?: string }[]} */
 export const CATEGORIES = [
   { key: 'front', label: 'Front', color: 'var(--series-1)' },
   { key: 'back', label: 'Back', color: 'var(--series-2)' },
@@ -18,11 +19,21 @@ export const CATEGORIES = [
 ]
 export const STACK_CATEGORIES = CATEGORIES.filter((category) => category.color)
 
-export const repoInfo = (repo) => state.stats.repos[repo] ?? { category: 'other', technologies: [] }
+/** @type {(repo: string) => RepositoryInfo} */
+export const repoInfo = (repo) => loadedStats().repos[repo] ?? { category: 'other', technologies: [] }
+/**
+ * @template {{ repo: string }} Row
+ * @param {Row[]} rows
+ * @returns {(Row & { category: Category })[]}
+ */
 export const withCategory = (rows) => rows.map((row) => ({ ...row, category: repoInfo(row.repo).category }))
 
 // Spreads amounts per repository, pull requests or lines, over the technologies of each repository, by their share of
 // its code.
+/**
+ * @param {Iterable<[repo: string, amount: number]>} amountPerRepo
+ * @returns {[technology: string, weight: number][]}
+ */
 export function technologyWeights(amountPerRepo) {
   const weights = new Map()
   for (const [repo, amount] of amountPerRepo) {
@@ -37,6 +48,15 @@ export function technologyWeights(amountPerRepo) {
 }
 
 // Front, back and mobile pull requests of a person, with the technologies they involve.
+/**
+ * A person's stack: their pull requests per type of repository, and their technologies.
+ * @typedef {{ counts: Record<string, number>, technologies: [technology: string, weight: number][] }} Stack
+ */
+
+/**
+ * @param {[repo: string, prs: number][]} prsPerRepo
+ * @returns {Stack}
+ */
 export function stackOf(prsPerRepo) {
   const counts = Object.fromEntries(STACK_CATEGORIES.map((category) => [category.key, 0]))
   const development = prsPerRepo.filter(([repo]) => repoInfo(repo).category in counts)
@@ -47,6 +67,7 @@ export function stackOf(prsPerRepo) {
   return { counts, technologies: technologyWeights(development) }
 }
 
+/** @param {Pick<Stack, 'counts'>} stack */
 export function frontShare({ counts }) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
 
@@ -54,6 +75,10 @@ export function frontShare({ counts }) {
 }
 
 // The type of a person's work: full-stack with enough of both sides, else the category of most of their pull requests.
+/**
+ * @param {Record<string, number>} counts
+ * @returns {{ key: string, label: string } | null}
+ */
 export function stackType(counts) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
   if (total === 0) {
@@ -69,6 +94,10 @@ export function stackType(counts) {
 }
 
 // The main technologies of a stack, with their share of it.
+/**
+ * @param {[technology: string, weight: number][]} technologies
+ * @returns {[technology: string, share: number][]}
+ */
 export function topTechnologies(technologies) {
   const total = technologies.reduce((sum, [, weight]) => sum + weight, 0)
 
@@ -78,5 +107,6 @@ export function topTechnologies(technologies) {
     .map(([name, weight]) => [name, weight / total])
 }
 
+/** @type {(options: [repo: string, count: number][], category: string) => string[]} */
 export const reposOfCategory = (options, category) =>
   options.filter(([repo]) => repoInfo(repo).category === category).map(([repo]) => repo)

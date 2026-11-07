@@ -21,9 +21,10 @@ const EVENTS_MAX_AGE_DAYS = 7
 // PBKDF2-SHA256 iterations deriving the encryption key from the password, also read from the file by the page.
 const KEY_ITERATIONS = 600_000
 
+/** @returns {Promise<Snapshot | null>} */
 export async function readSnapshot() {
   try {
-    const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'))
+    const snapshot = /** @type {Snapshot} */ (JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8')))
 
     return snapshot.org === ORG && snapshot.version === SNAPSHOT_VERSION ? snapshot : null
   } catch {
@@ -34,9 +35,20 @@ export async function readSnapshot() {
 // The salt only depends on the organization so that the key stays the same from one sync to the next: the page
 // derives it once from the password and keeps it.
 const encryptionSalt = createHash('sha256').update(`github-pr-dashboard:${ORG}`).digest().subarray(0, 16)
-const encryptionKey = pbkdf2Sync(process.env.DASHBOARD_PASSWORD, encryptionSalt, KEY_ITERATIONS, 32, 'sha256')
+// config.mjs refuses to run without a password.
+const encryptionKey = pbkdf2Sync(
+  /** @type {string} */ (process.env.DASHBOARD_PASSWORD),
+  encryptionSalt,
+  KEY_ITERATIONS,
+  32,
+  'sha256',
+)
 
 // Gzipped then encrypted with AES-256-GCM, the authentication tag appended as the Web Crypto API expects it.
+/**
+ * @param {Stats} data
+ * @returns {EncryptedStats}
+ */
 export function encrypt(data) {
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', encryptionKey, iv)
@@ -50,6 +62,10 @@ export function encrypt(data) {
   }
 }
 
+/**
+ * @param {Pick<EncryptedStats, 'iv' | 'data'>} payload
+ * @returns {Stats}
+ */
 export function decrypt({ iv, data }) {
   const blob = Buffer.from(data, 'base64')
   const decipher = createDecipheriv('aes-256-gcm', encryptionKey, Buffer.from(iv, 'base64'))
@@ -58,11 +74,20 @@ export function decrypt({ iv, data }) {
   return JSON.parse(gunzipSync(Buffer.concat([decipher.update(blob.subarray(0, -16)), decipher.final()])).toString())
 }
 
+/**
+ * @param {string} path
+ * @param {unknown} data
+ */
 export async function writeJson(path, data) {
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, JSON.stringify(data))
 }
 
+/**
+ * @param {SnapshotPullRequest[]} pullRequests
+ * @param {Date} now
+ * @returns {Stats['today']}
+ */
 export function computeToday(pullRequests, now) {
   const today = parisDay(now.toISOString())
   const totals = { date: today, opened: 0, merged: 0, reviews: 0 }
@@ -78,7 +103,7 @@ export function computeToday(pullRequests, now) {
     }
     for (const review of pr.reviews) {
       const counted = review.submittedAt && review.author !== pr.author && !isBot(review.author)
-      if (counted && parisDay(review.submittedAt) === today) {
+      if (counted && parisDay(/** @type {string} */ (review.submittedAt)) === today) {
         totals.reviews++
       }
     }
@@ -87,9 +112,16 @@ export function computeToday(pullRequests, now) {
   return totals
 }
 
+/**
+ * @param {SnapshotPullRequest[]} pullRequests
+ * @param {Date} now
+ * @returns {FeedEvent[]}
+ */
 export function computeEvents(pullRequests, now) {
   const sinceIso = new Date(now.getTime() - EVENTS_MAX_AGE_DAYS * DAY_MS).toISOString()
+  /** @type {FeedEvent[]} */
   const events = []
+  /** @type {(type: FeedEventType, at: string | null, actor: string, pr: SnapshotPullRequest) => void} */
   const push = (type, at, actor, pr) => {
     if (at && at >= sinceIso && !isBot(actor)) {
       events.push({ type, at, actor, author: pr.author, repo: pr.repo, number: pr.number })

@@ -15,6 +15,15 @@ import {
 
 const SEARCH_RESULT_LIMIT = 1000
 
+/**
+ * Every review or comment of a pull request: its first page, then the others.
+ * @template {'reviews' | 'comments'} Name
+ * @template Item
+ * @param {GithubPullRequest} node
+ * @param {Name} connection
+ * @param {(node: GithubPullRequest[Name]['nodes'][number]) => Item} toItem
+ * @returns {Promise<Item[]>}
+ */
 async function fetchAllItems(node, connection, toItem) {
   const items = node[connection].nodes.map(toItem)
   let { hasNextPage, endCursor } = node[connection].pageInfo
@@ -29,8 +38,13 @@ async function fetchAllItems(node, connection, toItem) {
   return items
 }
 
+/** @type {(node: GithubCommits) => CheckState | null} */
 const checksOf = (node) => node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null
 
+/**
+ * @param {GithubPullRequest} node
+ * @returns {Promise<SnapshotPullRequest>}
+ */
 async function toRecord(node) {
   return {
     repo: node.repository.name,
@@ -64,13 +78,18 @@ async function toRecord(node) {
 
 // The people still asked to review a pull request, code owners or not: logins only. A team, an app or a reviewer the
 // token cannot read is left out: none is someone a review waits for.
+/**
+ * @param {Pick<GithubReviewRequest, 'requestedReviewer'>[] | null | undefined} requests
+ * @returns {string[]}
+ */
 export function requestedPeople(requests) {
   return (requests ?? [])
     .filter((request) => request.requestedReviewer?.__typename === 'User')
-    .map((request) => request.requestedReviewer.login)
+    .map((request) => /** @type {string} */ (request.requestedReviewer?.login))
 }
 
 // A code owner asked to review: a login, a team as @slug, null when the token cannot read it.
+/** @param {GithubReviewRequest['requestedReviewer']} reviewer */
 function codeOwnerOf(reviewer) {
   if (reviewer?.__typename === 'Team') {
     return `@${reviewer.slug}`
@@ -79,6 +98,10 @@ function codeOwnerOf(reviewer) {
   return reviewer?.login ?? null
 }
 
+/**
+ * @param {GithubReview} node
+ * @returns {SnapshotReview}
+ */
 function toReview(node) {
   return {
     author: actorLogin(node.author),
@@ -88,14 +111,22 @@ function toReview(node) {
   }
 }
 
+/**
+ * @param {GithubComment} node
+ * @returns {SnapshotComment}
+ */
 function toComment(node) {
   return { author: actorLogin(node.author), createdAt: node.createdAt }
 }
 
+/** @param {string} sinceIso */
 export async function listActiveRepositories(sinceIso) {
+  /** @type {string[]} */
   const names = []
+  /** @type {string | null} */
   let cursor = null
   for (;;) {
+    /** @type {GraphqlAnswer<typeof REPOSITORIES_QUERY>} */
     const data = await graphql(REPOSITORIES_QUERY, { org: ORG, cursor })
     const { nodes, pageInfo } = data.organization.repositories
     for (const repository of nodes) {
@@ -111,10 +142,17 @@ export async function listActiveRepositories(sinceIso) {
   }
 }
 
+/**
+ * @param {string} name
+ * @param {string} sinceIso
+ */
 async function fetchRepositoryPullRequests(name, sinceIso) {
+  /** @type {SnapshotPullRequest[]} */
   const records = []
+  /** @type {string | null} */
   let cursor = null
   for (;;) {
+    /** @type {GraphqlAnswer<typeof REPOSITORY_PULL_REQUESTS_QUERY>} */
     const data = await graphql(REPOSITORY_PULL_REQUESTS_QUERY, { org: ORG, name, cursor })
     const { nodes, pageInfo } = data.repository.pullRequests
     for (const node of nodes) {
@@ -130,6 +168,7 @@ async function fetchRepositoryPullRequests(name, sinceIso) {
   }
 }
 
+/** @param {string} sinceIso */
 export async function fetchWindow(sinceIso) {
   const repositories = await listActiveRepositories(sinceIso)
   const perRepository = await mapWithConcurrency(repositories, CONCURRENCY, (name) =>
@@ -139,11 +178,15 @@ export async function fetchWindow(sinceIso) {
   return perRepository.flat()
 }
 
+/** @param {string} sinceIso */
 export async function fetchUpdatedSince(sinceIso) {
   const query = `org:${ORG} is:pr updated:>=${sinceIso.replace(/\.\d+Z$/, '+00:00')} sort:updated-asc`
+  /** @type {SnapshotPullRequest[]} */
   const records = []
+  /** @type {string | null} */
   let cursor = null
   for (;;) {
+    /** @type {GraphqlAnswer<typeof SEARCH_PULL_REQUESTS_QUERY>} */
     const data = await graphql(SEARCH_PULL_REQUESTS_QUERY, { query, cursor })
     const { issueCount, nodes, pageInfo } = data.search
     if (issueCount > SEARCH_RESULT_LIMIT) {
@@ -165,9 +208,12 @@ export async function fetchUpdatedSince(sinceIso) {
 // recently updated only, the others keeping the state last read.
 export async function fetchOpenChecks() {
   const query = `org:${ORG} is:pr is:open sort:updated-desc`
+  /** @type {Map<string, CheckState | null>} */
   const checks = new Map()
+  /** @type {string | null} */
   let cursor = null
   for (;;) {
+    /** @type {GraphqlAnswer<typeof OPEN_CHECKS_QUERY>} */
     const data = await graphql(OPEN_CHECKS_QUERY, { query, cursor })
     for (const node of data.search.nodes) {
       // The search may answer what is not a pull request, as an empty node.
@@ -189,26 +235,41 @@ export async function readOpenChecks() {
   try {
     return await fetchOpenChecks()
   } catch (error) {
-    console.warn(`Checks of the open pull requests not read again${process.env.CI ? '' : `: ${error.message}`}`)
+    console.warn(`Checks of the open pull requests not read again${process.env.CI ? '' : `: ${/** @type {Error} */ (error).message}`}`)
 
     return new Map()
   }
 }
 
 // The pull requests, those still open with the state of their checks just read when the search had them.
+/**
+ * @param {SnapshotPullRequest[]} pullRequests
+ * @param {Map<string, CheckState | null>} checks
+ * @returns {SnapshotPullRequest[]}
+ */
 export function withOpenChecks(pullRequests, checks) {
   return pullRequests.map((pr) =>
-    pr.state === 'OPEN' && checks.has(keyOf(pr)) ? { ...pr, checks: checks.get(keyOf(pr)) } : pr,
+    pr.state === 'OPEN' && checks.has(keyOf(pr))
+      ? { ...pr, checks: /** @type {CheckState | null} */ (checks.get(keyOf(pr))) }
+      : pr,
   )
 }
 
 // The pull requests created between two days (UTC, included), for the backfill. The search answers at most 1000
 // results: a range with more is read in halves.
+/**
+ * @param {string} from
+ * @param {string} to
+ * @returns {Promise<SnapshotPullRequest[]>}
+ */
 export async function fetchCreatedBetween(from, to) {
   const query = `org:${ORG} is:pr created:${from}..${to} sort:created-asc`
+  /** @type {SnapshotPullRequest[]} */
   const records = []
+  /** @type {string | null} */
   let cursor = null
   for (;;) {
+    /** @type {GraphqlAnswer<typeof SEARCH_PULL_REQUESTS_QUERY>} */
     const data = await graphql(SEARCH_PULL_REQUESTS_QUERY, { query, cursor })
     const { issueCount, nodes, pageInfo } = data.search
     if (cursor === null && issueCount > SEARCH_RESULT_LIMIT && from < to) {
@@ -226,4 +287,5 @@ export async function fetchCreatedBetween(from, to) {
   }
 }
 
+/** @type {(pr: { repo: string, number: number }) => string} */
 export const keyOf = (pr) => `${pr.repo}#${pr.number}`

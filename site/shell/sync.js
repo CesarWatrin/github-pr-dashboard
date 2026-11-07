@@ -52,10 +52,10 @@ function renderSyncStatusIn(status, label) {
 }
 
 export function renderSyncMenu() {
-  const menu = $('[data-sync-menu]')
+  const menu = $('[data-sync-menu]', HTMLDetailsElement)
   menu.hidden = !state.stats?.syncTrigger
   menu.classList.toggle('is-starting', state.syncStarting !== null)
-  for (const button of menu.querySelectorAll('[data-sync-kind]')) {
+  for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (menu.querySelectorAll('[data-sync-kind]'))) {
     button.disabled = state.syncStarting !== null || state.syncRequest !== null
     button.classList.toggle('is-starting', button.dataset.syncKind === state.syncStarting)
   }
@@ -64,7 +64,7 @@ export function renderSyncMenu() {
 // A sync already queued or running is waited for rather than doubled. A full sync carries the proof of its password,
 // when it has one.
 async function startSync(kind, proof = null) {
-  const menu = $('[data-sync-menu]')
+  const menu = $('[data-sync-menu]', HTMLDetailsElement)
   const error = $('[data-sync-error]')
   error.hidden = true
   // Reading the recent runs then starting one takes a few seconds: the menu and the status show it meanwhile, and
@@ -104,7 +104,7 @@ export function checkFullSyncRefused(stats) {
     error.textContent =
       'La synchro complète a été refusée (mot de passe changé depuis la dernière synchro, ou demande expirée) : une synchro rapide a été faite à la place.'
     error.hidden = false
-    $('[data-sync-menu]').open = true
+    $('[data-sync-menu]', HTMLDetailsElement).open = true
   }
 }
 
@@ -112,8 +112,8 @@ export function checkFullSyncRefused(stats) {
 // carry, then signs the request with the key derived from it, kept nowhere: the dispatch token alone could start a full
 // sync, so the workflow run checks that proof again. A wrong password keeps the dialog open and starts nothing.
 async function confirmFullSync() {
-  const dialog = $('[data-full-sync-dialog]')
-  const button = $('[data-full-sync-confirm]')
+  const dialog = $('[data-full-sync-dialog]', HTMLDialogElement)
+  const button = $('[data-full-sync-confirm]', HTMLButtonElement)
   const { fullSync, repository } = state.stats.syncTrigger
   if (!fullSync) {
     dialog.close()
@@ -125,7 +125,7 @@ async function confirmFullSync() {
   if (button.disabled) {
     return
   }
-  const password = $('[data-full-sync-password]')
+  const password = $('[data-full-sync-password]', HTMLInputElement)
   const error = $('[data-full-sync-error]')
   error.hidden = true
   button.disabled = true
@@ -222,10 +222,10 @@ export function setupSync() {
 
         return
       }
-      const dialog = $('[data-full-sync-dialog]')
-      const password = $('[data-full-sync-password]')
+      const dialog = $('[data-full-sync-dialog]', HTMLDialogElement)
+      const password = $('[data-full-sync-password]', HTMLInputElement)
       const asksPassword = Boolean(state.stats.syncTrigger.fullSync)
-      $('[data-sync-menu]').open = false
+      $('[data-sync-menu]', HTMLDetailsElement).open = false
       $('[data-full-sync-field]').hidden = !asksPassword
       $('[data-full-sync-error]').hidden = true
       password.disabled = !asksPassword
@@ -238,7 +238,7 @@ export function setupSync() {
     })
   }
   $('[data-full-sync-form]').addEventListener('submit', (event) => {
-    if (event.submitter?.value === 'confirm') {
+    if (/** @type {HTMLButtonElement | null} */ (event.submitter)?.value === 'confirm') {
       event.preventDefault()
       confirmFullSync()
     }
@@ -247,18 +247,19 @@ export function setupSync() {
   $('[data-full-sync-password]').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault()
-      $('[data-full-sync-form]').requestSubmit($('[data-full-sync-confirm]'))
+      $('[data-full-sync-form]', HTMLFormElement).requestSubmit($('[data-full-sync-confirm]'))
     }
   })
   // The password typed does not stay in the page.
   $('[data-full-sync-dialog]').addEventListener('close', () => {
-    $('[data-full-sync-form]').reset()
+    $('[data-full-sync-form]', HTMLFormElement).reset()
     $('[data-full-sync-error]').hidden = true
   })
   $('[data-sync-menu]').addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && event.currentTarget.open) {
-      event.currentTarget.open = false
-      event.currentTarget.querySelector('summary').focus()
+    const menu = /** @type {HTMLDetailsElement} */ (event.currentTarget)
+    if (event.key === 'Escape' && menu.open) {
+      menu.open = false
+      menu.querySelector('summary').focus()
     }
   })
 }

@@ -8,17 +8,19 @@ import { inSelection } from './contributors.js'
 import { inTeam } from './people.js'
 import { repoInfo } from './repositories.js'
 import { ciRange, currentPeriod, periodRange } from './selection.js'
-import { state } from './state.js'
+import { loadedStats, state } from './state.js'
 
 // The CI of the period per repository: its runs, the share of them that failed or were run again.
+/** @returns {Map<string, CiStats['totals']>} */
 function ciPerRepository() {
   const range = ciRange(periodRange())
+  /** @type {Map<string, WorkflowRuns[]>} */
   const workflows = new Map()
-  for (const workflow of state.stats.ci ?? []) {
+  for (const workflow of loadedStats().ci ?? []) {
     if (!workflows.has(workflow.repo)) {
       workflows.set(workflow.repo, [])
     }
-    workflows.get(workflow.repo).push(workflow)
+    /** @type {WorkflowRuns[]} */ (workflows.get(workflow.repo)).push(workflow)
   }
 
   return new Map([...workflows].map(([repo, list]) => [repo, computeCi(list, range).totals]))
@@ -29,10 +31,18 @@ function ciPerRepository() {
 // the people still in the team. The figures count everyone, people who left included, as the other figures of
 // repositories do. By default, those with code pull requests on the repositories selected on their page, for the cards;
 // with all, every repository with anything over the period, for their dialogs.
+/**
+ * What the repository of a row added up over its people, before its figures.
+ * @typedef {{ repo: string, code: number, merged: number, unreviewed: number, added: number, deleted: number, timesToFirstReview: number[], timesToMerge: number[], sizes: number[], authors: [login: string, code: number][], readers: [login: string, prs: number][] }} RepositoryTotals
+ */
+
+/** @param {{ all?: boolean }} [options] */
 export function repositoryRows({ all = false } = {}) {
   const period = currentPeriod()
   const selection = all ? null : state.repos.repositories
+  /** @type {Map<string, RepositoryTotals>} */
   const rows = new Map()
+  /** @param {string} repo */
   const row = (repo) => {
     if (!rows.has(repo)) {
       rows.set(repo, {
@@ -50,7 +60,7 @@ export function repositoryRows({ all = false } = {}) {
       })
     }
 
-    return rows.get(repo)
+    return /** @type {RepositoryTotals} */ (rows.get(repo))
   }
   for (const person of period.authors) {
     for (const [repo, stats] of Object.entries(person.repos)) {
@@ -68,6 +78,7 @@ export function repositoryRows({ all = false } = {}) {
       }
     }
   }
+  /** @type {Map<string, [approved: number, silent: number]>} */
   const approvals = new Map()
   for (const person of period.reviewers) {
     for (const [repo, stats] of Object.entries(person.repos)) {
@@ -87,6 +98,7 @@ export function repositoryRows({ all = false } = {}) {
   }
   const reviewed = new Map(period.repositories.map((stats) => [stats.repo, stats]))
   const hotfixes = new Map(period.tma.repositories.map((stats) => [stats.repo, stats.hotfixes]))
+  /** @param {[login: string, count: number][]} people */
   const busiest = (people) => people.toSorted((a, b) => b[1] - a[1])
 
   return [...rows.values()]

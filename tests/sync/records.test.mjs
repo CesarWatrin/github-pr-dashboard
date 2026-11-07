@@ -245,6 +245,7 @@ describe('timeline details', () => {
       PULL_REQUESTS.mergedLately,
       pullRequest({ number: 35, checks: 'PENDING' }),
     ]
+    /** @type {Map<string, CheckState>} */
     const checks = new Map([
       ['web#30', 'FAILURE'],
       // Merged since the search indexed it: kept as the snapshot read it.

@@ -5,6 +5,7 @@ import { getOrCreate, median } from './math.js'
 import { MINUTE_MS, parisDay } from './time.js'
 
 // The figures of each person's month, those of monthlyActivity().
+/** @type {(keyof MonthlyFigures)[]} */
 export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted', 'opened']
 
 // What each person did per Paris month ('YYYY-MM'), whatever the range, for the badges of the team page: code pull
@@ -14,12 +15,23 @@ export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'add
 // would miss it. Like the stats of a range, only code pull requests written by people count, but for the pull
 // requests opened (opened), which also count those that merge a branch into another: opening them is work too. Releases
 // stay out of it all.
+/**
+ * @param {PullRequestRecord[]} records
+ * @returns {Map<string, Map<string, MonthlyFigures>>}
+ */
 export function monthlyActivity(records) {
+  /** @type {Map<string, Map<string, MonthlyFigures>>} */
   const people = new Map()
+  /** @param {number} at */
   const monthOf = (at) => parisDay(at * MINUTE_MS).slice(0, 7)
+  /**
+   * @param {string} login
+   * @param {string} month
+   */
   const entry = (login, month) =>
     getOrCreate(getOrCreate(people, login, () => new Map()), month, () =>
-      Object.fromEntries(MONTHLY_FIGURES.map((key) => [key, 0])),
+      // Every figure of MONTHLY_FIGURES, at zero.
+      /** @type {MonthlyFigures} */ (/** @type {unknown} */ (Object.fromEntries(MONTHLY_FIGURES.map((key) => [key, 0])))),
     )
   for (const pr of records) {
     if (pr.bot || !['code', 'integration'].includes(pr.kind)) {
@@ -39,6 +51,7 @@ export function monthlyActivity(records) {
       merged.added += pr.lines - (pr.deleted ?? 0)
       merged.deleted += pr.deleted ?? 0
     }
+    /** @type {Set<string>} */
     const reviewed = new Set()
     for (const [login, at, , comments] of pr.interventions) {
       const month = monthOf(at)
@@ -56,10 +69,15 @@ export function monthlyActivity(records) {
 
 // The top of the team for one figure of a monthly history ({ 'YYYY-MM': { login: figures } }), month by month, oldest
 // first: how much, and who did that much, ties sharing it. A month nobody did any of it has no leader.
+/**
+ * @param {MonthlyHistory} history
+ * @param {keyof MonthlyFigures} key
+ */
 export function monthlyLeaders(history, key) {
   return Object.keys(history)
     .sort()
     .flatMap((month) => {
+      /** @type {[string, number][]} */
       const values = Object.entries(history[month]).map(([login, figures]) => [login, figures[key] ?? 0])
       const best = Math.max(0, ...values.map(([, value]) => value))
 
@@ -70,10 +88,15 @@ export function monthlyLeaders(history, key) {
 }
 
 // The same month a year earlier ('YYYY-MM').
+/** @param {string} month */
 export const monthYearBefore = (month) => `${Number(month.slice(0, 4)) - 1}${month.slice(4)}`
 
 // The months ('YYYY-MM', among `months`, in order) that a range touches, its start included and its end left out, in
 // Paris time: each one counts whole, however little of it the range covers.
+/**
+ * @param {string[]} months
+ * @param {{ start: number, end: number }} range
+ */
 export function monthsTouched(months, { start, end }) {
   const first = parisDay(start).slice(0, 7)
   const last = parisDay(end - 1).slice(0, 7)
@@ -83,17 +106,25 @@ export function monthsTouched(months, { start, end }) {
 
 // The median of each value and of the ones just before it, `size` values in all: none until that many follow each
 // other, a missing value (null) breaking the run. Smooths the ups and downs of a monthly series without hiding a turn.
+/**
+ * @param {(number | null)[]} values
+ * @param {number} size
+ */
 export function rollingMedian(values, size) {
   return values.map((_, index) => {
     const run = values.slice(Math.max(0, index - size + 1), index + 1)
 
-    return run.length === size && run.every(Number.isFinite) ? median(run) : null
+    return run.length === size && run.every(Number.isFinite) ? median(/** @type {number[]} */ (run)) : null
   })
 }
 
 // What a series of whole months, oldest first ([{ month, value }], null for a month without the figure), tells of its
 // last month: its value, that of the same month a year earlier (null when the series does not have it), and the median
 // of its last `yearMonths` months, the last one included, over the months that have the figure.
+/**
+ * @param {{ month: string, value: number | null }[]} points
+ * @param {number} [yearMonths]
+ */
 export function lastMonthSummary(points, yearMonths = 12) {
   const last = points.at(-1)
   if (!last) {
@@ -108,7 +139,7 @@ export function lastMonthSummary(points, yearMonths = 12) {
   return {
     month: last.month,
     value: Number.isFinite(last.value) ? last.value : null,
-    yearAgo: Number.isFinite(yearAgo?.value) ? yearAgo.value : null,
-    yearMedian: median(recent),
+    yearAgo: Number.isFinite(yearAgo?.value) ? /** @type {{ value: number }} */ (yearAgo).value : null,
+    yearMedian: median(/** @type {number[]} */ (recent)),
   }
 }

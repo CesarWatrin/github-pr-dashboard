@@ -14,6 +14,11 @@ const START = '<!-- modules: written by scripts/module-map.mjs -->'
 const END = '<!-- /modules -->'
 
 // The relative imports of a module, as paths from site/.
+/**
+ * @param {string} path
+ * @param {string} [source]
+ * @returns {string[]}
+ */
 export function importsOf(path, source = readFileSync(join(SITE, path), 'utf8')) {
   const specifiers = [...source.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s*'([^']+)'|^\s*import\s*'([^']+)'/gms)].map(
     (match) => match[1] ?? match[2],
@@ -54,6 +59,7 @@ export function moduleBlock(modules = pageModules(), indent = '    ') {
 }
 
 // The block as index.html holds it now, null without one.
+/** @param {string} html */
 export function currentBlock(html) {
   const start = html.indexOf(START)
   const end = html.indexOf(END)

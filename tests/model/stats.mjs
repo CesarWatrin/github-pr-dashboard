@@ -29,16 +29,23 @@ export function record(author, createdAt, fields = {}) {
 }
 
 // Sets fresh stats, so that every cache of the page starts again, and the choices of a viewer who picked nothing.
+/** @param {Partial<Stats>} [fields] */
 export function useStats(fields = {}) {
   state.stats = {
     org: 'example-org',
+    build: null,
     generatedAt: GENERATED_AT,
-    windowStart: WINDOW_START,
+    timezone: 'Europe/Paris',
+    syncTrigger: null,
+    requiredApprovals: 1,
     people: { ada: 'Ada Lune', ben: 'Ben Kerr' },
     repos: {},
+    today: { date: GENERATED_AT.slice(0, 10), opened: 0, merged: 0, reviews: 0 },
+    windowStart: WINDOW_START,
     pullRequests: [],
     firstPullRequests: {},
     ci: [],
+    events: [],
     ...fields,
   }
   Object.assign(state, { period: '365d', range: null, compare: 'none', squad: '', query: '' })

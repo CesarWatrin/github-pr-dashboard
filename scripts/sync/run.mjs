@@ -15,8 +15,10 @@ import { computeCi, fetchRuns, RUNS_OVERLAP_MS } from './runs.mjs'
 export const WATCH_INTERVAL_MS = 60_000
 const SYNC_OVERLAP_MS = 10 * 60_000
 
+/** @param {{ full: boolean, fullSync?: FullSyncCheck | null, refused?: boolean }} options */
 export async function sync({ full, fullSync = null, refused = false }) {
   const now = new Date()
+  /** @type {(days: number) => string} */
   const before = (days) => new Date(now.getTime() - days * DAY_MS).toISOString()
   const windowStartIso = before(WINDOW_DAYS)
   const recentStartIso = before(RECENT_DAYS)
@@ -74,8 +76,12 @@ export async function sync({ full, fullSync = null, refused = false }) {
 
   // Languages and frameworks are only looked up for repositories not seen yet: a full sync refreshes them all.
   const repositories = [...new Set(inWindow.map((pr) => pr.repo))]
-  let languages = mode === 'full' ? {} : (previous.languages ?? {})
-  let frameworks = mode === 'full' ? {} : (previous.frameworks ?? {})
+  // An incremental sync has a snapshot.
+  const snapshot = /** @type {Snapshot} */ (previous)
+  /** @type {Record<string, RepositoryLanguages>} */
+  let languages = mode === 'full' ? {} : (snapshot.languages ?? {})
+  /** @type {Record<string, string[]>} */
+  let frameworks = mode === 'full' ? {} : (snapshot.frameworks ?? {})
   if (repositories.some((repo) => !languages[repo] || !frameworks[repo])) {
     const details = await fetchRepositoryDetails()
     languages = details.languages
@@ -88,7 +94,9 @@ export async function sync({ full, fullSync = null, refused = false }) {
   }
 
   const index = deliveryIndex(inWindow)
-  const records = inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS))).filter(Boolean)
+  const records = /** @type {PullRequestRecord[]} */ (
+    inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS))).filter(Boolean)
+  )
   // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none. Without
   // any, the history starts from the data, counted the current way.
   const kept = previous?.monthly
@@ -152,7 +160,7 @@ export async function sync({ full, fullSync = null, refused = false }) {
       firstPullRequests: Object.fromEntries(
         peopleOf(records)
           .filter((login) => firstPullRequests[login])
-          .map((login) => [login, minutes(firstPullRequests[login])]),
+          .map((login) => [login, minutes(/** @type {string} */ (firstPullRequests[login]))]),
       ),
       // The badges are won over this history, since the first sync.
       monthly: history,

@@ -35,8 +35,8 @@ export function comparisonRange({ start, end, bucket }, mode, dataStart) {
 // Whether two ranges cover the same days, within one: the year before 12 months is the 12 months before, a 29 February
 // between them aside. Null, a range the data does not cover, matches nothing.
 /**
- * @param {TimeRange | null} a
- * @param {TimeRange | null} b
+ * @param {Pick<TimeRange, 'start' | 'end'> | null} a
+ * @param {Pick<TimeRange, 'start' | 'end'> | null} b
  */
 export function sameDays(a, b) {
   return a !== null && b !== null && Math.abs(a.start - b.start) <= DAY_MS && Math.abs(a.end - b.end) <= DAY_MS
@@ -45,8 +45,8 @@ export function sameDays(a, b) {
 // Whether the range a period is compared to, before it, shares more than a day with it: the same period last year of
 // a period longer than a year takes back part of it, and both sides would count the same pull requests.
 /**
- * @param {TimeRange} range
- * @param {TimeRange | null} compared
+ * @param {Pick<TimeRange, 'start' | 'end'>} range
+ * @param {Pick<TimeRange, 'start' | 'end'> | null} compared
  */
 export function overlapsPeriod(range, compared) {
   return compared !== null && compared.end - range.start > DAY_MS

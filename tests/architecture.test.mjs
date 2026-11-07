@@ -138,6 +138,29 @@ describe('the sync', () => {
 })
 
 describe('every file', () => {
+  // A type says what a value is: any says nothing, and lets anything through unchecked. unknown, narrowed where read,
+  // when a value really is unknown.
+  test('never types anything as any', () => {
+    const typed = [
+      ...siteModules.map((path) => join(SITE, path)),
+      ...syncModules.map((path) => join(SCRIPTS, path)),
+      ...filesOf(join(ROOT, 'tests'), '.mjs').map((path) => join(ROOT, 'tests', path)),
+    ]
+    const found = typed.flatMap((file) =>
+      // The types of the JSDoc, between the braces of a tag or a cast.
+      [...readFileSync(file, 'utf8').matchAll(/@(?:type|param|returns?|typedef|template|property|satisfies)\s*\{([^@]*?)\}\s/g)]
+        .filter((match) => /\bany\b/.test(match[1]))
+        .map((match) => `${relative(ROOT, file)}: {${match[1]}}`),
+    )
+    const declarations = filesOf(join(ROOT, 'types'), '.d.ts').flatMap((path) =>
+      readFileSync(join(ROOT, 'types', path), 'utf8')
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('//') && /\bany\b/.test(line))
+        .map((line) => `types/${path}: ${line.trim()}`),
+    )
+    assert.deepEqual([...found, ...declarations], [])
+  })
+
   test('starts with a comment that says what it is for', () => {
     const files = [
       ...siteModules.map((path) => join(SITE, path)),

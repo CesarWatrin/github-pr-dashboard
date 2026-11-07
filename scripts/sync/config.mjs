@@ -4,7 +4,8 @@
 
 import { dirname, join } from 'node:path'
 
-export const ORG = process.env.ORG
+// Checked below: nothing runs without it.
+export const ORG = /** @type {string} */ (process.env.ORG)
 
 export const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 export const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.enc.json'
@@ -12,10 +13,12 @@ export const VERSION_PATH = join(dirname(STATS_PATH), 'version.json')
 
 // Repository types, from the languages GitHub detects in them. TypeScript and JavaScript go with Vue: front-end code
 // next to it, back-end services without it. Docs, infrastructure and tooling fall under "other".
+/** @type {string[]} */
 const CATEGORIES = ['front', 'back', 'mobile', 'other']
 
 // Corrections for the repositories their languages misjudge, as "repo:category,repo:category". They come from the
 // environment rather than the code because the repository names of the organization are private.
+/** @type {Map<string, Category>} */
 export const CATEGORY_OVERRIDES = new Map(
   (process.env.REPO_CATEGORIES ?? '')
     .split(',')
@@ -28,7 +31,7 @@ export const CATEGORY_OVERRIDES = new Map(
         throw new Error(`REPO_CATEGORIES: ${process.env.CI ? 'an entry' : `"${entry}"`} should be repo:${CATEGORIES.join('|')}`)
       }
 
-      return [repo, category]
+      return /** @type {[string, Category]} */ ([repo, category])
     }),
 )
 
@@ -48,6 +51,7 @@ export const SYNC_TRIGGER = process.env.DISPATCH_TOKEN
 
 // How many approvals a pull request needs before it can be merged, a rule of the organization: from REQUIRED_APPROVALS,
 // 1 without it. It only travels inside the encrypted stats, for the page to tell the pull requests ready to merge.
+/** @param {string} [value] */
 export function requiredApprovals(value = '') {
   if (value.trim() === '') {
     return 1
@@ -66,7 +70,12 @@ export const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVA
 // members are private, so they come from the environment, and only travel inside the encrypted stats, for the squads
 // page and the squad filter. A person may belong to several squads; the order is kept, the page lists them so. A star
 // before a login marks the lead of the squad, one at most: "name:*login,login".
+/**
+ * @param {string} [value]
+ * @returns {Squad[]}
+ */
 export function parseSquads(value = '') {
+  /** @type {Squad[]} */
   const squads = []
   // A value copied with the quotes of its line in .env, as a secret: they surround the value, not the first squad's name.
   const unquoted = value.trim().replace(/^(["'])([\s\S]*)\1$/, '$2')

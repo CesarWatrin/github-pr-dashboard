@@ -15,6 +15,7 @@ export const PERSON_TOP = 3
 export const MIN_PEERS = 3
 
 // The review network of the period over the repositories selected on the page.
+/** @returns {ReviewNetwork} */
 export function currentNetwork() {
   const period = currentPeriod()
   const selection = state.repos.collaboration
@@ -28,17 +29,24 @@ export function currentNetwork() {
 // Everyone who wrote or reviewed code over the period in the repositories selected on the page, most code pull requests
 // first, then by name: what each person wrote, then what they reviewed. The stack comes from their code pull requests,
 // else from the ones they reviewed.
+// What a person wrote and reviewed, added up over the repositories selected.
+/** @typedef {{ login: string, code: number, merged: number, timesToMerge: number[], reviewed: number, comments: number }} TeamTotals */
+
+/** @param {{ withFormer?: boolean }} [options] */
 export function teamRows({ withFormer = false } = {}) {
   const period = currentPeriod()
   // The people who left only have a row for their own dialog, opened from the former people of the team page.
+  /** @param {{ login: string }} person */
   const kept = ({ login }) => withFormer || isCurrent(login)
+  /** @type {Map<string, TeamTotals>} */
   const rows = new Map()
+  /** @param {string} login */
   const row = (login) => {
     if (!rows.has(login)) {
       rows.set(login, { login, code: 0, merged: 0, timesToMerge: [], reviewed: 0, comments: 0 })
     }
 
-    return rows.get(login)
+    return /** @type {TeamTotals} */ (rows.get(login))
   }
   for (const person of period.authors.filter(kept)) {
     const parts = selectedEntries(person, 'team').map(([, stats]) => stats)
@@ -60,10 +68,22 @@ export function teamRows({ withFormer = false } = {}) {
   }
   const reviewersOf = new Map(reviewNetwork(withoutFormer(period), state.repos.team).authors.map((author) => [author.login, author.reviewers]))
   // The stack is the person's own, over every repository: the selection only narrows the figures.
+  /**
+   * @template {string} Key
+   * @param {{ login: string, repos: Record<string, Record<Key, number>> }[]} people
+   * @param {Key} key
+   * @returns {Map<string, [repo: string, count: number][]>}
+   */
   const perRepo = (people, key) =>
-    new Map(people.map((person) => [person.login, Object.entries(person.repos).map(([repo, stats]) => [repo, stats[key]])]))
+    new Map(
+      people.map((person) => [
+        person.login,
+        Object.entries(person.repos).map(([repo, stats]) => /** @type {[repo: string, count: number]} */ ([repo, stats[key]])),
+      ]),
+    )
   const codeRepos = perRepo(period.authors, 'code')
   const reviewedRepos = perRepo(period.reviewers, 'prs')
+  /** @param {string} login */
   const stackFor = (login) => {
     const code = codeRepos.get(login) ?? []
 
@@ -86,14 +106,26 @@ export function teamRows({ withFormer = false } = {}) {
 
 // The details of a person over the period and the repositories selected on the team page, with those of their peers:
 // the people of the same stack, or the whole team when the stack has too few people to compare with.
+/**
+ * A row of teamRows(): a person's figures over the period.
+ * @typedef {ReturnType<typeof teamRows>[number]} TeamRow
+ */
+
+/** @param {TeamRow} row */
 export function personDetails(row) {
   const { login } = row
   const period = currentPeriod()
   const network = reviewNetwork(withoutFormer(period), state.repos.team)
+  /**
+   * @template {{ login: string }} Row
+   * @param {Row[]} rows
+   * @returns {Map<string, Row>}
+   */
   const byLogin = (rows) => new Map(rows.map((other) => [other.login, other]))
   const authors = byLogin(authorRows('team'))
   const reviewers = byLogin(reviewerRows('team'))
   const networkAuthors = byLogin(network.authors)
+  /** @param {TeamRow} other */
   const detailsOf = (other) => ({
     row: other,
     author: authors.get(other.login),
@@ -105,17 +137,22 @@ export function personDetails(row) {
   const sameStack = team.filter((other) => stackType(other.stack.counts)?.key === type?.key)
   const peers = type && sameStack.length >= MIN_PEERS ? sameStack : team
   const author = period.authors.find((person) => person.login === login)
+  /**
+   * @param {ReviewNetwork['pairs']} pairs
+   * @param {'author' | 'reviewer'} key
+   * @returns {[login: string, prs: number][]}
+   */
   const top = (pairs, key) => pairs.slice(0, PERSON_TOP).map((pair) => [pair[key], pair.prs])
 
   return {
     ...detailsOf(row),
-    peers: { label: peers === team ? 'de l’équipe' : type.label, details: peers.map(detailsOf) },
+    peers: { label: peers === team ? 'de l’équipe' : /** @type {{ label: string }} */ (type).label, details: peers.map(detailsOf) },
     reviewedBy: top(network.pairs.filter((pair) => pair.author === login), 'reviewer'),
     reviews: top(network.pairs.filter((pair) => pair.reviewer === login), 'author'),
     codeRepos: author
       ? selectedEntries(author, 'team')
           .filter(([, stats]) => stats.code > 0)
-          .map(([repo, stats]) => [repo, stats.code])
+          .map(([repo, stats]) => /** @type {[repo: string, code: number]} */ ([repo, stats.code]))
           .sort((a, b) => b[1] - a[1])
           .slice(0, PERSON_TOP)
       : [],

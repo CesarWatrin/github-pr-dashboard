@@ -6,6 +6,7 @@ export const at = (iso) => Date.parse(iso) / 60_000
 export const iso = (time) => new Date(time * 60_000).toISOString()
 
 // A week of Paris days, Monday 2 to Sunday 8 March 2026.
+/** @type {TimeRange} */
 export const WEEK = { start: parisMidnight('2026-03-02'), end: parisMidnight('2026-03-09'), bucket: 'day' }
 
 export function record(fields) {

@@ -98,7 +98,9 @@ describe('computePeriod', () => {
     const days = Object.fromEntries(
       period.deploymentCalendar.map(({ repo, buckets }) => [
         repo,
-        Object.fromEntries(buckets.map((cell, index) => [period.series[index].key, cell]).filter(([, [count]]) => count > 0)),
+        Object.fromEntries(
+          buckets.map((cell, index) => /** @type {[string, number[]]} */ ([period.series[index].key, cell])).filter(([, [count]]) => count > 0),
+        ),
       ]),
     )
     assert.deepEqual(days, {

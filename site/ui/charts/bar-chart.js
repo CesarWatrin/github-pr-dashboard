@@ -9,17 +9,18 @@ import { measureText, truncateText } from './measure.js'
 
 // Horizontal bars, one row per item, value at the tip.
 /**
+ * @template Row
  * @param {HTMLElement} container
  * @param {object} options
- * @param {any[]} options.rows
- * @param {(row: any) => string} options.label
- * @param {(row: any) => number} options.value
+ * @param {Row[]} options.rows
+ * @param {(row: Row) => string} options.label
+ * @param {(row: Row) => number} options.value
  * @param {(value: number) => string} options.format
  * @param {number} [options.max] the value of a whole bar: the largest of the rows by default
  * @param {string} options.color
  * @param {string} options.ariaLabel
- * @param {(row: any) => import('../tooltip.js').Tooltip} options.tooltip
- * @param {(row: any) => string} [options.technology] the technology whose logo leads the label
+ * @param {(row: Row) => import('../tooltip.js').Tooltip} options.tooltip
+ * @param {(row: Row) => string} [options.technology] the technology whose logo leads the label
  */
 export function barChart(container, { rows, label, value, format, max, color, ariaLabel, tooltip, technology }) {
   const width = container.clientWidth

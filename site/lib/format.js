@@ -16,15 +16,24 @@ export const dateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }
 export const rangeShortFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 export const rangeLongFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 
+/** @typedef {number | null | undefined} MaybeNumber A figure, missing when null or undefined. */
+
+/** @type {(value: MaybeNumber) => string} */
 export const formatNumber = (value) => (isMissing(value) ? '–' : numberFormat.format(value))
+/** @type {(value: MaybeNumber) => string} */
 export const formatDecimal = (value) => (isMissing(value) ? '–' : decimalFormat.format(value))
+/** @type {(value: MaybeNumber) => string} */
 export const formatPercent = (value) => (isMissing(value) ? '–' : `${value} %`)
+/** @type {(value: MaybeNumber) => string} */
 export const formatShare = (value) => (isMissing(value) ? '–' : `${Math.round(value * 100)} %`)
 // Lines of code run into the millions: rounded (12 k, 1,2 M) everywhere but in the monthly report.
+/** @type {(value: MaybeNumber) => string} */
 export const formatLines = (value) => (isMissing(value) ? '–' : compactFormat.format(value))
+/** @type {(text: string) => string} */
 export const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1)
 
 // CI durations, in seconds: to the second under ten minutes.
+/** @param {MaybeNumber} seconds */
 export function formatSeconds(seconds) {
   if (isMissing(seconds)) {
     return '–'
@@ -42,6 +51,7 @@ export function formatSeconds(seconds) {
 }
 
 // Working time: in hours under two working days, beyond in working days of WORK_DAY_HOURS.
+/** @param {MaybeNumber} hours */
 export function formatDuration(hours) {
   if (isMissing(hours)) {
     return '–'
@@ -56,6 +66,7 @@ export function formatDuration(hours) {
   return `${numberFormat.format(Math.round((hours / WORK_DAY_HOURS) * 10) / 10)} j`
 }
 
+/** @param {string} iso */
 export function formatRelative(iso) {
   const seconds = (Date.parse(iso) - Date.now()) / 1000
   const elapsed = Math.abs(seconds)
@@ -75,6 +86,8 @@ export function formatRelative(iso) {
 // One label per size bucket sent by the sync script, smallest first.
 export const SIZE_LABELS = ['< 10', '10 à 100', '100 à 500', '500 à 1 000', '> 1 000']
 
+/** @type {(month: string) => string} */
 export const monthName = (month) => monthLongFormat.format(new Date(`${month}-15T12:00:00Z`))
 
+/** @type {(count: number, singular: string, several?: string) => string} */
 export const plural = (count, singular, several = `${singular}s`) => `${formatNumber(count)} ${count > 1 ? several : singular}`

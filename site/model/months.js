@@ -9,15 +9,14 @@ import { formatDecimal, formatDuration, formatNumber, formatShare } from '../lib
 import { badgeMonths } from './badges.js'
 import { ciStart } from './selection.js'
 import { scopedRecords, squadKey } from './squads.js'
-import { state } from './state.js'
+import { loadedStats, state } from './state.js'
 
 // The figures of the monthly report, read from { period, ci } of a month, in groups. kind tells how two months compare:
 // counts and durations by how much they changed, shares by how many points. better tells which way is good, when one
 // is: the change then takes its color.
 /**
- * A figure of the report: how to read it from the stats of a month ({ period, ci }), how two months compare (kind),
- * and the way that is better, if any.
- * @typedef {{ label: string, value: (month: { period: any, ci: any }) => number | null, kind: string, better?: string, hint?: string }} ReportFigure
+ * @typedef {'count' | 'duration' | 'share' | 'decimal'} FigureKind
+ * @typedef {{ label: string, value: (month: MonthStats) => number | null | undefined, kind: FigureKind, better?: 'up' | 'down' }} ReportFigure
  */
 
 /** @type {{ label: string, figures: ReportFigure[] }[]} */
@@ -66,10 +65,12 @@ export const REPORT_GROUPS = [
     ],
   },
 ]
+/** @type {Record<FigureKind, (value: number | null | undefined) => string>} */
 export const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: formatShare, decimal: formatDecimal }
 // A month of the report is set against the median of this many last whole months.
 export const REPORT_YEAR_MONTHS = 12
 
+/** @type {(month: string) => string} */
 const nextMonthOf = (month) => {
   const [year, number] = month.split('-').map(Number)
 
@@ -77,38 +78,52 @@ const nextMonthOf = (month) => {
 }
 
 // The months a report can cover: the whole months of the synced data, then the current one, unfinished.
+/** @returns {string[]} */
 export function reportMonths() {
-  return [...badgeMonths(), parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)]
+  return [...badgeMonths(), parisDay(Date.parse(loadedStats().generatedAt)).slice(0, 7)]
 }
 
 // The stats of a month, worked out once per stats and squad: those of a period and of the CI over its Paris days, up to
 // the last sync for the current month. The CI stays that of the whole organization: no run belongs to a squad.
+/**
+ * @param {string} month 'YYYY-MM'
+ * @returns {MonthStats}
+ */
 export function monthStats(month) {
-  if (state.reportCache?.stats !== state.stats) {
-    state.reportCache = { stats: state.stats, months: new Map() }
+  const stats = loadedStats()
+  if (state.reportCache?.stats !== stats) {
+    state.reportCache = { stats, months: new Map() }
   }
   const { months } = state.reportCache
   const key = `${squadKey()}:${month}`
   if (!months.has(key)) {
+    /** @type {TimeRange} */
     const range = {
       start: parisMidnight(`${month}-01`),
-      end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(state.stats.generatedAt)),
+      end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(stats.generatedAt)),
       bucket: 'week',
     }
     // A month the runs do not cover whole has no CI: GitHub had forgotten its runs.
-    const ci = range.start >= ciStart() ? computeCi(state.stats.ci ?? [], range) : null
+    const ci = range.start >= ciStart() ? computeCi(stats.ci ?? [], range) : null
     months.set(key, { period: computePeriod(scopedRecords(), range), ci })
   }
 
-  return months.get(key)
+  return /** @type {MonthStats} */ (months.get(key))
 }
 
 // How a figure changed from one month to the next: by how much for counts and durations, by how many points for
 // shares; and whether that is for the better, when the figure has a better way.
+/**
+ * @param {{ kind: string, better?: string }} figure
+ * @param {number | null | undefined} value
+ * @param {number | null | undefined} previous
+ * @returns {{ text: string, tone: 'neutral' | 'better' | 'worse' } | null}
+ */
 export function reportChange(figure, value, previous) {
   if (isMissing(value) || isMissing(previous)) {
     return null
   }
+  /** @param {number} amount */
   const sign = (amount) => (amount > 0 ? '+' : amount < 0 ? '−' : '')
   let text
   if (figure.kind === 'share') {
@@ -126,7 +141,9 @@ export function reportChange(figure, value, previous) {
   return { text, tone }
 }
 
-// The figures of the trends page, those of the monthly report, two by two: delivery, review, production, quality.
+// The figures of the monthly report, by label: the trends page picks its own among them.
+/** @type {Map<string, ReportFigure>} */
 export const REPORT_FIGURES = new Map(REPORT_GROUPS.flatMap((group) => group.figures).map((figure) => [figure.label, figure]))
 
+/** @type {(month: string) => boolean} */
 export const monthReady = (month) => state.reportCache?.stats === state.stats && state.reportCache.months.has(`${squadKey()}:${month}`)

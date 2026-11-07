@@ -138,7 +138,7 @@ export function openPullRequestDialog(pr, opener) {
   )
   close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
   close.setAttribute('aria-label', 'Fermer')
-  close.addEventListener('click', () => $('[data-pr-dialog]').close())
+  close.addEventListener('click', () => $('[data-pr-dialog]', HTMLDialogElement).close())
 
   const tags = [
     el('span', { className: `feed-tag pr-status is-${pullRequestStatus(pr)}`, textContent: PULL_REQUEST_STATUS[pullRequestStatus(pr)] }),
@@ -193,7 +193,7 @@ export function openPullRequestDialog(pr, opener) {
       el('section', { className: 'pr-dialog-section' }, el('h3', { textContent: 'Interventions' }), interventions),
     ),
   )
-  const dialog = $('[data-pr-dialog]')
+  const dialog = $('[data-pr-dialog]', HTMLDialogElement)
   if (dialog.open) {
     close.focus()
 
@@ -209,7 +209,7 @@ export function setupPullRequestDialog() {
   document.addEventListener(OPEN_PULL_REQUEST, (event) => openPullRequestDialog(/** @type {CustomEvent} */ (event).detail, event.target))
   $('[data-pr-dialog]').addEventListener('click', (event) => {
     if (event.target === event.currentTarget) {
-      event.currentTarget.close()
+      /** @type {HTMLDialogElement} */ (event.currentTarget).close()
     }
   })
 }

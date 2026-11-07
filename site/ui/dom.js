@@ -3,19 +3,37 @@
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 /**
- * The first element of the page a selector finds, an HTMLElement unless the caller says which:
- * `$(…)` for a container, `/** @type {HTMLInputElement} *\/ ($(…))` for a field.
+ * The first element of the page a selector finds. Given the kind of element it is (HTMLDialogElement,
+ * HTMLInputElement…), typed so and checked: a page that changed shows at once.
+ * @template {HTMLElement} [Found=HTMLElement]
  * @param {string} selector
- * @returns {HTMLElement}
+ * @param {new () => Found} [kind]
+ * @returns {Found}
  */
-export const $ = (selector) => /** @type {HTMLElement} */ (document.querySelector(selector))
+export function $(selector, kind) {
+  const node = document.querySelector(selector)
+  if (kind && !(node instanceof kind)) {
+    throw new TypeError(`${selector}: no ${kind.name}`)
+  }
+
+  return /** @type {Found} */ (node)
+}
 
 /**
- * Every element of the page a selector finds, as an array.
+ * Every element of the page a selector finds, as an array, of the kind given if any.
+ * @template {HTMLElement} [Found=HTMLElement]
  * @param {string} selector
- * @returns {HTMLElement[]}
+ * @param {new () => Found} [kind]
+ * @returns {Found[]}
  */
-export const $$ = (selector) => [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(selector))]
+export function $$(selector, kind) {
+  const nodes = [...document.querySelectorAll(selector)]
+  if (kind && !nodes.every((node) => node instanceof kind)) {
+    throw new TypeError(`${selector}: not all ${kind.name}`)
+  }
+
+  return /** @type {Found[]} */ (nodes)
+}
 
 export function el(tag, properties = {}, ...children) {
   const node = document.createElement(tag)

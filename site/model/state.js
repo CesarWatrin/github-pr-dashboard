@@ -14,6 +14,7 @@ const NOTIFY_STORAGE_KEY = 'github-pr-dashboard:notify'
 // The squad picked in the filters, in this browser: none for the whole organization.
 const SQUAD_STORAGE_KEY = 'github-pr-dashboard:squad'
 
+/** @type {State} */
 export const state = {
   key: null,
   keyExpiresAt: 0,
@@ -92,6 +93,7 @@ export const state = {
   fetchFailed: false,
 }
 
+/** @returns {string} */
 function readStoredPeriod() {
   try {
     return localStorage.getItem(PERIOD_STORAGE_KEY) ?? DEFAULT_PERIOD
@@ -100,21 +102,24 @@ function readStoredPeriod() {
   }
 }
 
+/** @returns {DayRange | null} */
 function readStoredRange() {
   try {
-    const range = JSON.parse(localStorage.getItem(RANGE_STORAGE_KEY))
+    /** @type {Partial<DayRange> | null} */
+    const range = JSON.parse(String(localStorage.getItem(RANGE_STORAGE_KEY)))
 
-    return typeof range?.from === 'string' && typeof range?.to === 'string' ? range : null
+    return typeof range?.from === 'string' && typeof range?.to === 'string' ? /** @type {DayRange} */ (range) : null
   } catch {
     return null
   }
 }
 
+/** @returns {string} */
 function readStoredCompare() {
   try {
     const compare = localStorage.getItem(COMPARE_STORAGE_KEY)
 
-    return Object.hasOwn(COMPARISONS, compare ?? '') ? compare : NO_COMPARISON
+    return Object.hasOwn(COMPARISONS, compare ?? '') ? /** @type {string} */ (compare) : NO_COMPARISON
   } catch {
     return NO_COMPARISON
   }
@@ -132,6 +137,7 @@ export function storePeriod() {
   }
 }
 
+/** @returns {string} */
 function readStoredSquad() {
   try {
     return localStorage.getItem(SQUAD_STORAGE_KEY) ?? ''
@@ -152,6 +158,7 @@ export function storeSquad() {
   }
 }
 
+/** @returns {string | null} */
 function readStoredMe() {
   try {
     return localStorage.getItem(ME_STORAGE_KEY)
@@ -162,12 +169,13 @@ function readStoredMe() {
 
 export function storeMe() {
   try {
-    localStorage.setItem(ME_STORAGE_KEY, state.me)
+    localStorage.setItem(ME_STORAGE_KEY, String(state.me))
   } catch {
     // Without storage, the person is picked again on the next visit.
   }
 }
 
+/** @returns {boolean} */
 function readStoredNotify() {
   try {
     return localStorage.getItem(NOTIFY_STORAGE_KEY) === 'on'
@@ -186,4 +194,14 @@ export function storeNotify() {
   } catch {
     // Without storage, notifications are turned on again on the next visit.
   }
+}
+
+// The stats, for what only runs once they are unlocked.
+/** @returns {Stats} */
+export function loadedStats() {
+  if (!state.stats) {
+    throw new Error('The stats are read before they are loaded')
+  }
+
+  return state.stats
 }

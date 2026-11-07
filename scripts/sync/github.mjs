@@ -23,11 +23,17 @@ function resolveToken() {
   return execFileSync('gh', ['auth', 'token'], { encoding: 'utf8' }).trim()
 }
 
+/** @type {(ms: number) => Promise<void>} */
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // A call to GitHub, its answer read whole: { ok, status, body }, the body parsed when the call succeeded, else as text.
 // Made again on a 5xx, 403 or 429 answer (after its retry-after, if any), on a connection that fails, and on a body that
 // comes back empty or cut short, as GitHub sometimes sends: one bad answer must not end a full sync.
+/**
+ * @param {string} url
+ * @param {{ method?: string, headers?: Record<string, string>, body?: string }} init
+ * @returns {Promise<GithubResponse>}
+ */
 export async function request(url, init) {
   for (let attempt = 1; ; attempt++) {
     const last = attempt === REQUEST_ATTEMPTS
@@ -53,10 +59,17 @@ export async function request(url, init) {
 
 // What GitHub answered, for an error: in CI only its status, since its messages name the organization's repositories
 // and the logs of a public repository are public.
+/** @param {GithubResponse} response */
 function responseDetail(response) {
   return process.env.CI ? '' : `: ${response.body}`
 }
 
+/**
+ * @template Answer
+ * @param {GraphqlQuery<Answer>} query
+ * @param {Record<string, string | number | null | undefined>} variables
+ * @returns {Promise<Answer>}
+ */
 export async function graphql(query, variables) {
   const response = await request('https://api.github.com/graphql', {
     method: 'POST',
@@ -67,7 +80,7 @@ export async function graphql(query, variables) {
     throw new Error(`GitHub API responded ${response.status}${responseDetail(response)}`)
   }
 
-  const { body } = response
+  const body = /** @type {{ data: Answer, errors?: { type: string, path?: (string | number)[] }[] }} */ (response.body)
   // A reviewer the token may not read, such as a team when it cannot read the organization's teams, comes back null
   // with an error of its own: the rest of the answer stands.
   const errors = (body.errors ?? []).filter((error) => !error.path?.includes('requestedReviewer'))
@@ -79,14 +92,20 @@ export async function graphql(query, variables) {
   return body.data
 }
 
+/** @type {{ used: number, waiting: (() => void)[] }} */
 const restSlots = { used: 0, waiting: [] }
 
+/**
+ * @template Result
+ * @param {() => Promise<Result>} task
+ * @returns {Promise<Result>}
+ */
 async function withRestSlot(task) {
   if (restSlots.used < REST_CONCURRENCY) {
     restSlots.used++
   } else {
     // A call that ends hands its slot over.
-    await new Promise((resolve) => restSlots.waiting.push(resolve))
+    await /** @type {Promise<void>} */ (new Promise((resolve) => restSlots.waiting.push(resolve)))
   }
   try {
     return await task()
@@ -101,6 +120,10 @@ async function withRestSlot(task) {
 }
 
 // REST call, null when the resource does not exist: a repository without Actions has no runs.
+/**
+ * @param {string} path
+ * @returns {Promise<unknown>}
+ */
 export async function rest(path) {
   return withRestSlot(async () => {
     const response = await request(`https://api.github.com${path}`, { headers: { accept: 'application/vnd.github+json' } })
@@ -115,7 +138,15 @@ export async function rest(path) {
   })
 }
 
+/**
+ * @template Item, Result
+ * @param {Item[]} items
+ * @param {number} limit
+ * @param {(item: Item) => Promise<Result>} callback
+ * @returns {Promise<Result[]>}
+ */
 export async function mapWithConcurrency(items, limit, callback) {
+  /** @type {Result[]} */
   const results = []
   let next = 0
   const workers = Array.from({ length: limit }, async () => {

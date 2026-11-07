@@ -28,7 +28,7 @@ export function renderSquadFilter() {
     state.squad = ''
     storeSquad()
   }
-  const picker = $('[data-squad-filter]')
+  const picker = $('[data-squad-filter]', HTMLSelectElement)
   picker.replaceChildren(new Option('Toutes les squads', ''), ...squads.map((squad) => new Option(squad.name, squad.name)))
   picker.value = state.squad
   picker.hidden = squads.length === 0
@@ -42,7 +42,7 @@ export function renderSquadFilter() {
 // the same, to none when the data no longer covers it (36 months) or when it is left out. Called before the tiles are
 // drawn. Under the picker, the days compared to.
 function renderComparePicker() {
-  const picker = $('[data-compare]')
+  const picker = $('[data-compare]', HTMLSelectElement)
   const sameAsBefore = state.stats !== null && sameDays(comparedRange('previous'), comparedRange('year'))
   const offered = (mode) =>
     state.stats === null || (!(sameAsBefore && mode === 'year') && !overlapsPeriod(periodRange(), comparedRange(mode)))
@@ -76,6 +76,16 @@ function renderComparePicker() {
   }
 }
 
+// The two days of the date picker.
+function dateFields() {
+  const { elements } = $('[data-date-range-form]', HTMLFormElement)
+
+  return {
+    from: /** @type {HTMLInputElement} */ (elements.namedItem('from')),
+    to: /** @type {HTMLInputElement} */ (elements.namedItem('to')),
+  }
+}
+
 export function renderPeriodSelector() {
   renderComparePicker()
   for (const button of $$('[data-period]')) {
@@ -90,13 +100,13 @@ export function renderPeriodSelector() {
   if (!state.stats) {
     return
   }
-  for (const button of $$('[data-period]')) {
+  for (const button of $$('[data-period]', HTMLButtonElement)) {
     button.disabled = !periodAvailable(button.dataset.period)
     button.title = button.disabled ? 'Historique en cours de synchronisation : un mois de plus à chaque synchro' : ''
   }
   const { min, max } = dateBounds()
   $('[data-date-range-note]').textContent = `Du ${dateFormat.format(dayDate(min))} à la dernière synchro.`
-  const { from, to } = $('[data-date-range-form]').elements
+  const { from, to } = dateFields()
   from.min = min
   from.max = max
   to.min = from.value || min
@@ -107,8 +117,8 @@ export function renderPeriodSelector() {
 export function setupFilters({ render }) {
   // An open repository list, date picker or sync menu closes when clicking anywhere else.
   document.addEventListener('click', (event) => {
-    for (const filter of $$('[data-repo-filter][open], [data-date-range][open], [data-sync-menu][open]')) {
-      if (!filter.contains(event.target)) {
+    for (const filter of $$('[data-repo-filter][open], [data-date-range][open], [data-sync-menu][open]', HTMLDetailsElement)) {
+      if (!filter.contains(/** @type {Node} */ (event.target))) {
         filter.open = false
       }
     }
@@ -127,7 +137,7 @@ export function setupFilters({ render }) {
   }
 
   $('[data-squad-filter]').addEventListener('change', (event) => {
-    state.squad = event.target.value
+    state.squad = /** @type {HTMLSelectElement} */ (event.target).value
     storeSquad()
     if (state.stats) {
       render(false)
@@ -136,27 +146,27 @@ export function setupFilters({ render }) {
   })
 
   // Picked dates: the form opens on the days of the period shown, and applies once both are valid.
-  const datePicker = $('[data-date-range]')
-  const dateForm = $('[data-date-range-form]')
+  const datePicker = $('[data-date-range]', HTMLDetailsElement)
+  const dateForm = $('[data-date-range-form]', HTMLFormElement)
   datePicker.addEventListener('toggle', () => {
     if (!datePicker.open || !state.stats) {
       return
     }
-    const { from, to } = dateForm.elements
+    const { from, to } = dateFields()
     const range = state.period === CUSTOM_PERIOD ? state.range : { from: parisDay(periodRange().start), to: dateBounds().max }
     from.value = range.from
     to.value = range.to
     to.min = range.from
   })
-  dateForm.elements.from.addEventListener('input', (event) => {
-    dateForm.elements.to.min = event.target.value || dateBounds().min
+  dateFields().from.addEventListener('input', (event) => {
+    dateFields().to.min = /** @type {HTMLInputElement} */ (event.target).value || dateBounds().min
   })
   dateForm.addEventListener('submit', (event) => {
     event.preventDefault()
     if (!state.stats) {
       return
     }
-    const { from, to } = dateForm.elements
+    const { from, to } = dateFields()
     state.period = CUSTOM_PERIOD
     state.range = { from: from.value, to: to.value }
     storePeriod()
@@ -173,7 +183,7 @@ export function setupFilters({ render }) {
 
   // A comparison only changes the tiles of the period.
   $('[data-compare]').addEventListener('change', (event) => {
-    state.compare = event.target.value
+    state.compare = /** @type {HTMLSelectElement} */ (event.target).value
     storePeriod()
     if (state.stats) {
       renderComparePicker()
@@ -185,7 +195,7 @@ export function setupFilters({ render }) {
   })
 
   $('[data-search]').addEventListener('input', (event) => {
-    state.query = event.target.value.trim().toLowerCase()
+    state.query = /** @type {HTMLInputElement} */ (event.target).value.trim().toLowerCase()
     if (state.stats) {
       renderTables(false)
       renderCollaboration()

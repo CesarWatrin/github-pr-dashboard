@@ -21,17 +21,40 @@ import { MINUTE_MS, parisDay, workHoursBetween } from './time.js'
 export const SIZE_BUCKETS = [10, 100, 500, 1000, Infinity]
 const TOP_HOTFIX_REPOS = 3
 
+// What happened in a bucket of the series.
+/** @typedef {{ key: string, opened: number, merged: number, comments: number, approvals: number, releases: number, hotfixes: number, deployments: number, corrective: number }} BucketCounts */
+// What a person opened in a repository over the range.
+/** @typedef {{ opened: number, code: number, release: number, integration: number, merged: number, closedUnmerged: number, unreviewed: number, hotfix: number, reviewed: number, timesToMerge: number[], timesToFirstReview: number[], sizes: number[], added: number, deleted: number }} AuthorTally */
+// What a person reviewed in a repository over the range, the pull requests by key.
+/** @typedef {{ reviewed: Map<string, PullRequestRecord>, approvedPrs: Set<string>, silentApprovedPrs: Set<string>, comments: number, changesRequested: number, merges: number }} ReviewerTally */
+// The deployments of a repository, and the delays of its code and of its corrective deployments.
+/** @typedef {{ deployments: number, corrective: number, leadTimes: number[], restoreTimes: number[] }} DeliveryTally */
+// The Dependabot updates of a repository.
+/** @typedef {{ opened: number, merged: number, closed: number, timesToMerge: number[], waiting: number, oldestWaitingAt: number | null }} DependencyTally */
+
+/** @param {PullRequestRecord} pr */
 const keyOf = (pr) => `${pr.repo}#${pr.number}`
+/** @param {number} lines */
 const sizeOf = (lines) => SIZE_BUCKETS.findIndex((max) => lines < max)
 
 // Stats of the range [start, end), in milliseconds. Authors are counted on the pull requests they opened in it,
 // whenever these were merged; reviewers on what they did in it.
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {TimeRange} range
+ */
 export function computePeriod(records, { start, end, bucket }) {
   const startAt = Math.floor(start / MINUTE_MS)
   const endAt = Math.ceil(end / MINUTE_MS)
+  /**
+   * @param {number | null} at
+   * @returns {at is number}
+   */
   const inRange = (at) => at !== null && at >= startAt && at < endAt
+  /** @param {number} at */
   const bucketKey = (at) => bucketOfDay(parisDay(at * MINUTE_MS), bucket)
   const keys = bucketsOf(start, end, bucket)
+  /** @type {Map<string, BucketCounts>} */
   const buckets = new Map(
     keys.map(({ key }) => [
       key,
@@ -39,15 +62,27 @@ export function computePeriod(records, { start, end, bucket }) {
     ]),
   )
   // Person stats are kept per repository so that the page can add them up over any selection of repositories.
+  /** @type {Map<string, Map<string, AuthorTally>>} */
   const authors = new Map()
+  /** @type {Map<string, Map<string, ReviewerTally>>} */
   const reviewers = new Map()
+  /** @type {Map<string, Map<string, { prs: number, comments: number }>>} */
   const reviewerSeries = new Map()
+  /** @type {Map<string, { repo: string, reviewed: Set<string>, comments: number }>} */
   const repositories = new Map()
+  /** @type {Set<string>} */
   const reviewedPullRequests = new Set()
+  /** @type {({ repo: string, bucket: string, size: number } & ReturnType<typeof cycleOf>)[]} */
   const cycles = []
+  /** @type {{ max: number, prs: number, comments: number, timesToMerge: number[] }[]} */
   const sizes = SIZE_BUCKETS.map((max) => ({ max, prs: 0, comments: 0, timesToMerge: [] }))
   let releases = 0
   let mergedWithFailedChecks = 0
+  /**
+   * @param {number} at
+   * @param {Exclude<keyof BucketCounts, 'key'>} field
+   * @param {number} [amount]
+   */
   const bump = (at, field, amount = 1) => {
     const bucket = buckets.get(bucketKey(at))
     if (bucket) {
@@ -55,6 +90,11 @@ export function computePeriod(records, { start, end, bucket }) {
     }
   }
 
+  /**
+   * @param {string} login
+   * @param {string} repo
+   * @returns {AuthorTally}
+   */
   const author = (login, repo) =>
     getOrCreate(getOrCreate(authors, login, () => new Map()), repo, () => ({
       opened: 0,
@@ -72,6 +112,11 @@ export function computePeriod(records, { start, end, bucket }) {
       added: 0,
       deleted: 0,
     }))
+  /**
+   * @param {string} login
+   * @param {string} repo
+   * @returns {ReviewerTally}
+   */
   const reviewer = (login, repo) =>
     getOrCreate(getOrCreate(reviewers, login, () => new Map()), repo, () => ({
       reviewed: new Map(),
@@ -81,10 +126,17 @@ export function computePeriod(records, { start, end, bucket }) {
       changesRequested: 0,
       merges: 0,
     }))
+  /** @param {string} name */
   const repository = (name) => getOrCreate(repositories, name, () => ({ repo: name, reviewed: new Set(), comments: 0 }))
   // Who reviews whom: each distinct reviewer of a code pull request opened in the range counts once for the pair of its
   // author and that reviewer, whenever the review came.
+  /** @type {Map<string, { author: string, reviewer: string, repos: Map<string, number> }>} */
   const pairs = new Map()
+  /**
+   * @param {string} authorLogin
+   * @param {string} reviewerLogin
+   * @param {string} repo
+   */
   const addPair = (authorLogin, reviewerLogin, repo) => {
     const pair = getOrCreate(pairs, `${authorLogin}\n${reviewerLogin}`, () => ({
       author: authorLogin,
@@ -96,10 +148,15 @@ export function computePeriod(records, { start, end, bucket }) {
 
   // DORA: deployments, the delay of code to production, the corrective deployments (hotfixes and reverts, the
   // rework rate) and their own delay (the time to restore).
+  /** @type {Map<string, DeliveryTally>} */
   const delivery = new Map()
+  /** @param {string} repo */
   const deliveryOf = (repo) => getOrCreate(delivery, repo, () => ({ deployments: 0, corrective: 0, leadTimes: [], restoreTimes: [] }))
   // The deployments of each repository per bucket, as [deployments, corrective ones], for the calendar of deployments.
+  /** @type {Map<string, Map<string, [number, number]>>} */
   const calendar = new Map()
+  // A deployment merged in the range.
+  /** @param {PullRequestRecord & { mergedAt: number }} pr */
   const addDeployment = (pr) => {
     const stats = deliveryOf(pr.repo)
     const cell = getOrCreate(getOrCreate(calendar, pr.repo, () => new Map()), bucketKey(pr.mergedAt), () => [0, 0])
@@ -115,8 +172,12 @@ export function computePeriod(records, { start, end, bucket }) {
   }
 
   // Dependabot: the updates opened over the range, and those still waiting whatever the range.
+  /** @type {Map<string, DependencyTally>} */
   const dependencies = new Map()
+  /** @type {Map<string, { opened: number, merged: number }>} */
   const ecosystems = new Map()
+  // A Dependabot update.
+  /** @param {PullRequestRecord & { dependency: string }} pr */
   const addDependency = (pr) => {
     const stats = getOrCreate(dependencies, pr.repo, () => ({
       opened: 0,
@@ -146,7 +207,13 @@ export function computePeriod(records, { start, end, bucket }) {
   }
 
   // TMA: the hotfix pull requests and the people who make them.
+  /**
+   * @type {{ opened: number, merged: number, timesToMerge: number[], timesToFirstReview: number[],
+   *   people: Map<string, { hotfixes: number, timesToMerge: number[], repositories: Map<string, number>, lastAt: number }>,
+   *   repositories: Map<string, number> }}
+   */
   const hotfixes = { opened: 0, merged: 0, timesToMerge: [], timesToFirstReview: [], people: new Map(), repositories: new Map() }
+  /** @param {PullRequestRecord} pr */
   const addHotfix = (pr) => {
     const person = getOrCreate(hotfixes.people, pr.author, () => ({
       hotfixes: 0,
@@ -179,10 +246,10 @@ export function computePeriod(records, { start, end, bucket }) {
     }
 
     if (pr.deployment && inRange(pr.mergedAt)) {
-      addDeployment(pr)
+      addDeployment(/** @type {PullRequestRecord & { mergedAt: number }} */ (pr))
     }
     if (pr.dependency) {
-      addDependency(pr)
+      addDependency(/** @type {PullRequestRecord & { dependency: string }} */ (pr))
     }
 
     // Everything else only covers code pull requests written by people.
@@ -199,7 +266,7 @@ export function computePeriod(records, { start, end, bucket }) {
       continue
     }
     if (inRange(pr.deployedAt ?? null)) {
-      deliveryOf(pr.repo).leadTimes.push(workHoursBetween(pr.createdAt, pr.deployedAt))
+      deliveryOf(pr.repo).leadTimes.push(workHoursBetween(pr.createdAt, /** @type {number} */ (pr.deployedAt)))
     }
 
     if (opened) {
@@ -307,7 +374,7 @@ export function computePeriod(records, { start, end, bucket }) {
       silentApprovalRate: approvedPairs ? round(silentPairs / approvedPairs, 3) : null,
       checksFailedShare: rate(mergedWithFailedChecks, merged),
     },
-    series: keys.map(({ key, partial }) => ({ ...buckets.get(key), partial })),
+    series: keys.map(({ key, partial }) => ({ .../** @type {BucketCounts} */ (buckets.get(key)), partial })),
     // Durations and sizes stay as lists: medians cannot be added up across repositories.
     authors: [...authors].map(([login, perRepository]) => ({
       login,
@@ -376,7 +443,7 @@ export function computePeriod(records, { start, end, bucket }) {
       medianTimeToFirstReviewHours: round(median(hotfixes.timesToFirstReview), 1),
       people: [...hotfixes.people]
         .map(([login, person]) => {
-          const code = [...authors.get(login).values()].reduce((total, stats) => total + stats.code, 0)
+          const code = [.../** @type {Map<string, AuthorTally>} */ (authors.get(login)).values()].reduce((total, stats) => total + stats.code, 0)
 
           return {
             login,
@@ -411,25 +478,35 @@ export function computePeriod(records, { start, end, bucket }) {
 // first look (pickup), from that first review or comment to the last approval before the merge, or to the merge
 // without any (review), from that approval to the merge (merge), from the merge to production (deploy), and from the
 // opening to the merge and to production. What comes after the merge does not count: the pull request was already in.
+/** @param {PullRequestRecord} pr */
 function cycleOf(pr) {
   const merged = pr.mergedAt !== null
-  const before = merged ? pr.interventions.filter(([, at]) => at <= pr.mergedAt) : pr.interventions
+  // Read only once merged, as deployedAt once deployed.
+  const mergedAt = /** @type {number} */ (pr.mergedAt)
+  const before = merged ? pr.interventions.filter(([, at]) => at <= mergedAt) : pr.interventions
   const firstAt = before[0]?.[1] ?? null
   const approvedAt = before.findLast(([, , state]) => state === 'APPROVED')?.[1] ?? null
   const deployed = merged && !isMissing(pr.deployedAt)
+  const deployedAt = /** @type {number} */ (pr.deployedAt)
+  /**
+   * @param {number} from
+   * @param {number} to
+   */
   const hours = (from, to) => round(workHoursBetween(from, to), 1)
 
   return {
     pickup: firstAt === null ? null : hours(pr.createdAt, firstAt),
-    review: merged && firstAt !== null ? hours(firstAt, approvedAt ?? pr.mergedAt) : null,
-    merge: merged && approvedAt !== null ? hours(approvedAt, pr.mergedAt) : null,
-    deploy: deployed ? hours(pr.mergedAt, pr.deployedAt) : null,
-    toMerge: merged ? hours(pr.createdAt, pr.mergedAt) : null,
-    toProduction: deployed ? hours(pr.createdAt, pr.deployedAt) : null,
+    review: merged && firstAt !== null ? hours(firstAt, approvedAt ?? mergedAt) : null,
+    merge: merged && approvedAt !== null ? hours(approvedAt, mergedAt) : null,
+    deploy: deployed ? hours(mergedAt, deployedAt) : null,
+    toMerge: merged ? hours(pr.createdAt, mergedAt) : null,
+    toProduction: deployed ? hours(pr.createdAt, deployedAt) : null,
   }
 }
 
+/** @param {({ repo: string } & DeliveryTally)[]} repositories */
 function deliveryStats(repositories) {
+  /** @param {DeliveryTally[]} rows */
   const summary = (rows) => ({
     deployments: sum(rows, 'deployments'),
     corrective: sum(rows, 'corrective'),
@@ -446,12 +523,18 @@ function deliveryStats(repositories) {
   }
 }
 
+/**
+ * @param {({ repo: string } & DependencyTally)[]} repositories
+ * @param {{ ecosystem: string, opened: number, merged: number }[]} ecosystems
+ */
 function dependencyStats(repositories, ecosystems) {
+  /** @param {DependencyTally[]} rows */
   const oldest = (rows) => {
     const times = rows.map((row) => row.oldestWaitingAt).filter((time) => time !== null)
 
     return times.length ? new Date(Math.min(...times) * MINUTE_MS).toISOString() : null
   }
+  /** @param {DependencyTally[]} rows */
   const summary = (rows) => ({
     opened: sum(rows, 'opened'),
     merged: sum(rows, 'merged'),

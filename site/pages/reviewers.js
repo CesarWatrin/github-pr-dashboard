@@ -98,7 +98,7 @@ export function renderPersonPicker() {
   if (!reviewers.some((row) => row.login === state.person)) {
     state.person = reviewers[0]?.login ?? null
   }
-  const picker = $('[data-person]')
+  const picker = $('[data-person]', HTMLSelectElement)
   picker.replaceChildren(...reviewers.map((row) => new Option(displayName(row.login), row.login)))
   picker.value = state.person ?? ''
 }
@@ -106,7 +106,7 @@ export function renderPersonPicker() {
 // Listens to the person picker of the reviews over time.
 export function setupReviewers() {
   $('[data-person]').addEventListener('change', (event) => {
-    state.person = event.target.value
+    state.person = /** @type {HTMLSelectElement} */ (event.target).value
     renderMiniCharts()
   })
 }

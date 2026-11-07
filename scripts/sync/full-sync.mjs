@@ -10,6 +10,12 @@ import {
 
 // The full sync asks for a password of its own (FULL_SYNC_PASSWORD), see site/domain/full-sync.js: its key, and what the page
 // checks a password against, published inside syncTrigger. Null without it: no password asked, as before.
+/**
+ * @param {string | undefined} password
+ * @param {string} org
+ * @param {number} [iterations]
+ * @returns {Promise<{ key: Uint8Array<ArrayBuffer>, published: FullSyncCheck } | null>}
+ */
 export async function fullSyncSettings(password, org, iterations = FULL_SYNC_ITERATIONS) {
   if (!password) {
     return null
@@ -22,18 +28,31 @@ export async function fullSyncSettings(password, org, iterations = FULL_SYNC_ITE
 }
 
 // What the page gets to start a sync: the trigger, with what checks the full sync password when there is one.
+/**
+ * @param {Omit<SyncTrigger, 'repository'> & { repository: string | undefined } | null} trigger
+ * @param {FullSyncCheck | null | undefined} fullSync
+ * @returns {SyncTrigger | null}
+ */
 export function publishedSyncTrigger(trigger, fullSync) {
   if (!trigger?.repository) {
     return null
   }
 
-  return fullSync ? { ...trigger, fullSync } : trigger
+  const published = /** @type {SyncTrigger} */ (trigger)
+
+  return fullSync ? { ...published, fullSync } : published
 }
 
 // Whether this sync is a full one. On the command line, --full is enough: whoever runs it holds the .env. The full input
 // of the workflow is not: anyone with the dashboard password holds the dispatch token, so once the full sync has a
 // password of its own, the run also needs a proof of it, signed for this repository by the page. Without one, the run
 // syncs as usual, incrementally: refused, but the deployment goes on.
+/**
+ * @param {{
+ *   commandLine: boolean, requested: boolean, key: Uint8Array<ArrayBuffer> | undefined, proof: string | undefined,
+ *   repository: string | undefined, now: number,
+ * }} run
+ */
 export async function chooseFullSync({ commandLine, requested, key, proof, repository, now }) {
   if (commandLine || (requested && !key)) {
     return { full: true, refused: false }
@@ -41,7 +60,10 @@ export async function chooseFullSync({ commandLine, requested, key, proof, repos
   if (!requested) {
     return { full: false, refused: false }
   }
-  const proven = Boolean(repository) && (await checkFullSyncProof(proof, key, repository, now))
+  // Asked with a password set: a key; and checked for a repository only.
+  const proven =
+    Boolean(repository) &&
+    (await checkFullSyncProof(proof, /** @type {Uint8Array<ArrayBuffer>} */ (key), /** @type {string} */ (repository), now))
 
   return { full: proven, refused: !proven }
 }

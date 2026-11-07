@@ -290,7 +290,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
         Object.fromEntries(
           [...activity]
             .filter(([, perMonth]) => perMonth.has(month))
-            .map(([login, perMonth]) => [login, perMonth.get(month)])
+            .map(([login, perMonth]) => /** @type {[string, MonthlyFigures]} */ ([login, perMonth.get(month)]))
             .sort(([a], [b]) => a.localeCompare(b)),
         ),
       ]),

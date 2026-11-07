@@ -19,6 +19,7 @@ const MONTH_FINAL_AFTER_MS = 7 * DAY_MS
 // branch they bring in rather than after a merge (develop-into-main, sync-develop…).
 export const MONTHLY_REVISION = 3
 
+/** @type {(month: string) => string} */
 const nextMonth = (month) => {
   const [year, number] = month.split('-').map(Number)
 
@@ -26,11 +27,16 @@ const nextMonth = (month) => {
 }
 
 // The Paris months ('YYYY-MM') lying whole within [start, end), in milliseconds.
+/**
+ * @param {number} start
+ * @param {number} end
+ */
 export function wholeMonthsWithin(start, end) {
   let month = parisDay(start).slice(0, 7)
   if (parisMidnight(`${month}-01`) < start) {
     month = nextMonth(month)
   }
+  /** @type {string[]} */
   const months = []
   for (; parisMidnight(`${nextMonth(month)}-01`) <= end; month = nextMonth(month)) {
     months.push(month)
@@ -40,6 +46,7 @@ export function wholeMonthsWithin(start, end) {
 }
 
 // A month of the history kept before some of the figures of monthlyActivity() existed: none of its people has them all.
+/** @type {(kept: MonthlyHistory[string]) => boolean} */
 const isOutdated = (kept) =>
   Object.keys(kept).length > 0 &&
   Object.values(kept).every((figures) => MONTHLY_FIGURES.some((key) => !(key in figures)))
@@ -52,6 +59,12 @@ const isOutdated = (kept) =>
 // window: the figures it kept stay, and the people only those new figures name join it. A history counted the way of an
 // older MONTHLY_REVISION (revision) has every whole month of the window worked out again, once, final or not: the fix
 // applies to them too. The months gone from the window stay as kept.
+/**
+ * @param {MonthlyHistory} history
+ * @param {PullRequestRecord[]} records
+ * @param {{ windowStart: number, now: number, revision?: number }} range
+ * @returns {MonthlyHistory}
+ */
 export function mergeMonthlyHistory(history, records, { windowStart, now, revision = MONTHLY_REVISION }) {
   const revised = revision < MONTHLY_REVISION
   const activity = monthlyActivity(records)
@@ -60,7 +73,7 @@ export function mergeMonthlyHistory(history, records, { windowStart, now, revisi
     const worked = Object.fromEntries(
       [...activity]
         .filter(([, perMonth]) => perMonth.has(month))
-        .map(([login, perMonth]) => [login, perMonth.get(month)])
+        .map(([login, perMonth]) => /** @type {[string, MonthlyFigures]} */ ([login, perMonth.get(month)]))
         .sort(([a], [b]) => a.localeCompare(b)),
     )
     if (revised || !(month in history) || parisMidnight(`${nextMonth(month)}-01`) > now - MONTH_FINAL_AFTER_MS) {
@@ -82,15 +95,16 @@ export function mergeMonthlyHistory(history, records, { windowStart, now, revisi
 // or a new SNAPSHOT_VERSION must not lose it. The local stats file first, else the deployed page (PUBLISHED_STATS_URL,
 // by default the GitHub Pages address of the repository in CI). Stats encrypted with another password, or without any
 // history, give none.
+/** @returns {Promise<{ history: MonthlyHistory, revision: number } | null>} */
 export async function readPublishedHistory() {
   const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '').split('/')
   const url = process.env.PUBLISHED_STATS_URL ?? (repo ? `https://${owner.toLowerCase()}.github.io/${repo}/data/stats.enc.json` : null)
   const sources = [
-    async () => JSON.parse(await readFile(STATS_PATH, 'utf8')),
+    async () => /** @type {EncryptedStats} */ (JSON.parse(await readFile(STATS_PATH, 'utf8'))),
     async () => {
       const response = url ? await fetch(url, { cache: 'no-store' }) : null
 
-      return response?.ok ? response.json() : null
+      return response?.ok ? /** @type {Promise<EncryptedStats>} */ (response.json()) : null
     },
   ]
   for (const source of sources) {

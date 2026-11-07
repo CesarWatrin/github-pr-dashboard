@@ -11,7 +11,8 @@ const records = [record('ada', '2026-06-01T09:00:00Z'), record('ben', '2026-06-0
 
 beforeEach(() => {
   useStats({ squads: [{ name: 'Boutique', members: ['ada', 'cleo'], lead: 'ada' }], pullRequests: records })
-  /** @type {any} */ (globalThis).location = { hash: '#/' }
+  // The page reads the hash of its address: a made-up one, all the model needs.
+  Object.defineProperty(globalThis, 'location', { value: { hash: '#/' }, configurable: true, writable: true })
 })
 afterEach(() => {
   delete globalThis.location

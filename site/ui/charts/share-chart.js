@@ -21,12 +21,13 @@ const cycleShareRows = (row) => [
 ]
 
 /**
+ * @template {{ label: string, shares: Record<string, number | null> | null }} Row
  * @param {HTMLElement} container
  * @param {object} options
- * @param {any[]} options.rows each with its label and the share of each part (shares)
+ * @param {Row[]} options.rows
  * @param {string} options.ariaLabel
  * @param {{ key: string, label: string, color: string }[]} [options.stages] the parts: the stages of the cycle by default
- * @param {(row: any) => { label: string, value: string, color?: string }[]} [options.tooltipRows]
+ * @param {(row: Row) => { label: string, value: string, color?: string }[]} [options.tooltipRows]
  */
 export function shareChart(container, { rows, ariaLabel, stages = CYCLE_STAGES, tooltipRows = cycleShareRows }) {
   const width = container.clientWidth

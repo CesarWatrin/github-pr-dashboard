@@ -25,6 +25,10 @@
 - A change in a computation or a sync rule comes with tests in `tests/` (`structure.md`), on made-up data only: invented repositories,
   people and figures, never anything taken from the snapshot.
 - A change in a computation: before and after comparison on the same snapshot (see `sync.md`).
+- A change meant to keep the page as it is (a refactoring, a move of code): render every page and dialog of `main`
+  and of the branch on the same stats, frozen at the same time, at the five widths below, and compare their DOM: it
+  must be identical, the console empty. Made-up stats first (`tests/fixtures/stats.mjs`), then the real ones of a
+  preview (below).
 - A visible change: a preview with real data, outside the repository.
   - Data, without a full sync (see below): copy `.cache/snapshot.json` to a temporary folder and, only if its
     `version` matches `SNAPSHOT_VERSION`, run the sync with `SNAPSHOT_PATH` and `STATS_PATH` pointing there, a

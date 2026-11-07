@@ -13,7 +13,8 @@ paths:
   deploy); its import map gives every module the same `?v=__BUILD__` and preloads them all, so that the Pages cache (10
   minutes) never mixes versions and the page loads at once. Imports are plain relative paths; `npm run modules` after
   adding, moving or removing a module.
-- Helpers: `$()`, `el()`, `svg()` (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
+- Helpers: `$()` and `$$()` (with the kind of element when the code needs more than an `HTMLElement`), `el()`, `svg()`
+  (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the

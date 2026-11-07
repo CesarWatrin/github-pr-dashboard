@@ -79,6 +79,7 @@ function waitedFor(pr) {
 
 // Unlike the unblock page, about the code, the « Pour moi » page lists releases and integrations too: they wait for
 // their reviews and code owners all the same. A tag tells them apart.
+/** @type {PullRequestKind[]} */
 const ME_KINDS = ['code', 'integration', 'release']
 
 const ME_ITEMS = {
@@ -141,7 +142,7 @@ function meQueue() {
 export function renderMe(mode) {
   const people = mePeople()
   const { me, queue } = meQueue()
-  const picker = $('[data-me-picker]')
+  const picker = $('[data-me-picker]', HTMLSelectElement)
   const placeholder = new Option('Choisir une personne', '')
   placeholder.disabled = true
   picker.replaceChildren(placeholder, ...people.map((login) => new Option(displayName(login), login)))
@@ -161,7 +162,7 @@ export function renderMe(mode) {
 }
 
 function renderNotifyToggle() {
-  const button = $('[data-notify-toggle]')
+  const button = $('[data-notify-toggle]', HTMLButtonElement)
   button.hidden = !notificationsSupported()
   if (button.hidden) {
     return
@@ -186,7 +187,7 @@ async function toggleNotifications() {
 // Listens to the person picker and the notifications toggle, and to the permission of the browser.
 export function setupMe() {
   $('[data-me-picker]').addEventListener('change', (event) => {
-    state.me = event.target.value
+    state.me = /** @type {HTMLSelectElement} */ (event.target).value
     storeMe()
     renderMe('enter')
   })

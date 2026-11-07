@@ -31,7 +31,15 @@ enforces what can be checked; the rest is for review.
   by `index.html` in the order of the cascade: a later file wins at the same specificity, `touch.css` stays last. A new
   file goes into that list at its place.
 - Types are JSDoc, checked by `npm run typecheck` (TypeScript, no emit): the browser and Node run the very files of
-  the repository, without build.
+  the repository, without build. The rules (`site/domain/`, `site/lib/`, `site/model/`, `scripts/`) are strict
+  (`tsconfig.strict.json`: every parameter typed, nulls handled); the view is checked without strict mode for now.
+  **Never `any`**, explicit or in a `.d.ts` (`tests/architecture.test.mjs` refuses it): `unknown`, narrowed where read,
+  for a value really unknown; a generic (`@template`) for what a function passes through.
+- The shapes everyone shares are global types of `types/`: `stats.d.ts` (the published stats, the records),
+  `page.d.ts` (the state of the page), `sync.d.ts` (the snapshot and the answers of GitHub), `globals.d.ts` (what the
+  DOM types lack). A shape one module uses stays a `@typedef` of that module.
+- `$(selector, Kind)` finds an element of a kind (`HTMLDialogElement`, `HTMLInputElement`…), typed so and checked when
+  found; `$(selector)` alone gives an `HTMLElement`. `$$()` likewise, for all of them.
 
 ## The sync (`scripts/`)
 

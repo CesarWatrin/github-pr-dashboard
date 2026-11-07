@@ -14,14 +14,23 @@ export const RUNS_OVERLAP_MS = DAY_MS
 // Runs that check code, on pull requests and pushes: scheduled, manual and Dependabot runs are left out.
 const CI_EVENTS = ['pull_request', 'pull_request_target', 'push', 'merge_group']
 // Cancelled and skipped runs reach no verdict: they are left out too.
+/** @type {(string | null)[]} */
 const VERDICT_CONCLUSIONS = ['success', 'failure', 'timed_out', 'startup_failure']
+/** @type {(string | null)[]} */
 const FAILED_CONCLUSIONS = ['failure', 'timed_out', 'startup_failure']
 
 // Returns null when too many pull requests changed for the search API, the caller then refetches the window.
 // The Actions runs of a repository created between two days (UTC, included), the ones that check code.
+/**
+ * @param {string} name
+ * @param {string} from
+ * @param {string} to
+ * @returns {Promise<SnapshotRun[]>}
+ */
 async function fetchRepositoryRuns(name, from, to) {
+  /** @type {(page: number) => string} */
   const path = (page) => `/repos/${ORG}/${name}/actions/runs?created=${from}..${to}&per_page=${RUNS_PAGE_SIZE}&page=${page}`
-  const first = await rest(path(1))
+  const first = /** @type {GithubRunsPage | null} */ (await rest(path(1)))
   if (first === null) {
     return []
   }
@@ -33,7 +42,9 @@ async function fetchRepositoryRuns(name, from, to) {
   }
   // The other pages at once: REST_CONCURRENCY bounds the calls.
   const pages = Math.ceil(Math.min(first.total_count, RUNS_QUERY_LIMIT) / RUNS_PAGE_SIZE)
-  const others = await Promise.all(Array.from({ length: pages - 1 }, (_, index) => rest(path(index + 2))))
+  const others = /** @type {GithubRunsPage[]} */ (
+    await Promise.all(Array.from({ length: pages - 1 }, (_, index) => rest(path(index + 2))))
+  )
 
   return [first, ...others]
     .flatMap((body) => body.workflow_runs)
@@ -41,6 +52,11 @@ async function fetchRepositoryRuns(name, from, to) {
     .map((run) => toRun(name, run))
 }
 
+/**
+ * @param {string} repo
+ * @param {GithubRun} run
+ * @returns {SnapshotRun}
+ */
 function toRun(repo, run) {
   return {
     id: run.id,
@@ -55,6 +71,10 @@ function toRun(repo, run) {
 }
 
 // Runs of the repositories pushed to since then: pull requests and pushes both push commits.
+/**
+ * @param {string} sinceIso
+ * @param {Date} now
+ */
 export async function fetchRuns(sinceIso, now) {
   const repositories = await listActiveRepositories(sinceIso)
   const perRepository = await Promise.all(
@@ -66,7 +86,12 @@ export async function fetchRuns(sinceIso, now) {
 
 // Actions runs per repository, workflow and Paris day, as [runs, failed, rerun, durations in seconds]: the page adds
 // up the days of the range it shows.
+/**
+ * @param {Omit<SnapshotRun, 'id'>[]} runs
+ * @returns {WorkflowRuns[]}
+ */
 export function computeCi(runs) {
+  /** @type {Map<string, WorkflowRuns>} */
   const workflows = new Map()
   for (const run of runs) {
     if (!VERDICT_CONCLUSIONS.includes(run.conclusion)) {
@@ -76,7 +101,7 @@ export function computeCi(runs) {
     if (!workflows.has(key)) {
       workflows.set(key, { repo: run.repo, workflow: run.workflow, days: {} })
     }
-    const day = (workflows.get(key).days[parisDay(run.createdAt)] ??= [0, 0, 0, []])
+    const day = (/** @type {WorkflowRuns} */ (workflows.get(key)).days[parisDay(run.createdAt)] ??= [0, 0, 0, []])
     day[0]++
     day[1] += FAILED_CONCLUSIONS.includes(run.conclusion) ? 1 : 0
     day[2] += run.attempt > 1 ? 1 : 0

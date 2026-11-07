@@ -76,7 +76,7 @@ function reportContent() {
 
 export function renderReport() {
   const { months, month, current, previous, whole, groups, champions, repos, arrivals } = reportContent()
-  const picker = $('[data-report-month]')
+  const picker = $('[data-report-month]', HTMLSelectElement)
   picker.replaceChildren(
     ...months.toReversed().map((option) => new Option(`${capitalize(monthName(option))}${option === months.at(-1) ? ', en cours' : ''}`, option)),
   )
@@ -251,7 +251,8 @@ export function setupReport() {
   $('[data-report-copy]').addEventListener('click', copyReport)
   $('[data-report-month]').addEventListener('change', (event) => {
     const months = reportMonths()
-    state.reportMonth = event.target.value === months.at(-1) ? null : event.target.value
+    const { value } = /** @type {HTMLSelectElement} */ (event.target)
+    state.reportMonth = value === months.at(-1) ? null : value
     renderReport()
   })
 }

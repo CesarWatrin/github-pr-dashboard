@@ -8,8 +8,10 @@ import { DAY_MS, parisMidnight } from '../../site/domain/time.js'
 
 describe('comparisonRange', () => {
   // A week of whole Paris days across the change to summer time of Sunday 29 March 2026.
+  /** @type {TimeRange} */
   const AFTER_CHANGE = { start: parisMidnight('2026-03-30'), end: parisMidnight('2026-04-06'), bucket: 'day' }
   // A preset period: 30 days up to a sync in the morning.
+  /** @type {TimeRange} */
   const PRESET = { start: Date.parse('2026-10-07T09:30:00Z'), end: Date.parse('2026-11-06T09:30:00Z'), bucket: 'day' }
 
   test('the previous period of whole days is the same number of days right before, whatever the change of time', () => {
@@ -37,6 +39,7 @@ describe('comparisonRange', () => {
   })
 
   test('29 February is compared with the 28th of the year before', () => {
+    /** @type {TimeRange} */
     const leapDay = { start: parisMidnight('2028-02-29'), end: parisMidnight('2028-03-01'), bucket: 'day' }
     assert.deepEqual(comparisonRange(leapDay, 'year', 0), {
       start: parisMidnight('2027-02-28'),
@@ -62,7 +65,9 @@ describe('comparisonRange', () => {
 
 describe('sameDays', () => {
   // 12 months up to a sync in the morning, with no 29 February within the two years before.
+  /** @type {TimeRange} */
   const YEAR = { start: Date.parse('2025-11-06T09:30:00Z'), end: Date.parse('2026-11-06T09:30:00Z'), bucket: 'month' }
+  /** @type {TimeRange} */
   const MONTH = { start: Date.parse('2026-10-07T09:30:00Z'), end: Date.parse('2026-11-06T09:30:00Z'), bucket: 'day' }
 
   test('for 12 months, the period before is the same period last year', () => {
@@ -88,6 +93,7 @@ describe('sameDays', () => {
 describe('overlapsPeriod', () => {
   // Presets up to a sync in the morning, with no 29 February within the years before.
   const upTo = Date.parse('2026-11-06T09:30:00Z')
+  /** @type {(days: number) => TimeRange} */
   const preset = (days) => ({ start: upTo - days * DAY_MS, end: upTo, bucket: 'month' })
 
   test('the same period last year of 24 months takes back part of them', () => {

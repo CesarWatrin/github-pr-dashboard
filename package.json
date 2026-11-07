@@ -13,7 +13,7 @@
     "dev": "node --env-file-if-exists=.env scripts/sync.mjs --watch & node scripts/serve.mjs",
     "modules": "node scripts/module-map.mjs",
     "check": "find scripts site tests -name '*.js' -not -path 'site/data/*' -o -name '*.mjs' | xargs -n 1 node --check",
-    "typecheck": "tsc -p .",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.strict.json",
     "test": "node --test"
   },
   "devDependencies": {

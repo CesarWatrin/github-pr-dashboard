@@ -8,20 +8,26 @@
 // since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
 // the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
 // or comment, else its opening; requestedReviewers: the people still asked to review it.
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {{ requiredApprovals?: number, kinds?: PullRequestKind[] }} [options]
+ */
 export function openPullRequests(records, { requiredApprovals = 1, kinds = ['code'] } = {}) {
   return records
     .filter((pr) => !pr.bot && kinds.includes(pr.kind) && pr.mergedAt === null && !pr.closed && !pr.draft)
     .map((pr) => {
+      /** @type {Map<string, { state: ReviewState, at: number }>} */
       const decisions = new Map()
       for (const [login, at, state] of pr.interventions) {
         if (state === 'APPROVED' || state === 'CHANGES_REQUESTED') {
           decisions.set(login, { state, at })
         }
       }
+      /** @param {ReviewState} state */
       const decided = (state) => [...decisions].filter(([, decision]) => decision.state === state)
       const requested = decided('CHANGES_REQUESTED')
       const approved = decided('APPROVED')
-      const owners = !requested.length && pr.codeOwners?.length > 0
+      const owners = !requested.length && (pr.codeOwners?.length ?? 0) > 0
       const deciders = requested.length ? requested : owners ? [] : approved
       const stance = requested.length
         ? 'changes'
@@ -55,7 +61,11 @@ export function openPullRequests(records, { requiredApprovals = 1, kinds = ['cod
     })
 }
 
+// An open pull request, where it stands.
+/** @typedef {ReturnType<typeof openPullRequests>[number]} OpenPullRequest */
+
 // Where a person's own open pull request goes when it is not forgotten, by where it stands; the others go to open.
+/** @type {Partial<Record<string, 'ready' | 'changes' | 'owners'>>} */
 const OWN_LISTS = { approved: 'ready', changes: 'changes', owners: 'owners' }
 
 // What stands for one person among the open pull requests of openPullRequests(): those of other people still asking
@@ -63,8 +73,14 @@ const OWN_LISTS = { approved: 'ready', changes: 'changes', owners: 'owners' }
 // reviewed or commented since forgottenBefore (minutes since the epoch), whatever it stands, the longest forgotten
 // first; else after where it stands: approved by as many people as merging needs (ready), changes requested (changes),
 // blocked by code owners (owners), or any other stance (open), the longest where they stand first.
+/**
+ * @param {OpenPullRequest[]} open
+ * @param {string} login
+ * @param {{ forgottenBefore?: number }} [options]
+ */
 export function personalQueue(open, login, { forgottenBefore = -Infinity } = {}) {
   const own = open.filter((pr) => pr.author === login)
+  /** @type {Record<'ready' | 'changes' | 'owners' | 'open', OpenPullRequest[]>} */
   const lists = { ready: [], changes: [], owners: [], open: [] }
   for (const pr of own.filter((other) => other.lastAt > forgottenBefore).sort((a, b) => a.since - b.since)) {
     lists[OWN_LISTS[pr.stance] ?? 'open'].push(pr)

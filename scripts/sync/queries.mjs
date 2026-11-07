@@ -17,6 +17,7 @@ const PULL_REQUEST_FIELDS = `
   reviewRequests(first: 10) { nodes { asCodeOwner requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
 `
 
+/** @type {GraphqlQuery<{ organization: { repositories: Connection<{ name: string, pushedAt: string }> } }>} */
 export const REPOSITORIES_QUERY = `
   query($org: String!, $cursor: String) {
     organization(login: $org) {
@@ -27,6 +28,7 @@ export const REPOSITORIES_QUERY = `
     }
   }`
 
+/** @type {GraphqlQuery<{ organization: { repositories: Connection<GithubRepositoryDetails> } }>} */
 export const REPOSITORY_DETAILS_QUERY = `
   query($org: String!, $cursor: String) {
     organization(login: $org) {
@@ -43,6 +45,7 @@ export const REPOSITORY_DETAILS_QUERY = `
     }
   }`
 
+/** @type {GraphqlQuery<{ repository: { pullRequests: Connection<GithubPullRequest> } }>} */
 export const REPOSITORY_PULL_REQUESTS_QUERY = `
   query($org: String!, $name: String!, $cursor: String) {
     repository(owner: $org, name: $name) {
@@ -53,6 +56,7 @@ export const REPOSITORY_PULL_REQUESTS_QUERY = `
     }
   }`
 
+/** @type {GraphqlQuery<{ search: GithubSearch<GithubPullRequest> }>} */
 export const SEARCH_PULL_REQUESTS_QUERY = `
   query($query: String!, $cursor: String) {
     search(query: $query, type: ISSUE, first: 25, after: $cursor) {
@@ -63,6 +67,7 @@ export const SEARCH_PULL_REQUESTS_QUERY = `
   }`
 
 // The state of the checks of open pull requests, read again at each sync (fetchOpenChecks()).
+/** @type {GraphqlQuery<{ search: Connection<GithubOpenChecks> }>} */
 export const OPEN_CHECKS_QUERY = `
   query($query: String!, $cursor: String) {
     search(query: $query, type: ISSUE, first: 100, after: $cursor) {
@@ -72,6 +77,7 @@ export const OPEN_CHECKS_QUERY = `
   }`
 
 // The oldest pull request a person opened in the organization, whatever the window.
+/** @type {GraphqlQuery<{ search: { nodes: { createdAt: string }[] } }>} */
 export const FIRST_PULL_REQUEST_QUERY = `
   query($query: String!) {
     search(query: $query, type: ISSUE, first: 1) {
@@ -79,6 +85,7 @@ export const FIRST_PULL_REQUEST_QUERY = `
     }
   }`
 
+/** @type {(connection: string, fields: string) => string} */
 const remainingItemsQuery = (connection, fields) => `
   query($org: String!, $name: String!, $number: Int!, $cursor: String) {
     repository(owner: $org, name: $name) {
@@ -91,6 +98,11 @@ const remainingItemsQuery = (connection, fields) => `
     }
   }`
 
+/**
+ * @type {{
+ *   [Name in 'reviews' | 'comments']: GraphqlQuery<{ repository: { pullRequest: Pick<GithubPullRequest, Name> } }>
+ * }}
+ */
 export const REMAINING_ITEMS_QUERIES = {
   reviews: remainingItemsQuery('reviews', REVIEW_FIELDS),
   comments: remainingItemsQuery('comments', COMMENT_FIELDS),

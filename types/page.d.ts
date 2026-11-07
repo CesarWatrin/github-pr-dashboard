@@ -6,6 +6,7 @@ type CiStats = ReturnType<typeof import('../site/domain/ci.js').computeCi>
 type ReviewNetwork = ReturnType<typeof import('../site/domain/team.js').reviewNetwork>
 type ActivityBounds = ReturnType<typeof import('../site/domain/team.js').activityBounds>
 type Analysis = ReturnType<typeof import('../site/domain/analysis.js').analyze>
+type PersonalQueue = ReturnType<typeof import('../site/domain/open-pull-requests.js').personalQueue>
 
 // What the page shows over a whole month: its stats, and its CI when the runs cover it.
 interface MonthStats {
@@ -22,13 +23,6 @@ interface DayRange {
 interface TableSort {
   key: string
   direction: number
-}
-
-// A value worked out once per stats and key (a range, a selection…).
-interface Cached<Value> {
-  stats: Stats
-  key: string
-  value: Value
 }
 
 interface State {
@@ -49,27 +43,30 @@ interface State {
   technologyMeasure: string
   repos: Record<string, Set<string> | null>
   sort: Record<string, TableSort>
-  previousRows: Record<string, Map<string, unknown>>
+  // Per table, each row as last drawn (JSON), by its key: the rows that changed are highlighted.
+  previousRows: Record<string, Map<string, string>>
   syncStarting: string | null
-  syncRequest: { kind: string; since: number; until: number; generatedAt: string | null } | null
+  syncRequest: { kind: string; at: number } | null
   fullSyncAsked: boolean
   autoSyncTriedAt: number
   autoSyncing: boolean
   activity: { stats: Stats; bounds: ActivityBounds } | null
-  badges: { stats: Stats; standings: unknown } | null
+  badges: import('../site/model/badges.js').BadgeStandings | null
   reportMonth: string | null
   reportCache: { stats: Stats; months: Map<string, MonthStats> } | null
-  trendsPreparing: Stats | null
-  trendsCards: { stats: Stats; key: string; cards: HTMLElement[] } | null
+  trendsPreparing: { stats: Stats; squad: string } | null
+  trendsCards: { stats: Stats; key: string; cards: { card: HTMLElement; draw: () => void }[] } | null
   seenEvents: Set<string> | null
   seenUnapproved: Set<string> | null
   squad: string
+  // The squad of the last render(): going to or from a page without filters may change it.
+  renderedSquad?: string
   squadRecordsCache: { stats: Stats; records: Map<string, PullRequestRecord[]> } | null
-  squadPeriodsCache: { stats: Stats; periods: Map<string, PeriodStats> } | null
+  squadPeriodsCache: { stats: Stats | null; periods: Map<string, PeriodStats> } | null
   squadSort: { key: string; reversed: boolean }
   squadPerMember: boolean
   me: string | null
   notify: boolean
-  reviewsAsked: number | null
+  reviewsAsked: PersonalQueue['toReview'] | null
   fetchFailed: boolean
 }

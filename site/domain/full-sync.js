@@ -19,9 +19,18 @@ export const FULL_SYNC_PROOF_MAX_AGE = 2 * 60 * 60
 // sync into a quick one.
 export const CLOCK_SKEW = 5 * 60
 
+// Bytes of Web Crypto: those of a key, a digest, a signature.
+/** @typedef {Uint8Array<ArrayBuffer>} Bytes */
+
+/** @param {ArrayBuffer} bytes */
 const toHex = (bytes) => Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('')
+/** @param {ArrayBuffer} bytes */
 const toBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))
 
+/**
+ * @param {...Bytes} parts
+ * @returns {Bytes}
+ */
 function concat(...parts) {
   const bytes = new Uint8Array(parts.reduce((length, part) => length + part.length, 0))
   let offset = 0
@@ -34,6 +43,10 @@ function concat(...parts) {
 }
 
 // Same length, same text, in a time that does not tell where they differ.
+/**
+ * @param {string} a
+ * @param {string} b
+ */
 function sameText(a, b) {
   if (a.length !== b.length) {
     return false
@@ -48,6 +61,10 @@ function sameText(a, b) {
 
 // The salt only depends on the organization, so that the verifier stays the same from one sync to the next, and differs
 // from the salt of the dashboard key.
+/**
+ * @param {string} org
+ * @returns {Promise<Bytes>}
+ */
 export async function fullSyncSalt(org) {
   const digest = await subtle.digest('SHA-256', encoder.encode(`github-pr-dashboard:full-sync:${org}`))
 
@@ -55,6 +72,12 @@ export async function fullSyncSalt(org) {
 }
 
 // The key, 32 raw bytes: it signs the proofs, so it is never published, stored nor logged.
+/**
+ * @param {string} password
+ * @param {Bytes} salt
+ * @param {number} [iterations]
+ * @returns {Promise<Bytes>}
+ */
 export async function deriveFullSyncKey(password, salt, iterations = FULL_SYNC_ITERATIONS) {
   const material = await subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits'])
 
@@ -62,10 +85,16 @@ export async function deriveFullSyncKey(password, salt, iterations = FULL_SYNC_I
 }
 
 // What the page checks a password against, published in the encrypted stats: a hash of the key, not the key itself.
+/** @param {Bytes} key */
 export async function fullSyncVerifier(key) {
   return toBase64(await subtle.digest('SHA-256', concat(encoder.encode('verify:'), key)))
 }
 
+/**
+ * @param {Bytes} key
+ * @param {string} repository
+ * @param {number} at
+ */
 async function signature(key, repository, at) {
   const hmacKey = await subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
 
@@ -74,11 +103,23 @@ async function signature(key, repository, at) {
 
 // The proof that whoever asks for a full sync of this repository knows the password: `at.signature`, at in seconds since
 // the epoch.
+/**
+ * @param {Bytes} key
+ * @param {string} repository
+ * @param {number} at
+ */
 export async function fullSyncProof(key, repository, at) {
   return `${at}.${await signature(key, repository, at)}`
 }
 
 // True only for a proof signed with this key, for this repository, neither from the future nor older than maxAge.
+/**
+ * @param {unknown} proof
+ * @param {Bytes} key
+ * @param {string} repository
+ * @param {number} now
+ * @param {number} [maxAge]
+ */
 export async function checkFullSyncProof(proof, key, repository, now, maxAge = FULL_SYNC_PROOF_MAX_AGE) {
   const match = /^(0|[1-9]\d{0,11})\.([0-9a-f]{64})$/.exec(typeof proof === 'string' ? proof : '')
   if (!match) {

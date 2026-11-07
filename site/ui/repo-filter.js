@@ -13,12 +13,16 @@ export const REPO_FILTERS = {}
 export const repoFilterNames = () => Object.keys(REPO_FILTERS)
 
 // Repositories with activity in the table over the period, busiest first.
+/**
+ * @param {string} name
+ * @returns {[repo: string, count: number][]}
+ */
 export function repoOptions(name) {
   const counts = REPO_FILTERS[name].repoCounts()
   const repos = new Set(currentPeriod()[REPO_FILTERS[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
 
   return [...repos]
-    .map((repo) => [repo, counts.get(repo) ?? 0])
+    .map((repo) => /** @type {[string, number]} */ ([repo, counts.get(repo) ?? 0]))
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 }
 
@@ -63,21 +67,21 @@ export function repoFilterLabel(name, options) {
 
 // Checkboxes and shortcuts are updated in place so that keyboard focus stays where it is.
 function renderRepoFilterState(name, options = repoOptions(name)) {
-  const filter = $(`[data-repo-filter="${name}"]`)
+  const filter = $(`[data-repo-filter="${name}"]`, HTMLDetailsElement)
   const selection = state.repos[name]
   filter.classList.toggle('is-filtered', selection !== null)
   filter.querySelector('[data-repo-label]').textContent = repoFilterLabel(name, options)
-  for (const input of filter.querySelectorAll('input[data-repo]')) {
+  for (const input of /** @type {NodeListOf<HTMLInputElement>} */ (filter.querySelectorAll('input[data-repo]'))) {
     input.checked = inSelection(selection, input.dataset.repo)
   }
-  for (const input of filter.querySelectorAll('input[data-category]')) {
+  for (const input of /** @type {NodeListOf<HTMLInputElement>} */ (filter.querySelectorAll('input[data-category]'))) {
     const repos = reposOfCategory(options, input.dataset.category)
     const checked = repos.filter((repo) => inSelection(selection, repo)).length
     input.checked = checked === repos.length
     input.indeterminate = checked > 0 && checked < repos.length
   }
   const selected = listedSelection(name, options)
-  for (const button of filter.querySelectorAll('[data-preset]')) {
+  for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (filter.querySelectorAll('[data-preset]'))) {
     button.setAttribute('aria-pressed', String(sameSelection(selected, presetSelection(button.dataset.preset, options))))
   }
 }
@@ -97,7 +101,7 @@ function repoCheckbox(label, count, data) {
 
 // The list groups the repositories by type, each type with a checkbox of its own.
 export function renderRepoFilter(name) {
-  const filter = $(`[data-repo-filter="${name}"]`)
+  const filter = $(`[data-repo-filter="${name}"]`, HTMLDetailsElement)
   const list = filter.querySelector('[data-repo-list]')
   const options = repoOptions(name)
   const groups = CATEGORIES.map((category) => ({
@@ -136,7 +140,7 @@ export function renderRepoFilter(name) {
 
 // Builds the repository filter of a table or a page once, and listens to it: presets, checkboxes, search.
 export function setupRepoFilter(name) {
-  const filter = $(`[data-repo-filter="${name}"]`)
+  const filter = $(`[data-repo-filter="${name}"]`, HTMLDetailsElement)
   const presets = el('div', { className: 'repo-presets' })
   presets.dataset.repoPresets = ''
   const list = el('ul', { className: 'repo-filter-list' })

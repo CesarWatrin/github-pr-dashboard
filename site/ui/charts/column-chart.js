@@ -10,15 +10,16 @@ import { measureText } from './measure.js'
 
 // Columns over time buckets: one series, or several grouped side by side.
 /**
+ * @template {{ key: string, partial?: boolean }} Point
  * @param {HTMLElement} container
  * @param {object} options
- * @param {any[]} options.points the buckets, oldest first
- * @param {string} options.bucket day, week or month
- * @param {{ label: string, color: string, value: (point: any) => number }[]} options.series
+ * @param {Point[]} options.points the buckets, oldest first
+ * @param {Bucket} options.bucket
+ * @param {{ label: string, color: string, value: (point: Point) => number | null }[]} options.series
  * @param {string} options.ariaLabel
  * @param {boolean} [options.decimals]
  * @param {(value: number) => string} [options.format]
- * @param {(point: any) => { label: string, value: string }[]} [options.extraRows] more rows for the tooltip of a bucket
+ * @param {(point: Point) => { label: string, value: string }[]} [options.extraRows] more rows for the tooltip of a bucket
  */
 export function columnChart(
   container,

@@ -23,6 +23,10 @@ const PROJECT_MERGE = new RegExp(
   'i',
 )
 
+/**
+ * @param {Pick<SnapshotPullRequest, 'head' | 'base' | 'title'>} pr
+ * @returns {PullRequestKind}
+ */
 export function classify(pr) {
   const { head, base, title } = pr
   if (
@@ -46,34 +50,52 @@ export function classify(pr) {
 
 // Every action of someone other than the author on a pull request, oldest first. A review without inline
 // comments counts as one comment when it is a plain comment, not when it only approves or requests changes.
+/** @param {SnapshotPullRequest} pr */
 function reviewInterventions(pr) {
   const fromReviews = pr.reviews
     .filter((review) => review.submittedAt && review.author !== pr.author && !isBot(review.author))
     .map((review) => ({
       login: review.author,
-      at: review.submittedAt,
+      at: /** @type {string} */ (review.submittedAt),
       state: review.state,
       comments: review.comments + (review.state === 'COMMENTED' && review.comments === 0 ? 1 : 0),
     }))
   const fromComments = pr.comments
     .filter((comment) => comment.author !== pr.author && !isBot(comment.author))
-    .map((comment) => ({ login: comment.author, at: comment.createdAt, state: null, comments: 1 }))
+    .map((comment) => ({ login: comment.author, at: comment.createdAt, state: /** @type {ReviewState | null} */ (null), comments: 1 }))
 
   return [...fromReviews, ...fromComments].sort((a, b) => a.at.localeCompare(b.at))
 }
 
-export const minutes = (iso) => (iso ? Math.round(Date.parse(iso) / 60_000) : null)
+/**
+ * @overload
+ * @param {string} iso
+ * @returns {number}
+ */
+/**
+ * @overload
+ * @param {string | null | undefined} iso
+ * @returns {number | null}
+ */
+/** @param {string | null | undefined} iso */
+export function minutes(iso) {
+  return iso ? Math.round(Date.parse(iso) / 60_000) : null
+}
 
 // Production deployments: pull requests merged into master or main, back-merges between them aside.
+/** @type {(pr: Pick<SnapshotPullRequest, 'mergedAt' | 'base' | 'head'>) => boolean} */
 const isDeployment = (pr) => pr.mergedAt !== null && RELEASE_BASES.includes(pr.base) && !RELEASE_BASES.includes(pr.head)
 
 // Per repository, the times of its deployments, and per branch the times it was merged, sorted.
+/** @param {SnapshotPullRequest[]} pullRequests */
 export function deliveryIndex(pullRequests) {
+  /** @type {DeliveryIndex} */
   const index = { deployments: new Map(), branchMerges: new Map() }
-  const add = (map, key, value) => (map.has(key) ? map.get(key).push(value) : map.set(key, [value]))
+  /** @type {(map: Map<string, string[]>, key: string, value: string) => unknown} */
+  const add = (map, key, value) => (map.has(key) ? /** @type {string[]} */ (map.get(key)).push(value) : map.set(key, [value]))
   for (const pr of pullRequests) {
     if (isDeployment(pr)) {
-      add(index.deployments, pr.repo, pr.mergedAt)
+      add(index.deployments, pr.repo, /** @type {string} */ (pr.mergedAt))
     }
     if (pr.mergedAt) {
       add(index.branchMerges, `${pr.repo}:${pr.head}`, pr.mergedAt)
@@ -91,6 +113,11 @@ export function deliveryIndex(pullRequests) {
 // When a pull request reached production: merged into master or main, at once; into develop, with the next
 // deployment of its repository; into another branch, a project one, with the next deployment once that branch is
 // merged in turn. Null while it waits.
+/**
+ * @param {SnapshotPullRequest} pr
+ * @param {DeliveryIndex} index
+ * @returns {string | null}
+ */
 function deployedAt(pr, index) {
   if (!pr.mergedAt) {
     return null
@@ -98,9 +125,10 @@ function deployedAt(pr, index) {
   if (RELEASE_BASES.includes(pr.base)) {
     return pr.mergedAt
   }
+  /** @type {string | undefined} */
   let at = pr.mergedAt
   if (!INTEGRATION_BASES.includes(pr.base)) {
-    at = index.branchMerges.get(`${pr.repo}:${pr.base}`)?.find((time) => time >= at)
+    at = index.branchMerges.get(`${pr.repo}:${pr.base}`)?.find((time) => time >= /** @type {string} */ (at))
     if (!at) {
       return null
     }
@@ -111,6 +139,10 @@ function deployedAt(pr, index) {
 
 // Whether a pull request is one the page opens the timeline of (DETAILS_DAYS): open, or with an opening, a merge, a
 // closing, a review or a comment since detailsSince (ISO, null for the open ones only).
+/**
+ * @param {SnapshotPullRequest} pr
+ * @param {string | null} detailsSince
+ */
 function hasDetails(pr, detailsSince) {
   if (pr.state === 'OPEN') {
     return true
@@ -129,6 +161,12 @@ function hasDetails(pr, detailsSince) {
 // What the page needs of a pull request to compute the stats of any range, see site/domain/period.js, and to show its
 // timeline (detailsSince, see hasDetails()). Bot pull requests are only kept when they deploy or update a dependency
 // (Dependabot).
+/**
+ * @param {SnapshotPullRequest} pr
+ * @param {DeliveryIndex} index
+ * @param {string | null} [detailsSince]
+ * @returns {PullRequestRecord | null}
+ */
 export function toPeriodRecord(pr, index, detailsSince = null) {
   const kind = classify(pr)
   const production = kind === 'release' && RELEASE_BASES.includes(pr.base)
@@ -156,19 +194,21 @@ export function toPeriodRecord(pr, index, detailsSince = null) {
     closed: pr.state === 'CLOSED',
     lines: pr.additions + pr.deletions,
     mergedBy: pr.mergedBy && !isBot(pr.mergedBy) ? pr.mergedBy : null,
-    interventions: reviewInterventions(pr).map(({ login, at, state, comments }) => [login, minutes(at), state, comments]),
+    interventions: reviewInterventions(pr).map(
+      ({ login, at, state, comments }) => /** @type {Intervention} */ ([login, minutes(at), state, comments]),
+    ),
     ...(deployment && { deployment: true }),
     // A revert merged into production undoes a deployment, as a hotfix repairs one: the title says it.
     ...(deployment && /^revert\b/i.test(pr.title) && { revert: true }),
     ...(kind === 'code' && !bot && { deployedAt: minutes(deployedAt(pr, index)) }),
     // The lines a merged code pull request deletes, among its lines: the others are added.
     ...(kind === 'code' && !bot && pr.mergedAt && { deleted: pr.deletions }),
-    ...(['FAILURE', 'ERROR'].includes(pr.checks) && { checksFailed: true }),
+    ...(/** @type {(CheckState | null)[]} */ (['FAILURE', 'ERROR']).includes(pr.checks) && { checksFailed: true }),
     ...(dependency && { dependency }),
     // An open draft is not waiting for anyone yet.
     ...(pr.state === 'OPEN' && pr.draft && { draft: true }),
     // An open pull request GitHub does not let merge yet, while code owners are still asked to review it.
-    ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && pr.codeOwnerRequests?.length > 0 && { codeOwners: pr.codeOwnerRequests }),
+    ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && (pr.codeOwnerRequests?.length ?? 0) > 0 && { codeOwners: pr.codeOwnerRequests }),
     ...(requestedReviewers.length > 0 && { requestedReviewers }),
     // Only for the timelines the page opens: the title, and the state of the checks of the last commit (null without
     // any), read again at each sync for an open pull request.

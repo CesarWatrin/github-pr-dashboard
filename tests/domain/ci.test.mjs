@@ -7,6 +7,7 @@ import { computeCi } from '../../site/domain/ci.js'
 import { WEEK } from './records.mjs'
 
 describe('computeCi', () => {
+  /** @type {WorkflowRuns[]} */
   const WORKFLOWS = [
     {
       repo: 'web',
