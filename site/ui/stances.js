@@ -1,4 +1,4 @@
-// Where an open pull request stands (unblock page, « Pour moi »): the lists, their delays and their tags.
+// Where an open pull request stands (unblock page, « Mes PR »): the lists, their delays and their tags.
 
 import { formatNumber } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -89,7 +89,7 @@ export const FORGOTTEN = {
   empty: t('Aucune PR oubliée'),
 }
 
-// The lists of the « Pour moi » page, from personalQueue() of site/domain/open-pull-requests.js, in the order of the page. Named and
+// The lists of the « Mes PR » page, from personalQueue() of site/domain/open-pull-requests.js, in the order of the page. Named and
 // defined as on the unblock page, without its delays, but the forgotten ones: a pull request of the person shows in
 // one list only, forgotten whatever it stands, else after where it stands, the others in the last one.
 export const unblockStance = (key) => UNBLOCK_STANCES.find((stance) => stance.key === key)

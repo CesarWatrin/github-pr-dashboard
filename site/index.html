@@ -352,11 +352,11 @@
             </svg>
             À débloquer
           </a>
-          <a class="nav-link" href="#/pour-moi" data-route-link="me">
+          <a class="nav-link" href="#/mes-pr" data-route-link="me">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <circle cx="8" cy="5.5" r="2.5" /><path d="M3 13.5c.5-2.6 2.4-4 5-4s4.5 1.4 5 4" />
             </svg>
-            Pour moi
+            Mes PR
             <span class="nav-badge" data-reviews-badge hidden></span>
           </a>
           <a class="nav-link" href="#/bilan" data-route-link="report">
@@ -667,7 +667,7 @@
             </div>
           </div>
 
-          <!-- Pour moi -->
+          <!-- Mes PR -->
           <div class="route" data-route="me" hidden>
             <section class="card" aria-labelledby="me-title">
               <div class="card-toolbar">
@@ -679,7 +679,7 @@
                       <path d="M4 11.5V7a4 4 0 0 1 8 0v4.5l1 1.5H3z" />
                       <path d="M6.5 14.5a1.6 1.6 0 0 0 3 0" />
                     </svg>
-                    Me prévenir des reviews demandées
+                    Me prévenir des nouvelles PR
                   </button>
                   <label class="me-picker">
                     Je suis
@@ -695,9 +695,9 @@
                 D’après la dernière synchro, hors brouillons et PR des personnes parties. Les PR de release et
                 d’intégration y figurent aussi, étiquetées : elles attendent leurs reviews comme les autres. Le choix de
                 la personne reste dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles
-                faites à la personne. Le titre de l’onglet compte les reviews demandées, sur toutes les pages. Avec la
-                cloche, le navigateur affiche une notification à chaque nouvelle demande, tant qu’un onglet du dashboard
-                reste ouvert, même en arrière-plan.
+                faites à la personne. Le titre de l’onglet et le badge de « Mes PR » comptent toutes les PR de ces listes, sur
+                toutes les pages. Avec la cloche, le navigateur affiche une notification à chaque PR qui y arrive, tant
+                qu’un onglet du dashboard reste ouvert, même en arrière-plan.
               </p>
             </section>
 
@@ -1216,7 +1216,7 @@
                   restreint les pages à ses PR : leurs chiffres, qui les relit, leurs délais, leurs mises en prod ; les
                   cartes de l’équipe n’y montrent que ses membres. La CI reste celle de toute l’organisation, une
                   exécution ne se rattachant à personne ; le compteur du jour, compté pour toute l’organisation,
-                  disparaît. Le bilan du mois, le palmarès et « Pour moi » ne se filtrent jamais. Sur la page Squads,
+                  disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la page Squads,
                   « Par personne » divise les volumes (PR, relectures, commentaires, PR en attente) par le nombre de
                   membres ; les délais et les parts restent ceux de la squad. « Relu en interne » : part des relectures
                   des PR de la squad faites par ses membres. Le chef de squad, quand la squad en a un, compte comme ses
@@ -1410,7 +1410,7 @@
                   l’ouverture ou le dernier échange. Sans aucune review ni commentaire depuis plus d’un
                   mois, elle est rangée à part, parmi les oubliées.
                 </dd>
-                <dt>Pour moi</dt>
+                <dt>Mes PR</dt>
                 <dd>
                   Les mêmes PR ouvertes, vues par la personne choisie, celles de release et d’intégration comprises
                   (étiquetées : À débloquer ne garde que le code) : celles des autres dont GitHub lui
@@ -1440,7 +1440,7 @@
         <footer class="page-footer">
           <p>
             Données GitHub actualisées automatiquement : tant qu’elle est affichée, ou en arrière-plan avec les
-            notifications de « Pour moi », la page lance une synchro rapide dès qu’elles ont plus de 10 minutes, et le
+            notifications de « Mes PR », la page lance une synchro rapide dès qu’elles ont plus de 10 minutes, et le
             workflow tourne aussi en semaine, à intervalles irréguliers. Pour les
             mettre à jour tout de suite, utilise le bouton ⟳ de la navigation, ou ouvre le workflow
             <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a>

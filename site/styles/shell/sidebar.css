@@ -93,7 +93,7 @@
   stroke-linejoin: round;
 }
 
-/* The reviews asked of the person of « Pour moi » (ui/title.js), a red badge as on the icon of a phone app: at the end
+/* The reviews asked of the person of « Mes PR » (ui/title.js), a red badge as on the icon of a phone app: at the end
    of its link, and on the corner of the button that opens the menu on narrower screens. */
 .nav-badge {
   display: inline-grid;

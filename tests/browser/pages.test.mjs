@@ -195,6 +195,22 @@ for (const language of ['fr', 'en']) {
       assert.ok((await rows()) < everyone)
     })
 
+    test('the tab and the badges count every pull request of the lists of « Mes PR »', async () => {
+      await show('me')
+      await page.evaluate(`(() => {
+        const picker = document.querySelector('[data-me-picker]')
+        picker.value = 'ada-l'
+        picker.dispatchEvent(new Event('change'))
+      })()`)
+      const listed = await page.evaluate(`document.querySelectorAll('[data-me] li:not(.feed-empty)').length`)
+      assert.ok(listed > 1, 'the made-up person has pull requests in several lists')
+      assert.ok(await page.evaluate(`document.title.startsWith('(${listed}) ')`))
+      assert.deepEqual(
+        await page.evaluate(`[...document.querySelectorAll('[data-reviews-badge]')].map((badge) => badge.textContent)`),
+        [String(listed), String(listed)],
+      )
+    })
+
     test('the theme toggles, and locking asks first', async () => {
       const theme = await page.evaluate(`document.documentElement.dataset.theme ?? ''`)
       await page.evaluate(`document.querySelector('[data-theme-toggle]').click()`)

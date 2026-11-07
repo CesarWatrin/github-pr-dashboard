@@ -5,7 +5,7 @@ import { currentRoute, ROUTES } from './routes.js'
 import { loadedStats, state } from './state.js'
 
 // The squads of the stats (SQUADS of the sync), none without them. The one picked in the filters scopes the pages to the
-// pull requests its members opened; the pages without filters (the report, the badges, « Pour moi ») never are.
+// pull requests its members opened; the pages without filters (the report, the badges, « Mes PR ») never are.
 /** @type {() => Squad[]} */
 export const squadsOf = () => state.stats?.squads ?? []
 

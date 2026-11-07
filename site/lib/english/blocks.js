@@ -72,7 +72,7 @@ export const BLOCKS = {
   'PR et reviews de toute l’équipe, et ce qui attend': 'PRs and reviews of the whole team, and what is waiting',
   'À débloquer': 'Unblock',
   'Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord': 'Open PRs waiting for someone, oldest first',
-  'Pour moi': 'For me',
+  'Mes PR': 'My PRs',
   'Les reviews qu’on me demande, mes PR ouvertes et celles prêtes à merger': 'The reviews asked of me, my open PRs and those ready to merge',
   'Auteurs': 'Authors',
   'Qui livre quoi, et comment': 'Who delivers what, and how',
@@ -440,4 +440,6 @@ export const BLOCKS = {
   'hotfix (pluriel)': 'hotfixes',
   'mois (singulier)': 'month',
   'mois (pluriel)': 'months',
+  'PR à traiter (singulier)': 'PR to handle',
+  'PR à traiter (pluriel)': 'PRs to handle',
 }

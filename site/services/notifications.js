@@ -1,57 +1,63 @@
-// Browser notifications of the reviews newly asked of the person of « Pour moi ».
+// Browser notifications of what is new for the person of « Mes PR »: a pull request in any of its lists.
 
-import { formatNumber } from '../lib/format.js'
+import { plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { currentRoute, ROUTES } from '../model/routes.js'
 import { state } from '../model/state.js'
 
-// The reviews already asked of that person when the tab last looked (sessionStorage): a reload for a new build notifies
-// those asked meanwhile, a new tab none of those already there.
-const KNOWN_REVIEWS_STORAGE_KEY = 'github-pr-dashboard:known-reviews'
+// What the lists of that person held when the tab last looked (sessionStorage): a reload for a new build notifies what
+// came meanwhile, a new tab nothing of what was already there.
+const KNOWN_ITEMS_STORAGE_KEY = 'github-pr-dashboard:known-items'
 
-// Notifications of the reviews newly asked of the person picked on « Pour moi », once turned on in this browser and
-// allowed by it. Some browsers, on phones, have the API without the constructor: they show none.
+// Notifications of what is new for the person picked on « Mes PR », once turned on in this browser and allowed by
+// it. Some browsers, on phones, have the API without the constructor: they show none.
 export const notificationsSupported = () => 'Notification' in window
 export const notificationsOn = () => state.notify && notificationsSupported() && Notification.permission === 'granted'
 
-const reviewKey = (pr) => `${pr.repo}#${pr.number}`
+/** @param {{ repo: string, number: number }} pr */
+const pullRequestKey = (pr) => `${pr.repo}#${pr.number}`
+// A pull request in a list: one that moves to another list, ready to merge say, is new there.
+/** @param {{ list: string, pr: { repo: string, number: number } }} item */
+const itemKey = ({ list, pr }) => `${list}:${pullRequestKey(pr)}`
 
-function readKnownReviews() {
+function readKnownItems() {
   try {
-    return JSON.parse(sessionStorage.getItem(KNOWN_REVIEWS_STORAGE_KEY))
+    return JSON.parse(sessionStorage.getItem(KNOWN_ITEMS_STORAGE_KEY) ?? 'null')
   } catch {
     return null
   }
 }
 
-function storeKnownReviews(known) {
+/** @param {{ me: string | null, items: string[] }} known */
+function storeKnownItems(known) {
   try {
-    sessionStorage.setItem(KNOWN_REVIEWS_STORAGE_KEY, JSON.stringify(known))
+    sessionStorage.setItem(KNOWN_ITEMS_STORAGE_KEY, JSON.stringify(known))
   } catch {
-    // Without storage, the reviews of the next stats are set against none: they notify only from the following ones.
+    // Without storage, the lists of the next stats are set against none: they notify only from the following ones.
   }
 }
 
-// The reviews asked of the person that the tab did not know yet notify, unless « Pour moi » is on screen, where they
-// show: one notification for several. The first stats of a tab, or a person picked anew, notify nothing.
-export function notifyNewReviews(me) {
-  const reviews = state.reviewsAsked ?? []
-  const known = readKnownReviews()
-  const fresh = known?.me === me ? reviews.filter((pr) => !known.reviews.includes(reviewKey(pr))) : []
-  storeKnownReviews({ me, reviews: reviews.map(reviewKey) })
+// The pull requests of the lists of the person that the tab did not know yet notify, unless « Mes PR » is on screen,
+// where they show: one notification for several, counting all that waits, as the tab and the badge do. The first stats
+// of a tab, or a person picked anew, notify nothing.
+/** @param {string | null} me */
+export function notifyNewItems(me) {
+  const items = state.forMe ?? []
+  const known = readKnownItems()
+  const fresh = known?.me === me && Array.isArray(known.items) ? items.filter((item) => !known.items.includes(itemKey(item))) : []
+  storeKnownItems({ me, items: items.map(itemKey) })
   if (!fresh.length || !notificationsOn() || (document.visibilityState === 'visible' && currentRoute() === 'me')) {
     return
   }
   const [first] = fresh
-  const shown = fresh.slice(0, 3).map(reviewKey).join(', ')
+  const shown = fresh.slice(0, 3).map(({ pr }) => pullRequestKey(pr)).join(', ')
   try {
-    const title = fresh.length > 1 ? t('{count} reviews demandées', { count: formatNumber(fresh.length) }) : t('Review demandée')
-    const notification = new Notification(title, {
+    const notification = new Notification(plural(items.length, 'PR à traiter', 'PR à traiter'), {
       body:
         fresh.length > 1
           ? `${shown}${fresh.length > 3 ? '…' : ''}`
-          : t('{pullRequest} de {author}', { pullRequest: reviewKey(first), author: displayName(first.author) }),
+          : t('{pullRequest} de {author}', { pullRequest: pullRequestKey(first.pr), author: displayName(first.pr.author) }),
     })
     notification.addEventListener('click', () => {
       window.focus()

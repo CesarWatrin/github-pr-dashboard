@@ -16,7 +16,7 @@ export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
 export const ROUTES = {
   overview: { hash: '#/', title: t('Vue d’ensemble'), subtitle: t('PR et reviews de toute l’équipe, et ce qui attend') },
   unblock: { hash: '#/a-debloquer', title: t('À débloquer'), subtitle: t('Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord'), period: false },
-  me: { hash: '#/pour-moi', title: t('Pour moi'), subtitle: t('Les reviews qu’on me demande, mes PR ouvertes et celles prêtes à merger'), filters: false },
+  me: { hash: '#/mes-pr', title: t('Mes PR'), subtitle: t('Les reviews qu’on me demande, mes PR ouvertes et celles prêtes à merger'), filters: false },
   authors: { hash: '#/auteurs', title: t('Auteurs'), subtitle: t('Qui livre quoi, et comment') },
   reviewers: { hash: '#/relecteurs', title: t('Relecteurs'), subtitle: t('Qui relit, et avec quelle profondeur') },
   cycle: { hash: '#/cycle', title: t('Cycle de vie'), subtitle: t('Où passe le temps d’une PR, de son ouverture à la prod') },

@@ -35,7 +35,7 @@ function lock(message) {
   }
   state.key = null
   state.stats = null
-  state.reviewsAsked = null
+  state.forMe = null
   renderTitle()
   showLock(message)
 }

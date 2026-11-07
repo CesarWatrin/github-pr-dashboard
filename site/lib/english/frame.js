@@ -54,8 +54,8 @@ export const FRAME = {
     'Code PRs of the last 30 days, front, back and mobile repositories: already merged, to review after the fact',
   'Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur.':
     'Notifications blocked for this site: allow them in the browser’s settings.',
-  'D’après la dernière synchro, hors brouillons et PR des personnes parties. Les PR de release et d’intégration y figurent aussi, étiquetées : elles attendent leurs reviews comme les autres. Le choix de la personne reste dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles faites à la personne. Le titre de l’onglet compte les reviews demandées, sur toutes les pages. Avec la cloche, le navigateur affiche une notification à chaque nouvelle demande, tant qu’un onglet du dashboard reste ouvert, même en arrière-plan.':
-    'As of the last sync, drafts and PRs of people who left aside. Release and integration PRs show too, tagged: they wait for their reviews like the others. The person picked stays in this browser. A review asked of a team does not show: only those asked of the person count. The tab title counts the reviews asked, on every page. With the bell, the browser shows a notification for each new request, as long as a tab of the dashboard stays open, even in the background.',
+  'D’après la dernière synchro, hors brouillons et PR des personnes parties. Les PR de release et d’intégration y figurent aussi, étiquetées : elles attendent leurs reviews comme les autres. Le choix de la personne reste dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles faites à la personne. Le titre de l’onglet et le badge de « Mes PR » comptent toutes les PR de ces listes, sur toutes les pages. Avec la cloche, le navigateur affiche une notification à chaque PR qui y arrive, tant qu’un onglet du dashboard reste ouvert, même en arrière-plan.':
+    'As of the last sync, drafts and PRs of people who left aside. Release and integration PRs show too, tagged: they wait for their reviews like the others. The person picked stays in this browser. A review asked of a team does not show: only those asked of the person count. The tab title and the badge of “My PRs” count every PR of these lists, on every page. With the bell, the browser shows a notification for each PR that comes into them, as long as a tab of the dashboard stays open, even in the background.',
   'Reviews qu’on m’a demandées': 'Reviews asked of me',
   'Prêtes à merger': 'Ready to merge',
   'Mes PR ouvertes': 'My open PRs',
@@ -160,9 +160,9 @@ export const FRAME = {
   'Tendances': 'Trends',
   'Analyse': 'Analysis',
   'À débloquer': 'Unblock',
-  'Pour moi': 'For me',
-  'Données GitHub actualisées automatiquement : tant qu’elle est affichée, ou en arrière-plan avec les notifications de « Pour moi », la page lance une synchro rapide dès qu’elles ont plus de 10 minutes, et le workflow tourne aussi en semaine, à intervalles irréguliers. Pour les mettre à jour tout de suite, utilise le bouton ⟳ de la navigation, ou ouvre le workflow <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a> puis clique sur « Run workflow » (accès en écriture au dépôt requis).':
-    'GitHub data refreshed automatically: while it shows, or in the background with the notifications of “For me”, the page starts a quick sync as soon as the data is more than 10 minutes old, and the workflow also runs on weekdays, at irregular intervals. To update it right away, use the ⟳ button of the navigation, or open the <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a> workflow then click “Run workflow” (write access to the repository required).',
+  'Mes PR': 'My PRs',
+  'Données GitHub actualisées automatiquement : tant qu’elle est affichée, ou en arrière-plan avec les notifications de « Mes PR », la page lance une synchro rapide dès qu’elles ont plus de 10 minutes, et le workflow tourne aussi en semaine, à intervalles irréguliers. Pour les mettre à jour tout de suite, utilise le bouton ⟳ de la navigation, ou ouvre le workflow <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a> puis clique sur « Run workflow » (accès en écriture au dépôt requis).':
+    'GitHub data refreshed automatically: while it shows, or in the background with the notifications of “My PRs”, the page starts a quick sync as soon as the data is more than 10 minutes old, and the workflow also runs on weekdays, at irregular intervals. To update it right away, use the ⟳ button of the navigation, or open the <a href="https://github.com/CesarWatrin/github-pr-dashboard/actions/workflows/deploy.yml">Sync and deploy</a> workflow then click “Run workflow” (write access to the repository required).',
   'Lancer une synchro complète ?': 'Start a full sync?',
   'Elle relit depuis GitHub toutes les PR des 12 derniers mois, dépôt par dépôt, avec leurs checks : <strong>15 à 20 minutes</strong>. Les PR plus anciennes restent telles qu’elles ont été lues. Pendant ce temps, les autres synchros attendent leur tour et la page garde les données actuelles.':
     'It reads again from GitHub every PR of the last 12 months, repository by repository, with their checks: <strong>15 to 20 minutes</strong>. Older PRs stay as they were read. Meanwhile, the other syncs wait their turn and the page keeps the current data.',
@@ -182,7 +182,7 @@ export const FRAME = {
   'DevOps': 'DevOps',
   'Du': 'From',
   'Au': 'To',
-  'Me prévenir des reviews demandées': 'Notify me of the reviews asked',
+  'Me prévenir des nouvelles PR': 'Notify me of new PRs',
   'Je suis': 'I am',
   'Copier le bilan': 'Copy the report',
   'Mot de passe de la synchro complète': 'Password of the full sync',
@@ -235,7 +235,5 @@ export const FRAME = {
   'PR de code ouvertes sur la période': 'Code PRs opened over the period',
   'Passer en mode clair': 'Switch to light mode',
   'Passer en mode sombre': 'Switch to dark mode',
-  '{count} reviews demandées': '{count} reviews asked',
-  'Review demandée': 'Review asked',
   '{pullRequest} de {author}': '{pullRequest} by {author}',
 }

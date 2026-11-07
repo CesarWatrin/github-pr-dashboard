@@ -18,7 +18,7 @@ paths:
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
-  method, report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour
+  method, report, awards and « Mes PR » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
   analysis, trends and squads pages the period only (`search: false`). The Méthode page has no link among the pages: a
   button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
@@ -101,7 +101,7 @@ paths:
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
   carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
   `squadLead()`) shows on its card and dialog, its avatar first and ringed (`squadAvatars()`).
-- **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
+- **« Mes PR » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
   `personalQueue()` of `site/domain/` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
@@ -112,13 +112,15 @@ paths:
   say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking. Its lists, like those of the unblock
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a
   short card, and no blank on a phone where they stack. `meQueue()` works the lists out for `renderMe()`,
-  which keeps the reviews asked (`state.reviewsAsked`): `renderTitle()` counts them in the tab title of every page,
-  « (3) Stats PR », and on a red badge (`[data-reviews-badge]`, `--notification`) at the end of the link of « Pour moi »
-  and on the corner of the menu button of narrow screens, hidden at 0. The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
-  blocks it) turns notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first);
-  `notifyNewReviews()` then shows one for the reviews asked since the tab last looked (`KNOWN_REVIEWS_STORAGE_KEY`,
-  in `sessionStorage`: a reload for a new build misses none, a new tab or another person notifies none of those
-  already there), one for several, none while « Pour moi » is on screen. A browser with the API but without the
+  which keeps the pull requests of every list (`state.forMe`, each in one list only): `renderTitle()` counts them all
+  in the tab title of every page, « (5) Stats PR », and on a red badge (`[data-reviews-badge]`, `--notification`) at
+  the end of the link of « Mes PR » and on the corner of the menu button of narrow screens, hidden at 0. The bell
+  (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser blocks it) turns
+  notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first); `notifyNewItems()` then shows
+  one for the pull requests new in any list since the tab last looked, one moved to another list (ready to merge, say)
+  being new there (`KNOWN_ITEMS_STORAGE_KEY`, in `sessionStorage`: a reload for a new build misses none, a new tab or
+  another person notifies none of those already there), counting them all as the tab does, one for several, none
+  while « Mes PR » is on screen. A browser with the API but without the
   constructor (phones) shows none: the title still counts.
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by

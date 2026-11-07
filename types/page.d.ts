@@ -67,6 +67,7 @@ interface State {
   squadPerMember: boolean
   me: string | null
   notify: boolean
-  reviewsAsked: PersonalQueue['toReview'] | null
+  // The pull requests of every list of « Mes PR » for the person picked there, as of the last sync.
+  forMe: { list: string; pr: PersonalQueue['toReview'][number] }[] | null
   fetchFailed: boolean
 }

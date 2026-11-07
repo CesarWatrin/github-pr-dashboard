@@ -1,4 +1,4 @@
-// Pour moi: the reviews asked of one person, their open pull requests, and the notifications of new ones.
+// Mes PR: the reviews asked of one person, their open pull requests, and the notifications of new ones.
 
 import { openPullRequests, personalQueue } from '../domain/open-pull-requests.js'
 import { minutesIso } from '../lib/dates.js'
@@ -7,7 +7,7 @@ import { t } from '../lib/i18n.js'
 import { displayName, isCurrent, mePeople } from '../model/people.js'
 import { requiredApprovals } from '../model/pull-requests.js'
 import { state, storeMe, storeNotify } from '../model/state.js'
-import { notificationsOn, notificationsSupported, notifyNewReviews } from '../services/notifications.js'
+import { notificationsOn, notificationsSupported, notifyNewItems } from '../services/notifications.js'
 import { $, el } from '../ui/dom.js'
 import { personLink, pullRequestLink } from '../ui/links.js'
 import { listItem, renderList } from '../ui/list.js'
@@ -80,7 +80,7 @@ function waitedFor(pr) {
   ]
 }
 
-// Unlike the unblock page, about the code, the « Pour moi » page lists releases and integrations too: they wait for
+// Unlike the unblock page, about the code, the « Mes PR » page lists releases and integrations too: they wait for
 // their reviews and code owners all the same. A tag tells them apart.
 /** @type {PullRequestKind[]} */
 const ME_KINDS = ['code', 'integration', 'release']
@@ -127,7 +127,7 @@ function ownItem(pr, { tagged = false, forgotten = false } = {}) {
     : listItem(pr.author, text, minutesIso(pr.since), `${stance.since} `)
 }
 
-// The person picked on « Pour moi », when still in the team, and their lists as of the last sync (null without one).
+// The person picked on « Mes PR », when still in the team, and their lists as of the last sync (null without one).
 function meQueue() {
   const me = mePeople().includes(state.me) ? state.me : null
   if (!me) {
@@ -158,10 +158,11 @@ export function renderMe(mode) {
     $(`[data-me-sub="${key}"]`).textContent = typeof list.hint === 'function' ? list.hint(required) : list.hint
     renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : t('Choisir une personne en haut de la page'))
   }
-  state.reviewsAsked = queue ? queue.toReview : null
+  // Everything its lists hold, each pull request in one list only: what the tab, the badges and the notifications count.
+  state.forMe = queue ? Object.keys(ME_LISTS).flatMap((list) => queue[list].map((pr) => ({ list, pr }))) : null
   renderTitle()
   renderNotifyToggle()
-  notifyNewReviews(me)
+  notifyNewItems(me)
 }
 
 function renderNotifyToggle() {

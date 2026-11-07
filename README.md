@@ -14,7 +14,7 @@ une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1
 la fenêtre. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
 les PR ouvertes par ses membres, et ce qui s'y passe (qui les relit, leurs délais, leurs mises en prod). La CI reste
 celle de toute l'organisation, une exécution ne se rattachant à aucune squad, et le compteur du jour, qui ne se
-découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Pour moi » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, la TMA et
+découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, la TMA et
 DevOps, un choix « Comparer à » met chaque chiffre de la période face à la période d'avant ou à la même période l'an
 dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
@@ -34,16 +34,18 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   les oubliées, sans review ni commentaire depuis plus d'un mois. Elle ne dépend pas de la période, seulement de la
   dernière synchro. En bas, les PR de code que leur auteur a mergées sans approbation sur les 30 derniers jours, dans
   les dépôts front, back et mobile, à relire après coup.
-- **Pour moi** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
+- **Mes PR** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
   dont GitHub lui demande encore la review (pas celles demandées à une équipe), puis les siennes, chacune dans une
   seule liste et sans délai minimum : prêtes à merger, changements demandés, bloquées par un code owner, oubliées
   (sans review ni commentaire depuis plus d'un mois, ce qui l'emporte sur le reste), et les autres, chacune avec où
   elle en est et qui elle attend. Les PR de release et d'intégration y figurent aussi, étiquetées. D'après la dernière
-  synchro. Le titre de l'onglet compte les reviews demandées à la personne, sur toutes les pages : « (3) Stats PR », et
-  un badge rouge le répète au bout de « Pour moi » dans la barre latérale, et sur le bouton du menu des écrans étroits.
-  Avec la cloche « Me prévenir des reviews demandées », le navigateur affiche une notification à chaque nouvelle
-  demande, tant qu'un onglet du dashboard reste ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand
-  « Pour moi » est à l'écran, aucune pour les demandes déjà là à l'ouverture de l'onglet.
+  synchro. Le titre de l'onglet compte toutes les PR des listes de la personne, sur toutes les pages : « (5) Stats PR » ;
+  un badge rouge le répète au bout de « Mes PR » dans la barre latérale, et sur le bouton du menu des écrans étroits,
+  et une notification compte de même quand une PR arrive dans l'une des listes.
+  Avec la cloche « Me prévenir des nouvelles PR », le navigateur affiche une notification à chaque PR qui arrive dans
+  l'une des listes (une review demandée, une PR à soi devenue prête à merger…), tant qu'un onglet du dashboard reste
+  ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand « Mes PR » est à l'écran, aucune pour les PR
+  déjà là à l'ouverture de l'onglet.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
   vert ou en orange quand elle a un bon sens ;
@@ -123,7 +125,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   mise en prod, chacun avec la médiane des dépôts du même type, et qui l'écrit et le relit.
 - **Noms des dépôts**, sur toutes les pages : un clic sur un nom de dépôt (tableaux, cartes, fiches) ouvre sa fiche,
   qui mène au dépôt sur GitHub.
-- **Frise d'une PR**, sur toutes les pages : un clic sur une PR (fil d'activité, À débloquer, Pour moi, PR mergées
+- **Frise d'une PR**, sur toutes les pages : un clic sur une PR (fil d'activité, À débloquer, Mes PR, PR mergées
   sans approbation) ouvre sa frise : son titre, l'état de la CI de son dernier commit, son ouverture, la première review ou le premier commentaire d'une autre
   personne, chaque demande de changements et chaque approbation avant le merge, le merge, puis l'arrivée en prod,
   avec l'attente en heures ouvrées avant chaque étape, à la minute près. Une PR encore ouverte, en brouillon ou pas
@@ -139,7 +141,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   s'allonge avec le temps jusqu'à 36 mois ; une période qui commence avant le dit.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
-Chaque page a son adresse (`#/a-debloquer`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
+Chaque page a son adresse (`#/a-debloquer`, `#/mes-pr`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
 `#/equipe`, `#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
@@ -179,7 +181,7 @@ lecture et écriture. Il voyage dans les stats chiffrées : toute personne qui a
 pour lancer ou annuler des runs de ce workflow et rien d'autre.
 
 Avec ce token, la page lance aussi une synchro rapide d'elle-même dès que ses données ont plus de 10 minutes, tant
-qu'elle est affichée (pas dans un onglet en arrière-plan, sauf avec les notifications de « Pour moi », qui sinon
+qu'elle est affichée (pas dans un onglet en arrière-plan, sauf avec les notifications de « Mes PR », qui sinon
 arriveraient en retard) : GitHub saute la plupart des déclenchements planifiés, et
 le cron seul laisse les données vieillir des heures. Elle regarde d'abord les derniers runs du workflow : une synchro
 en attente ou en cours est attendue, et rien n'est lancé si un run a démarré dans les 10 dernières minutes, depuis
