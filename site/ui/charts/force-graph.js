@@ -27,7 +27,7 @@ const PHONE_MAX_RADIUS = 16
 // At rest, the labels of the nodes asked for, else those of the MAX_LABELS heaviest; a node pointed at shows those of
 // its neighbours.
 const MAX_LABELS = 20
-const RING_WIDTH = 3
+export const RING_WIDTH = 3
 const ZOOM_LIMITS = [0.5, 4]
 // Moved less than this, a press on a node is a click.
 const DRAG_THRESHOLD = 4
@@ -66,7 +66,7 @@ export function forceGraph(container, { nodes, links, ariaLabel, details, hint, 
 
     return
   }
-  const height = Math.round(Math.min(640, Math.max(380, width * 0.62)))
+  const height = graphHeight(width)
   const heaviest = Math.max(...nodes.map((node) => node.value))
   const maxRadius = width < 600 ? PHONE_MAX_RADIUS : MAX_RADIUS
   const radius = (/** @type {GraphNode} */ node) => MIN_RADIUS + (maxRadius - MIN_RADIUS) * Math.sqrt(node.value / heaviest)
@@ -101,13 +101,8 @@ export function forceGraph(container, { nodes, links, ariaLabel, details, hint, 
     showDetails(details, null, hint)
   }
 
-  const clipId = `force-graph-clip-${(clipCount += 1)}`
   const chart = svg('svg', { class: 'force-graph', viewBox: `0 0 ${width} ${height}`, width, height, role: 'group', 'aria-label': ariaLabel })
-  const clip = svg('clipPath', { id: clipId, clipPathUnits: 'objectBoundingBox' })
-  clip.append(svg('circle', { cx: 0.5, cy: 0.5, r: 0.5 }))
-  const defs = svg('defs')
-  defs.append(clip)
-  chart.append(defs)
+  const clipId = addCircleClip(chart)
   const view = svg('g', { class: 'force-graph-view' })
   const linkLayer = svg('g', { class: 'force-graph-links' })
   const nodeLayer = svg('g', { class: 'force-graph-nodes' })
@@ -140,23 +135,7 @@ export function forceGraph(container, { nodes, links, ariaLabel, details, hint, 
     const size = radius(node)
     const group = svg('g', { class: 'force-graph-node', tabindex: 0, role: 'button', 'aria-label': node.label })
     group.setAttribute('aria-haspopup', 'dialog')
-    if (node.image) {
-      group.append(svg('circle', { class: 'force-graph-disc', r: size }))
-      const image = svg('image', { href: node.image, x: -size, y: -size, width: 2 * size, height: 2 * size, 'clip-path': `url(#${clipId})` })
-      // An avatar GitHub does not serve leaves the disc, rather than the mark of a broken image.
-      image.addEventListener('error', () => image.remove())
-      group.append(image)
-      group.append(...ringArcs(node.ring ?? [], size + RING_WIDTH / 2))
-    } else {
-      const square = svg('rect', { class: 'force-graph-square', x: -size, y: -size, width: 2 * size, height: 2 * size, rx: size * 0.35 })
-      if (node.fill) {
-        square.style.fill = node.fill
-      }
-      group.append(square)
-    }
-    const label = svg('text', { class: 'force-graph-label', y: size + RING_WIDTH + 11, 'text-anchor': 'middle' })
-    label.textContent = node.label
-    group.append(label)
+    group.append(...nodeShapes(node, size, clipId))
     group.classList.toggle('is-unlabelled', !labelled.has(node.id))
     group.classList.toggle('is-found', searched?.has(node.id) ?? false)
     onHover(
@@ -353,6 +332,48 @@ export function forceGraph(container, { nodes, links, ariaLabel, details, hint, 
   })
 }
 
+// The height of a network drawn at a width.
+/** @param {number} width */
+export const graphHeight = (width) => Math.round(Math.min(640, Math.max(380, width * 0.62)))
+
+// A clip path that cuts an image to the circle within its box, for the avatars of a network: its id.
+/** @param {SVGElement} chart */
+export function addCircleClip(chart) {
+  const id = `force-graph-clip-${(clipCount += 1)}`
+  const clip = svg('clipPath', { id, clipPathUnits: 'objectBoundingBox' })
+  clip.append(svg('circle', { cx: 0.5, cy: 0.5, r: 0.5 }))
+  const defs = svg('defs')
+  defs.append(clip)
+  chart.prepend(defs)
+
+  return id
+}
+
+// What draws a node around its centre: an avatar on a disc in its ring, or a filled square; and its label under it.
+/**
+ * @param {Pick<GraphNode, 'label' | 'image' | 'fill' | 'ring'>} node
+ * @param {number} size
+ * @param {string} clipId
+ * @returns {SVGElement[]}
+ */
+export function nodeShapes(node, size, clipId) {
+  const label = svg('text', { class: 'force-graph-label', y: size + RING_WIDTH + 11, 'text-anchor': 'middle' })
+  label.textContent = node.label
+  if (!node.image) {
+    const square = svg('rect', { class: 'force-graph-square', x: -size, y: -size, width: 2 * size, height: 2 * size, rx: size * 0.35 })
+    if (node.fill) {
+      square.style.fill = node.fill
+    }
+
+    return [square, label]
+  }
+  const image = svg('image', { href: node.image, x: -size, y: -size, width: 2 * size, height: 2 * size, 'clip-path': `url(#${clipId})` })
+  // An avatar GitHub does not serve leaves the disc, rather than the mark of a broken image.
+  image.addEventListener('error', () => image.remove())
+
+  return [svg('circle', { class: 'force-graph-disc', r: size }), image, ...ringArcs(node.ring ?? [], size + RING_WIDTH / 2), label]
+}
+
 // The ring of a person: an arc per share, a gap of the surface between two, a full circle for a single one.
 /**
  * @param {{ color: string, share: number }[]} ring
@@ -394,7 +415,7 @@ function ringArcs(ring, r) {
  * @param {() => void} enter
  * @param {() => void} leave
  */
-function onHover(target, enter, leave) {
+export function onHover(target, enter, leave) {
   target.addEventListener('pointerenter', enter)
   target.addEventListener('pointerleave', leave)
   target.addEventListener('focus', enter)
@@ -407,7 +428,7 @@ function onHover(target, enter, leave) {
  * @param {import('../tooltip.js').Tooltip | null} content
  * @param {string} hint
  */
-function showDetails(details, content, hint) {
+export function showDetails(details, content, hint) {
   if (!content) {
     details.replaceChildren(el('span', { className: 'force-graph-hint', textContent: hint }))
 

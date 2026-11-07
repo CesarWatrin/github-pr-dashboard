@@ -1,50 +1,20 @@
-// Cartographie: the team as two networks over the period, who reviews whom and who writes in which repository.
+// Cartographie: the team as two networks over the period, who reviews whom and who writes in which repository, and
+// the film of the period (replay.js).
 
-import { elides, formatNumber, plural } from '../lib/format.js'
-import { t } from '../lib/i18n.js'
-import { mapStacks, repositoryMap, reviewMap } from '../model/cartography.js'
-import { displayName } from '../model/people.js'
-import { CATEGORIES, repoInfo, STACK_CATEGORIES, stackType } from '../model/repositories.js'
-import { matchesQuery, periodTitle } from '../model/selection.js'
-import { squadsOf } from '../model/squads.js'
-import { state } from '../model/state.js'
-import { dataTable } from '../ui/charts/data-table.js'
-import { forceGraph } from '../ui/charts/force-graph.js'
-import { renderLegend } from '../ui/charts/legend.js'
-import { $ } from '../ui/dom.js'
-import { askToOpen, avatarUrl, OPEN_PERSON, OPEN_REPOSITORY } from '../ui/links.js'
-
-// The colour of a repository type; the repositories that are neither front, back nor mobile in the muted ink.
-const typeColor = (category) => CATEGORIES.find((type) => type.key === category)?.color ?? 'var(--text-muted)'
-const TYPE_LEGEND = CATEGORIES.map((type) => ({ label: type.label, color: type.color ?? 'var(--text-muted)' }))
-
-// A person: their avatar in a ring of the share of their code pull requests in front, back and mobile repositories.
-function personNode(login, value, stackFor) {
-  const { counts } = stackFor(login)
-  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
-
-  return {
-    id: `person:${login}`,
-    label: displayName(login),
-    value,
-    image: avatarUrl(login, 96),
-    ring: total ? STACK_CATEGORIES.map((type) => ({ color: type.color, share: counts[type.key] / total })) : [],
-  }
-}
-
-// What a person's tooltip says under their figures: their squads and the type of their work.
-function personNote(login, stackFor) {
-  const squads = squadsOf()
-    .filter((squad) => squad.members.includes(login))
-    .map((squad) => squad.name)
-  const type = stackType(stackFor(login).counts)
-
-  return (
-    [squads.length ? t('Squad : {squads}', { squads: squads.join(', ') }) : null, type ? t('Plutôt {type}', { type: type.label }) : null]
-      .filter(Boolean)
-      .join(' · ') || null
-  )
-}
+import { elides, formatNumber, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
+import { mapStacks, repositoryMap, reviewMap } from '../../model/cartography.js'
+import { displayName } from '../../model/people.js'
+import { CATEGORIES, repoInfo } from '../../model/repositories.js'
+import { matchesQuery, periodTitle } from '../../model/selection.js'
+import { state } from '../../model/state.js'
+import { dataTable } from '../../ui/charts/data-table.js'
+import { forceGraph } from '../../ui/charts/force-graph.js'
+import { renderLegend } from '../../ui/charts/legend.js'
+import { $ } from '../../ui/dom.js'
+import { askToOpen, OPEN_PERSON, OPEN_REPOSITORY } from '../../ui/links.js'
+import { personNode, personNote, TYPE_LEGEND, typeColor } from './nodes.js'
+import { pauseReplay, renderReplay } from './replay.js'
 
 const loginOf = (id) => id.slice('person:'.length)
 const reviewedBy = (author, reviewer) =>
@@ -64,11 +34,14 @@ const openNode = (node, element) =>
 export function renderCartography() {
   const card = $('[data-map-reviews-card]')
   if (!state.stats || card.clientWidth === 0) {
+    pauseReplay()
+
     return
   }
   const stackFor = mapStacks()
   renderReviewMap(stackFor)
   renderRepositoryMap(stackFor)
+  renderReplay(stackFor)
 }
 
 // Who reviews whom: people linked by the code pull requests of either that the other reviewed.

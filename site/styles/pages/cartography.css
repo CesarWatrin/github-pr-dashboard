@@ -1,0 +1,95 @@
+/* The map page: the controls of its film, its date and totals, and the feed of what just happened. */
+.replay-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+
+.replay-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.replay-play:hover {
+  background: var(--surface-hover);
+}
+
+.replay-play svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.replay-play .replay-icon-pause,
+.replay-play[aria-pressed='true'] .replay-icon-play {
+  display: none;
+}
+
+.replay-play[aria-pressed='true'] .replay-icon-pause {
+  display: block;
+}
+
+.replay-slider {
+  flex: 1 1 240px;
+  min-width: 0;
+  accent-color: var(--series-1);
+}
+
+.replay-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-status strong {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+/* What just happened, the latest first, in a fixed height: the card does not jump while the film plays. */
+.replay-feed {
+  display: grid;
+  gap: 3px;
+  height: calc(6 * 1.5em + 5 * 3px);
+  margin: 4px 0 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.replay-event {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replay-event time {
+  display: inline-block;
+  min-width: 7.5em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

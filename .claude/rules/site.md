@@ -117,6 +117,18 @@ paths:
   opens the dialog of the person or repository (`askToOpen()`). People show their avatar in a ring of their stack
   (`stacksOf()`, shared with `teamRows()`), repositories a square in the colour of their type; labels show for the
   heaviest nodes (`MAX_LABELS`), or those asked for (the repositories), and for the neighbours of the node pointed at.
+  What is pointed at shows its figures on a line under the network (`showDetails()`), never in a tooltip over it.
+  Under them, the film (`pages/cartography/replay.js`, `renderReplay()`, `setupReplay()`): `replayEvents()` of
+  `site/model/replay.js` turns the code pull requests of the period and squad (people who left included: it is the
+  history) into events, opened, reviewed (each reviewer once per pull request) and merged (with the lines it added);
+  `createReplay()` tells what the team looks like at any moment, moving forward event by event, starting again when
+  going back: repositories so far with their lines merged, people and links of the last `REPLAY_TRAIL_DAYS`, the
+  totals, the latest events. `replayGraph()` of `ui/charts/` draws a frame and keeps the layout moving between frames
+  (a new `forceLayout()` from where the nodes are whenever they change), sends a dot from the person to the repository
+  for each pull request opened or reviewed, lights a repository up on a merge, names the nodes that just acted and the
+  biggest repositories. The page plays it (play, pause, a slider through the period, the speed in days per second,
+  the first one playing the period in about 30 seconds), shows the date, the totals and the feed of the latest
+  events, and pauses it when the page hides (`pauseReplay()`). A new period or squad starts a new film, at its end.
 - **« Mes PR » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.

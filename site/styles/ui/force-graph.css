@@ -133,3 +133,41 @@
   color: var(--text-muted);
 }
 
+
+/* The film (ui/charts/replay-graph.js): a node shows its name a few days after something happened to it, the biggest
+   repositories always, any node pointed at; a review travels hollow, a pull request opened full; a merge lights its
+   repository up. */
+.replay-node .force-graph-label {
+  display: none;
+}
+
+.replay-node.is-acting .force-graph-label,
+.replay-node:hover .force-graph-label {
+  display: block;
+}
+
+.replay-link.is-reviewed {
+  stroke-dasharray: 3 3;
+}
+
+.replay-traveller {
+  fill: var(--series-1);
+  pointer-events: none;
+}
+
+.replay-traveller.is-reviewed {
+  fill: var(--page);
+  stroke: var(--series-1);
+  stroke-width: 1.5;
+}
+
+.replay-node.is-merging .force-graph-square {
+  animation: replay-merge 700ms ease-out;
+}
+
+@keyframes replay-merge {
+  from {
+    stroke: var(--status-good);
+    stroke-width: 8;
+  }
+}

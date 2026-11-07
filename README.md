@@ -85,7 +85,12 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   entre front, back et mobile. On peut glisser les ronds, zoomer (Ctrl ou ⌘ et la molette, ou deux doigts) et
   déplacer la vue ; le survol éclaire un rond et ses voisins, un clic ouvre sa fiche, la recherche fait ressortir ce
   qu'elle trouve. Pour rester lisibles, seuls restent les quatre liens les plus forts de chaque rond, et les 30 dépôts
-  les plus actifs ; le tableau de chaque carte donne tout. Le dessin est fait maison, sans librairie.
+  les plus actifs ; le tableau de chaque carte donne tout. Dessous, « Rejouer la période » rejoue les PR de code
+  jour après jour, à la façon de Gource : lecture, pause, un curseur dans le temps et la vitesse. Les dépôts
+  apparaissent à leur première PR et grossissent des lignes ajoutées par leurs PR mergées, les personnes arrivent
+  quand elles ouvrent, relisent ou mergent une PR et s'effacent après 30 jours sans rien faire, un point part d'elles
+  vers le dépôt à chaque PR ouverte ou relue, un merge fait briller le dépôt ; la date, les totaux et les derniers
+  événements (« X a mergé dépôt#123 ») défilent avec. Le dessin est fait maison, sans librairie.
 - **Squads** (quand `SQUADS` en déclare) : une carte par squad, comme celles des personnes et des dépôts, avec ses
   membres, son chef de squad en tête, et ses chiffres de la période : PR de code, mergées, relectures, attente de la première review, délai de
   merge, PR en attente. Un clic ouvre sa fiche, qui s'incline vers la souris : ce qu'elle écrit, sa revue (dont la
