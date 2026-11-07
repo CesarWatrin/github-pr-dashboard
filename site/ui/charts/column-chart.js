@@ -1,6 +1,7 @@
 // Columns over time buckets: series side by side, partial buckets lighter.
 
 import { compactFormat, formatDecimal, formatNumber } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { svg } from '../dom.js'
 import { STAGGER_SPREAD_MS } from '../motion.js'
 import { bindTooltip, hideTooltip, showTooltip } from '../tooltip.js'
@@ -113,7 +114,7 @@ export function columnChart(
       width: slot,
       height: innerHeight,
       tabindex: 0,
-      'aria-label': `${title} : ${series.map((item) => `${format(item.value(point))} ${item.label}`).join(', ')}`,
+      'aria-label': t('{label} : {value}', { label: title, value: series.map((item) => `${format(item.value(point))} ${item.label}`).join(', ') }),
     })
     bindTooltip(
       hit,
@@ -126,7 +127,7 @@ export function columnChart(
               ...series.map((item) => ({ color: item.color, value: format(item.value(point)), label: item.label })),
               ...extraRows(point),
             ],
-            note: point.partial ? 'Période incomplète' : null,
+            note: point.partial ? t('Période incomplète') : null,
           },
           x,
           y,

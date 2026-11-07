@@ -1,6 +1,7 @@
 // Browser notifications of the reviews newly asked of the person of « Pour moi ».
 
 import { formatNumber } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { currentRoute, ROUTES } from '../model/routes.js'
 import { state } from '../model/state.js'
@@ -45,8 +46,12 @@ export function notifyNewReviews(me) {
   const [first] = fresh
   const shown = fresh.slice(0, 3).map(reviewKey).join(', ')
   try {
-    const notification = new Notification(fresh.length > 1 ? `${formatNumber(fresh.length)} reviews demandées` : 'Review demandée', {
-      body: fresh.length > 1 ? `${shown}${fresh.length > 3 ? '…' : ''}` : `${reviewKey(first)} de ${displayName(first.author)}`,
+    const title = fresh.length > 1 ? t('{count} reviews demandées', { count: formatNumber(fresh.length) }) : t('Review demandée')
+    const notification = new Notification(title, {
+      body:
+        fresh.length > 1
+          ? `${shown}${fresh.length > 3 ? '…' : ''}`
+          : t('{pullRequest} de {author}', { pullRequest: reviewKey(first), author: displayName(first.author) }),
     })
     notification.addEventListener('click', () => {
       window.focus()

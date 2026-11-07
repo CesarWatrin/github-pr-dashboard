@@ -1,6 +1,7 @@
 // Cells shared by the tables: lines added and deleted, stack, repository, technologies.
 
-import { formatLines, formatNumber, formatShare } from '../../lib/format.js'
+import { formatLines, formatNumber, formatShare, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import {
   CATEGORIES,
   STACK_CATEGORIES,
@@ -16,19 +17,19 @@ import { bindTooltip, hideTooltip, showTooltip } from '../tooltip.js'
 // Lines added over lines deleted, one above the other like a diff, rounded: narrow enough for the tables to fit.
 export const LINES_COLUMN = {
   key: 'added',
-  label: 'Lignes',
+  label: t('Lignes'),
   cell: (row) => linesCell(row),
-  hint: 'Lignes ajoutées (+) et supprimées (−) par les PR mergées, au total, arrondies (k : milliers, M : millions). Le tri suit les lignes ajoutées.',
+  hint: t('Lignes ajoutées (+) et supprimées (−) par les PR mergées, au total, arrondies (k : milliers, M : millions). Le tri suit les lignes ajoutées.'),
 }
 
-export const formatTechnologyShare = (value) => (value < 0.01 ? '< 1 %' : formatShare(value))
+export const formatTechnologyShare = (value) => (value < 0.01 ? t('< 1 %') : formatShare(value))
 
 export function technologyLogos(technologies) {
   const names = technologies.slice(0, STACK_TECHNOLOGIES).map(([name]) => name)
   const logos = el('span', { className: 'stack-logos', title: names.join(', ') }, ...names.map((name) => technologyIcon(name)))
   if (names.length) {
     logos.setAttribute('role', 'img')
-    logos.setAttribute('aria-label', `Technos : ${names.join(', ')}`)
+    logos.setAttribute('aria-label', t('Technos : {technologies}', { technologies: names.join(', ') }))
   }
 
   return logos
@@ -44,7 +45,7 @@ export function stackCell({ counts, technologies }) {
   const share = (category) => Math.round((100 * counts[category.key]) / total)
   const fullStack = type.key === 'full-stack'
   const top = topTechnologies(technologies)
-  const technologyText = top.map(([name, part]) => `${name} ${Math.round(100 * part)} %`).join(', ')
+  const technologyText = top.map(([name, part]) => t('{label} {value} %', { label: name, value: Math.round(100 * part) })).join(', ')
 
   const bar = el(
     'span',
@@ -64,20 +65,20 @@ export function stackCell({ counts, technologies }) {
     bar,
     el('span', { className: 'stack-logos' }, ...top.map(([name]) => technologyIcon(name))),
   )
-  const split = parts.map((category) => `${category.label} ${share(category)} %`).join(', ')
-  cell.setAttribute('aria-label', `${fullStack ? 'Full-stack. ' : ''}${split}. ${technologyText}`)
+  const split = parts.map((category) => t('{label} {value} %', { label: category.label, value: share(category) })).join(', ')
+  cell.setAttribute('aria-label', `${fullStack ? `${t('Full-stack.')} ` : ''}${split}. ${technologyText}`)
   bindTooltip(
     cell,
     (x, y) =>
       showTooltip(
         {
-          title: fullStack ? 'Stack full-stack' : 'Stack',
+          title: fullStack ? t('Stack full-stack') : t('Stack'),
           rows: parts.map((category) => ({
             color: category.color,
-            value: `${share(category)} %`,
-            label: `${category.label.toLowerCase()} · ${formatNumber(counts[category.key])} PR`,
+            value: t('{value} %', { value: share(category) }),
+            label: `${category.label.toLowerCase()} · ${plural(counts[category.key], 'PR', 'PR')}`,
           })),
-          note: technologyText ? `Technos : ${technologyText}` : null,
+          note: technologyText ? t('Technos : {technologies}', { technologies: technologyText }) : null,
         },
         x,
         y,
@@ -91,7 +92,7 @@ export function stackCell({ counts, technologies }) {
 export function repoTypeTag(category) {
   const type = CATEGORIES.find((item) => item.key === category) ?? CATEGORIES.at(-1)
 
-  return el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? 'autre' : type.label.toLowerCase() })
+  return el('span', { className: `stack-type is-${type.key}`, textContent: type.key === 'other' ? t('autre') : type.label.toLowerCase() })
 }
 
 export function repoCell({ repo, category }) {
@@ -122,9 +123,9 @@ export function technologiesCell(technologies) {
     (x, y) =>
       showTooltip(
         {
-          title: 'Technologies',
+          title: t('Technologies'),
           rows: technologies.map(([name, share]) => ({ value: formatTechnologyShare(share), label: name })),
-          note: 'Part dans le code du dépôt',
+          note: t('Part dans le code du dépôt'),
         },
         x,
         y,
@@ -150,13 +151,13 @@ export function topReposCell(topRepos, unit) {
   if (others.length > 0) {
     content.append(el('span', { className: 'top-repos-more', textContent: `+${others.length}` }))
   }
-  content.setAttribute('aria-label', topRepos.map(([name, prs]) => `${name} : ${formatNumber(prs)} ${unit}`).join(', '))
+  content.setAttribute('aria-label', topRepos.map(([name, prs]) => t('{label} : {value}', { label: name, value: `${formatNumber(prs)} ${unit}` })).join(', '))
   bindTooltip(
     content,
     (x, y) =>
       showTooltip(
         {
-          title: 'Principaux dépôts',
+          title: t('Principaux dépôts'),
           rows: topRepos.map(([name, prs]) => ({ value: formatNumber(prs), label: name })),
           note: unit,
         },

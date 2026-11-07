@@ -113,7 +113,8 @@ paths:
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a
   short card, and no blank on a phone where they stack. `meQueue()` works the lists out for `renderMe()`,
   which keeps the reviews asked (`state.reviewsAsked`): `renderTitle()` counts them in the tab title of every page,
-  « (3) Stats PR ». The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
+  « (3) Stats PR », and on a red badge (`[data-reviews-badge]`, `--notification`) at the end of the link of « Pour moi »
+  and on the corner of the menu button of narrow screens, hidden at 0. The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
   blocks it) turns notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first);
   `notifyNewReviews()` then shows one for the reviews asked since the tab last looked (`KNOWN_REVIEWS_STORAGE_KEY`,
   in `sessionStorage`: a reload for a new build misses none, a new tab or another person notifies none of those
@@ -274,6 +275,22 @@ paths:
   `prefers-reduced-motion`.
 - Text is French, with French typography: typographic apostrophes (’), « » quotes, a non-breaking space before
   `:` `;` `?` `!` and `%`. People are referred to without gendered pronouns ("la personne").
+- **Languages**: the page is written in French and shows in English once the viewer picks it (the button beside the
+  method's, `shell/language.js`: kept in `localStorage` by `LANGUAGE_STORAGE_KEY`, the page loads again in it, still
+  unlocked). Every text the page shows goes through `t()` of `lib/i18n.js`, written where the text is written, the
+  French as its key: `t('{count} membres', { count })` for a template, whose French once filled is the text as it was,
+  `plural()` of `lib/format.js` for a counted noun. Its English goes in the same change into the part of
+  `lib/english/` of its area: `frame.js` (index.html and `shell/`, `services/`), `method.js` (the method page),
+  `pages.js` (`pages/` but the analysis), `blocks.js` (`ui/`, `model/`, `pages/analysis/`, the formats). The static
+  texts of index.html translate through `ui/translate.js`, before anything writes in the page: a sentence with inline
+  markup (strong, code, a link…) as a whole, keyed by its HTML, any other text alone, and the text attributes (`title`,
+  `aria-label`, `placeholder`, `data-label`, `alt`). English reads as English: US spelling, ’ and “ ”, no space before
+  `:` `;` `?` `!` `%`. The formats follow the language (`LOCALE`: `en-GB` in English, days before months). What comes
+  from GitHub is never translated: logins, names, repositories, titles of pull requests, workflows, technologies,
+  squads. The English loads in English only, before any module that writes a text (`lib/i18n.js` awaits it), in the
+  import map but not preloaded; in English the page shows once translated (`is-translated`). The browser test runs in
+  both languages and fails on any text without its English (`missing` of `lib/i18n.js`); `tests/lib/english.test.mjs`
+  checks that each English keeps the placeholders and inline elements of its French.
 
 ## Security
 

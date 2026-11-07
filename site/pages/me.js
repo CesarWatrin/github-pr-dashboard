@@ -3,6 +3,7 @@
 import { openPullRequests, personalQueue } from '../domain/open-pull-requests.js'
 import { minutesIso } from '../lib/dates.js'
 import { formatNumber } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { displayName, isCurrent, mePeople } from '../model/people.js'
 import { requiredApprovals } from '../model/pull-requests.js'
 import { state, storeMe, storeNotify } from '../model/state.js'
@@ -24,36 +25,38 @@ import { renderTitle } from '../ui/title.js'
 
 const ME_LISTS = {
   toReview: {
-    label: 'Reviews qu’on m’a demandées',
-    tile: 'Reviews demandées',
-    hint: 'PR des autres qui attendent encore ma review, les plus anciennes d’abord',
-    empty: 'Aucune review demandée en attente',
+    label: t('Reviews qu’on m’a demandées'),
+    tile: t('Reviews demandées'),
+    hint: t('PR des autres qui attendent encore ma review, les plus anciennes d’abord'),
+    empty: t('Aucune review demandée en attente'),
   },
   ready: {
-    label: 'Prêtes à merger',
-    tile: 'Prêtes à merger',
+    label: t('Prêtes à merger'),
+    tile: t('Prêtes à merger'),
     hint: (required) =>
-      `Approuvées par ${required > 1 ? `au moins ${approvers(required)}` : approvers(required)}, sans demande de changements en cours : il ne reste qu’à merger`,
-    empty: 'Aucune PR approuvée qui attend son merge',
+      t('Approuvées par {who}, sans demande de changements en cours : il ne reste qu’à merger', {
+        who: required > 1 ? t('au moins {count}', { count: approvers(required) }) : approvers(required),
+      }),
+    empty: t('Aucune PR approuvée qui attend son merge'),
   },
   changes: {
     label: unblockStance('changes').label,
     tile: unblockStance('changes').label,
-    hint: 'Des changements demandés, sans nouvelle approbation depuis : à corriger, ou à faire relire de nouveau',
-    empty: 'Aucune PR avec des changements demandés',
+    hint: t('Des changements demandés, sans nouvelle approbation depuis : à corriger, ou à faire relire de nouveau'),
+    empty: t('Aucune PR avec des changements demandés'),
   },
   owners: {
     label: unblockStance('owners').label,
     tile: unblockStance('owners').label,
-    hint: 'Pas encore validées, et un code owner du dépôt ne les a pas encore relues : GitHub bloque le merge',
+    hint: t('Pas encore validées, et un code owner du dépôt ne les a pas encore relues : GitHub bloque le merge'),
     empty: unblockStance('owners').empty,
   },
   forgotten: { label: FORGOTTEN.label, tile: FORGOTTEN.label, hint: FORGOTTEN.hint, empty: FORGOTTEN.empty },
   open: {
-    label: 'Mes PR ouvertes',
-    tile: 'Mes autres PR ouvertes',
-    hint: 'Les autres, sans review, en discussion ou pas encore assez approuvées : où en est chacune, ce qu’elle attend et depuis quand',
-    empty: 'Aucune autre PR ouverte',
+    label: t('Mes PR ouvertes'),
+    tile: t('Mes autres PR ouvertes'),
+    hint: t('Les autres, sans review, en discussion ou pas encore assez approuvées : où en est chacune, ce qu’elle attend et depuis quand'),
+    empty: t('Aucune autre PR ouverte'),
   },
 }
 const ME_TILES = Object.entries(ME_LISTS).map(([key, { tile }]) => ({ key, label: tile }))
@@ -62,7 +65,7 @@ const ME_TILES = Object.entries(ME_LISTS).map(([key, { tile }]) => ({ key, label
 // those still asked to review it.
 function waitedFor(pr) {
   const stance = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
-  const [label, logins] = stance.by && pr.by.length ? [stance.by, pr.by] : ['en attente de', pr.requestedReviewers]
+  const [label, logins] = stance.by && pr.by.length ? [stance.by, pr.by] : [t('en attente de'), pr.requestedReviewers]
   if (!logins.length) {
     return []
   }
@@ -91,13 +94,13 @@ const ME_ITEMS = {
         'p',
         { className: 'feed-text' },
         pullRequestLink(pr.repo, pr.number),
-        document.createTextNode(' de '),
+        document.createTextNode(` ${t('de')} `),
         personLink(pr.author, { withAvatar: false }),
         ...kindTag(pr),
         el('span', { className: 'feed-tag', textContent: UNBLOCK_STANCES.find((stance) => stance.key === pr.stance).tag }),
       ),
       minutesIso(pr.createdAt),
-      'ouverte ',
+      `${t('ouverte')} `,
     ),
   ready: (pr) => ownItem(pr),
   changes: (pr) => ownItem(pr),
@@ -143,7 +146,7 @@ export function renderMe(mode) {
   const people = mePeople()
   const { me, queue } = meQueue()
   const picker = $('[data-me-picker]', HTMLSelectElement)
-  const placeholder = new Option('Choisir une personne', '')
+  const placeholder = new Option(t('Choisir une personne'), '')
   placeholder.disabled = true
   picker.replaceChildren(placeholder, ...people.map((login) => new Option(displayName(login), login)))
   picker.value = me ?? ''
@@ -153,7 +156,7 @@ export function renderMe(mode) {
   for (const [key, list] of Object.entries(ME_LISTS)) {
     $(`[data-me-title="${key}"]`).textContent = queue ? `${list.label} (${formatNumber(queue[key].length)})` : list.label
     $(`[data-me-sub="${key}"]`).textContent = typeof list.hint === 'function' ? list.hint(required) : list.hint
-    renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : 'Choisir une personne en haut de la page')
+    renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : t('Choisir une personne en haut de la page'))
   }
   state.reviewsAsked = queue ? queue.toReview : null
   renderTitle()

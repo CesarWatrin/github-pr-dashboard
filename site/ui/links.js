@@ -1,5 +1,6 @@
 // Names of people, repositories and pull requests: buttons that open their dialog, GitHub when they have none.
 
+import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { pullRequestOf } from '../model/pull-requests.js'
 import { state } from '../model/state.js'
@@ -67,7 +68,7 @@ export function pullRequestLink(repo, number) {
     textContent: `${repo}#${number}`,
   })
   if (pullRequestOf(repo, number)) {
-    link.title = 'Voir sa frise (Ctrl ou ⌘ + clic : l’ouvrir sur GitHub)'
+    link.title = t('Voir sa frise (Ctrl ou ⌘ + clic : l’ouvrir sur GitHub)')
     link.setAttribute('aria-haspopup', 'dialog')
     link.addEventListener('click', (event) => {
       const pr = pullRequestOf(repo, number)

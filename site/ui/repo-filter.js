@@ -1,6 +1,7 @@
 // The repository filter of the pages that have one: presets by type, and the repositories one by one.
 
 import { formatNumber } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { inSelection } from '../model/contributors.js'
 import { CATEGORIES, repoInfo, reposOfCategory } from '../model/repositories.js'
 import { currentPeriod } from '../model/selection.js'
@@ -47,10 +48,10 @@ const sameSelection = (a, b) => (a === null || b === null ? a === b : a.size ===
 export function repoFilterLabel(name, options) {
   const selected = listedSelection(name, options)
   if (!selected) {
-    return 'Tous les dépôts'
+    return t('Tous les dépôts')
   }
   if (selected.size === 0) {
-    return 'Aucun dépôt'
+    return t('Aucun dépôt')
   }
   // A selection made of whole types of repositories is named after them.
   const types = CATEGORIES.map((category) => reposOfCategory(options, category.key)).map((repos, index) => ({
@@ -62,7 +63,7 @@ export function repoFilterLabel(name, options) {
     return whole.map(({ label }) => label).join(' + ')
   }
 
-  return selected.size === 1 ? [...selected][0] : `${selected.size} dépôts sur ${options.length}`
+  return selected.size === 1 ? [...selected][0] : t('{count} dépôts sur {total}', { count: selected.size, total: options.length })
 }
 
 // Checkboxes and shortcuts are updated in place so that keyboard focus stays where it is.
@@ -118,9 +119,9 @@ export function renderRepoFilter(name) {
   filter
     .querySelector('[data-repo-presets]')
     .replaceChildren(
-      preset('all', 'Tous'),
+      preset('all', t('Tous')),
       ...groups.map(({ category }) => preset(category.key, category.label)),
-      preset('none', 'Aucun'),
+      preset('none', t('Aucun')),
     )
 
   const scrollTop = list.scrollTop
@@ -145,8 +146,8 @@ export function setupRepoFilter(name) {
   presets.dataset.repoPresets = ''
   const list = el('ul', { className: 'repo-filter-list' })
   list.dataset.repoList = ''
-  list.setAttribute('aria-label', 'Dépôts')
-  const label = el('span', { className: 'repo-filter-label', textContent: 'Tous les dépôts' })
+  list.setAttribute('aria-label', t('Dépôts'))
+  const label = el('span', { className: 'repo-filter-label', textContent: t('Tous les dépôts') })
   label.dataset.repoLabel = ''
   filter.append(
     el('summary', { className: 'search' }, label),

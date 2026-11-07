@@ -1,5 +1,6 @@
 // Unlocking with the password, locking, and the new stats the page polls for.
 
+import { t } from '../lib/i18n.js'
 import { state } from '../model/state.js'
 import { reloadForNewBuild } from '../services/build.js'
 import { decryptStats, deriveKey, KEY_STORAGE_KEY, storeKey } from '../services/stats-key.js'
@@ -59,7 +60,7 @@ async function unlock(form) {
     const key = await deriveKey(form.elements.password.value, payload)
     const stats = await decryptStats(payload, key)
     if (!stats) {
-      showLock('Mot de passe incorrect.')
+      showLock(t('Mot de passe incorrect.'))
 
       return
     }
@@ -75,7 +76,7 @@ async function unlock(form) {
     renderSyncStatus()
     autoSync()
   } catch {
-    showLock('Données indisponibles pour le moment, réessaie dans un instant.')
+    showLock(t('Données indisponibles pour le moment, réessaie dans un instant.'))
   } finally {
     button.disabled = false
   }
@@ -104,7 +105,7 @@ export async function refresh() {
     return
   }
   if (Date.now() > state.keyExpiresAt) {
-    lock('L’accès dure 30 jours : saisis à nouveau le mot de passe.')
+    lock(t('L’accès dure 30 jours : saisis à nouveau le mot de passe.'))
 
     return
   }
@@ -118,7 +119,7 @@ export async function refresh() {
       const payload = await fetchJson(`${DATA_URL}?v=${encodeURIComponent(version.generatedAt)}`)
       stats = await decryptStats(payload, state.key)
       if (!stats) {
-        lock('Le mot de passe a changé : saisis le nouveau.')
+        lock(t('Le mot de passe a changé : saisis le nouveau.'))
 
         return
       }

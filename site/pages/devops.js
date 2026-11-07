@@ -9,7 +9,9 @@ import {
   formatRelative,
   formatSeconds,
   formatShare,
+  noun,
 } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { BUCKET_TITLES } from '../model/periods.js'
 import {
   ciStart,
@@ -36,116 +38,116 @@ const TOP_ECOSYSTEMS = 8
 const CALENDAR_REPOS = 15
 
 const DORA_TILES = [
-  { key: 'deployments', label: 'Déploiements' },
-  { key: 'deploymentsPerWeek', label: 'Par semaine', format: formatDecimal },
-  { key: 'medianLeadTimeHours', label: 'Délai médian jusqu’en prod', format: formatDuration, better: 'down' },
-  { key: 'reworkRate', label: 'Taux de reprise', format: formatShare, better: 'down' },
-  { key: 'medianRestoreHours', label: 'Rétablissement médian', format: formatDuration, better: 'down' },
+  { key: 'deployments', label: t('Déploiements') },
+  { key: 'deploymentsPerWeek', label: t('Par semaine'), format: formatDecimal },
+  { key: 'medianLeadTimeHours', label: t('Délai médian jusqu’en prod'), format: formatDuration, better: 'down' },
+  { key: 'reworkRate', label: t('Taux de reprise'), format: formatShare, better: 'down' },
+  { key: 'medianRestoreHours', label: t('Rétablissement médian'), format: formatDuration, better: 'down' },
 ]
 
 const CI_TILES = [
-  { key: 'runs', label: 'Exécutions' },
-  { key: 'medianSeconds', label: 'Durée médiane', format: formatSeconds, better: 'down' },
-  { key: 'p90Seconds', label: '9 sur 10 en moins de', format: formatSeconds, better: 'down' },
-  { key: 'failureRate', label: 'En échec', format: formatShare, better: 'down' },
-  { key: 'rerunRate', label: 'Relancées', format: formatShare, better: 'down' },
-  { key: 'checksFailedShare', label: 'PR mergées avec un check rouge', format: formatShare, better: 'down' },
+  { key: 'runs', label: t('Exécutions') },
+  { key: 'medianSeconds', label: t('Durée médiane'), format: formatSeconds, better: 'down' },
+  { key: 'p90Seconds', label: t('9 sur 10 en moins de'), format: formatSeconds, better: 'down' },
+  { key: 'failureRate', label: t('En échec'), format: formatShare, better: 'down' },
+  { key: 'rerunRate', label: t('Relancées'), format: formatShare, better: 'down' },
+  { key: 'checksFailedShare', label: t('PR mergées avec un check rouge'), format: formatShare, better: 'down' },
 ]
 
 const DEPENDENCY_TILES = [
-  { key: 'opened', label: 'PR ouvertes' },
-  { key: 'merged', label: 'Mergées' },
-  { key: 'closed', label: 'Fermées sans merge' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, better: 'down' },
+  { key: 'opened', label: t('PR ouvertes') },
+  { key: 'merged', label: t('Mergées') },
+  { key: 'closed', label: t('Fermées sans merge') },
+  { key: 'medianTimeToMergeHours', label: t('Délai médian de merge'), format: formatDuration, better: 'down' },
   // A count of today, not of the period: nothing to compare.
-  { key: 'waiting', label: 'En attente aujourd’hui', compare: false },
+  { key: 'waiting', label: t('En attente aujourd’hui'), compare: false },
 ]
 
 export const DEPLOYMENT_COLUMNS = [
-  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'repo', label: t('Dépôt'), kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
   {
     key: 'deployments',
-    label: 'Déploiements',
+    label: t('Déploiements'),
     kind: 'bar',
-    hint: 'PR mergées dans master ou main sur la période : releases, hotfix et merges directs.',
+    hint: t('PR mergées dans master ou main sur la période : releases, hotfix et merges directs.'),
   },
-  { key: 'corrective', label: 'Correctifs', hint: 'Déploiements imprévus pour réparer la prod : hotfix ou revert.' },
+  { key: 'corrective', label: t('Correctifs'), hint: t('Déploiements imprévus pour réparer la prod : hotfix ou revert.') },
   {
     key: 'medianLeadTimeHours',
-    label: 'Délai jusqu’en prod',
+    label: t('Délai jusqu’en prod'),
     format: (row) => formatDuration(row.medianLeadTimeHours),
-    hint: 'Médiane, de l’ouverture d’une PR de code à son arrivée en prod, pour celles arrivées sur la période.',
+    hint: t('Médiane, de l’ouverture d’une PR de code à son arrivée en prod, pour celles arrivées sur la période.'),
   },
   {
     key: 'reworkRate',
-    label: 'Taux de reprise',
+    label: t('Taux de reprise'),
     format: (row) => formatShare(row.reworkRate),
-    hint: 'Part des déploiements qui sont des correctifs.',
+    hint: t('Part des déploiements qui sont des correctifs.'),
   },
   {
     key: 'medianRestoreHours',
-    label: 'Rétablissement',
+    label: t('Rétablissement'),
     format: (row) => formatDuration(row.medianRestoreHours),
-    hint: 'Médiane, de l’ouverture d’un correctif à son merge en prod.',
+    hint: t('Médiane, de l’ouverture d’un correctif à son merge en prod.'),
   },
 ]
 
 export const WORKFLOW_COLUMNS = [
-  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
-  { key: 'workflow', label: 'Workflow', kind: 'text', format: (row) => row.workflow },
+  { key: 'repo', label: t('Dépôt'), kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'workflow', label: t('Workflow'), kind: 'text', format: (row) => row.workflow },
   {
     key: 'runs',
-    label: 'Exécutions',
+    label: t('Exécutions'),
     kind: 'bar',
-    hint: 'Exécutions sur des PR ou des push qui ont abouti à un verdict : annulées et ignorées exclues.',
+    hint: t('Exécutions sur des PR ou des push qui ont abouti à un verdict : annulées et ignorées exclues.'),
   },
   {
     key: 'medianSeconds',
-    label: 'Durée médiane',
+    label: t('Durée médiane'),
     format: (row) => formatSeconds(row.medianSeconds),
-    hint: 'Du démarrage de l’exécution à la fin de sa dernière tâche, attente des runners comprise.',
+    hint: t('Du démarrage de l’exécution à la fin de sa dernière tâche, attente des runners comprise.'),
   },
   {
     key: 'p90Seconds',
-    label: '9 sur 10 sous',
+    label: t('9 sur 10 sous'),
     format: (row) => formatSeconds(row.p90Seconds),
-    hint: 'Durée sous laquelle se terminent 90 % des exécutions : les plus lentes, sans les cas extrêmes.',
+    hint: t('Durée sous laquelle se terminent 90 % des exécutions : les plus lentes, sans les cas extrêmes.'),
   },
   {
     key: 'failureRate',
-    label: 'En échec',
+    label: t('En échec'),
     format: (row) => formatShare(row.failureRate),
-    hint: 'Exécutions en échec, dépassements de délai compris.',
+    hint: t('Exécutions en échec, dépassements de délai compris.'),
   },
   {
     key: 'rerunRate',
-    label: 'Relancées',
+    label: t('Relancées'),
     format: (row) => formatShare(row.rerunRate),
-    hint: 'Exécutions relancées au moins une fois, souvent le signe d’un test instable.',
+    hint: t('Exécutions relancées au moins une fois, souvent le signe d’un test instable.'),
   },
 ]
 
 export const DEPENDENCY_COLUMNS = [
-  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
-  { key: 'opened', label: 'Ouvertes', kind: 'bar', hint: 'PR Dependabot ouvertes sur la période.' },
-  { key: 'merged', label: 'Mergées', hint: 'Parmi elles, celles mergées.' },
+  { key: 'repo', label: t('Dépôt'), kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'opened', label: t('Ouvertes'), kind: 'bar', hint: t('PR Dependabot ouvertes sur la période.') },
+  { key: 'merged', label: t('Mergées'), hint: t('Parmi elles, celles mergées.') },
   {
     key: 'closed',
-    label: 'Fermées',
-    hint: 'Parmi elles, celles fermées sans merge : remplacées par une version plus récente ou ignorées.',
+    label: t('Fermées'),
+    hint: t('Parmi elles, celles fermées sans merge : remplacées par une version plus récente ou ignorées.'),
   },
   {
     key: 'medianTimeToMergeHours',
-    label: 'Délai de merge',
+    label: t('Délai de merge'),
     format: (row) => formatDuration(row.medianTimeToMergeHours),
-    hint: 'Médiane, de l’ouverture au merge.',
+    hint: t('Médiane, de l’ouverture au merge.'),
   },
-  { key: 'waiting', label: 'En attente', hint: 'PR Dependabot encore ouvertes aujourd’hui, quelle que soit la période.' },
+  { key: 'waiting', label: t('En attente'), hint: t('PR Dependabot encore ouvertes aujourd’hui, quelle que soit la période.') },
   {
     key: 'oldestWaitingAt',
-    label: 'Plus ancienne',
+    label: t('Plus ancienne'),
     format: (row) => (row.oldestWaitingAt ? formatRelative(row.oldestWaitingAt) : '–'),
-    hint: 'Ouverture de la plus ancienne encore en attente.',
+    hint: t('Ouverture de la plus ancienne encore en attente.'),
   },
 ]
 
@@ -165,18 +167,18 @@ const ECOSYSTEM_NAMES = {
 
 export const DEPLOYMENT_SERIES = [
   {
-    label: 'releases et merges',
+    label: t('releases et merges'),
     color: 'var(--series-1)',
     value: (point) => point.deployments - point.corrective,
   },
-  { label: 'correctifs', color: 'var(--series-2)', value: (point) => point.corrective },
+  { label: t('correctifs'), color: 'var(--series-2)', value: (point) => point.corrective },
 ]
 
 // What the CI of the period leaves out, when it starts after the period: « depuis le 3 mars 2025 », say.
 function ciCut() {
   const start = ciStart()
 
-  return periodRange().start < start ? `depuis le ${dateFormat.format(start)}` : null
+  return periodRange().start < start ? t('depuis le {date}', { date: dateFormat.format(start) }) : null
 }
 
 export function renderDevopsTiles(mode) {
@@ -200,9 +202,11 @@ export function renderDevopsTiles(mode) {
   const cut = ciCut()
   const squad = activeSquad()
   const notes = [
-    ...(cut ? [`Exécutions de CI ${cut} seulement : GitHub efface les plus anciennes, la synchro garde les autres.`] : []),
+    ...(cut ? [t('Exécutions de CI {cut} seulement : GitHub efface les plus anciennes, la synchro garde les autres.', { cut })] : []),
     // No run belongs to a squad: the CI stays that of the whole organization, and says so.
-    ...(squad ? [`Intégration continue de toute l’organisation : une exécution ne se rattache à aucune squad, pas même ${squad.name}.`] : []),
+    ...(squad
+      ? [t('Intégration continue de toute l’organisation : une exécution ne se rattache à aucune squad, pas même {squad}.', { squad: squad.name })]
+      : []),
   ]
   $('[data-ci-cut]').hidden = notes.length === 0
   $('[data-ci-cut]').textContent = notes.join(' ')
@@ -222,63 +226,63 @@ function renderDeploymentCalendar() {
   if (others.length) {
     rows.push({
       key: 'others',
-      label: `${formatNumber(others.length)} autres dépôts`,
+      label: t('{count} autres dépôts', { count: formatNumber(others.length) }),
       grouped: true,
       buckets: series.map((_, index) => others.reduce(([count, corrective], other) => [count + other.buckets[index][0], corrective + other.buckets[index][1]], [0, 0])),
     })
   }
   const columns = series.map((point, index) => ({ key: point.key, label: axisLabel(point.key, bucket), index, partial: point.partial }))
-  $('[data-deploy-calendar-title]').textContent = `Calendrier des mises en production ${BUCKET_TITLES[bucket]}`
+  $('[data-deploy-calendar-title]').textContent = t('Calendrier des mises en production {bucket}', { bucket: BUCKET_TITLES[bucket] })
   $('[data-deploy-calendar-sub]').textContent = others.length
-    ? `Déploiements de chaque dépôt : les ${formatNumber(CALENDAR_REPOS)} qui déploient le plus, puis les autres ensemble`
-    : 'Déploiements de chaque dépôt, ceux qui déploient le plus en haut'
+    ? t('Déploiements de chaque dépôt : les {count} qui déploient le plus, puis les autres ensemble', { count: formatNumber(CALENDAR_REPOS) })
+    : t('Déploiements de chaque dépôt, ceux qui déploient le plus en haut')
   heatmapChart($('[data-deploy-calendar]'), {
     rows,
     columns,
     value: (row, column) => row.buckets[column.index][0],
-    ariaLabel: `Déploiements de chaque dépôt ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    ariaLabel: t('Déploiements de chaque dépôt {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
     tooltip: (row, column, count) => ({
       title: `${row.label} · ${bucketTitle(column.key, bucket)}`,
       rows: [
-        { label: count > 1 ? 'déploiements' : 'déploiement', value: formatNumber(count) },
-        { label: 'dont correctifs', value: formatNumber(row.buckets[column.index][1]) },
+        { label: noun(count, 'déploiement', 'déploiements'), value: formatNumber(count) },
+        { label: t('dont correctifs'), value: formatNumber(row.buckets[column.index][1]) },
       ],
-      note: column.partial ? 'Période incomplète' : null,
+      note: column.partial ? t('Période incomplète') : null,
     }),
   })
 }
 
 export function renderDevopsCharts() {
   const { series, bucket, dependencies } = currentPeriod()
-  $('[data-deployments-chart-title]').textContent = `Déploiements ${BUCKET_TITLES[bucket]}`
+  $('[data-deployments-chart-title]').textContent = t('Déploiements {bucket}', { bucket: BUCKET_TITLES[bucket] })
   columnChart($('[data-deployments-chart]'), {
     points: series,
     bucket,
     series: DEPLOYMENT_SERIES,
-    ariaLabel: `Déploiements ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    ariaLabel: t('Déploiements {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
   })
 
   renderDeploymentCalendar()
 
   const ci = currentCi()
   const cut = ciCut()
-  $('[data-ci-sub]').textContent = `Exécutions GitHub Actions déclenchées par une PR ou un push${cut ? `, ${cut} seulement` : ''}`
-  $('[data-ci-charts-title]').textContent = `Exécutions ${BUCKET_TITLES[bucket]}`
+  $('[data-ci-sub]').textContent = `${t('Exécutions GitHub Actions déclenchées par une PR ou un push')}${cut ? t(', {cut} seulement', { cut }) : ''}`
+  $('[data-ci-charts-title]').textContent = t('Exécutions {bucket}', { bucket: BUCKET_TITLES[bucket] })
   columnChart($('[data-ci-duration-chart]'), {
     points: ci.series,
     bucket,
-    series: [{ label: 'min, durée médiane', color: 'var(--series-1)', value: (point) => (point.medianSeconds ?? 0) / 60 }],
+    series: [{ label: t('min, durée médiane'), color: 'var(--series-1)', value: (point) => (point.medianSeconds ?? 0) / 60 }],
     decimals: true,
-    ariaLabel: `Durée médiane des exécutions de CI ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
-    extraRows: (point) => [{ label: 'exécutions', value: formatNumber(point.runs) }],
+    ariaLabel: t('Durée médiane des exécutions de CI {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
+    extraRows: (point) => [{ label: t('exécutions'), value: formatNumber(point.runs) }],
   })
   columnChart($('[data-ci-failure-chart]'), {
     points: ci.series,
     bucket,
-    series: [{ label: '% en échec', color: 'var(--series-2)', value: (point) => (point.failureRate ?? 0) * 100 }],
+    series: [{ label: t('% en échec'), color: 'var(--series-2)', value: (point) => (point.failureRate ?? 0) * 100 }],
     decimals: true,
-    ariaLabel: `Part des exécutions de CI en échec ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
-    extraRows: (point) => [{ label: 'exécutions', value: formatNumber(point.runs) }],
+    ariaLabel: t('Part des exécutions de CI en échec {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
+    extraRows: (point) => [{ label: t('exécutions'), value: formatNumber(point.runs) }],
   })
 
   const ecosystemName = (row) => ECOSYSTEM_NAMES[row.ecosystem] ?? row.ecosystem
@@ -288,12 +292,12 @@ export function renderDevopsCharts() {
     value: (row) => row.opened,
     format: formatNumber,
     color: 'var(--series-1)',
-    ariaLabel: 'PR Dependabot par écosystème',
+    ariaLabel: t('PR Dependabot par écosystème'),
     tooltip: (row) => ({
       title: ecosystemName(row),
       rows: [
-        { label: 'ouvertes', value: formatNumber(row.opened) },
-        { label: 'mergées', value: formatNumber(row.merged) },
+        { label: t('ouvertes'), value: formatNumber(row.opened) },
+        { label: t('mergées'), value: formatNumber(row.merged) },
       ],
     }),
   })

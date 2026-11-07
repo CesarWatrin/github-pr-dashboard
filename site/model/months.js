@@ -6,6 +6,7 @@ import { isMissing, median } from '../domain/math.js'
 import { computePeriod } from '../domain/period.js'
 import { parisDay, parisMidnight } from '../domain/time.js'
 import { formatDecimal, formatDuration, formatNumber, formatShare } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { badgeMonths } from './badges.js'
 import { ciStart } from './selection.js'
 import { scopedRecords, squadKey } from './squads.js'
@@ -20,7 +21,7 @@ import { loadedStats, state } from './state.js'
  */
 
 /** @type {{ label: string, figures: ReportFigure[] }[]} */
-export const REPORT_GROUPS = [
+const GROUPS = [
   {
     label: 'Livraison',
     figures: [
@@ -65,6 +66,15 @@ export const REPORT_GROUPS = [
     ],
   },
 ]
+// The figures of the monthly report, by their French label, which the trends page picks its own by; each shows its
+// label in the language of the page.
+/** @type {Map<string, ReportFigure>} */
+export const REPORT_FIGURES = new Map(GROUPS.flatMap((group) => group.figures).map((figure) => [figure.label, { ...figure, label: t(figure.label) }]))
+// The groups of the report, their figures those of REPORT_FIGURES.
+export const REPORT_GROUPS = GROUPS.map((group) => ({
+  label: t(group.label),
+  figures: group.figures.map((figure) => /** @type {ReportFigure} */ (REPORT_FIGURES.get(figure.label))),
+}))
 /** @type {Record<FigureKind, (value: number | null | undefined) => string>} */
 export const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: formatShare, decimal: formatDecimal }
 // A month of the report is set against the median of this many last whole months.
@@ -128,22 +138,18 @@ export function reportChange(figure, value, previous) {
   let text
   if (figure.kind === 'share') {
     const points = Math.round((value - previous) * 100)
-    text = `${sign(points)}${Math.abs(points)} pt${Math.abs(points) > 1 ? 's' : ''}`
+    text = t(Math.abs(points) > 1 ? '{sign}{value} pts' : '{sign}{value} pt', { sign: sign(points), value: Math.abs(points) })
   } else if (previous === 0) {
     return null
   } else {
     const percent = Math.round(((value - previous) / previous) * 100)
-    text = `${sign(percent)}${formatNumber(Math.abs(percent))} %`
+    text = t('{sign}{value} %', { sign: sign(percent), value: formatNumber(Math.abs(percent)) })
   }
   const direction = Math.sign(value - previous)
   const tone = !figure.better || direction === 0 ? 'neutral' : (direction < 0) === (figure.better === 'down') ? 'better' : 'worse'
 
   return { text, tone }
 }
-
-// The figures of the monthly report, by label: the trends page picks its own among them.
-/** @type {Map<string, ReportFigure>} */
-export const REPORT_FIGURES = new Map(REPORT_GROUPS.flatMap((group) => group.figures).map((figure) => [figure.label, figure]))
 
 /** @type {(month: string) => boolean} */
 export const monthReady = (month) => state.reportCache?.stats === state.stats && state.reportCache.months.has(`${squadKey()}:${month}`)

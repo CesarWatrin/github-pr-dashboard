@@ -3,6 +3,7 @@
 import { activityBounds } from '../domain/team.js'
 import { DAY_MS } from '../domain/time.js'
 import { dateFormat } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { loadedStats, state } from './state.js'
 
 // A person first seen this close to the start of the synced data was already there before it: more than all of it.
@@ -13,8 +14,11 @@ const MONTH_MS = (365.25 / 12) * DAY_MS
 
 // Explained in the legend under the cards, with the figures.
 export const SENIORITY_LEGEND = {
-  label: 'Ancienneté',
-  hint: `Depuis la première PR de la personne dans l’organisation, même au-delà des données synchronisées, ou sa première review ou son premier commentaire s’ils sont plus anciens. Sans PR, une première activité dans les ${SENIORITY_START_DAYS} premiers jours des données compte pour plus que toute leur durée.`,
+  label: t('Ancienneté'),
+  hint: t(
+    'Depuis la première PR de la personne dans l’organisation, même au-delà des données synchronisées, ou sa première review ou son premier commentaire s’ils sont plus anciens. Sans PR, une première activité dans les {days} premiers jours des données compte pour plus que toute leur durée.',
+    { days: SENIORITY_START_DAYS },
+  ),
 }
 
 /** @type {(login: string) => string} */
@@ -94,26 +98,27 @@ export function seniority(login) {
     const years = Math.max(1, Math.floor((end - start) / (365 * DAY_MS) + 1e-9))
 
     return {
-      label: years === 1 ? 'plus d’un an' : `plus de ${years} ans`,
-      title: 'Première activité dès les premiers jours des données synchronisées',
+      label: years === 1 ? t('plus d’un an') : t('plus de {years} ans', { years }),
+      title: t('Première activité dès les premiers jours des données synchronisées'),
     }
   }
   const months = Math.floor((end - first.at) / MONTH_MS)
-  const what = first.fromPullRequest ? 'Première PR dans l’organisation' : 'Première activité'
+  const what = first.fromPullRequest ? 'Première PR dans l’organisation le {date}' : 'Première activité le {date}'
 
-  return { label: months < 1 ? 'moins d’un mois' : monthsLabel(months), title: `${what} le ${dateFormat.format(first.at)}` }
+  return { label: months < 1 ? t('moins d’un mois') : monthsLabel(months), title: t(what, { date: dateFormat.format(first.at) }) }
 }
 
 // « 7 mois », « 1 an et 3 mois », « 2 ans ».
 /** @param {number} months */
 function monthsLabel(months) {
   if (months < 12) {
-    return `${months} mois`
+    return months > 1 ? t('{months} mois', { months }) : t('1 mois')
   }
   const years = Math.floor(months / 12)
   const rest = months % 12
+  const whole = years > 1 ? t('{years} ans', { years }) : t('{years} an', { years })
 
-  return `${years} an${years > 1 ? 's' : ''}${rest > 0 ? ` et ${rest} mois` : ''}`
+  return rest > 1 ? t('{years} et {months} mois', { years: whole, months: rest }) : rest === 1 ? t('{years} et 1 mois', { years: whole }) : whole
 }
 
 // Of [login, count] pairs, those of the people still in the team.

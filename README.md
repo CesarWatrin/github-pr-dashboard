@@ -39,7 +39,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   seule liste et sans délai minimum : prêtes à merger, changements demandés, bloquées par un code owner, oubliées
   (sans review ni commentaire depuis plus d'un mois, ce qui l'emporte sur le reste), et les autres, chacune avec où
   elle en est et qui elle attend. Les PR de release et d'intégration y figurent aussi, étiquetées. D'après la dernière
-  synchro. Le titre de l'onglet compte les reviews demandées à la personne, sur toutes les pages : « (3) Stats PR ».
+  synchro. Le titre de l'onglet compte les reviews demandées à la personne, sur toutes les pages : « (3) Stats PR », et
+  un badge rouge le répète au bout de « Pour moi » dans la barre latérale, et sur le bouton du menu des écrans étroits.
   Avec la cloche « Me prévenir des reviews demandées », le navigateur affiche une notification à chaque nouvelle
   demande, tant qu'un onglet du dashboard reste ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand
   « Pour moi » est à l'écran, aucune pour les demandes déjà là à l'ouverture de l'onglet.
@@ -143,6 +144,11 @@ Chaque page a son adresse (`#/a-debloquer`, `#/bilan`, `#/auteurs`, `#/relecteur
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
+
+Le bouton **EN** / **FR**, à gauche de « Méthode », passe tout le site en anglais, ou le ramène en français : le choix
+est retenu par le navigateur, et la page se recharge dans la langue choisie, sans redemander le mot de passe. Les
+nombres et les dates suivent la langue ; ce qui vient de GitHub (noms, dépôts, titres des PR) reste tel quel. Le site
+est écrit en français, l'anglais vit dans `site/lib/english/` et ne se charge qu'en anglais.
 
 ## Accès protégé
 

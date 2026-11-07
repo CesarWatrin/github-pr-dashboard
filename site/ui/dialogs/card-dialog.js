@@ -2,7 +2,8 @@
 // the median of their peers.
 
 import { isMissing, median } from '../../domain/math.js'
-import { formatNumber } from '../../lib/format.js'
+import { formatNumber, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { $, el, svg } from '../dom.js'
 import { personLink, repoLink } from '../links.js'
 import { reducedMotion } from '../motion.js'
@@ -36,7 +37,7 @@ function peerMedian(values, format) {
   const middle = median(values)
   const shown = !isMissing(middle) && values.every(Number.isInteger) ? Math.round(middle) : middle
 
-  return el('span', { className: 'person-stats-peer', textContent: `méd. ${format(shown)}` })
+  return el('span', { className: 'person-stats-peer', textContent: t('méd. {value}', { value: format(shown) }) })
 }
 
 // The busiest people or repositories of a person or a repository, each with its count of pull requests.
@@ -51,7 +52,7 @@ export function topList(title, items, withAvatar) {
             {},
             // A person or a repository opens its own dialog in place of this one.
             withAvatar ? personLink(key) : repoLink(key, 'repo-link person-dialog-list-name'),
-            el('span', { className: 'pair-count', textContent: `${formatNumber(prs)} PR` }),
+            el('span', { className: 'pair-count', textContent: plural(prs, 'PR', 'PR') }),
           ),
         ),
       )
@@ -67,11 +68,11 @@ export function topList(title, items, withAvatar) {
 export function showCardDialog([head, ...children], opener) {
   const close = el(
     'button',
-    { type: 'button', className: 'icon-button person-dialog-close', title: 'Fermer' },
+    { type: 'button', className: 'icon-button person-dialog-close', title: t('Fermer') },
     svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
   )
   close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
-  close.setAttribute('aria-label', 'Fermer')
+  close.setAttribute('aria-label', t('Fermer'))
   close.addEventListener('click', () => $('[data-person-dialog]', HTMLDialogElement).close())
   const body = el('div', { className: 'person-dialog-body' }, ...children)
   $('[data-person-dialog-card]').replaceChildren(close, head, body)

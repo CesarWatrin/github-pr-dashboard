@@ -2,6 +2,7 @@
 
 import { bucketDate } from '../../lib/dates.js'
 import { capitalize, dayLongFormat, dayMonthFormat, monthLongFormat, monthShortFormat } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 
 // A month shows its year in January, or wherever a year starts among labels that skip months (withYear).
 export function axisLabel(key, bucket, withYear = false) {
@@ -20,7 +21,7 @@ export function bucketTitle(key, bucket) {
     return capitalize(monthLongFormat.format(date))
   }
   if (bucket === 'week') {
-    return `Semaine du ${dayMonthFormat.format(date)}`
+    return t('Semaine du {day}', { day: dayMonthFormat.format(date) })
   }
 
   return capitalize(dayLongFormat.format(date))

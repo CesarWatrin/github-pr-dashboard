@@ -1,6 +1,7 @@
 // Bars cut into shares that fill the width (the stages of the cycle, by default).
 
 import { formatDuration, formatNumber, formatShare } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { CYCLE_STAGES } from '../../model/cycle.js'
 import { el, svg } from '../dom.js'
 import { STAGGER_SPREAD_MS } from '../motion.js'
@@ -15,9 +16,9 @@ const cycleShareRows = (row) => [
   ...CYCLE_STAGES.map((stage) => ({
     color: stage.color,
     value: formatShare(row.shares[stage.key]),
-    label: `${stage.label.toLowerCase()}, médiane ${formatDuration(row[stage.key])}`,
+    label: t('{stage}, médiane {value}', { stage: stage.label.toLowerCase(), value: formatDuration(row[stage.key]) }),
   })),
-  { label: 'PR relues arrivées en prod', value: formatNumber(row.timed) },
+  { label: t('PR relues arrivées en prod'), value: formatNumber(row.timed) },
 ]
 
 /**
@@ -36,7 +37,7 @@ export function shareChart(container, { rows, ariaLabel, stages = CYCLE_STAGES, 
   }
   const shown = rows.filter((row) => row.shares)
   if (shown.length === 0) {
-    container.replaceChildren(el('p', { className: 'chart-empty', textContent: 'Aucune donnée sur la période' }))
+    container.replaceChildren(el('p', { className: 'chart-empty', textContent: t('Aucune donnée sur la période') }))
 
     return
   }
@@ -73,7 +74,7 @@ export function shareChart(container, { rows, ariaLabel, stages = CYCLE_STAGES, 
 
     const content = { title: row.label, rows: tooltipRows(row) }
     const text = stages.map((stage) => `${stage.label.toLowerCase()} ${formatShare(row.shares[stage.key])}`).join(', ')
-    const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': `${row.label} : ${text}` })
+    const hit = svg('rect', { class: 'hit', x: 0, y, width, height: rowHeight, tabindex: 0, 'aria-label': t('{label} : {value}', { label: row.label, value: text }) })
     bindTooltip(
       hit,
       (pointerX, pointerY) => {

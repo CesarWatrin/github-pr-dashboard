@@ -1,5 +1,6 @@
 // The tables of the pages and their repository filters: the one place that knows them all.
 
+import { t } from '../lib/i18n.js'
 import { BADGES_LEGEND } from '../model/badges.js'
 import { authorRows, reviewerRows } from '../model/contributors.js'
 import { displayName, isCurrent, SENIORITY_LEGEND } from '../model/people.js'
@@ -39,7 +40,7 @@ export function registerTables() {
 
         return counts
       },
-      repoCountsLabel: 'PR ouvertes sur la période',
+      repoCountsLabel: t('PR ouvertes sur la période'),
     },
     reviewers: {
       columns: REVIEWER_COLUMNS,
@@ -47,7 +48,7 @@ export function registerTables() {
       searchTexts: (row) => [row.login, displayName(row.login), ...row.topRepos.map(([repo]) => repo)],
       // Counted once per pull request, however many people reviewed it.
       repoCounts: () => new Map(currentPeriod().repositories.map((row) => [row.repo, row.prs])),
-      repoCountsLabel: 'PR relues sur la période',
+      repoCountsLabel: t('PR relues sur la période'),
     },
     cycle: {
       columns: CYCLE_COLUMNS,
@@ -57,7 +58,7 @@ export function registerTables() {
       // The filter lists the repositories of the authors, and applies to the whole page.
       source: 'authors',
       repoCounts: () => TABLES.collaboration.repoCounts(),
-      repoCountsLabel: 'PR de code ouvertes sur la période',
+      repoCountsLabel: t('PR de code ouvertes sur la période'),
       onFilter: () => {
         renderCycleTiles('enter')
         renderCycleCharts()
@@ -79,7 +80,7 @@ export function registerTables() {
 
         return counts
       },
-      repoCountsLabel: 'PR de code ouvertes sur la période',
+      repoCountsLabel: t('PR de code ouvertes sur la période'),
       onFilter: () => renderCollaboration(),
     },
     repos: {
@@ -117,13 +118,13 @@ export function registerTables() {
     team: {
       source: 'authors',
       repoCounts: () => TABLES.collaboration.repoCounts(),
-      repoCountsLabel: 'PR de code ouvertes sur la période',
+      repoCountsLabel: t('PR de code ouvertes sur la période'),
       onFilter: () => renderTeam(),
     },
     repositories: {
       source: 'authors',
       repoCounts: () => TABLES.collaboration.repoCounts(),
-      repoCountsLabel: 'PR de code ouvertes sur la période',
+      repoCountsLabel: t('PR de code ouvertes sur la période'),
       onFilter: () => renderRepositories(),
     },
   })

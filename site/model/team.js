@@ -2,6 +2,7 @@
 
 import { median } from '../domain/math.js'
 import { reviewNetwork } from '../domain/team.js'
+import { t } from '../lib/i18n.js'
 import { sumOf } from '../lib/math.js'
 import { authorRows, reviewerRows, selectedEntries } from './contributors.js'
 import { displayName, isCurrent, withoutFormer } from './people.js'
@@ -146,7 +147,11 @@ export function personDetails(row) {
 
   return {
     ...detailsOf(row),
-    peers: { label: peers === team ? 'de l’équipe' : /** @type {{ label: string }} */ (type).label, details: peers.map(detailsOf) },
+    // Who the person is set against: « des 5 personnes de l’équipe », « des 3 personnes Front ».
+    peers: {
+      label: peers === team ? t('personnes de l’équipe') : t('personnes {type}', { type: /** @type {{ label: string }} */ (type).label }),
+      details: peers.map(detailsOf),
+    },
     reviewedBy: top(network.pairs.filter((pair) => pair.author === login), 'reviewer'),
     reviews: top(network.pairs.filter((pair) => pair.reviewer === login), 'author'),
     codeRepos: author

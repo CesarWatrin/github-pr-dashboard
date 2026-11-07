@@ -1,6 +1,7 @@
 // Relecteurs: who reviews, how deep, and one person's reviews over time.
 
 import { formatDecimal, formatNumber, formatShare } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { displayName, isCurrent } from '../model/people.js'
 import { BUCKET_TITLES } from '../model/periods.js'
 import { frontShare } from '../model/repositories.js'
@@ -11,55 +12,56 @@ import { $ } from '../ui/dom.js'
 import { topReposCell } from '../ui/tables/cells.js'
 
 export const REVIEWER_COLUMNS = [
-  { key: 'login', label: 'Relecteur', kind: 'person', value: (row) => displayName(row.login) },
+  { key: 'login', label: t('Relecteur'), kind: 'person', value: (row) => displayName(row.login) },
   {
     key: 'prs',
-    label: 'PR relues',
+    label: t('PR relues'),
     kind: 'bar',
-    hint: 'PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.',
+    hint: t('PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.'),
   },
   {
     key: 'stack',
-    label: 'Stack',
+    label: t('Stack'),
     kind: 'stack',
     value: (row) => frontShare(row.stack),
-    hint: 'Part de ces PR dans les dépôts front, back et mobile.',
+    hint: t('Part de ces PR dans les dépôts front, back et mobile.'),
   },
   {
     key: 'commentsPerPr',
-    label: 'Comment. / PR',
+    label: t('Comment. / PR'),
     format: (row) => formatDecimal(row.commentsPerPr),
-    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+    hint: t('Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.'),
   },
   {
     key: 'silentApprovalRate',
-    label: 'Approb. sans comment.',
+    label: t('Approb. sans comment.'),
     format: (row) => formatShare(row.silentApprovalRate),
-    hint: 'Part des PR approuvées sans y laisser de commentaire.',
+    hint: t('Part des PR approuvées sans y laisser de commentaire.'),
   },
-  { key: 'changesRequested', label: 'Modif. demandées', hint: 'Reviews « changements demandés ».' },
-  { key: 'medianSize', label: 'Taille médiane', hint: 'Lignes ajoutées et supprimées des PR relues.' },
-  { key: 'merges', label: 'Merges effectués', hint: 'PR de code mergées par la personne, les siennes comprises.' },
+  { key: 'changesRequested', label: t('Modif. demandées'), hint: t('Reviews « changements demandés ».') },
+  { key: 'medianSize', label: t('Taille médiane'), hint: t('Lignes ajoutées et supprimées des PR relues.') },
+  { key: 'merges', label: t('Merges effectués'), hint: t('PR de code mergées par la personne, les siennes comprises.') },
   {
     key: 'topRepos',
-    label: 'Principaux dépôts',
+    label: t('Principaux dépôts'),
     kind: 'text',
     value: (row) => row.topRepos[0]?.[0] ?? '',
-    cell: (row) => topReposCell(row.topRepos, 'PR relues'),
-    hint: 'Dépôts où la personne a relu le plus de PR.',
+    cell: (row) => topReposCell(row.topRepos, t('PR relues')),
+    hint: t('Dépôts où la personne a relu le plus de PR.'),
   },
 ]
 
 const MINI_CHARTS = [
-  { key: 'prs', title: 'PR relues', value: (point) => point.prs },
+  { key: 'prs', title: t('PR relues'), series: t('pr relues'), value: (point) => point.prs },
   {
     key: 'ratio',
-    title: 'Commentaires par PR relue',
+    title: t('Commentaires par PR relue'),
+    series: t('commentaires par pr relue'),
     decimals: true,
     value: (point) => (point.prs ? point.comments / point.prs : null),
     extraRows: (point) => [
-      { label: 'PR relues', value: formatNumber(point.prs) },
-      { label: 'commentaires', value: formatNumber(point.comments) },
+      { label: t('PR relues'), value: formatNumber(point.prs) },
+      { label: t('commentaires'), value: formatNumber(point.comments) },
     ],
   },
 ]
@@ -83,7 +85,7 @@ export function renderMiniCharts() {
       points,
       bucket,
       decimals: mini.decimals,
-      series: [{ label: mini.title.toLowerCase(), color: 'var(--series-1)', value: mini.value }],
+      series: [{ label: mini.series, color: 'var(--series-1)', value: mini.value }],
       ariaLabel: `${mini.title} ${BUCKET_TITLES[bucket]}, ${displayName(state.person)}`,
       extraRows: mini.extraRows,
     })

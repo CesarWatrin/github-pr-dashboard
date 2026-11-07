@@ -40,6 +40,8 @@ enforces what can be checked; the rest is for review.
 - The shapes everyone shares are global types of `types/`: `stats.d.ts` (the published stats, the records),
   `page.d.ts` (the state of the page), `sync.d.ts` (the snapshot and the answers of GitHub), `globals.d.ts` (what the
   DOM types lack). A shape one module uses stays a `@typedef` of that module.
+- Every text the page shows is French, through `t()` of `lib/i18n.js`, its English in `lib/english/` (`site.md`,
+  Languages). A module the page loads on demand (`import('./…')`, the English) is in the import map, not preloaded.
 - `$(selector, Kind)` finds an element of a kind (`HTMLDialogElement`, `HTMLInputElement`…), typed so and checked when
   found; `$(selector)` alone gives an `HTMLElement`. `$$()` likewise, for all of them.
 

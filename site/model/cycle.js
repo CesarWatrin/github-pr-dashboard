@@ -1,6 +1,7 @@
 // The stages of the cycle of a pull request (pickup, review, merge, deploy) and their medians.
 
 import { median } from '../domain/math.js'
+import { t } from '../lib/i18n.js'
 
 // The stages of a code pull request, in order, as cut by the period stats: the neutral color for the one that no
 // longer depends on the review.
@@ -10,22 +11,22 @@ import { median } from '../domain/math.js'
 export const CYCLE_STAGES = [
   {
     key: 'pickup',
-    label: 'Prise en charge',
+    label: t('Prise en charge'),
     color: 'var(--series-1)',
-    hint: 'Médiane, de l’ouverture à la première review ou au premier commentaire d’une autre personne.',
+    hint: t('Médiane, de l’ouverture à la première review ou au premier commentaire d’une autre personne.'),
   },
   {
     key: 'review',
-    label: 'Relecture',
+    label: t('Relecture'),
     color: 'var(--series-2)',
-    hint: 'Médiane, de cette première intervention à la dernière approbation avant le merge, ou au merge sans approbation.',
+    hint: t('Médiane, de cette première intervention à la dernière approbation avant le merge, ou au merge sans approbation.'),
   },
-  { key: 'merge', label: 'Merge', color: 'var(--series-3)', hint: 'Médiane, de la dernière approbation au merge.' },
+  { key: 'merge', label: t('Merge'), color: 'var(--series-3)', hint: t('Médiane, de la dernière approbation au merge.') },
   {
     key: 'deploy',
-    label: 'Mise en prod',
+    label: t('Mise en prod'),
     color: 'var(--text-muted)',
-    hint: 'Médiane, du merge à l’arrivée en prod, avec le déploiement suivant du dépôt.',
+    hint: t('Médiane, du merge à l’arrivée en prod, avec le déploiement suivant du dépôt.'),
   },
 ]
 /** @type {(Stage | 'toMerge' | 'toProduction')[]} */

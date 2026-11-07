@@ -9,7 +9,9 @@ import {
   formatLines,
   formatNumber,
   formatShare,
+  plural,
 } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { BUCKET_TITLES } from '../model/periods.js'
 import { repoInfo, technologyWeights } from '../model/repositories.js'
@@ -27,72 +29,72 @@ import { formatTechnologyShare, LINES_COLUMN, repoCell, technologiesCell } from 
 import { renderTiles } from '../ui/tiles.js'
 
 const EVENT_VERBS = {
-  opened: 'a ouvert',
-  merged: 'a mergé',
-  approved: 'a approuvé',
-  changes_requested: 'a demandé des changements sur',
-  commented: 'a commenté',
+  opened: t('a ouvert'),
+  merged: t('a mergé'),
+  approved: t('a approuvé'),
+  changes_requested: t('a demandé des changements sur'),
+  commented: t('a commenté'),
 }
 
 const TODAY_TILES = [
-  { key: 'opened', label: 'PR ouvertes' },
-  { key: 'merged', label: 'PR mergées' },
-  { key: 'reviews', label: 'Reviews soumises' },
+  { key: 'opened', label: t('PR ouvertes') },
+  { key: 'merged', label: t('PR mergées') },
+  { key: 'reviews', label: t('Reviews soumises') },
 ]
 
 // A tile with a route leads to the page that details it.
 const DELIVERY_TILES = [
-  { key: 'opened', label: 'PR ouvertes', route: 'authors' },
-  { key: 'merged', label: 'PR de code mergées', route: 'authors' },
-  { key: 'medianTimeToMergeHours', label: 'Délai médian de merge', format: formatDuration, route: 'authors', better: 'down' },
-  { key: 'releases', label: 'Mises en production' },
-  { key: 'hotfixShare', label: 'Part de hotfix', format: formatShare, route: 'tma', better: 'down' },
+  { key: 'opened', label: t('PR ouvertes'), route: 'authors' },
+  { key: 'merged', label: t('PR de code mergées'), route: 'authors' },
+  { key: 'medianTimeToMergeHours', label: t('Délai médian de merge'), format: formatDuration, route: 'authors', better: 'down' },
+  { key: 'releases', label: t('Mises en production') },
+  { key: 'hotfixShare', label: t('Part de hotfix'), format: formatShare, route: 'tma', better: 'down' },
 ]
 
 const LINES_TILES = [
-  { key: 'added', label: 'Lignes ajoutées', format: formatLines },
-  { key: 'deleted', label: 'Lignes supprimées', format: formatLines },
-  { key: 'medianSize', label: 'Taille médiane des PR', route: 'authors' },
+  { key: 'added', label: t('Lignes ajoutées'), format: formatLines },
+  { key: 'deleted', label: t('Lignes supprimées'), format: formatLines },
+  { key: 'medianSize', label: t('Taille médiane des PR'), route: 'authors' },
 ]
 
 const REVIEW_TILES = [
-  { key: 'reviewed', label: 'PR relues', route: 'reviewers' },
-  { key: 'commentsPerPr', label: 'Commentaires par PR relue', format: formatDecimal, route: 'reviewers' },
-  { key: 'silentApprovalRate', label: 'Approb. sans commentaire', format: formatShare, route: 'reviewers' },
-  { key: 'unreviewedShare', label: 'Mergées sans review', format: formatShare, route: 'authors', better: 'down' },
+  { key: 'reviewed', label: t('PR relues'), route: 'reviewers' },
+  { key: 'commentsPerPr', label: t('Commentaires par PR relue'), format: formatDecimal, route: 'reviewers' },
+  { key: 'silentApprovalRate', label: t('Approb. sans commentaire'), format: formatShare, route: 'reviewers' },
+  { key: 'unreviewedShare', label: t('Mergées sans review'), format: formatShare, route: 'authors', better: 'down' },
 ]
 
 export const REPO_COLUMNS = [
-  { key: 'repo', label: 'Dépôt', kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
+  { key: 'repo', label: t('Dépôt'), kind: 'text', value: (row) => row.repo, cell: (row) => repoCell(row) },
   {
     key: 'technologies',
-    label: 'Technos',
+    label: t('Technos'),
     kind: 'text',
     value: (row) => row.technologies[0]?.[0] ?? '',
     cell: (row) => technologiesCell(row.technologies),
-    hint: 'Technologies principales du code du dépôt, détail au survol.',
+    hint: t('Technologies principales du code du dépôt, détail au survol.'),
   },
-  { key: 'code', label: 'PR de code', kind: 'bar', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
-  { key: 'contributors', label: 'Contributeurs', hint: 'Auteurs de ces PR.' },
+  { key: 'code', label: t('PR de code'), kind: 'bar', hint: t('PR ouvertes sur la période, hors release et synchronisation de branches.') },
+  { key: 'contributors', label: t('Contributeurs'), hint: t('Auteurs de ces PR.') },
   LINES_COLUMN,
   {
     key: 'medianTimeToMergeHours',
-    label: 'Délai de merge',
+    label: t('Délai de merge'),
     format: (row) => formatDuration(row.medianTimeToMergeHours),
-    hint: 'Médiane, de la création au merge.',
+    hint: t('Médiane, de la création au merge.'),
   },
   {
     key: 'unreviewedRate',
-    label: 'Mergées sans review',
+    label: t('Mergées sans review'),
     format: (row) => formatShare(row.unreviewedRate),
-    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+    hint: t('Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.'),
   },
-  { key: 'reviewed', label: 'PR relues', hint: 'PR du dépôt avec une review ou un commentaire sur la période.' },
+  { key: 'reviewed', label: t('PR relues'), hint: t('PR du dépôt avec une review ou un commentaire sur la période.') },
 ]
 
 export const ACTIVITY_SERIES = [
-  { label: 'PR ouvertes', color: 'var(--series-1)', value: (point) => point.opened },
-  { label: 'commentaires de review', color: 'var(--series-2)', value: (point) => point.comments },
+  { label: t('PR ouvertes'), color: 'var(--series-1)', value: (point) => point.opened },
+  { label: t('commentaires de review'), color: 'var(--series-2)', value: (point) => point.comments },
 ]
 
 // The counts of today come from the sync, for the whole organization: a squad picked hides them, rather than show figures
@@ -102,7 +104,7 @@ export function renderToday(mode) {
   const { today, timezone } = state.stats
   const currentDay = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
   $('[data-today-title]').textContent =
-    today.date === currentDay ? 'Aujourd’hui' : `Le ${dayLongFormat.format(new Date(`${today.date}T12:00:00Z`))}`
+    today.date === currentDay ? t('Aujourd’hui') : t('Le {day}', { day: dayLongFormat.format(new Date(`${today.date}T12:00:00Z`)) })
   renderTiles($('[data-today]'), TODAY_TILES, today, mode)
 }
 
@@ -117,16 +119,16 @@ export function renderTotals(mode) {
 
 export function renderActivityChart() {
   const { series, bucket } = currentPeriod()
-  $('[data-chart-title]').textContent = `Activité ${BUCKET_TITLES[bucket]}`
+  $('[data-chart-title]').textContent = t('Activité {bucket}', { bucket: BUCKET_TITLES[bucket] })
   columnChart($('[data-chart]'), {
     points: series,
     bucket,
     series: ACTIVITY_SERIES,
-    ariaLabel: `PR ouvertes et commentaires de review ${BUCKET_TITLES[bucket]}, ${periodTitle()}`,
+    ariaLabel: t('PR ouvertes et commentaires de review {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
     extraRows: (point) => [
-      { label: 'PR de code mergées', value: formatNumber(point.merged) },
-      { label: 'approbations', value: formatNumber(point.approvals) },
-      { label: 'mises en production', value: formatNumber(point.releases) },
+      { label: t('PR de code mergées'), value: formatNumber(point.merged) },
+      { label: t('approbations'), value: formatNumber(point.approvals) },
+      { label: t('mises en production'), value: formatNumber(point.releases) },
     ],
   })
 }
@@ -134,12 +136,12 @@ export function renderActivityChart() {
 // What the technologies chart can weigh, each repository's amount shared among its technologies: the code pull
 // requests opened over the period, or the lines those merged added.
 const TECHNOLOGY_MEASURES = {
-  prs: { amount: (stats) => stats.code, share: 'Part des PR de code', of: 'des PR de code', weight: 'PR de code, au prorata' },
+  prs: { amount: (stats) => stats.code, share: t('Part des PR de code'), of: t('des PR de code'), weight: t('PR de code, au prorata') },
   added: {
     amount: (stats) => stats.added,
-    share: 'Part des lignes ajoutées',
-    of: 'des lignes ajoutées',
-    weight: 'Lignes ajoutées, au prorata',
+    share: t('Part des lignes ajoutées'),
+    of: t('des lignes ajoutées'),
+    weight: t('Lignes ajoutées, au prorata'),
   },
 }
 
@@ -158,7 +160,7 @@ export function renderTechnologiesChart() {
   const total = weights.reduce((sum, [, weight]) => sum + weight, 0)
   const rows = weights.map(([name, weight]) => ({ name, weight, share: weight / total }))
   $('[data-technologies-sub]').textContent =
-    `${measure.share}, ${formatNumber(rows.length)} technologie${rows.length > 1 ? 's' : ''}`
+    `${measure.share}, ${plural(rows.length, 'technologie')}`
   barChart($('[data-technologies-chart]'), {
     rows,
     label: (row) => row.name,
@@ -166,7 +168,7 @@ export function renderTechnologiesChart() {
     value: (row) => row.share,
     format: formatTechnologyShare,
     color: 'var(--series-1)',
-    ariaLabel: `${measure.share} par technologie`,
+    ariaLabel: t('{share} par technologie', { share: measure.share }),
     tooltip: (row) => ({
       title: row.name,
       rows: [
@@ -181,11 +183,11 @@ export function renderChartTable() {
   const { series, bucket } = currentPeriod()
   dataTable(
     $('[data-chart-table]'),
-    ['Période', 'PR ouvertes', 'Commentaires', 'PR de code mergées', 'Approbations', 'Mises en production'],
+    [t('Période'), t('PR ouvertes'), t('Commentaires'), t('PR de code mergées'), t('Approbations'), t('Mises en production')],
     series
       .toReversed()
       .map((point) => [
-        bucketTitle(point.key, bucket) + (point.partial ? ' (incomplète)' : ''),
+        point.partial ? t('{bucket} (incomplète)', { bucket: bucketTitle(point.key, bucket) }) : bucketTitle(point.key, bucket),
         formatNumber(point.opened),
         formatNumber(point.comments),
         formatNumber(point.merged),
@@ -259,7 +261,7 @@ export function renderFeed(highlight) {
         pullRequestLink(event.repo, event.number),
       )
       if (event.type !== 'opened' && event.author !== event.actor) {
-        text.append(document.createTextNode(' de '), personLink(event.author, { withAvatar: false }))
+        text.append(document.createTextNode(` ${t('de')} `), personLink(event.author, { withAvatar: false }))
       }
       const item = listItem(event.actor, text, event.at)
       if (highlight && previous && !previous.has(eventId(event))) {
@@ -270,7 +272,7 @@ export function renderFeed(highlight) {
     })
 
   state.seenEvents = new Set(events.map(eventId))
-  renderList($('[data-feed]'), items, 'Aucune activité')
+  renderList($('[data-feed]'), items, t('Aucune activité'))
 }
 
 // Listens to the measure of the technologies chart: pull requests or lines.
