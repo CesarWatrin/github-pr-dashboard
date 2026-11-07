@@ -195,20 +195,25 @@ for (const language of ['fr', 'en']) {
       assert.ok((await rows()) < everyone)
     })
 
-    test('the tab and the badges count every pull request of the lists of « Mes PR »', async () => {
+    test('on « Mes PR », the tab and the red badges count what to act on, the grey one all the person’s own', async () => {
       await show('me')
       await page.evaluate(`(() => {
         const picker = document.querySelector('[data-me-picker]')
         picker.value = 'ada-l'
         picker.dispatchEvent(new Event('change'))
       })()`)
-      const listed = await page.evaluate(`document.querySelectorAll('[data-me] li:not(.feed-empty)').length`)
-      assert.ok(listed > 1, 'the made-up person has pull requests in several lists')
-      assert.ok(await page.evaluate(`document.title.startsWith('(${listed}) ')`))
+      /** @param {string[]} lists */
+      const listed = (lists) =>
+        page.evaluate(`document.querySelectorAll('${lists.map((list) => `[data-me="${list}"] li:not(.feed-empty)`).join(', ')}').length`)
+      const urgent = await listed(['toReview', 'ready', 'changes', 'forgotten'])
+      const own = await listed(['ready', 'changes', 'forgotten', 'owners', 'open', 'drafts'])
+      assert.ok(urgent > 0 && (await listed(['drafts'])) > 0, 'the made-up person has pull requests to act on, and a draft')
+      assert.ok(await page.evaluate(`document.title.startsWith('(${urgent}) ')`))
       assert.deepEqual(
         await page.evaluate(`[...document.querySelectorAll('[data-reviews-badge]')].map((badge) => badge.textContent)`),
-        [String(listed), String(listed)],
+        [String(urgent), String(urgent)],
       )
+      assert.equal(await page.evaluate(`document.querySelector('[data-own-badge]').textContent`), String(own))
     })
 
     test('the theme toggles, and locking asks first', async () => {

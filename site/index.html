@@ -357,6 +357,7 @@
               <circle cx="8" cy="5.5" r="2.5" /><path d="M3 13.5c.5-2.6 2.4-4 5-4s4.5 1.4 5 4" />
             </svg>
             Mes PR
+            <span class="nav-badge nav-badge-own" data-own-badge hidden></span>
             <span class="nav-badge" data-reviews-badge hidden></span>
           </a>
           <a class="nav-link" href="#/bilan" data-route-link="report">
@@ -692,12 +693,13 @@
               </p>
               <div class="tiles" data-me-tiles></div>
               <p class="card-note">
-                D’après la dernière synchro, hors brouillons et PR des personnes parties. Les PR de release et
-                d’intégration y figurent aussi, étiquetées : elles attendent leurs reviews comme les autres. Le choix de
-                la personne reste dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles
-                faites à la personne. Le titre de l’onglet et le badge de « Mes PR » comptent toutes les PR de ces listes, sur
-                toutes les pages. Avec la cloche, le navigateur affiche une notification à chaque PR qui y arrive, tant
-                qu’un onglet du dashboard reste ouvert, même en arrière-plan.
+                D’après la dernière synchro, hors PR des personnes parties. Les PR de release et d’intégration y
+                figurent aussi, étiquetées : elles attendent leurs reviews comme les autres. Le choix de la personne reste
+                dans ce navigateur. Une demande de review faite à une équipe n’apparaît pas : seules comptent celles
+                faites à la personne. Le titre de l’onglet et le badge rouge de « Mes PR » comptent, sur toutes les pages,
+                ce qui demande d’agir : les quatre premières listes ; un badge gris compte toutes mes PR ouvertes,
+                brouillons compris. Avec la cloche, le navigateur affiche une notification à chaque PR qui arrive dans
+                l’une des quatre premières listes, tant qu’un onglet du dashboard reste ouvert, même en arrière-plan.
               </p>
             </section>
 
@@ -720,22 +722,28 @@
                 <ol class="feed" data-me="changes"></ol>
               </section>
 
-              <section class="card" aria-labelledby="me-owners-title">
-                <h2 id="me-owners-title" data-me-title="owners">Bloquées par un code owner</h2>
-                <p class="card-sub" data-me-sub="owners"></p>
-                <ol class="feed" data-me="owners"></ol>
-              </section>
-
               <section class="card" aria-labelledby="me-forgotten-title">
                 <h2 id="me-forgotten-title" data-me-title="forgotten">Oubliées</h2>
                 <p class="card-sub" data-me-sub="forgotten"></p>
                 <ol class="feed" data-me="forgotten"></ol>
               </section>
 
+              <section class="card" aria-labelledby="me-owners-title">
+                <h2 id="me-owners-title" data-me-title="owners">Bloquées par un code owner</h2>
+                <p class="card-sub" data-me-sub="owners"></p>
+                <ol class="feed" data-me="owners"></ol>
+              </section>
+
               <section class="card" aria-labelledby="me-open-title">
                 <h2 id="me-open-title" data-me-title="open">Mes PR ouvertes</h2>
                 <p class="card-sub" data-me-sub="open"></p>
                 <ol class="feed" data-me="open"></ol>
+              </section>
+
+              <section class="card" aria-labelledby="me-drafts-title">
+                <h2 id="me-drafts-title" data-me-title="drafts">Mes brouillons</h2>
+                <p class="card-sub" data-me-sub="drafts"></p>
+                <ol class="feed" data-me="drafts"></ol>
               </section>
             </div>
           </div>
@@ -1419,7 +1427,9 @@
                   seule liste, définie comme sur À débloquer mais sans délai minimum. Oubliée d’abord, sans aucune
                   review ni commentaire depuis plus d’un mois, quoi qu’elle attende ; sinon prête à merger, approuvée
                   par autant de personnes qu’il en faut, avec des changements demandés, bloquée par un code owner, ou,
-                  pour toutes les autres, dans ses PR ouvertes.
+                  pour toutes les autres, dans ses PR ouvertes ; ses brouillons à part. L’onglet, le badge rouge et les
+                  notifications comptent ce qui demande d’agir : les reviews demandées, et ses PR prêtes à merger, avec
+                  des changements demandés ou oubliées. Un badge gris compte toutes ses PR ouvertes, brouillons compris.
                 </dd>
                 <dt>Noms</dt>
                 <dd>Nom du profil GitHub, sinon identifiant.</dd>

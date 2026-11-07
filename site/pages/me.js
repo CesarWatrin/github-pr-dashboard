@@ -1,6 +1,6 @@
-// Mes PR: the reviews asked of one person, their open pull requests, and the notifications of new ones.
+// Mes PR: the reviews asked of one person, their open pull requests and drafts, and the notifications of new ones.
 
-import { openPullRequests, personalQueue } from '../domain/open-pull-requests.js'
+import { openPullRequests, ownDrafts, personalQueue } from '../domain/open-pull-requests.js'
 import { minutesIso } from '../lib/dates.js'
 import { formatNumber } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -23,12 +23,16 @@ import {
 import { renderTiles } from '../ui/tiles.js'
 import { renderTitle } from '../ui/title.js'
 
+// The lists of the page, in its order: first what the person has to act on (urgent), which the red badges, the tab and
+// the notifications count, then what waits on someone else. The grey badge counts the person's own: every list but the
+// reviews asked of them, drafts included.
 const ME_LISTS = {
   toReview: {
     label: t('Reviews qu’on m’a demandées'),
     tile: t('Reviews demandées'),
     hint: t('PR des autres qui attendent encore ma review, les plus anciennes d’abord'),
     empty: t('Aucune review demandée en attente'),
+    urgent: true,
   },
   ready: {
     label: t('Prêtes à merger'),
@@ -38,12 +42,21 @@ const ME_LISTS = {
         who: required > 1 ? t('au moins {count}', { count: approvers(required) }) : approvers(required),
       }),
     empty: t('Aucune PR approuvée qui attend son merge'),
+    urgent: true,
   },
   changes: {
     label: unblockStance('changes').label,
     tile: unblockStance('changes').label,
     hint: t('Des changements demandés, sans nouvelle approbation depuis : à corriger, ou à faire relire de nouveau'),
     empty: t('Aucune PR avec des changements demandés'),
+    urgent: true,
+  },
+  forgotten: {
+    label: FORGOTTEN.label,
+    tile: FORGOTTEN.label,
+    hint: FORGOTTEN.hint,
+    empty: FORGOTTEN.empty,
+    urgent: true,
   },
   owners: {
     label: unblockStance('owners').label,
@@ -51,12 +64,17 @@ const ME_LISTS = {
     hint: t('Pas encore validées, et un code owner du dépôt ne les a pas encore relues : GitHub bloque le merge'),
     empty: unblockStance('owners').empty,
   },
-  forgotten: { label: FORGOTTEN.label, tile: FORGOTTEN.label, hint: FORGOTTEN.hint, empty: FORGOTTEN.empty },
   open: {
     label: t('Mes PR ouvertes'),
     tile: t('Mes autres PR ouvertes'),
     hint: t('Les autres, sans review, en discussion ou pas encore assez approuvées : où en est chacune, ce qu’elle attend et depuis quand'),
     empty: t('Aucune autre PR ouverte'),
+  },
+  drafts: {
+    label: t('Mes brouillons'),
+    tile: t('Mes brouillons'),
+    hint: t('Mes PR encore en brouillon, les plus anciennes d’abord : elles n’attendent encore personne'),
+    empty: t('Aucune PR en brouillon'),
   },
 }
 const ME_TILES = Object.entries(ME_LISTS).map(([key, { tile }]) => ({ key, label: tile }))
@@ -107,6 +125,14 @@ const ME_ITEMS = {
   owners: (pr) => ownItem(pr),
   forgotten: (pr) => ownItem(pr, { tagged: true, forgotten: true }),
   open: (pr) => ownItem(pr, { tagged: true }),
+  // A draft, since its opening.
+  drafts: (pr) =>
+    listItem(
+      pr.author,
+      el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), ...kindTag(pr)),
+      minutesIso(pr.createdAt),
+      `${t('ouverte')} `,
+    ),
 }
 
 // One of the person's own pull requests: who it waits for and since when it stands where it does, or, forgotten, its
@@ -139,7 +165,10 @@ function meQueue() {
   // Forgotten as on the unblock page: no review nor comment for FORGOTTEN_AFTER_DAYS.
   const forgottenBefore = Date.now() / 60_000 - FORGOTTEN_AFTER_DAYS * 24 * 60
 
-  return { me, queue: personalQueue(open, me, { forgottenBefore }) }
+  return {
+    me,
+    queue: { ...personalQueue(open, me, { forgottenBefore }), drafts: ownDrafts(state.stats.pullRequests, me, { kinds: ME_KINDS }) },
+  }
 }
 
 export function renderMe(mode) {
@@ -158,8 +187,11 @@ export function renderMe(mode) {
     $(`[data-me-sub="${key}"]`).textContent = typeof list.hint === 'function' ? list.hint(required) : list.hint
     renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : t('Choisir une personne en haut de la page'))
   }
-  // Everything its lists hold, each pull request in one list only: what the tab, the badges and the notifications count.
-  state.forMe = queue ? Object.keys(ME_LISTS).flatMap((list) => queue[list].map((pr) => ({ list, pr }))) : null
+  // What its urgent lists hold, each pull request in one list only: what the tab, the red badges and the notifications
+  // count. And how many pull requests of the person's own they hold, for the grey badge.
+  const lists = Object.entries(ME_LISTS)
+  state.forMe = queue ? lists.filter(([, list]) => list.urgent).flatMap(([key]) => queue[key].map((pr) => ({ list: key, pr }))) : null
+  state.meOwn = queue ? lists.filter(([key]) => key !== 'toReview').reduce((sum, [key]) => sum + queue[key].length, 0) : 0
   renderTitle()
   renderNotifyToggle()
   notifyNewItems(me)

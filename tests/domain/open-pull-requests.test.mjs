@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { openPullRequests, personalQueue } from '../../site/domain/open-pull-requests.js'
+import { openPullRequests, ownDrafts, personalQueue } from '../../site/domain/open-pull-requests.js'
 import { at, iso, record } from './records.mjs'
 
 describe('openPullRequests', () => {
@@ -154,5 +154,29 @@ describe('personalQueue', () => {
     const recent = personalQueue(openPullRequests([open(1, { interventions: [['bob', at('2026-03-02T10:00:00Z'), 'CHANGES_REQUESTED', 1]] })]), 'alice')
     assert.deepEqual([numbers(recent.changes), numbers(recent.forgotten)], [[1], []])
     assert.deepEqual(personalQueue([], 'alice'), { toReview: [], ready: [], changes: [], owners: [], open: [], forgotten: [] })
+  })
+})
+
+describe('ownDrafts', () => {
+  const draft = (number, fields) =>
+    record({ repo: 'web', number, author: 'alice', createdAt: at('2026-03-02T09:00:00Z'), draft: true, ...fields })
+  const records = [
+    draft(1, { createdAt: at('2026-03-06T09:00:00Z') }),
+    draft(2, { kind: 'release' }),
+    draft(3, { author: 'bob' }),
+    draft(4, { draft: undefined }),
+    draft(5, { closed: true }),
+    draft(6, { bot: true }),
+  ]
+
+  test('the person’s open drafts of the kinds asked for, the oldest first', () => {
+    assert.deepEqual(
+      ownDrafts(records, 'alice').map(({ number, kind }) => [number, kind]),
+      [[1, 'code']],
+    )
+    assert.deepEqual(
+      ownDrafts(records, 'alice', { kinds: ['code', 'release'] }).map(({ number }) => number),
+      [2, 1],
+    )
   })
 })

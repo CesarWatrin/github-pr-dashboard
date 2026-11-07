@@ -88,8 +88,9 @@ export const state = {
   // Who the « Mes PR » page is for, null until picked.
   me: readStoredMe(),
   notify: readStoredNotify(),
-  // The open pull requests of others that still wait for that person's review, as of the last sync.
+  // What that person has to act on, as of the last sync, and how many open pull requests of their own, drafts included.
   forMe: null,
+  meOwn: 0,
   fetchFailed: false,
 }
 

@@ -1,4 +1,4 @@
-// Browser notifications of what is new for the person of « Mes PR »: a pull request in any of its lists.
+// Browser notifications of what is new for the person of « Mes PR »: a pull request in any of the lists they have to act on.
 
 import { plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'

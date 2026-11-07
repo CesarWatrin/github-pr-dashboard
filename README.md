@@ -36,14 +36,16 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   les dépôts front, back et mobile, à relire après coup.
 - **Mes PR** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
   dont GitHub lui demande encore la review (pas celles demandées à une équipe), puis les siennes, chacune dans une
-  seule liste et sans délai minimum : prêtes à merger, changements demandés, bloquées par un code owner, oubliées
-  (sans review ni commentaire depuis plus d'un mois, ce qui l'emporte sur le reste), et les autres, chacune avec où
-  elle en est et qui elle attend. Les PR de release et d'intégration y figurent aussi, étiquetées. D'après la dernière
-  synchro. Le titre de l'onglet compte toutes les PR des listes de la personne, sur toutes les pages : « (5) Stats PR » ;
-  un badge rouge le répète au bout de « Mes PR » dans la barre latérale, et sur le bouton du menu des écrans étroits,
-  et une notification compte de même quand une PR arrive dans l'une des listes.
-  Avec la cloche « Me prévenir des nouvelles PR », le navigateur affiche une notification à chaque PR qui arrive dans
-  l'une des listes (une review demandée, une PR à soi devenue prête à merger…), tant qu'un onglet du dashboard reste
+  seule liste et sans délai minimum : prêtes à merger, changements demandés, oubliées (sans review ni commentaire
+  depuis plus d'un mois, ce qui l'emporte sur le reste), bloquées par un code owner, et les autres, chacune avec où
+  elle en est et qui elle attend ; enfin ses brouillons. Les PR de release et d'intégration y figurent aussi,
+  étiquetées. D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
+  les pages : les reviews qu'on lui demande, et ses PR prêtes à merger, avec des changements demandés ou oubliées,
+  « (5) Stats PR » ; un badge rouge le répète au bout de « Mes PR » dans la barre latérale, et sur le bouton du menu
+  des écrans étroits, et une notification compte de même. Un badge gris, juste après « Mes PR », compte toutes ses PR
+  ouvertes, brouillons compris. Avec la cloche « Me prévenir des nouvelles PR », le navigateur affiche une
+  notification à chaque PR qui arrive dans l'une des listes qui demandent d'agir (une review demandée, une PR à soi
+  devenue prête à merger…), tant qu'un onglet du dashboard reste
   ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand « Mes PR » est à l'écran, aucune pour les PR
   déjà là à l'ouverture de l'onglet.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :

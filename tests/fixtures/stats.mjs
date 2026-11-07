@@ -236,6 +236,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
   open('dev-o', 4, { interventions: [['hana-v', ago(3), 'APPROVED', 0]] })
   open('eli-p', 8, { codeOwners: ['ben-k', '@example-org/back'], requestedReviewers: ['ben-k'] })
   open('fay-r', 3, { draft: true, checks: null })
+  open('ada-l', 15, { draft: true, checks: null })
   open('gus-t', 40, { checks: 'ERROR' })
   open('hana-v', 2, { kind: 'release', requestedReviewers: ['ada-l'] })
   open('ivo-w', 1, { requestedReviewers: ['ada-l', 'dev-o'], checks: 'EXPECTED' })
