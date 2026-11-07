@@ -2,7 +2,8 @@
 
 import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
 import { parisDay } from '../domain/time.js'
-import { capitalize, monthName } from '../lib/format.js'
+import { capitalize, monthName, plural } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { BADGE_TIERS, BADGES, badgeStandings, monthFigures, TIER_ORDER } from '../model/badges.js'
 import { displayName, isCurrent } from '../model/people.js'
 import { state } from '../model/state.js'
@@ -25,10 +26,11 @@ function renderChampions({ history, leaders }) {
   const last = Object.keys(history).sort().at(-1)
   const current = parisDay(Date.parse(state.stats.generatedAt)).slice(0, 7)
   const ongoing = { [current]: monthFigures(monthlyActivity(state.stats.pullRequests), current) }
-  const currentName = capitalize(monthName(current).replace(/ \d+$/, ''))
+  const currentMonth = monthName(current).replace(/ \d+$/, '')
+  const currentName = capitalize(currentMonth)
   $('[data-awards-champions-sub]').textContent = last
-    ? `${capitalize(monthName(last))}, le dernier mois complet, et ${currentName.toLowerCase()} en cours, provisoire`
-    : `${currentName} en cours, provisoire : pas encore de mois complet`
+    ? t('{last}, le dernier mois complet, et {current} en cours, provisoire', { last: capitalize(monthName(last)), current: currentMonth })
+    : t('{current} en cours, provisoire : pas encore de mois complet', { current: currentName })
   $('[data-awards-champions]').replaceChildren(
     ...BADGES.map((badge) =>
       el(
@@ -51,7 +53,7 @@ function renderChampions({ history, leaders }) {
           el(
             'div',
             {},
-            el('dt', { textContent: `${currentName}, en cours` }),
+            el('dt', { textContent: t('{month}, en cours', { month: currentName }) }),
             el('dd', {}, leadersLine(monthlyLeaders(ongoing, badge.key)[0], badge)),
           ),
         ),
@@ -99,13 +101,13 @@ function renderHolders({ byLogin }) {
                   personLink(login),
                   el('span', {
                     className: 'award-value',
-                    textContent: won.streak > 1 ? `${won.streak} mois d’affilée` : `${won.total} mois`,
+                    textContent: won.streak > 1 ? t('{count} mois d’affilée', { count: won.streak }) : plural(won.total, 'mois', 'mois'),
                   }),
                 ),
               ),
             ),
           )
-        : el('p', { className: 'muted', textContent: 'Personne de l’équipe pour l’instant' })
+        : el('p', { className: 'muted', textContent: t('Personne de l’équipe pour l’instant') })
       list.addEventListener('scroll', hideTooltip)
 
       return el('article', { className: 'award' }, awardHead(badge), list)
@@ -117,8 +119,8 @@ function renderHolders({ byLogin }) {
 function renderAwardMonths({ history, leaders }) {
   const months = Object.keys(history).sort().toReversed()
   $('[data-awards-months-sub]').textContent = months.length
-    ? `Les champions de chaque mois complet depuis la première synchro, en ${monthName(months.at(-1))}`
-    : 'Pas encore de mois complet'
+    ? t('Les champions de chaque mois complet depuis la première synchro, en {month}', { month: monthName(months.at(-1)) })
+    : t('Pas encore de mois complet')
   $('[data-awards-months]').replaceChildren(
     el(
       'table',
@@ -129,7 +131,7 @@ function renderAwardMonths({ history, leaders }) {
         el(
           'tr',
           {},
-          el('th', { scope: 'col', className: 'text', textContent: 'Mois' }),
+          el('th', { scope: 'col', className: 'text', textContent: t('Mois') }),
           ...BADGES.map((badge) => el('th', { scope: 'col', className: 'text', textContent: `${badge.icon} ${badge.name}` })),
         ),
       ),

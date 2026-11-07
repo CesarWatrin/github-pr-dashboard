@@ -3,6 +3,7 @@
 
 import { isMissing } from '../domain/math.js'
 import { formatNumber, formatShare } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { reportChange } from '../model/months.js'
 import { COMPARED_PHRASES } from '../model/periods.js'
 import { ROUTES } from '../model/routes.js'
@@ -80,8 +81,8 @@ function renderTileChange(tile, definition, value, compared) {
   node.className = change ? `tile-change report-change is-${change.tone}` : 'tile-change is-missing'
   node.textContent = change ? change.text : '–'
   node.title = isMissing(previous)
-    ? `Pas de chiffre ${COMPARED_PHRASES[state.compare]}`
-    : `Contre ${(definition.format ?? formatNumber)(previous)} ${COMPARED_PHRASES[state.compare]}`
+    ? t('Pas de chiffre {compared}', { compared: COMPARED_PHRASES[state.compare] })
+    : t('Contre {value} {compared}', { value: (definition.format ?? formatNumber)(previous), compared: COMPARED_PHRASES[state.compare] })
 }
 
 function animateCounter(node, from, to, format, integer) {

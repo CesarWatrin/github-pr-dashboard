@@ -1,4 +1,4 @@
-// The helpers that build the page: $() and $$() find, el() and svg() create.
+// The helpers that build the page: $() and $$() find, el() and svg() create, withNodes() puts nodes in a text.
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -42,6 +42,14 @@ export function el(tag, properties = {}, ...children) {
 
   return node
 }
+
+// A text with nodes in it, links say: the placeholders of the text take them.
+export const withNodes = (text, nodes) =>
+  text
+    .split(/\{(\w+)\}/)
+    .map((part, index) => (index % 2 ? nodes[part] : part))
+    .filter((part) => part !== '')
+    .map((part) => (typeof part === 'string' ? document.createTextNode(part) : part))
 
 export function svg(tag, attributes = {}) {
   const node = document.createElementNS(SVG_NS, tag)

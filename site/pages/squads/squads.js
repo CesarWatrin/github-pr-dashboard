@@ -2,6 +2,7 @@
 
 import { isMissing } from '../../domain/math.js'
 import { capitalize, formatNumber } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { periodTitle } from '../../model/selection.js'
 import { squadsOf } from '../../model/squads.js'
 import { state } from '../../model/state.js'
@@ -44,7 +45,7 @@ function renderSquadRanking(rows, organization) {
     'tr',
     {},
     el('th', { scope: 'col', className: 'text squad-rank', textContent: '#' }),
-    el('th', { scope: 'col', className: 'text', textContent: 'Squad' }),
+    el('th', { scope: 'col', className: 'text', textContent: t('Squad') }),
     ...SQUAD_RANKING.map((figure) => {
       const descending = (figure.better !== 'down') !== state.squadSort.reversed
       const button = el(
@@ -96,7 +97,7 @@ function renderSquadRanking(rows, organization) {
     'tr',
     { className: 'squad-total' },
     el('td', { className: 'text squad-rank' }),
-    el('th', { scope: 'row', className: 'text', textContent: 'Toute l’organisation' }),
+    el('th', { scope: 'row', className: 'text', textContent: t('Toute l’organisation') }),
     ...cells(organization, false),
   )
   $('[data-squads-ranking]').replaceChildren(el('table', { className: 'squad-ranking' }, el('thead', {}, head), el('tbody', {}, ...body, total)))
@@ -114,9 +115,10 @@ export function renderSquads() {
   }
   const { squads, organization } = squadRows()
   $('[data-squads]').replaceChildren(...squads.map((row, index) => squadCard(row, index, squads)))
-  $('[data-squads-ranking-sub]').textContent = `${capitalize(periodTitle())}, ${
-    state.squadPerMember ? 'les volumes divisés par le nombre de membres de chaque squad' : 'en totaux'
-  }. Un clic sur une colonne classe les squads sur elle, un second inverse le classement.`
+  $('[data-squads-ranking-sub]').textContent = t('{period}, {measure}. Un clic sur une colonne classe les squads sur elle, un second inverse le classement.', {
+    period: capitalize(periodTitle()),
+    measure: t(state.squadPerMember ? 'les volumes divisés par le nombre de membres de chaque squad' : 'en totaux'),
+  })
   renderSquadRanking(squads, organization)
   renderSquadCharts({ squads, organization })
 }

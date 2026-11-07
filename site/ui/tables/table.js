@@ -3,6 +3,7 @@
 
 import { isMissing } from '../../domain/math.js'
 import { formatNumber } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { STACK_CATEGORIES } from '../../model/repositories.js'
 import { matchesQuery } from '../../model/selection.js'
 import { state } from '../../model/state.js'
@@ -18,14 +19,14 @@ export const TABLES = {}
 export function renderStackLegends() {
   for (const legend of $$('[data-stack-legend]')) {
     legend.replaceChildren(
-      document.createTextNode('Stack :'),
+      document.createTextNode(t('Stack :')),
       ...STACK_CATEGORIES.map((category) => {
         const swatch = el('span', { className: 'swatch' })
         swatch.style.background = category.color
 
         return el('span', {}, swatch, document.createTextNode(category.label))
       }),
-      el('span', { className: 'muted', textContent: 'docs, infra et outillage exclus' }),
+      el('span', { className: 'muted', textContent: t('docs, infra et outillage exclus') }),
     )
   }
 }
@@ -119,7 +120,7 @@ export function renderTable(name, highlight) {
     return tr
   })
   if (bodyRows.length === 0) {
-    bodyRows.push(el('tr', {}, el('td', { colSpan: columns.length, className: 'muted', textContent: 'Aucun résultat' })))
+    bodyRows.push(el('tr', {}, el('td', { colSpan: columns.length, className: 'muted', textContent: t('Aucun résultat') })))
   }
 
   state.previousRows[name] = new Map(rows.map((row) => [rowKey(row), JSON.stringify(row)]))

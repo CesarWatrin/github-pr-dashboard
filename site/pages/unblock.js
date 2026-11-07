@@ -3,6 +3,7 @@
 import { openPullRequests } from '../domain/open-pull-requests.js'
 import { DAY_MS, WORK_DAY_HOURS, workHoursBetween } from '../domain/time.js'
 import { formatNumber } from '../lib/format.js'
+import { inContext, t } from '../lib/i18n.js'
 import { displayName, isCurrent } from '../model/people.js'
 import { pullRequestId, requiredApprovals } from '../model/pull-requests.js'
 import { repoInfo } from '../model/repositories.js'
@@ -20,11 +21,12 @@ import { renderTiles } from '../ui/tiles.js'
 const UNAPPROVED_DAYS = 30
 const UNAPPROVED_CATEGORIES = ['front', 'back', 'mobile']
 // What the pull request got from others before its merge, when it was not an approval.
-const UNAPPROVED_TAGS = { none: 'sans review', commented: 'commentée', changes: 'changements demandés' }
+const UNAPPROVED_TAGS = { none: t('sans review'), commented: t('commentée'), changes: t('changements demandés') }
 
 const UNBLOCK_TILES = [
   ...[...UNBLOCK_STANCES, FORGOTTEN].map(({ key, label }) => ({ key, label })),
-  { key: 'open', label: 'PR de code ouvertes' },
+  // Open now, where the same French elsewhere means opened over the period: its English has a key of its own.
+  { key: 'open', label: inContext('en ce moment', 'PR de code ouvertes') },
 ]
 
 // Code pull requests of the main repositories that their author merged over the last month with no approval from
@@ -54,7 +56,7 @@ function unapprovedTag(pr) {
 export function renderUnapproved(highlight) {
   const prs = mergedWithoutApproval()
   const previous = state.seenUnapproved
-  $('[data-unapproved-title]').textContent = `Mergées par leur auteur sans approbation (${formatNumber(prs.length)})`
+  $('[data-unapproved-title]').textContent = t('Mergées par leur auteur sans approbation ({count})', { count: formatNumber(prs.length) })
   const items = prs
     .filter((pr) => matchesQuery(pr.author, displayName(pr.author), pr.repo))
     .map((pr) => {
@@ -62,13 +64,13 @@ export function renderUnapproved(highlight) {
         'p',
         { className: 'feed-text' },
         personLink(pr.author, { withAvatar: false }),
-        document.createTextNode(' a mergé sa PR '),
+        document.createTextNode(` ${t('a mergé sa PR')} `),
         pullRequestLink(pr.repo, pr.number),
-        ...[unapprovedTag(pr), pr.hotfix ? 'hotfix' : null]
+        ...[unapprovedTag(pr), pr.hotfix ? t('hotfix') : null]
           .filter(Boolean)
           .map((tag) => el('span', { className: 'feed-tag', textContent: tag })),
       )
-      const item = listItem(pr.author, text, new Date(pr.mergedAt * 60_000).toISOString(), 'mergée ')
+      const item = listItem(pr.author, text, new Date(pr.mergedAt * 60_000).toISOString(), `${t('mergée')} `)
       if (highlight && previous && !previous.has(pullRequestId(pr))) {
         item.classList.add('is-new')
       }
@@ -77,7 +79,7 @@ export function renderUnapproved(highlight) {
     })
 
   state.seenUnapproved = new Set(prs.map(pullRequestId))
-  renderList($('[data-unapproved]'), items, 'Aucune PR mergée sans approbation')
+  renderList($('[data-unapproved]'), items, t('Aucune PR mergée sans approbation'))
 }
 
 // The open code pull requests of the people of the team, drafts aside, as of the last sync: those that have waited too
@@ -122,7 +124,7 @@ export function renderUnblock(mode) {
           'p',
           { className: 'feed-text' },
           pullRequestLink(pr.repo, pr.number),
-          document.createTextNode(' de '),
+          document.createTextNode(` ${t('de')} `),
           personLink(pr.author, { withAvatar: false }),
         )
         // A forgotten pull request says where it stood; the others are listed by it.

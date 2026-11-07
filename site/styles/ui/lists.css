@@ -16,7 +16,7 @@
   list-style: none;
 }
 
-/* The lists of « Pour moi » and of the unblock page keep to what they hold, up to the height of a feed: an empty or
+/* The lists of « Mes PR » and of the unblock page keep to what they hold, up to the height of a feed: an empty or
    short one leaves a short card, and two short ones a short row; one under the other on a phone, no blank. */
 .unblock-lists .feed {
   height: auto;

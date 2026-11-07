@@ -1,6 +1,7 @@
 // The repositories: their type (front, back, mobile, other) and technologies, and the stack of a person that follows
 // from them.
 
+import { t } from '../lib/i18n.js'
 import { loadedStats } from './state.js'
 
 export const STACK_TECHNOLOGIES = 3
@@ -12,10 +13,10 @@ const FULL_STACK_MIN_SHARE = 0.3
 // repositories ("Autres") stay out of the stacks: they are neither front nor back.
 /** @type {{ key: Category, label: string, color?: string }[]} */
 export const CATEGORIES = [
-  { key: 'front', label: 'Front', color: 'var(--series-1)' },
-  { key: 'back', label: 'Back', color: 'var(--series-2)' },
-  { key: 'mobile', label: 'Mobile', color: 'var(--series-3)' },
-  { key: 'other', label: 'Autres' },
+  { key: 'front', label: t('Front'), color: 'var(--series-1)' },
+  { key: 'back', label: t('Back'), color: 'var(--series-2)' },
+  { key: 'mobile', label: t('Mobile'), color: 'var(--series-3)' },
+  { key: 'other', label: t('Autres') },
 ]
 export const STACK_CATEGORIES = CATEGORIES.filter((category) => category.color)
 

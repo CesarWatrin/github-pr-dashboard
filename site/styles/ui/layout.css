@@ -33,7 +33,7 @@ main.is-loading {
   }
 }
 
-/* « Pour moi »: the person picker, named by its label, after the notifications toggle. */
+/* « Mes PR »: the person picker, named by its label, after the notifications toggle. */
 .me-controls {
   display: flex;
   flex-wrap: wrap;

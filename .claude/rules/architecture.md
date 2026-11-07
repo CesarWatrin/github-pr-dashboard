@@ -33,7 +33,7 @@
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
    only when `generatedAt` changes, reloads itself when `build` changes. Once the data is older than 10 minutes, a
-   page that shows (or one in the background that notifies the reviews asked on « Pour moi ») starts a quick sync
+   page that shows (or one in the background that notifies the reviews asked on « Mes PR ») starts a quick sync
    itself with `DISPATCH_TOKEN` (`site/domain/auto-sync.js`), unless a run is going or
    started within those 10 minutes: GitHub drops most scheduled runs, so the cron alone leaves the data hours behind.
    It decrypts with Web Crypto and keeps the derived key (not the password) in `localStorage` for 30 days. Every

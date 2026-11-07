@@ -1,5 +1,7 @@
 // The pages of the dashboard, one per hash, and the page shown.
 
+import { t } from '../lib/i18n.js'
+
 // The pages whose tiles are about the period: the comparison is only offered there.
 export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
 
@@ -12,23 +14,23 @@ export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
 
 /** @type {Record<string, Route>} */
 export const ROUTES = {
-  overview: { hash: '#/', title: 'Vue d’ensemble', subtitle: 'PR et reviews de toute l’équipe, et ce qui attend' },
-  unblock: { hash: '#/a-debloquer', title: 'À débloquer', subtitle: 'Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord', period: false },
-  me: { hash: '#/pour-moi', title: 'Pour moi', subtitle: 'Les reviews qu’on me demande, mes PR ouvertes et celles prêtes à merger', filters: false },
-  authors: { hash: '#/auteurs', title: 'Auteurs', subtitle: 'Qui livre quoi, et comment' },
-  reviewers: { hash: '#/relecteurs', title: 'Relecteurs', subtitle: 'Qui relit, et avec quelle profondeur' },
-  cycle: { hash: '#/cycle', title: 'Cycle de vie', subtitle: 'Où passe le temps d’une PR, de son ouverture à la prod' },
-  collaboration: { hash: '#/collaboration', title: 'Collaboration', subtitle: 'Qui relit qui, et qui connaît quel dépôt' },
-  team: { hash: '#/equipe', title: 'Équipe', subtitle: 'Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit' },
-  squads: { hash: '#/squads', title: 'Squads', subtitle: 'Les squads classées et comparées, puis le détail de celle choisie', search: false },
-  report: { hash: '#/bilan', title: 'Bilan du mois', subtitle: 'Un mois comparé au précédent et au reste de l’année', filters: false },
-  trends: { hash: '#/tendances', title: 'Tendances', subtitle: 'Les indicateurs clés mois après mois, sur les mois de la période', search: false },
-  analysis: { hash: '#/analyse', title: 'Analyse', subtitle: 'Ce qui ressort de la période, et des pistes pour progresser', search: false },
-  awards: { hash: '#/palmares', title: 'Palmarès', subtitle: 'Les badges de l’équipe, mois après mois, depuis la première synchro', filters: false },
-  repositories: { hash: '#/depots', title: 'Dépôts', subtitle: 'Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit' },
-  tma: { hash: '#/tma', title: 'TMA', subtitle: 'Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait' },
-  devops: { hash: '#/devops', title: 'DevOps', subtitle: 'Mises en production, intégration continue et mises à jour de dépendances' },
-  method: { hash: '#/methode', title: 'Méthode', subtitle: 'Les règles communes : chaque colonne est expliquée sous son tableau', filters: false },
+  overview: { hash: '#/', title: t('Vue d’ensemble'), subtitle: t('PR et reviews de toute l’équipe, et ce qui attend') },
+  unblock: { hash: '#/a-debloquer', title: t('À débloquer'), subtitle: t('Les PR ouvertes qui attendent quelqu’un, les plus anciennes d’abord'), period: false },
+  me: { hash: '#/mes-pr', title: t('Mes PR'), subtitle: t('Les reviews qu’on me demande, mes PR ouvertes et celles prêtes à merger'), filters: false },
+  authors: { hash: '#/auteurs', title: t('Auteurs'), subtitle: t('Qui livre quoi, et comment') },
+  reviewers: { hash: '#/relecteurs', title: t('Relecteurs'), subtitle: t('Qui relit, et avec quelle profondeur') },
+  cycle: { hash: '#/cycle', title: t('Cycle de vie'), subtitle: t('Où passe le temps d’une PR, de son ouverture à la prod') },
+  collaboration: { hash: '#/collaboration', title: t('Collaboration'), subtitle: t('Qui relit qui, et qui connaît quel dépôt') },
+  team: { hash: '#/equipe', title: t('Équipe'), subtitle: t('Chaque personne en un coup d’œil : ce qu’elle écrit, ce qu’elle relit') },
+  squads: { hash: '#/squads', title: t('Squads'), subtitle: t('Les squads classées et comparées, puis le détail de celle choisie'), search: false },
+  report: { hash: '#/bilan', title: t('Bilan du mois'), subtitle: t('Un mois comparé au précédent et au reste de l’année'), filters: false },
+  trends: { hash: '#/tendances', title: t('Tendances'), subtitle: t('Les indicateurs clés mois après mois, sur les mois de la période'), search: false },
+  analysis: { hash: '#/analyse', title: t('Analyse'), subtitle: t('Ce qui ressort de la période, et des pistes pour progresser'), search: false },
+  awards: { hash: '#/palmares', title: t('Palmarès'), subtitle: t('Les badges de l’équipe, mois après mois, depuis la première synchro'), filters: false },
+  repositories: { hash: '#/depots', title: t('Dépôts'), subtitle: t('Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit') },
+  tma: { hash: '#/tma', title: t('TMA'), subtitle: t('Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait') },
+  devops: { hash: '#/devops', title: t('DevOps'), subtitle: t('Mises en production, intégration continue et mises à jour de dépendances') },
+  method: { hash: '#/methode', title: t('Méthode'), subtitle: t('Les règles communes : chaque colonne est expliquée sous son tableau'), filters: false },
 }
 
 /** @type {() => string} */

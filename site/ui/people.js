@@ -1,6 +1,7 @@
 // What the card and the dialog of a person share: stack, seniority, squads.
 
 import { dateFormat } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { activities, seniority } from '../model/people.js'
 import { stackType, topTechnologies } from '../model/repositories.js'
 import { squadsOf } from '../model/squads.js'
@@ -14,7 +15,7 @@ export function stackLine(stack) {
   const logos = el('span', { className: 'stack-logos', title: technologies.join(', ') }, ...technologies.map((technology) => technologyIcon(technology)))
   if (technologies.length) {
     logos.setAttribute('role', 'img')
-    logos.setAttribute('aria-label', `Technos : ${technologies.join(', ')}`)
+    logos.setAttribute('aria-label', t('Technos : {technologies}', { technologies: technologies.join(', ') }))
   }
 
   return el(
@@ -29,7 +30,7 @@ export function stackLine(stack) {
 export function seniorityText(tag, className, login) {
   const value = seniority(login)
 
-  return value ? [el(tag, { className, textContent: `${value.label} d’ancienneté`, title: value.title })] : []
+  return value ? [el(tag, { className, textContent: t('{value} d’ancienneté', { value: value.label }), title: value.title })] : []
 }
 
 // In the dialog of someone who left the team, opened from the former people or the record of every month: that they
@@ -39,8 +40,8 @@ export function formerText(login) {
     el(
       'p',
       { className: 'person-dialog-meta person-dialog-former' },
-      el('span', { className: 'former-tag', textContent: 'Ne fait plus partie de l’équipe' }),
-      document.createTextNode(`Dernière activité le ${dateFormat.format(activities().get(login).last * 60_000)}`),
+      el('span', { className: 'former-tag', textContent: t('Ne fait plus partie de l’équipe') }),
+      document.createTextNode(t('Dernière activité le {date}', { date: dateFormat.format(activities().get(login).last * 60_000) })),
     ),
   ]
 }
@@ -52,8 +53,8 @@ export function squadTags(login) {
   // The head of a squad: a star on its tag, and the words on hover.
   const tag = (squad) =>
     squad.lead === login
-      ? el('span', { className: 'squad-tag is-lead', textContent: `★ ${squad.name}`, title: `Chef de squad, ${squad.name}` })
+      ? el('span', { className: 'squad-tag is-lead', textContent: `★ ${squad.name}`, title: t('Chef de squad, {squad}', { squad: squad.name }) })
       : el('span', { className: 'squad-tag', textContent: squad.name })
 
-  return squads.length ? [el('div', { className: 'squad-tags', title: 'Squads' }, ...squads.map(tag))] : []
+  return squads.length ? [el('div', { className: 'squad-tags', title: t('Squads') }, ...squads.map(tag))] : []
 }

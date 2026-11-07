@@ -1,6 +1,7 @@
 // The medals of the badges, and the leaders of a month (awards page, monthly report).
 
-import { capitalize, formatNumber, monthName } from '../lib/format.js'
+import { capitalize, formatNumber, monthName, noun } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { BADGE_TIERS, badgesOf, TIER_ORDER } from '../model/badges.js'
 import { isCurrent } from '../model/people.js'
 import { el } from './dom.js'
@@ -8,10 +9,13 @@ import { personLink } from './links.js'
 
 // What a badge was won for: the longest run of months, and the total when there were more.
 export function badgeWhy(badge) {
-  const run = badge.streak > 1 ? `${badge.streak} mois d’affilée, de ${monthName(badge.from)} à ${monthName(badge.to)}` : `en ${monthName(badge.to)}`
-  const total = badge.total > badge.streak ? `, ${badge.total} mois en tout` : ''
+  const run =
+    badge.streak > 1
+      ? t('{count} mois d’affilée, de {from} à {to}', { count: badge.streak, from: monthName(badge.from), to: monthName(badge.to) })
+      : t('en {month}', { month: monthName(badge.to) })
+  const total = badge.total > badge.streak ? t(', {count} mois en tout', { count: badge.total }) : ''
 
-  return `${capitalize(badge.what)} de l’équipe ${run}${total}.`
+  return t('{what} de l’équipe {run}{total}.', { what: capitalize(badge.what), run, total })
 }
 
 // A badge as a medal of its tier's metal, a face with its icon inside a brushed ring, the length of its run of months on
@@ -32,7 +36,7 @@ export function badgeMedal(badge, size) {
     ),
   )
   medal.setAttribute('role', 'img')
-  medal.setAttribute('aria-label', `${badge.name}, ${tier} : ${badgeWhy(badge)}`)
+  medal.setAttribute('aria-label', t('{name}, {tier} : {why}', { name: badge.name, tier, why: badgeWhy(badge) }))
   medal.lastChild.setAttribute('aria-hidden', 'true')
 
   return medal
@@ -77,26 +81,26 @@ function moreBadges(badges, size) {
   )
   more.setAttribute('role', 'img')
   const names = badges.map((badge) => `${badge.name}, ${BADGE_TIERS[badge.tier]}`)
-  more.setAttribute('aria-label', `Et aussi : ${names.join(' ; ')}`)
+  more.setAttribute('aria-label', t('Et aussi : {names}', { names: names.join(t(' ; ')) }))
   more.lastChild.setAttribute('aria-hidden', 'true')
 
   return more
 }
 
-export const amountOf = (value, [one, many], format = formatNumber) => `${format(value)} ${value > 1 ? many : one}`
+export const amountOf = (value, [one, many], format = formatNumber) => `${format(value)} ${noun(value, one, many)}`
 
 // The people who led a badge over a month, and how much. Someone who left the team shows without a name, as everywhere,
 // but in the record of every month (withFormer), where their name opens their dialog, as among the former people.
 export function leadersLine(leader, badge, { withFormer = false } = {}) {
   if (!leader) {
-    return el('span', { className: 'muted', textContent: 'Personne' })
+    return el('span', { className: 'muted', textContent: t('Personne') })
   }
 
   return el(
     'span',
     { className: 'award-leaders' },
     ...leader.people.map((login) =>
-      withFormer || isCurrent(login) ? personLink(login) : el('span', { className: 'award-former', textContent: 'une personne partie' }),
+      withFormer || isCurrent(login) ? personLink(login) : el('span', { className: 'award-former', textContent: t('une personne partie') }),
     ),
     el('span', { className: 'award-value', textContent: amountOf(leader.value, badge.units, badge.format) }),
   )

@@ -1,7 +1,7 @@
-// Where the open pull requests stand now: for the unblock page, and for one person (« Pour moi »).
+// Where the open pull requests stand now: for the unblock page, and for one person (« Mes PR »).
 
 // The open pull requests of people of the kinds asked for (code only by default: the unblock page; releases and
-// integrations wait for their reviews too, for the « Pour moi » page), drafts aside, each with its kind, and where each
+// integrations wait for their reviews too, for the « Mes PR » page), drafts aside, each with its kind, and where each
 // one stands after the latest decision of each reviewer, as GitHub reckons it: changes requested by someone (changes), else blocked by code owners who have not
 // reviewed it yet (owners), else approved by as many people as merging needs (approved), else approved by fewer
 // (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).

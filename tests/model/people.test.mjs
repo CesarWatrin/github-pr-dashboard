@@ -31,7 +31,7 @@ describe('isFormer', () => {
     assert.equal(isFormer('zoe'), false)
   })
 
-  test('the « Pour moi » page offers the people still in the team, by name', () => {
+  test('the « Mes PR » page offers the people still in the team, by name', () => {
     useStats({
       people: { ada: 'Ada Lune', ben: 'Ben Kerr', cleo: 'Aaron Cleo' },
       pullRequests: [record('ada', '2026-06-01T09:00:00Z'), record('ben', '2026-01-01T09:00:00Z'), record('cleo', '2026-06-02T09:00:00Z')],

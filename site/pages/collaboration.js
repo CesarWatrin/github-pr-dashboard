@@ -1,6 +1,7 @@
 // Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen).
 
-import { formatNumber, formatShare } from '../lib/format.js'
+import { formatNumber, formatShare, plural } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { matchesQuery, periodTitle } from '../model/selection.js'
 import { state } from '../model/state.js'
@@ -22,40 +23,40 @@ const MATRIX_MIN_WIDTH = 560
 const TOP_PAIRS = 20
 
 export const COLLABORATION_COLUMNS = [
-  { key: 'login', label: 'Auteur', kind: 'person', value: (row) => displayName(row.login) },
-  { key: 'code', label: 'PR de code', hint: 'PR de code ouvertes sur la période.' },
+  { key: 'login', label: t('Auteur'), kind: 'person', value: (row) => displayName(row.login) },
+  { key: 'code', label: t('PR de code'), hint: t('PR de code ouvertes sur la période.') },
   {
     key: 'reviewed',
-    label: 'PR relues',
-    hint: 'Parmi ces PR, celles qui ont reçu au moins une review ou un commentaire d’une autre personne, à n’importe quelle date.',
+    label: t('PR relues'),
+    hint: t('Parmi ces PR, celles qui ont reçu au moins une review ou un commentaire d’une autre personne, à n’importe quelle date.'),
   },
   {
     key: 'reviewers',
-    label: 'Relecteurs distincts',
-    hint: 'Personnes différentes intervenues sur ces PR relues. Peu de relecteurs : le code de la personne circule peu.',
+    label: t('Relecteurs distincts'),
+    hint: t('Personnes différentes intervenues sur ces PR relues. Peu de relecteurs : le code de la personne circule peu.'),
   },
   {
     key: 'topReviewer',
-    label: 'Relecteur principal',
+    label: t('Relecteur principal'),
     kind: 'text',
     value: (row) => (row.topReviewer ? displayName(row.topReviewer) : null),
     cell: (row) =>
       row.topReviewer
         ? el('td', { className: 'person-secondary' }, personLink(row.topReviewer))
         : el('td', { className: 'text muted', textContent: '–' }),
-    hint: 'La personne intervenue sur le plus de PR relues de l’auteur.',
+    hint: t('La personne intervenue sur le plus de PR relues de l’auteur.'),
   },
   {
     key: 'topReviewerShare',
-    label: 'Dépendance au relecteur principal',
+    label: t('Dépendance au relecteur principal'),
     kind: 'bar',
     format: (row) => formatShare(row.topReviewerShare),
-    hint: 'Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.',
+    hint: t('Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.'),
   },
 ]
 
 const OTHERS = '\u0000others'
-const personName = (login, count) => (login === OTHERS ? `${formatNumber(count)} autres personnes` : displayName(login))
+const personName = (login, count) => (login === OTHERS ? t('{count} autres personnes', { count: formatNumber(count) }) : displayName(login))
 
 // The first people of a list sorted busiest first, at most `limit` entries: the people past the first `shown` ones, or
 // past the limit, are grouped in a last entry.
@@ -102,8 +103,15 @@ function getOrCreatePerson(people, login) {
 }
 
 // French elision: « d’Ana », « de Ben ».
-const ofPrefix = (name) => (/^[aeiouyàâéèêëîïôöùûü]/i.test(name) ? 'd’' : 'de ')
-const ofName = (name) => `${ofPrefix(name)}${name}`
+const elides = (name) => /^[aeiouyàâéèêëîïôöùûü]/i.test(name)
+const ofName = (name) => (elides(name) ? t('d’{name}', { name }) : t('de {name}', { name }))
+// A text with nodes in it, links say: the placeholders of the text take them.
+const withNodes = (text, nodes) =>
+  text
+    .split(/\{(\w+)\}/)
+    .map((part, index) => (index % 2 ? nodes[part] : part))
+    .filter((part) => part !== '')
+    .map((part) => (typeof part === 'string' ? document.createTextNode(part) : part))
 
 export function renderCollaboration() {
   const card = $('[data-collaboration-matrix-card]')
@@ -116,8 +124,8 @@ export function renderCollaboration() {
   matrix.hidden = !wide
   $('[data-collaboration-pairs]').hidden = wide
   $('[data-collaboration-matrix-sub]').textContent = wide
-    ? 'PR de code ouvertes sur la période : auteurs en lignes, relecteurs en colonnes'
-    : 'PR de code ouvertes sur la période : les binômes les plus fréquents'
+    ? t('PR de code ouvertes sur la période : auteurs en lignes, relecteurs en colonnes')
+    : t('PR de code ouvertes sur la période : les binômes les plus fréquents')
   if (wide) {
     const limit = Math.max(2, Math.floor((matrix.clientWidth - MATRIX_LABELS_WIDTH) / MATRIX_MIN_CELL))
     const { authors, reviewers } = matrixPeople(network, limit)
@@ -134,31 +142,43 @@ export function renderCollaboration() {
     // also left some out, both reasons.
     const entries = (side) => [
       ...side.kept.map((login) => ({ key: login, label: displayName(login) })),
-      ...(side.others.length ? [{ key: OTHERS, label: side.crowded ? 'Autres' : 'Peu de relectures', grouped: true }] : []),
+      ...(side.others.length ? [{ key: OTHERS, label: side.crowded ? t('Autres') : t('Peu de relectures'), grouped: true }] : []),
     ]
     const minShare = formatShare(MATRIX_MIN_SHARE)
     const groupedNote = (side, where) =>
       side.crowded
-        ? `${where}, ${formatNumber(side.others.length)} personnes : celles sous ${minShare} des relectures de la période, et celles qui ne tiennent pas dans la largeur.`
-        : `${where}, ${formatNumber(side.others.length)} personnes qui pèsent chacune moins de ${minShare} des relectures de la période.`
+        ? t('{where}, {count} personnes : celles sous {share} des relectures de la période, et celles qui ne tiennent pas dans la largeur.', {
+            where,
+            count: formatNumber(side.others.length),
+            share: minShare,
+          })
+        : t('{where}, {count} personnes qui pèsent chacune moins de {share} des relectures de la période.', {
+            where,
+            count: formatNumber(side.others.length),
+            share: minShare,
+          })
     heatmapChart(matrix, {
       rows: entries(authors),
       columns: entries(reviewers),
       value,
-      ariaLabel: `PR relues par auteur et par relecteur, ${periodTitle()}`,
+      ariaLabel: t('PR relues par auteur et par relecteur, {period}', { period: periodTitle() }),
       tooltip: (row, column, prs) => {
         const author = personName(row.key, authors.others.length)
         const reviewer = personName(column.key, reviewers.others.length)
         const reviewed = row.key === OTHERS ? null : reviewedOf.get(row.key)
 
         const notes = [
-          row.key === OTHERS && groupedNote(authors, 'En ligne'),
-          column.key === OTHERS && groupedNote(reviewers, 'En colonne'),
+          row.key === OTHERS && groupedNote(authors, t('En ligne')),
+          column.key === OTHERS && groupedNote(reviewers, t('En colonne')),
         ]
 
         return {
-          title: `${formatNumber(prs)} PR ${ofName(author)} relue${prs > 1 ? 's' : ''} par ${reviewer}`,
-          rows: reviewed ? [{ value: formatShare(prs / reviewed), label: `des PR relues ${ofName(author)}` }] : [],
+          title: t(prs > 1 ? '{count} PR {of} relues par {reviewer}' : '{count} PR {of} relue par {reviewer}', {
+            count: formatNumber(prs),
+            of: ofName(author),
+            reviewer,
+          }),
+          rows: reviewed ? [{ value: formatShare(prs / reviewed), label: t('des PR relues {of}', { of: ofName(author) }) }] : [],
           note: notes.filter(Boolean).join(' ') || null,
         }
       },
@@ -169,7 +189,7 @@ export function renderCollaboration() {
 
   dataTable(
     $('[data-collaboration-table]'),
-    ['Auteur', 'Relecteur', 'PR relues'],
+    [t('Auteur'), t('Relecteur'), t('PR relues')],
     network.pairs
       .filter((pair) => matchesQuery(pair.author, displayName(pair.author), pair.reviewer, displayName(pair.reviewer)))
       .map((pair) => [displayName(pair.author), displayName(pair.reviewer), formatNumber(pair.prs)]),
@@ -189,13 +209,13 @@ function renderPairs(network) {
         el(
           'p',
           { className: 'feed-text' },
-          document.createTextNode(`PR ${ofPrefix(displayName(pair.author))}`),
-          personLink(pair.author, { withAvatar: false }),
-          document.createTextNode(' relues par '),
-          personLink(pair.reviewer, { withAvatar: false }),
+          ...withNodes(t(elides(displayName(pair.author)) ? 'PR d’{author} relues par {reviewer}' : 'PR de {author} relues par {reviewer}'), {
+            author: personLink(pair.author, { withAvatar: false }),
+            reviewer: personLink(pair.reviewer, { withAvatar: false }),
+          }),
         ),
-        el('span', { className: 'pair-count', textContent: `${formatNumber(pair.prs)} PR` }),
+        el('span', { className: 'pair-count', textContent: plural(pair.prs, 'PR', 'PR') }),
       ),
     )
-  renderList($('[data-collaboration-pairs]'), items, 'Aucun binôme sur la période')
+  renderList($('[data-collaboration-pairs]'), items, t('Aucun binôme sur la période'))
 }

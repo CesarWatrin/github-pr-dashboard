@@ -1,5 +1,5 @@
 // The one state of the page, and the choices of the viewer it remembers in this browser (period, comparison, squad,
-// person of « Pour moi », notifications).
+// person of « Mes PR », notifications).
 
 import { COMPARISONS, DEFAULT_PERIOD, NO_COMPARISON } from './periods.js'
 
@@ -7,7 +7,7 @@ const PERIOD_STORAGE_KEY = 'github-pr-dashboard:period'
 const RANGE_STORAGE_KEY = 'github-pr-dashboard:range'
 const COMPARE_STORAGE_KEY = 'github-pr-dashboard:compare'
 
-// Who the « Pour moi » page is for, in this browser.
+// Who the « Mes PR » page is for, in this browser.
 const ME_STORAGE_KEY = 'github-pr-dashboard:me'
 // Whether this browser notifies the reviews newly asked of that person.
 const NOTIFY_STORAGE_KEY = 'github-pr-dashboard:notify'
@@ -85,11 +85,11 @@ export const state = {
   squadPeriodsCache: null,
   squadSort: { key: 'merged', reversed: false },
   squadPerMember: false,
-  // Who the « Pour moi » page is for, null until picked.
+  // Who the « Mes PR » page is for, null until picked.
   me: readStoredMe(),
   notify: readStoredNotify(),
   // The open pull requests of others that still wait for that person's review, as of the last sync.
-  reviewsAsked: null,
+  forMe: null,
   fetchFailed: false,
 }
 

@@ -1,6 +1,7 @@
 // Dépôts: a card per repository, and those that rest on a single person.
 
 import { formatNumber, formatShare } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { inTeam, isFormer } from '../model/people.js'
 import { repositoryRows } from '../model/repository-rows.js'
 import { matchesQuery } from '../model/selection.js'
@@ -36,7 +37,7 @@ const writtenShare = (row, writers) => writers.reduce((total, [, code]) => total
 // The mark of someone who left the team, next to their name in the repositories that rest on a single person: when its
 // authors left, the one who wrote the most still shows there, their code is still there.
 function formerMark(login) {
-  return isFormer(login) ? [el('span', { className: 'former-tag is-small', textContent: 'hors équipe', title: 'Ne fait plus partie de l’équipe' })] : []
+  return isFormer(login) ? [el('span', { className: 'former-tag is-small', textContent: t('hors équipe'), title: t('Ne fait plus partie de l’équipe') })] : []
 }
 
 function repositoryCard(row, index) {
@@ -53,12 +54,12 @@ function repositoryCard(row, index) {
             el('span', {
               className: 'repo-card-share',
               textContent: formatShare(code / row.code),
-              title: `${formatNumber(code)} PR de code sur ${formatNumber(row.code)}`,
+              title: t('{count} PR de code sur {total}', { count: formatNumber(code), total: formatNumber(row.code) }),
             }),
           ),
         ),
       )
-    : el('p', { className: 'muted', textContent: 'Plus personne de l’équipe' })
+    : el('p', { className: 'muted', textContent: t('Plus personne de l’équipe') })
   // The whole card opens the repository's dialog: the button of its head stretches over it, under the people.
   const open = el(
     'button',
@@ -76,7 +77,7 @@ function repositoryCard(row, index) {
     el(
       'div',
       { className: 'repo-card-people' },
-      el('div', { className: 'repo-card-people-head' }, el('span', { textContent: 'Qui l’écrit' }), ...busFactorTag(row.busFactor)),
+      el('div', { className: 'repo-card-people-head' }, el('span', { textContent: t('Qui l’écrit') }), ...busFactorTag(row.busFactor)),
       people,
     ),
     statList(REPOSITORY_STATS, row),
@@ -92,13 +93,16 @@ function renderFragile(rows) {
   const fragile = rows.filter((row) => row.busFactor <= 1 && row.code >= FRAGILE_MIN_PRS)
   $('[data-repositories-fragile-card]').hidden = fragile.length === 0
   $('[data-repositories-fragile-sub]').textContent =
-    `Au moins ${FRAGILE_MIN_PRS} PR de code sur la période, dont au moins la moitié écrites par une seule personne de l’équipe, ou plus de la moitié par des personnes parties`
+    t(
+      'Au moins {count} PR de code sur la période, dont au moins la moitié écrites par une seule personne de l’équipe, ou plus de la moitié par des personnes parties',
+      { count: FRAGILE_MIN_PRS },
+    )
   // The person it rests on: the one of the team who wrote the most, or, when its authors left, the one who wrote the most.
   $('[data-repositories-fragile]').replaceChildren(
     ...fragile.map((row) => {
       const team = row.writers.filter(inTeam)
       const [login, code] = row.busFactor === 1 ? team[0] : row.writers[0]
-      const share = `${formatShare(code / row.code)} des ${formatNumber(row.code)} PR de code`
+      const share = t('{share} des {count} PR de code', { share: formatShare(code / row.code), count: formatNumber(row.code) })
 
       return el(
         'li',
@@ -107,7 +111,7 @@ function renderFragile(rows) {
         el('span', { className: 'fragile-person' }, personLink(login), ...formerMark(login)),
         el('span', {
           className: 'fragile-share',
-          textContent: row.busFactor === 1 ? share : `${share}, l’équipe actuelle ${formatShare(writtenShare(row, team))}`,
+          textContent: row.busFactor === 1 ? share : t('{share}, l’équipe actuelle {team}', { share, team: formatShare(writtenShare(row, team)) }),
         }),
       )
     }),
@@ -121,7 +125,7 @@ export function renderRepositories() {
   if (rows.length === 0) {
     const filtered = state.query || state.repos.repositories
     container.replaceChildren(
-      el('p', { className: 'feed-empty', textContent: filtered ? 'Aucun dépôt ne correspond à ces filtres' : 'Aucun dépôt sur la période' }),
+      el('p', { className: 'feed-empty', textContent: filtered ? t('Aucun dépôt ne correspond à ces filtres') : t('Aucun dépôt sur la période') }),
     )
 
     return

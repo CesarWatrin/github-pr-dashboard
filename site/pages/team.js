@@ -1,6 +1,7 @@
 // Équipe: a card per person, and the people who left.
 
 import { dateFormat } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { SHOWN_BADGES } from '../model/badges.js'
 import { activities, displayName, isFormer } from '../model/people.js'
 import { matchesQuery } from '../model/selection.js'
@@ -55,7 +56,7 @@ function renderFormer() {
         'li',
         {},
         personLink(login),
-        el('span', { className: 'former-last', textContent: `dernière activité le ${dateFormat.format(last * 60_000)}` }),
+        el('span', { className: 'former-last', textContent: t('dernière activité le {date}', { date: dateFormat.format(last * 60_000) }) }),
       ),
     ),
   )
@@ -69,7 +70,7 @@ export function renderTeam() {
   if (rows.length === 0) {
     const filtered = state.query || state.repos.team
     container.replaceChildren(
-      el('p', { className: 'feed-empty', textContent: filtered ? 'Personne ne correspond à ces filtres' : 'Personne sur la période' }),
+      el('p', { className: 'feed-empty', textContent: filtered ? t('Personne ne correspond à ces filtres') : t('Personne sur la période') }),
     )
 
     return

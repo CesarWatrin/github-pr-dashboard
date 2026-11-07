@@ -1,7 +1,8 @@
 // The four charts under the ranking: the column that ranks, the cycle, the types of repositories, who reads whom.
 
 import { isMissing } from '../../domain/math.js'
-import { formatLines, formatNumber, formatShare } from '../../lib/format.js'
+import { formatLines, formatNumber, formatShare, noun, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { cycleSummary } from '../../model/cycle.js'
 import { CATEGORIES, repoInfo } from '../../model/repositories.js'
 import { periodTitle } from '../../model/selection.js'
@@ -23,23 +24,23 @@ function renderSquadComparison(rows) {
   const perMember = state.squadPerMember && figure.perMember
   // A figure the ranking shows in more than one way (the lines) names what its bars show.
   const label = figure.chartLabel ?? figure.label
-  $('[data-squads-compare-title]').textContent = `${label}${perMember ? ' par personne' : ''}`
-  $('[data-squads-compare-sub]').textContent = `${figure.hint} Le graphique suit la colonne qui classe le classement.`
+  $('[data-squads-compare-title]').textContent = perMember ? t('{label} par personne', { label }) : label
+  $('[data-squads-compare-sub]').textContent = `${figure.hint} ${t('Le graphique suit la colonne qui classe le classement.')}`
   barChart($('[data-squads-compare]'), {
     rows: rankedSquads(rows).filter((row) => !isMissing(rankingValue(row, figure))),
     label: (row) => row.name,
     value: (row) => rankingValue(row, figure),
     format,
     color: 'var(--series-1)',
-    ariaLabel: `${label} de chaque squad${perMember ? ', par personne' : ''}, ${periodTitle()}`,
+    ariaLabel: t(perMember ? '{label} de chaque squad, par personne, {period}' : '{label} de chaque squad, {period}', { label, period: periodTitle() }),
     tooltip: (row) => ({
       title: row.name,
       rows: [
         { label: label.toLowerCase(), value: format(rankingValue(row, figure)) },
         ...(figure.key === 'added'
-          ? [{ label: 'lignes supprimées', value: format(perMember ? row.deleted / row.size : row.deleted) }]
+          ? [{ label: t('lignes supprimées'), value: format(perMember ? row.deleted / row.size : row.deleted) }]
           : []),
-        { label: 'membres', value: formatNumber(row.size) },
+        { label: t('membres'), value: formatNumber(row.size) },
       ],
     }),
   })
@@ -49,10 +50,10 @@ function renderSquadComparison(rows) {
 function renderSquadStages(rows, organization) {
   shareChart($('[data-squads-stages]'), {
     rows: [organization, ...rows].map((row) => ({
-      label: row.name === '*' ? 'Toute l’organisation' : row.name,
+      label: row.name === '*' ? t('Toute l’organisation') : row.name,
       ...cycleSummary(row.period.cycles),
     })),
-    ariaLabel: 'Part de chaque étape dans le temps des PR de code, par squad',
+    ariaLabel: t('Part de chaque étape dans le temps des PR de code, par squad'),
   })
 }
 
@@ -72,7 +73,7 @@ function renderSquadTypes(rows, organization) {
       const code = Object.values(counts).reduce((total, count) => total + count, 0)
 
       return {
-        label: row.name === '*' ? 'Toute l’organisation' : row.name,
+        label: row.name === '*' ? t('Toute l’organisation') : row.name,
         counts,
         code,
         shares: code ? Object.fromEntries(SQUAD_TYPES.map((type) => [type.key, counts[type.key] / code])) : null,
@@ -80,10 +81,10 @@ function renderSquadTypes(rows, organization) {
     }),
     stages: SQUAD_TYPES,
     tooltipRows: (row) => [
-      ...SQUAD_TYPES.map((type) => ({ color: type.color, value: formatShare(row.shares[type.key]), label: `${type.label.toLowerCase()}, ${formatNumber(row.counts[type.key])} PR` })),
-      { label: 'PR de code', value: formatNumber(row.code) },
+      ...SQUAD_TYPES.map((type) => ({ color: type.color, value: formatShare(row.shares[type.key]), label: `${type.label.toLowerCase()}, ${plural(row.counts[type.key], 'PR', 'PR')}` })),
+      { label: t('PR de code'), value: formatNumber(row.code) },
     ],
-    ariaLabel: 'Part des PR de code de chaque squad par type de dépôt',
+    ariaLabel: t('Part des PR de code de chaque squad par type de dépôt'),
   })
 }
 
@@ -115,10 +116,13 @@ function renderSquadMatrix(rows, organization) {
     value: (row, column) => cells.get(`${row.key}\n${column.key}`) ?? 0,
     // Narrow cells, on a phone, take thousands short (« 1,2 k »): the tooltip keeps the whole number.
     format: container.clientWidth < SQUAD_MATRIX_COMPACT_WIDTH ? formatLines : formatNumber,
-    ariaLabel: `Relectures entre squads, ${periodTitle()}`,
+    ariaLabel: t('Relectures entre squads, {period}', { period: periodTitle() }),
     tooltip: (row, column, count) => ({
-      title: row.key === column.key ? `${row.label}, entre ses membres` : `${row.label}, relue par ${column.label}`,
-      rows: [{ label: count > 1 ? 'PR relues' : 'PR relue', value: formatNumber(count) }],
+      title:
+        row.key === column.key
+          ? t('{squad}, entre ses membres', { squad: row.label })
+          : t('{squad}, relue par {reviewer}', { squad: row.label, reviewer: column.label }),
+      rows: [{ label: noun(count, 'PR relue', 'PR relues'), value: formatNumber(count) }],
     }),
   })
 }

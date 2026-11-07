@@ -3,6 +3,7 @@
 import { pullRequestTimeline } from '../../domain/timeline.js'
 import { minuteDate } from '../../lib/dates.js'
 import { dateTimeFormat, formatDuration, formatNumber, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { state } from '../../model/state.js'
 import { $, el, svg } from '../dom.js'
 import { githubPill, OPEN_PULL_REQUEST, personLink, pullRequestPath } from '../links.js'
@@ -12,24 +13,24 @@ import { kindTag } from '../stances.js'
 // intervened (pullRequestTimeline() of site/domain/timeline.js), as of the last sync.
 
 const TIMELINE_STEPS = {
-  opened: { label: 'Ouverte', by: 'par' },
-  commented: { label: 'Premier commentaire', by: 'de' },
-  reviewed: { label: 'Première review', by: 'de' },
-  changes: { label: 'Changements demandés', by: 'par' },
-  approved: { label: 'Approuvée', by: 'par' },
-  merged: { label: 'Mergée', by: 'par' },
-  deployed: { label: 'En prod', note: 'Avec le déploiement suivant du dépôt' },
-  closed: { label: 'Fermée sans merge', note: 'Sans date : les données ne la gardent pas' },
+  opened: { label: t('Ouverte'), by: t('par') },
+  commented: { label: t('Premier commentaire'), by: t('de') },
+  reviewed: { label: t('Première review'), by: t('de') },
+  changes: { label: t('Changements demandés'), by: t('par') },
+  approved: { label: t('Approuvée'), by: t('par') },
+  merged: { label: t('Mergée'), by: t('par') },
+  deployed: { label: t('En prod'), note: t('Avec le déploiement suivant du dépôt') },
+  closed: { label: t('Fermée sans merge'), note: t('Sans date : les données ne la gardent pas') },
 }
 const TIMELINE_PENDING = {
-  open: 'Toujours ouverte',
-  draft: 'Toujours en brouillon',
-  production: 'Pas encore en prod',
+  open: t('Toujours ouverte'),
+  draft: t('Toujours en brouillon'),
+  production: t('Pas encore en prod'),
 }
 const TIMELINE_FIGURES = [
-  { key: 'pickup', label: 'Prise en charge' },
-  { key: 'toMerge', label: 'De l’ouverture au merge' },
-  { key: 'toProduction', label: 'De l’ouverture à la prod' },
+  { key: 'pickup', label: t('Prise en charge') },
+  { key: 'toMerge', label: t('De l’ouverture au merge') },
+  { key: 'toProduction', label: t('De l’ouverture à la prod') },
 ]
 
 function timelineStep(step) {
@@ -48,7 +49,7 @@ function timelineStep(step) {
   return el(
     'li',
     { className: `pr-step is-${step.key}` },
-    ...(step.wait === null ? [] : [el('p', { className: 'pr-step-wait', textContent: `${formatDuration(step.wait)} d’attente` })]),
+    ...(step.wait === null ? [] : [el('p', { className: 'pr-step-wait', textContent: t('{wait} d’attente', { wait: formatDuration(step.wait) }) })]),
     el('span', { className: 'pr-step-dot' }),
     el('div', { className: 'pr-step-body' }, title, el('p', { className: 'pr-step-time' }, ...details)),
   )
@@ -58,7 +59,7 @@ function pendingStep(pending) {
   return el(
     'li',
     { className: `pr-step is-pending is-${pending.key}` },
-    el('p', { className: 'pr-step-wait', textContent: `${formatDuration(pending.wait)} d’attente à la dernière synchro` }),
+    el('p', { className: 'pr-step-wait', textContent: t('{wait} d’attente à la dernière synchro', { wait: formatDuration(pending.wait) }) }),
     el('span', { className: 'pr-step-dot' }),
     el(
       'div',
@@ -75,7 +76,7 @@ function interventionSummary(person) {
     ...(person.comments ? [plural(person.comments, 'commentaire')] : []),
   ]
 
-  return parts.join(' · ') || 'review'
+  return parts.join(' · ') || t('review')
 }
 
 // The state of the checks of the last commit, as the sync publishes it for the pull requests the page opens the
@@ -92,13 +93,13 @@ const CHECK_ICONS = {
   ],
 }
 const CHECK_STATES = {
-  SUCCESS: { key: 'success', label: 'CI réussie' },
-  FAILURE: { key: 'failure', label: 'CI en échec' },
-  ERROR: { key: 'failure', label: 'CI en erreur' },
-  PENDING: { key: 'pending', label: 'CI en cours' },
-  EXPECTED: { key: 'pending', label: 'CI attendue' },
+  SUCCESS: { key: 'success', label: t('CI réussie') },
+  FAILURE: { key: 'failure', label: t('CI en échec') },
+  ERROR: { key: 'failure', label: t('CI en erreur') },
+  PENDING: { key: 'pending', label: t('CI en cours') },
+  EXPECTED: { key: 'pending', label: t('CI attendue') },
 }
-const NO_CHECKS = { key: 'none', label: 'Sans CI' }
+const NO_CHECKS = { key: 'none', label: t('Sans CI') }
 
 function checksIcon(key) {
   const icon = svg('svg', { class: 'pr-checks-icon', viewBox: '0 0 16 16', 'aria-hidden': 'true' })
@@ -118,14 +119,14 @@ function checksTag(pr) {
   return [
     el(
       'span',
-      { className: `pr-checks is-${check.key}`, title: 'Checks du dernier commit, à la dernière synchro' },
+      { className: `pr-checks is-${check.key}`, title: t('Checks du dernier commit, à la dernière synchro') },
       checksIcon(check.key),
       document.createTextNode(check.label),
     ),
   ]
 }
 
-const PULL_REQUEST_STATUS = { merged: 'Mergée', closed: 'Fermée sans merge', draft: 'Brouillon', open: 'Ouverte' }
+const PULL_REQUEST_STATUS = { merged: t('Mergée'), closed: t('Fermée sans merge'), draft: t('Brouillon'), open: t('Ouverte') }
 const pullRequestStatus = (pr) => (pr.mergedAt !== null ? 'merged' : pr.closed ? 'closed' : pr.draft ? 'draft' : 'open')
 
 // The dialog of a pull request. Closing gives the focus back to the link that opened it, when still there.
@@ -133,17 +134,17 @@ export function openPullRequestDialog(pr, opener) {
   const { steps, pending, people, durations } = pullRequestTimeline(pr, Date.parse(state.stats.generatedAt) / 60_000)
   const close = el(
     'button',
-    { type: 'button', className: 'icon-button pr-dialog-close', title: 'Fermer' },
+    { type: 'button', className: 'icon-button pr-dialog-close', title: t('Fermer') },
     svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }),
   )
   close.firstChild.append(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
-  close.setAttribute('aria-label', 'Fermer')
+  close.setAttribute('aria-label', t('Fermer'))
   close.addEventListener('click', () => $('[data-pr-dialog]', HTMLDialogElement).close())
 
   const tags = [
     el('span', { className: `feed-tag pr-status is-${pullRequestStatus(pr)}`, textContent: PULL_REQUEST_STATUS[pullRequestStatus(pr)] }),
     ...kindTag(pr),
-    ...(pr.hotfix ? [el('span', { className: 'feed-tag', textContent: 'hotfix' })] : []),
+    ...(pr.hotfix ? [el('span', { className: 'feed-tag', textContent: t('hotfix') })] : []),
   ]
   const figures = TIMELINE_FIGURES.filter(({ key }) => durations[key] !== null).map(({ key, label }) =>
     el('div', {}, el('dt', { textContent: label }), el('dd', { textContent: formatDuration(durations[key]) })),
@@ -158,10 +159,10 @@ export function openPullRequestDialog(pr, opener) {
     el(
       'p',
       { className: 'pr-dialog-meta' },
-      el('span', {}, document.createTextNode('Par '), personLink(pr.author, { withAvatar: false })),
-      el('span', { textContent: `${formatNumber(pr.lines)} lignes modifiées` }),
+      el('span', {}, document.createTextNode(`${t('Par')} `), personLink(pr.author, { withAvatar: false })),
+      el('span', { textContent: t('{count} lignes modifiées', { count: formatNumber(pr.lines) }) }),
       ...checksTag(pr),
-      githubPill(pullRequestPath(pr.repo, pr.number), 'Voir sur GitHub'),
+      githubPill(pullRequestPath(pr.repo, pr.number), t('Voir sur GitHub')),
     ),
   )
   const timeline = el('ol', { className: 'pr-timeline' }, ...steps.map(timelineStep), ...(pending ? [pendingStep(pending)] : []))
@@ -173,7 +174,7 @@ export function openPullRequestDialog(pr, opener) {
           el('li', {}, personLink(person.login), el('span', { className: 'pr-people-summary', textContent: interventionSummary(person) })),
         ),
       )
-    : el('p', { className: 'pr-dialog-note', textContent: 'Aucune intervention d’une autre personne.' })
+    : el('p', { className: 'pr-dialog-note', textContent: t('Aucune intervention d’une autre personne.') })
 
   // The head stays in place, with the close button; only the body under it scrolls, from its top for each pull request.
   $('[data-pr-dialog-card]').replaceChildren(
@@ -186,11 +187,11 @@ export function openPullRequestDialog(pr, opener) {
       el(
         'section',
         { className: 'pr-dialog-section' },
-        el('h3', { textContent: 'Frise' }),
-        el('p', { className: 'pr-dialog-note', textContent: 'Attentes en heures ouvrées : du lundi au vendredi, de 9 h à 18 h.' }),
+        el('h3', { textContent: t('Frise') }),
+        el('p', { className: 'pr-dialog-note', textContent: t('Attentes en heures ouvrées : du lundi au vendredi, de 9 h à 18 h.') }),
         timeline,
       ),
-      el('section', { className: 'pr-dialog-section' }, el('h3', { textContent: 'Interventions' }), interventions),
+      el('section', { className: 'pr-dialog-section' }, el('h3', { textContent: t('Interventions') }), interventions),
     ),
   )
   const dialog = $('[data-pr-dialog]', HTMLDialogElement)

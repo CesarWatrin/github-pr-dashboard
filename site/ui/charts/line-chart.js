@@ -2,6 +2,7 @@
 
 import { WORK_DAY_HOURS } from '../../domain/time.js'
 import { compactFormat, decimalFormat, formatShare } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { svg } from '../dom.js'
 import { bindTooltip, hideTooltip, showTooltip } from '../tooltip.js'
 import { axisLabel, bucketTitle } from './axis.js'
@@ -18,13 +19,13 @@ function trendAxis(kind, maxValue) {
     if (maxValue >= 2 * WORK_DAY_HOURS) {
       const days = niceStep(maxValue / WORK_DAY_HOURS / 4, false)
 
-      return { step: days * WORK_DAY_HOURS, format: (hours) => `${decimalFormat.format(hours / WORK_DAY_HOURS)} j` }
+      return { step: days * WORK_DAY_HOURS, format: (hours) => t('{value} j', { value: decimalFormat.format(hours / WORK_DAY_HOURS) }) }
     }
     if (maxValue >= 1) {
-      return { step: niceStep(maxValue / 4, false), format: (hours) => `${decimalFormat.format(hours)} h` }
+      return { step: niceStep(maxValue / 4, false), format: (hours) => t('{value} h', { value: decimalFormat.format(hours) }) }
     }
 
-    return { step: niceStep((Math.max(1 / 6, maxValue) * 60) / 4, true) / 60, format: (hours) => `${Math.round(hours * 60)} min` }
+    return { step: niceStep((Math.max(1 / 6, maxValue) * 60) / 4, true) / 60, format: (hours) => t('{value} min', { value: Math.round(hours * 60) }) }
   }
   if (kind === 'decimal') {
     return { step: niceStep(Math.max(0.4, maxValue) / 4, false), format: (value) => decimalFormat.format(value) }
@@ -122,7 +123,7 @@ export function lineChart(container, { points, series, kind, format, ariaLabel }
   const markers = svg('g', {})
   root.append(markers)
   points.forEach((point, index) => {
-    const title = `${bucketTitle(point.key, 'month')}${point.partial ? ', en cours' : ''}`
+    const title = point.partial ? t('{month}, en cours', { month: bucketTitle(point.key, 'month') }) : bucketTitle(point.key, 'month')
     const hit = svg('rect', {
       class: 'hit',
       x: margin.left + slot * index,
@@ -130,7 +131,7 @@ export function lineChart(container, { points, series, kind, format, ariaLabel }
       width: slot,
       height: innerHeight,
       tabindex: 0,
-      'aria-label': `${title} : ${series.map((item) => `${item.label} ${format(point[item.key])}`).join(', ')}`,
+      'aria-label': t('{label} : {value}', { label: title, value: series.map((item) => `${item.label} ${format(point[item.key])}`).join(', ') }),
     })
     bindTooltip(
       hit,
@@ -143,7 +144,7 @@ export function lineChart(container, { points, series, kind, format, ariaLabel }
           {
             title,
             rows: series.map((item) => ({ color: item.color, value: format(point[item.key]), label: item.label })),
-            note: point.partial ? 'Mois incomplet, jusqu’à la dernière synchro' : null,
+            note: point.partial ? t('Mois incomplet, jusqu’à la dernière synchro') : null,
           },
           x,
           y,

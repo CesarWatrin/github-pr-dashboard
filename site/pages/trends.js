@@ -4,6 +4,7 @@ import { isMissing } from '../domain/math.js'
 import { lastMonthSummary, monthsTouched, monthYearBefore, rollingMedian } from '../domain/months.js'
 import { parisMidnight } from '../domain/time.js'
 import { capitalize, dateFormat, formatNumber, monthName, plural } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import {
   monthReady,
   monthStats,
@@ -29,13 +30,13 @@ const TREND_FIGURES = [
   REPORT_FIGURES.get('Délai médian jusqu’en prod'),
   REPORT_FIGURES.get('Taux de reprise'),
   REPORT_FIGURES.get('Part de hotfix'),
-  { ...REPORT_FIGURES.get('En échec'), label: 'CI en échec', ci: true },
+  { ...REPORT_FIGURES.get('En échec'), label: t('CI en échec'), ci: true },
 ]
 // A month's rolling median covers it and the months just before it, this many in all.
 const TREND_ROLLING_MONTHS = 3
 const TREND_SERIES = [
-  { key: 'value', label: 'Mois', color: 'var(--series-1)' },
-  { key: 'rolling', label: `Médiane sur ${TREND_ROLLING_MONTHS} mois`, color: 'var(--series-2)' },
+  { key: 'value', label: t('Mois'), color: 'var(--series-1)' },
+  { key: 'rolling', label: t('Médiane sur {count} mois', { count: TREND_ROLLING_MONTHS }), color: 'var(--series-2)' },
 ]
 
 // How the latest whole month of a trend compares, the change colored when the figure has a better way.
@@ -62,7 +63,10 @@ function ciTrendNote(months, shown) {
   return [
     el('p', {
       className: 'card-note',
-      textContent: `Pas de chiffre avant ${monthName(first)} : GitHub efface les exécutions de CI après environ 13 mois, et le dashboard ne les garde lui-même que depuis le ${dateFormat.format(ciStart())}. L’historique s’allonge d’un mois chaque mois.`,
+      textContent: t(
+        'Pas de chiffre avant {month} : GitHub efface les exécutions de CI après environ 13 mois, et le dashboard ne les garde lui-même que depuis le {date}. L’historique s’allonge d’un mois chaque mois.',
+        { month: monthName(first), date: dateFormat.format(ciStart()) },
+      ),
     }),
   ]
 }
@@ -99,8 +103,14 @@ function trendCard(figure, months, shown) {
   const table = el('div', { className: 'table-wrap' })
   dataTable(
     table,
-    ['Mois', TREND_SERIES[0].label, TREND_SERIES[1].label],
-    points.toReversed().map((point) => [`${capitalize(monthName(point.key))}${point.partial ? ' (en cours)' : ''}`, format(point.value), format(point.rolling)]),
+    [t('Mois'), TREND_SERIES[0].label, TREND_SERIES[1].label],
+    points
+      .toReversed()
+      .map((point) => [
+        point.partial ? t('{month} (en cours)', { month: capitalize(monthName(point.key)) }) : capitalize(monthName(point.key)),
+        format(point.value),
+        format(point.rolling),
+      ]),
   )
   const card = el(
     'section',
@@ -111,9 +121,9 @@ function trendCard(figure, months, shown) {
           'p',
           { className: 'trend-head' },
           el('strong', { className: 'trend-value', textContent: format(summary.value) }),
-          el('span', { textContent: `en ${monthName(summary.month)}` }),
+          el('span', { textContent: t('en {month}', { month: monthName(summary.month) }) }),
         )
-      : el('p', { className: 'card-sub', textContent: 'Pas de mois complet sur la période' }),
+      : el('p', { className: 'card-sub', textContent: t('Pas de mois complet sur la période') }),
     summary
       ? el(
           'ul',
@@ -122,16 +132,29 @@ function trendCard(figure, months, shown) {
             figure,
             summary.value,
             summary.yearAgo,
-            `sur un an (${isMissing(summary.yearAgo) ? 'pas de chiffre' : format(summary.yearAgo)} en ${monthName(yearBefore)})`,
+            t('sur un an ({value} en {month})', {
+              value: isMissing(summary.yearAgo) ? t('pas de chiffre') : format(summary.yearAgo),
+              month: monthName(yearBefore),
+            }),
           ),
-          trendComparison(figure, summary.value, summary.yearMedian, `face à la médiane sur ${formatNumber(medianMonths)} mois (${format(summary.yearMedian)})`),
+          trendComparison(
+            figure,
+            summary.value,
+            summary.yearMedian,
+            t('face à la médiane sur {count} mois ({value})', { count: formatNumber(medianMonths), value: format(summary.yearMedian) }),
+          ),
         )
       : '',
     chart,
     ...(figure.ci ? ciTrendNote(months, shown) : []),
-    el('details', { className: 'chart-data' }, el('summary', { textContent: 'Voir les données du graphique' }), table),
+    el('details', { className: 'chart-data' }, el('summary', { textContent: t('Voir les données du graphique') }), table),
   )
-  const ariaLabel = `${figure.label}, mois par mois, de ${monthName(shown[0])} à ${monthName(shown.at(-1))}, et sa médiane sur ${TREND_ROLLING_MONTHS} mois`
+  const ariaLabel = t('{figure}, mois par mois, de {from} à {to}, et sa médiane sur {count} mois', {
+    figure: figure.label,
+    from: monthName(shown[0]),
+    to: monthName(shown.at(-1)),
+    count: TREND_ROLLING_MONTHS,
+  })
 
   return { card, draw: () => lineChart(chart, { points, series: TREND_SERIES, kind: figure.kind, format, ariaLabel }) }
 }
@@ -165,7 +188,7 @@ export function renderTrends() {
   if (!months.every(monthReady)) {
     // New stats keep the cards of the previous ones in the meantime.
     status.hidden = Boolean(state.trendsCards)
-    status.textContent = 'Calcul des tendances, mois par mois…'
+    status.textContent = t('Calcul des tendances, mois par mois…')
     // Once per stats and squad: the months of another squad are other stats.
     const preparing = `${squadKey()}`
     if (state.trendsPreparing?.stats !== state.stats || state.trendsPreparing.squad !== preparing) {
@@ -179,7 +202,7 @@ export function renderTrends() {
   const shown = monthsTouched(months, range)
   status.hidden = shown.length > 0
   // Only the first month of the data, cut by its start: no whole month to show.
-  status.textContent = 'Aucun mois complet des données sur la période : choisissez une période plus longue.'
+  status.textContent = t('Aucun mois complet des données sur la période : choisissez une période plus longue.')
 
   if (state.trendsCards?.stats !== state.stats || state.trendsCards.key !== key) {
     const current = months.at(-1)
@@ -187,14 +210,19 @@ export function renderTrends() {
     const ciFrom = months.find((month) => monthStats(month).ci)
     $('[data-trends-title]').textContent = capitalize(periodTitle())
     // « D’avril », « D’août », « D’octobre » : de elides before a vowel.
-    const from = (month) => (/^[aeiou]/.test(monthName(month)) ? `D’${monthName(month)}` : `De ${monthName(month)}`)
-    const then = shown.includes(current) ? `, puis ${monthName(current)} en cours` : ''
+    const from = (month) =>
+      /^[aeiou]/.test(monthName(month)) ? t('D’{month}', { month: monthName(month) }) : t('De {month}', { month: monthName(month) })
+    const then = shown.includes(current) ? t(', puis {month} en cours', { month: monthName(current) }) : ''
     $('[data-trends-sub]').textContent = [
-      whole.length > 1 ? `${from(whole[0])} à ${monthName(whole.at(-1))}${then}.` : '',
+      whole.length > 1 ? t('{from} à {to}{then}.', { from: from(whole[0]), to: monthName(whole.at(-1)), then }) : '',
       whole.length === 1 ? `${capitalize(monthName(whole[0]))}${then}.` : '',
-      whole.length === 0 && shown.length ? `${capitalize(monthName(current))} en cours.` : '',
-      shown.length && shown.length < TREND_FEW_MONTHS ? `${capitalize(plural(shown.length, 'mois', 'mois'))} seulement : une tendance se lit mieux sur 12 mois ou plus.` : '',
-      ciFrom && shown.length && shown[0] < ciFrom ? `L’intégration continue commence en ${monthName(ciFrom)} : GitHub oublie ses exécutions après environ 13 mois.` : '',
+      whole.length === 0 && shown.length ? t('{month} en cours.', { month: capitalize(monthName(current)) }) : '',
+      shown.length && shown.length < TREND_FEW_MONTHS
+        ? t('{months} seulement : une tendance se lit mieux sur 12 mois ou plus.', { months: capitalize(plural(shown.length, 'mois', 'mois')) })
+        : '',
+      ciFrom && shown.length && shown[0] < ciFrom
+        ? t('L’intégration continue commence en {month} : GitHub oublie ses exécutions après environ 13 mois.', { month: monthName(ciFrom) })
+        : '',
     ]
       .filter(Boolean)
       .join(' ')

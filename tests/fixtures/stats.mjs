@@ -2,7 +2,8 @@
 // figure here is invented. Drawn from a seeded generator, so that the same `now` always gives the same stats, with
 // enough of everything for each page to show all it can: three years of pull requests of every kind, open ones in
 // every stance, reviews and comments, deployments, hotfixes, reverts, Dependabot updates, CI runs, squads, a person who
-// left and one who just arrived.
+// left and one who just arrived. Names and titles are plain ASCII: what comes from GitHub is never translated, and the
+// browser test in English takes any accent left for French not translated.
 
 import { monthlyActivity } from '../../site/domain/months.js'
 import { DAY_MS, parisDay } from '../../site/domain/time.js'
@@ -12,15 +13,15 @@ export const ORG = 'example-org'
 const PEOPLE = {
   'ada-l': 'Ada Lune',
   'ben-k': 'Ben Kerr',
-  'cleo-m': 'Cléo Marin',
+  'cleo-m': 'Cleo Marin',
   'dev-o': 'Dev Orla',
-  'eli-p': 'Éli Prat',
+  'eli-p': 'Eli Prat',
   'fay-r': 'Fay Roux',
   'gus-t': 'Gus Tani',
   'hana-v': 'Hana Vey',
   'ivo-w': 'Ivo Wen',
-  'jo-former': 'Jo Ancien',
-  'kim-new': 'Kim Neuve',
+  'jo-former': 'Jo Former',
+  'kim-new': 'Kim New',
 }
 const ACTIVE = ['ada-l', 'ben-k', 'cleo-m', 'dev-o', 'eli-p', 'fay-r', 'gus-t', 'hana-v', 'ivo-w']
 
@@ -47,8 +48,8 @@ const HOMES = {
   'kim-new': ['core-api'],
 }
 const SQUADS = [
-  { name: 'Boutique', members: ['ada-l', 'cleo-m', 'ivo-w', 'fay-r'], lead: 'ada-l' },
-  { name: 'Paiement', members: ['ben-k', 'gus-t', 'eli-p'], lead: 'ben-k' },
+  { name: 'Shop', members: ['ada-l', 'cleo-m', 'ivo-w', 'fay-r'], lead: 'ada-l' },
+  { name: 'Payments', members: ['ben-k', 'gus-t', 'eli-p'], lead: 'ben-k' },
   { name: 'Mobile', members: ['dev-o', 'hana-v', 'eli-p'] },
 ]
 const WORKFLOWS = ['ci.yml', 'deploy.yml']
@@ -141,7 +142,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
       interventions: unreviewed ? [] : interventions,
       deployedAt: toMinutes(hotfix ? merged : later(random, merged, random.int(2, 60))),
       ...(random.chance(0.05) && { checksFailed: true }),
-      ...(now - merged < 30 * DAY_MS && { title: `Amélioration ${numbers[repo]} de ${repo}`, checks: 'SUCCESS' }),
+      ...(now - merged < 30 * DAY_MS && { title: `Change ${numbers[repo]} to ${repo}`, checks: 'SUCCESS' }),
     })
   }
 
@@ -224,7 +225,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
       mergedAt: null,
       lines: 120,
       interventions: [],
-      title: `Travail en cours de ${PEOPLE[author]}`,
+      title: `Work in progress by ${PEOPLE[author]}`,
       checks: 'SUCCESS',
       ...fields,
     })
@@ -251,7 +252,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
     mergedBy: 'ivo-w',
     interventions: [['cleo-m', ago(4.5), 'COMMENTED', 1]],
     deployedAt: ago(3),
-    title: 'Correction rapide',
+    title: 'Quick fix',
     checks: 'SUCCESS',
   })
   pullRequests.sort((a, b) => a.createdAt - b.createdAt)

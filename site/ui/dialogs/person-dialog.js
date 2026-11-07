@@ -8,6 +8,7 @@ import {
   formatPercent,
   formatShare,
 } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { SHOWN_BADGES } from '../../model/badges.js'
 import { displayName, isFormer } from '../../model/people.js'
 import { topTechnologies } from '../../model/repositories.js'
@@ -24,29 +25,29 @@ import { dialogSection, showCardDialog, statList, topList } from './card-dialog.
 // The figures of each person's card on the team page, over the period: what the person wrote, then what they reviewed.
 // The hints make the legend under the cards.
 export const TEAM_STATS = [
-  { key: 'code', label: 'PR de code', hint: 'PR ouvertes sur la période, hors release et synchronisation de branches.' },
-  { key: 'merged', label: 'Mergées', hint: 'Parmi ces PR, celles qui ont été mergées.' },
+  { key: 'code', label: t('PR de code'), hint: t('PR ouvertes sur la période, hors release et synchronisation de branches.') },
+  { key: 'merged', label: t('Mergées'), hint: t('Parmi ces PR, celles qui ont été mergées.') },
   {
     key: 'medianTimeToMergeHours',
-    label: 'Merge en',
+    label: t('Merge en'),
     format: formatDuration,
-    hint: 'Délai médian de ces PR mergées, de la création au merge.',
+    hint: t('Délai médian de ces PR mergées, de la création au merge.'),
   },
   {
     key: 'reviewed',
-    label: 'PR relues',
-    hint: 'PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.',
+    label: t('PR relues'),
+    hint: t('PR de code d’autres personnes avec au moins une review ou un commentaire de sa part sur la période.'),
   },
   {
     key: 'commentsPerPr',
-    label: 'Comm. / PR',
+    label: t('Comm. / PR'),
     format: formatDecimal,
-    hint: 'Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.',
+    hint: t('Commentaires dans le code, commentaires généraux et reviews « commentaire », par PR relue.'),
   },
   {
     key: 'reviewers',
-    label: 'Relecteurs',
-    hint: 'Personnes différentes intervenues sur ses PR de code. Peu de relecteurs : son code circule peu.',
+    label: t('Relecteurs'),
+    hint: t('Personnes différentes intervenues sur ses PR de code. Peu de relecteurs : son code circule peu.'),
   },
 ]
 
@@ -54,58 +55,58 @@ export const TEAM_STATS = [
 // the card, the person's rows of the authors and reviewers tables and their place in the review network, all over the
 // repositories selected on the team page. The hints are those of the tables' columns.
 const PERSON_WRITTEN = [
-  { label: 'PR de code', value: ({ row }) => row.code, hint: TEAM_STATS[0].hint },
-  { label: 'Mergées', value: ({ row }) => row.merged, hint: TEAM_STATS[1].hint },
-  { label: 'Lignes ajoutées', value: ({ author }) => author?.added, format: formatLines, hint: 'Total des lignes ajoutées par les PR mergées.' },
-  { label: 'Lignes supprimées', value: ({ author }) => author?.deleted, format: formatLines, hint: 'Total des lignes supprimées par les PR mergées.' },
-  { label: 'Taux de merge', value: ({ author }) => author?.mergeRate, format: formatPercent, hint: 'Mergées / (mergées + fermées sans merge).' },
-  { label: 'Merge en', value: ({ row }) => row.medianTimeToMergeHours, format: formatDuration, hint: TEAM_STATS[2].hint },
+  { label: t('PR de code'), value: ({ row }) => row.code, hint: TEAM_STATS[0].hint },
+  { label: t('Mergées'), value: ({ row }) => row.merged, hint: TEAM_STATS[1].hint },
+  { label: t('Lignes ajoutées'), value: ({ author }) => author?.added, format: formatLines, hint: t('Total des lignes ajoutées par les PR mergées.') },
+  { label: t('Lignes supprimées'), value: ({ author }) => author?.deleted, format: formatLines, hint: t('Total des lignes supprimées par les PR mergées.') },
+  { label: t('Taux de merge'), value: ({ author }) => author?.mergeRate, format: formatPercent, hint: t('Mergées / (mergées + fermées sans merge).') },
+  { label: t('Merge en'), value: ({ row }) => row.medianTimeToMergeHours, format: formatDuration, hint: TEAM_STATS[2].hint },
   {
-    label: 'Attente 1re review',
+    label: t('Attente 1re review'),
     value: ({ author }) => author?.medianTimeToFirstReviewHours,
     format: formatDuration,
-    hint: 'Médiane, de la création à la première review ou au premier commentaire d’une autre personne.',
+    hint: t('Médiane, de la création à la première review ou au premier commentaire d’une autre personne.'),
   },
   {
-    label: 'Mergées sans review',
+    label: t('Mergées sans review'),
     value: ({ author }) => author?.unreviewedRate,
     format: formatShare,
-    hint: 'Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.',
+    hint: t('Part des PR mergées sans review ni commentaire d’une autre personne que l’auteur.'),
   },
 ]
 
 const PERSON_REVIEWED = [
-  { label: 'PR relues', value: ({ reviewer }) => reviewer?.prs ?? 0, hint: TEAM_STATS[3].hint },
-  { label: 'Comm. / PR', value: ({ reviewer }) => reviewer?.commentsPerPr, format: formatDecimal, hint: TEAM_STATS[4].hint },
+  { label: t('PR relues'), value: ({ reviewer }) => reviewer?.prs ?? 0, hint: TEAM_STATS[3].hint },
+  { label: t('Comm. / PR'), value: ({ reviewer }) => reviewer?.commentsPerPr, format: formatDecimal, hint: TEAM_STATS[4].hint },
   {
-    label: 'Approb. sans comm.',
+    label: t('Approb. sans comm.'),
     value: ({ reviewer }) => reviewer?.silentApprovalRate,
     format: formatShare,
-    hint: 'Part des PR approuvées sans y laisser de commentaire.',
+    hint: t('Part des PR approuvées sans y laisser de commentaire.'),
   },
-  { label: 'Modif. demandées', value: ({ reviewer }) => reviewer?.changesRequested, hint: 'Reviews « changements demandés ».' },
+  { label: t('Modif. demandées'), value: ({ reviewer }) => reviewer?.changesRequested, hint: t('Reviews « changements demandés ».') },
   {
-    label: 'Merges effectués',
+    label: t('Merges effectués'),
     value: ({ reviewer }) => reviewer?.merges,
-    hint: 'PR de code mergées par la personne, les siennes comprises.',
+    hint: t('PR de code mergées par la personne, les siennes comprises.'),
   },
   {
-    label: 'Taille relue',
+    label: t('Taille relue'),
     value: ({ reviewer }) => reviewer?.medianSize,
-    hint: 'Taille médiane des PR relues, en lignes ajoutées et supprimées.',
+    hint: t('Taille médiane des PR relues, en lignes ajoutées et supprimées.'),
   },
 ]
 
 // Only in the dialog, but explained in the legend under the cards, "Les chiffres des cartes".
 export const DEPENDENCY_STAT = {
-  label: 'Dépendance au relecteur principal',
+  label: t('Dépendance au relecteur principal'),
   value: ({ network }) => network?.topReviewerShare,
   format: formatShare,
-  hint: 'Dans la fiche d’une personne : part de ses PR relues sur lesquelles intervient son relecteur principal, la personne qui relit le plus son code. Proche de 100 % : son code ne circule qu’entre deux personnes.',
+  hint: t('Dans la fiche d’une personne : part de ses PR relues sur lesquelles intervient son relecteur principal, la personne qui relit le plus son code. Proche de 100 % : son code ne circule qu’entre deux personnes.'),
 }
 
 const PERSON_CIRCULATION = [
-  { label: 'Relecteurs distincts', value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
+  { label: t('Relecteurs distincts'), value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
   DEPENDENCY_STAT,
 ]
 
@@ -132,7 +133,7 @@ export function openPersonDialog(row, opener) {
             'div',
             { className: 'person-dialog-title' },
             el('h2', { id: 'person-dialog-name', textContent: name, title: name }),
-            githubPill(encodeURIComponent(row.login), 'Profil GitHub'),
+            githubPill(encodeURIComponent(row.login), t('Profil GitHub')),
           ),
           // The login is only worth showing when the display name differs from it.
           ...(name === row.login ? [] : [el('p', { className: 'person-dialog-meta', textContent: row.login })]),
@@ -148,20 +149,24 @@ export function openPersonDialog(row, opener) {
       ),
       el('p', {
         className: 'person-dialog-scope',
-        textContent: `${scope} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(details.peers.details.length)} personnes ${details.peers.label}`,
+        textContent: t('{scope} · sous chaque chiffre, la médiane (méd.) des {count} {people}', {
+          scope,
+          count: formatNumber(details.peers.details.length),
+          people: details.peers.label,
+        }),
       }),
-      dialogSection('Ce que la personne écrit', statList(PERSON_WRITTEN, details, writers)),
-      dialogSection('Ce que la personne relit', statList(PERSON_REVIEWED, details, reviewers)),
+      dialogSection(t('Ce que la personne écrit'), statList(PERSON_WRITTEN, details, writers)),
+      dialogSection(t('Ce que la personne relit'), statList(PERSON_REVIEWED, details, reviewers)),
       dialogSection(
-        'Avec qui, et où',
+        t('Avec qui, et où'),
         statList(PERSON_CIRCULATION, details, writers),
         el(
           'div',
           { className: 'person-dialog-columns' },
-          topList('Son code est relu par', details.reviewedBy, true),
-          topList('Relit le code de', details.reviews, true),
-          topList('Ses dépôts', details.codeRepos, false),
-          topList('Dépôts relus', details.reviewer?.topRepos ?? [], false),
+          topList(t('Son code est relu par'), details.reviewedBy, true),
+          topList(t('Relit le code de'), details.reviews, true),
+          topList(t('Ses dépôts'), details.codeRepos, false),
+          topList(t('Dépôts relus'), details.reviewer?.topRepos ?? [], false),
         ),
       ),
     ],

@@ -3,6 +3,7 @@
 import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
 import { parisDay } from '../domain/time.js'
 import { formatLines } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { loadedStats, state } from './state.js'
 
 // Badges, like GitHub achievements: the most of something in the whole team over a whole Paris month since the first
@@ -27,36 +28,39 @@ import { loadedStats, state } from './state.js'
 
 /** @type {Badge[]} */
 export const BADGES = [
-  { key: 'opened', icon: '🦈', name: 'Requin des PR', what: 'le plus de PR ouvertes, merges de branches compris', units: ['PR', 'PR'] },
-  { key: 'reviewed', icon: '🔍', name: 'Œil de lynx', what: 'le plus de PR relues', units: ['PR relue', 'PR relues'] },
-  { key: 'comments', icon: '🪶', name: 'Plume', what: 'le plus de commentaires de review', units: ['commentaire', 'commentaires'] },
-  { key: 'hotfixes', icon: '🚒', name: 'Pompier', what: 'le plus de hotfix', units: ['hotfix', 'hotfix'] },
+  { key: 'opened', icon: '🦈', name: t('Requin des PR'), what: t('le plus de PR ouvertes, merges de branches compris'), units: ['PR', 'PR'] },
+  { key: 'reviewed', icon: '🔍', name: t('Œil de lynx'), what: t('le plus de PR relues'), units: ['PR relue', 'PR relues'] },
+  { key: 'comments', icon: '🪶', name: t('Plume'), what: t('le plus de commentaires de review'), units: ['commentaire', 'commentaires'] },
+  { key: 'hotfixes', icon: '🚒', name: t('Pompier'), what: t('le plus de hotfix'), units: ['hotfix', 'hotfix'] },
   {
     key: 'added',
     icon: '🏗️',
-    name: 'Bâtisseur',
-    what: 'le plus de lignes ajoutées',
+    name: t('Bâtisseur'),
+    what: t('le plus de lignes ajoutées'),
     units: ['ligne ajoutée', 'lignes ajoutées'],
     format: formatLines,
   },
   {
     key: 'deleted',
     icon: '🧹',
-    name: 'Coup de balai',
-    what: 'le plus de lignes supprimées',
+    name: t('Coup de balai'),
+    what: t('le plus de lignes supprimées'),
     units: ['ligne supprimée', 'lignes supprimées'],
     format: formatLines,
   },
 ]
 /** @type {Record<Tier, string>} */
-export const BADGE_TIERS = { bronze: 'Bronze', silver: 'Argent', gold: 'Or' }
+export const BADGE_TIERS = { bronze: t('Bronze'), silver: t('Argent'), gold: t('Or') }
 // The medals a person's card and dialog show, the best ones: the others gather under a "+N", so that neither grows.
 export const SHOWN_BADGES = 3
 /** @type {Tier[]} */
 export const TIER_ORDER = ['gold', 'silver', 'bronze']
 export const BADGES_LEGEND = {
-  label: 'Badges',
-  hint: `${BADGES.map((badge) => `${badge.icon} ${badge.name} : ${badge.what}`).join(' · ')}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus. Ils se gagnent depuis la première synchro et restent acquis, quels que soient la période et le filtre.`,
+  label: t('Badges'),
+  hint: t(
+    '{badges}, de toute l’équipe sur un mois complet. Bronze pour un mois, argent pour deux mois d’affilée, or pour trois ou plus. Ils se gagnent depuis la première synchro et restent acquis, quels que soient la période et le filtre.',
+    { badges: BADGES.map((badge) => t('{icon} {name} : {what}', { icon: badge.icon, name: badge.name, what: badge.what })).join(' · ') },
+  ),
 }
 
 // The whole Paris months of the synced data, oldest first: the first one, cut by the start of the data, and the

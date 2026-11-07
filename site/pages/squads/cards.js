@@ -1,6 +1,7 @@
 // The card of a squad and its dialog, each figure over the median of the squads.
 
-import { formatNumber } from '../../lib/format.js'
+import { formatNumber, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { displayName, isCurrent } from '../../model/people.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
@@ -34,9 +35,9 @@ function squadAvatars(members, size = 28, lead = null) {
 
 // « Chef de squad », and who, on the card and the dialog of a squad that has one.
 const squadLead = (row, className) =>
-  row.lead ? [el('p', { className }, el('span', { className: 'squad-lead-label', textContent: 'Chef de squad' }), personLink(row.lead))] : []
+  row.lead ? [el('p', { className }, el('span', { className: 'squad-lead-label', textContent: t('Chef de squad') }), personLink(row.lead))] : []
 
-const membersText = (count) => `${formatNumber(count)} membre${count > 1 ? 's' : ''}`
+const membersText = (count) => plural(count, 'membre')
 
 export function squadCard(row, index, rows) {
   // The whole card opens the squad's dialog: the button of its head stretches over it.
@@ -83,19 +84,23 @@ export function openSquadDialog(row, rows, opener) {
       ),
       el('p', {
         className: 'person-dialog-scope',
-        textContent: `${periodTitle()} · sous chaque chiffre, la médiane (méd.) des ${formatNumber(peers.length)} squads`,
+        textContent: t('{scope} · sous chaque chiffre, la médiane (méd.) des {count} {people}', {
+          scope: periodTitle(),
+          count: formatNumber(peers.length),
+          people: t('squads'),
+        }),
       }),
-      dialogSection('Ce que la squad écrit', statList(SQUAD_WRITTEN, row, peers)),
-      dialogSection('La revue', statList(SQUAD_REVIEWED, row, peers.filter((other) => other.reviews > 0))),
-      dialogSection('La mise en prod', statList(SQUAD_DELIVERED, row, peers)),
+      dialogSection(t('Ce que la squad écrit'), statList(SQUAD_WRITTEN, row, peers)),
+      dialogSection(t('La revue'), statList(SQUAD_REVIEWED, row, peers.filter((other) => other.reviews > 0))),
+      dialogSection(t('La mise en prod'), statList(SQUAD_DELIVERED, row, peers)),
       dialogSection(
-        'Qui, et où',
+        t('Qui, et où'),
         el(
           'div',
           { className: 'person-dialog-columns' },
-          topList('Ses membres, PR mergées', row.writers.filter(([login]) => isCurrent(login)), true),
-          topList('Son code est relu par', row.readers.slice(0, SQUAD_TOP), true),
-          topList('Ses dépôts', row.repos.slice(0, SQUAD_TOP), false),
+          topList(t('Ses membres, PR mergées'), row.writers.filter(([login]) => isCurrent(login)), true),
+          topList(t('Son code est relu par'), row.readers.slice(0, SQUAD_TOP), true),
+          topList(t('Ses dépôts'), row.repos.slice(0, SQUAD_TOP), false),
         ),
       ),
     ],

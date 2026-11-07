@@ -1,6 +1,7 @@
 // A grid of intensities, rows × columns.
 
 import { formatNumber } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { el, svg } from '../dom.js'
 import { STAGGER_SPREAD_MS } from '../motion.js'
 import { bindTooltip, hideTooltip, showTooltip } from '../tooltip.js'
@@ -19,7 +20,7 @@ export function heatmapChart(container, { rows, columns, value, ariaLabel, toolt
     return
   }
   if (rows.length === 0 || columns.length === 0) {
-    container.replaceChildren(el('p', { className: 'chart-empty', textContent: 'Aucune donnée sur la période' }))
+    container.replaceChildren(el('p', { className: 'chart-empty', textContent: t('Aucune donnée sur la période') }))
 
     return
   }

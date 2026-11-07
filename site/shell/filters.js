@@ -4,6 +4,7 @@ import { overlapsPeriod, sameDays } from '../domain/comparison.js'
 import { parisDay } from '../domain/time.js'
 import { dayDate } from '../lib/dates.js'
 import { dateFormat, rangeShortFormat } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 import { COMPARISONS, CUSTOM_PERIOD, NO_COMPARISON, NO_COMPARISON_LABEL } from '../model/periods.js'
 import { comparedRange, dateBounds, periodAvailable, periodRange } from '../model/selection.js'
 import { squadsOf } from '../model/squads.js'
@@ -29,7 +30,7 @@ export function renderSquadFilter() {
     storeSquad()
   }
   const picker = $('[data-squad-filter]', HTMLSelectElement)
-  picker.replaceChildren(new Option('Toutes les squads', ''), ...squads.map((squad) => new Option(squad.name, squad.name)))
+  picker.replaceChildren(new Option(t('Toutes les squads'), ''), ...squads.map((squad) => new Option(squad.name, squad.name)))
   picker.value = state.squad
   picker.hidden = squads.length === 0
   picker.classList.toggle('is-active', Boolean(state.squad))
@@ -60,8 +61,8 @@ function renderComparePicker() {
       const option = new Option(COMPARISONS[mode], mode)
       if (state.stats && comparedRange(mode) === null) {
         option.disabled = true
-        option.textContent = `${COMPARISONS[mode]} (hors données)`
-        option.title = 'Les données synchronisées ne remontent pas jusque-là pour cette période.'
+        option.textContent = t('{comparison} (hors données)', { comparison: COMPARISONS[mode] })
+        option.title = t('Les données synchronisées ne remontent pas jusque-là pour cette période.')
       }
 
       return option
@@ -72,7 +73,9 @@ function renderComparePicker() {
   const note = $('[data-compare-note]')
   note.hidden = range === null
   if (range) {
-    note.textContent = `Comparé au ${rangeShortFormat.formatRange(dayDate(parisDay(range.start)), dayDate(parisDay(range.end - 1)))}`
+    note.textContent = t('Comparé au {range}', {
+      range: rangeShortFormat.formatRange(dayDate(parisDay(range.start)), dayDate(parisDay(range.end - 1))),
+    })
   }
 }
 
@@ -96,16 +99,16 @@ export function renderPeriodSelector() {
   $('[data-date-range]').classList.toggle('is-active', custom)
   $('[data-date-range-label]').textContent = custom
     ? rangeShortFormat.formatRange(dayDate(state.range.from), dayDate(state.range.to))
-    : 'Dates'
+    : t('Dates')
   if (!state.stats) {
     return
   }
   for (const button of $$('[data-period]', HTMLButtonElement)) {
     button.disabled = !periodAvailable(button.dataset.period)
-    button.title = button.disabled ? 'Historique en cours de synchronisation : un mois de plus à chaque synchro' : ''
+    button.title = button.disabled ? t('Historique en cours de synchronisation : un mois de plus à chaque synchro') : ''
   }
   const { min, max } = dateBounds()
-  $('[data-date-range-note]').textContent = `Du ${dateFormat.format(dayDate(min))} à la dernière synchro.`
+  $('[data-date-range-note]').textContent = t('Du {day} à la dernière synchro.', { day: dateFormat.format(dayDate(min)) })
   const { from, to } = dateFields()
   from.min = min
   from.max = max

@@ -18,7 +18,7 @@ paths:
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
-  method, report, awards and « Pour moi » ones (`filters: false`): the report has a month picker of its own, « Pour
+  method, report, awards and « Mes PR » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
   analysis, trends and squads pages the period only (`search: false`). The Méthode page has no link among the pages: a
   button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
@@ -101,7 +101,7 @@ paths:
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
   carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
   `squadLead()`) shows on its card and dialog, its avatar first and ringed (`squadAvatars()`).
-- **« Pour moi » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
+- **« Mes PR » page** (`renderMe()`): the same open pull requests, releases and integrations included (`ME_KINDS`,
   the `kinds` of `openPullRequests()`, tagged by `kindTag()`: they wait for reviews too), those of people still in the team, for one person
   picked among them (`mePeople()`), kept in `localStorage` (`ME_STORAGE_KEY`), a per-viewer convenience.
   `personalQueue()` of `site/domain/` gives the lists of `ME_LISTS`, in the order of the page: the pull requests of
@@ -112,12 +112,15 @@ paths:
   say, where it stands (the tags of `UNBLOCK_STANCES`). No score, no ranking. Its lists, like those of the unblock
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a
   short card, and no blank on a phone where they stack. `meQueue()` works the lists out for `renderMe()`,
-  which keeps the reviews asked (`state.reviewsAsked`): `renderTitle()` counts them in the tab title of every page,
-  « (3) Stats PR ». The bell (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser
-  blocks it) turns notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first);
-  `notifyNewReviews()` then shows one for the reviews asked since the tab last looked (`KNOWN_REVIEWS_STORAGE_KEY`,
-  in `sessionStorage`: a reload for a new build misses none, a new tab or another person notifies none of those
-  already there), one for several, none while « Pour moi » is on screen. A browser with the API but without the
+  which keeps the pull requests of every list (`state.forMe`, each in one list only): `renderTitle()` counts them all
+  in the tab title of every page, « (5) Stats PR », and on a red badge (`[data-reviews-badge]`, `--notification`) at
+  the end of the link of « Mes PR » and on the corner of the menu button of narrow screens, hidden at 0. The bell
+  (`[data-notify-toggle]`, hidden without the Notification API, disabled when the browser blocks it) turns
+  notifications on in this browser (`NOTIFY_STORAGE_KEY`, asking the permission first); `notifyNewItems()` then shows
+  one for the pull requests new in any list since the tab last looked, one moved to another list (ready to merge, say)
+  being new there (`KNOWN_ITEMS_STORAGE_KEY`, in `sessionStorage`: a reload for a new build misses none, a new tab or
+  another person notifies none of those already there), counting them all as the tab does, one for several, none
+  while « Mes PR » is on screen. A browser with the API but without the
   constructor (phones) shows none: the title still counts.
 - **Lines added and deleted**: `computePeriod()` adds up, per person and repository, the lines of the code pull
   requests opened in the range and merged (`added`, `deleted`, from `lines` and `deleted` of the records), rounded by
@@ -274,6 +277,22 @@ paths:
   `prefers-reduced-motion`.
 - Text is French, with French typography: typographic apostrophes (’), « » quotes, a non-breaking space before
   `:` `;` `?` `!` and `%`. People are referred to without gendered pronouns ("la personne").
+- **Languages**: the page is written in French and shows in English once the viewer picks it (the button beside the
+  method's, `shell/language.js`: kept in `localStorage` by `LANGUAGE_STORAGE_KEY`, the page loads again in it, still
+  unlocked). Every text the page shows goes through `t()` of `lib/i18n.js`, written where the text is written, the
+  French as its key: `t('{count} membres', { count })` for a template, whose French once filled is the text as it was,
+  `plural()` of `lib/format.js` for a counted noun. Its English goes in the same change into the part of
+  `lib/english/` of its area: `frame.js` (index.html and `shell/`, `services/`), `method.js` (the method page),
+  `pages.js` (`pages/` but the analysis), `blocks.js` (`ui/`, `model/`, `pages/analysis/`, the formats). The static
+  texts of index.html translate through `ui/translate.js`, before anything writes in the page: a sentence with inline
+  markup (strong, code, a link…) as a whole, keyed by its HTML, any other text alone, and the text attributes (`title`,
+  `aria-label`, `placeholder`, `data-label`, `alt`). English reads as English: US spelling, ’ and “ ”, no space before
+  `:` `;` `?` `!` `%`. The formats follow the language (`LOCALE`: `en-GB` in English, days before months). What comes
+  from GitHub is never translated: logins, names, repositories, titles of pull requests, workflows, technologies,
+  squads. The English loads in English only, before any module that writes a text (`lib/i18n.js` awaits it), in the
+  import map but not preloaded; in English the page shows once translated (`is-translated`). The browser test runs in
+  both languages and fails on any text without its English (`missing` of `lib/i18n.js`); `tests/lib/english.test.mjs`
+  checks that each English keeps the placeholders and inline elements of its French.
 
 ## Security
 
