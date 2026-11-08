@@ -2,13 +2,14 @@
 
 import { formatNumber, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { displayName, isCurrent } from '../../model/people.js'
+import { isCurrent } from '../../model/people.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { dialogSection, showCardDialog, statList, topList } from '../../ui/dialogs/card-dialog.js'
 import { el } from '../../ui/dom.js'
-import { avatarUrl, personLink } from '../../ui/links.js'
+import { personLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
+import { avatarStack } from '../../ui/people.js'
 import { squadFigures } from './figures.js'
 
 const SQUAD_CARD_STATS = squadFigures('code', 'merged', 'reviews', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours', 'open')
@@ -18,20 +19,6 @@ const SQUAD_DELIVERED = squadFigures('medianLeadTimeHours', 'reworkRate', 'open'
 
 // The readers and repositories listed on a squad's dialog.
 const SQUAD_TOP = 5
-
-// The avatars of the members still in the team, overlapping, as on a team photo.
-// The head of the squad comes first, ringed.
-function squadAvatars(members, size = 28, lead = null) {
-  const current = members.filter(isCurrent).sort((a, b) => Number(b === lead) - Number(a === lead))
-
-  return el(
-    'span',
-    { className: 'squad-avatars', title: current.map(displayName).join(', ') },
-    ...current.map((login) =>
-      el('img', { className: login === lead ? 'is-lead' : '', src: avatarUrl(login, size * 2), alt: '', loading: 'lazy', width: size, height: size }),
-    ),
-  )
-}
 
 // « Chef de squad », and who, on the card and the dialog of a squad that has one.
 const squadLead = (row, className) =>
@@ -54,7 +41,7 @@ export function squadCard(row, index, rows) {
     { className: `repo-card squad-card${row.name === state.squad ? ' is-selected' : ''}` },
     open,
     ...squadLead(row, 'squad-lead'),
-    squadAvatars(row.members, 28, row.lead),
+    avatarStack(row.members, { size: 28, lead: row.lead }),
     statList(SQUAD_CARD_STATS, row),
   )
   card.setAttribute('aria-label', row.name)
@@ -79,7 +66,7 @@ export function openSquadDialog(row, rows, opener) {
           el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: row.name, title: row.name })),
           el('p', { className: 'person-dialog-meta', textContent: membersText(row.size) }),
           ...squadLead(row, 'squad-lead'),
-          squadAvatars(row.members, 36, row.lead),
+          avatarStack(row.members, { size: 36, lead: row.lead }),
         ),
       ),
       el('p', {

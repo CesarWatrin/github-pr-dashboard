@@ -9,7 +9,9 @@
 // codeOwners (the code owners still asked to review it while GitHub does not let it merge: logins, teams as @slug, null
 // for one the sync could not read), requestedReviewers (the people still asked to review an open pull request that is
 // not a draft, code owners or not: logins only, teams and bots aside), deleted (the lines a merged code pull request
-// deletes, among its lines: the others are added), and for the pull requests the page opens the timeline of only (open,
+// deletes, among its lines: the others are added), project (the name of the project of a code pull request of a person,
+// and of the merge of a project branch into a long-lived branch, which projectMerge flags: see projects.js), and for the
+// pull requests the page opens the timeline of only (open,
 // or with any activity over the last 30 days), title and checks (the state of the checks of its last commit: SUCCESS,
 // FAILURE, ERROR, PENDING or EXPECTED, null without any). The other modules of this folder read the same records; the
 // parts of the stats of a range are counted in period/.

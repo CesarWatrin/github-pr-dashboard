@@ -17,7 +17,7 @@ paths:
   (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
-  team, squads, awards, repositories, tma, devops, method). The period selector and the search apply to every page but the
+  team, squads, awards, repositories, projects, tma, devops, method). The period selector and the search apply to every page but the
   method, report, awards and « Mes PR » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
   analysis, trends and squads pages the period only (`search: false`). The Méthode page has no link among the pages: a
@@ -100,7 +100,7 @@ paths:
   requests by repository type (`SQUAD_TYPES`, the colors of the types); who reads whom between squads, from the
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
   carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
-  `squadLead()`) shows on its card and dialog, its avatar first and ringed (`squadAvatars()`).
+  `squadLead()`) shows on its card and dialog, its avatar first and ringed (`avatarStack()` of `ui/people.js`).
 - **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the
   squad picked, from `site/model/cartography.js`: `reviewMap()` (a link per pair of people, how many code pull requests
   each way, from `reviewNetwork()`) and `repositoryMap()` (a link per person and repository of their code pull
@@ -238,6 +238,32 @@ paths:
     `REPOSITORY_WRITTEN`, `REPOSITORY_REVIEWED` and `REPOSITORY_DELIVERED`, each with the median of the repositories of
     the same type (or of all of them under `MIN_PEERS`), and who writes and reviews it. `repositoryRows({ all: true })`
     gives a row to every repository with anything over the period, whatever the filter.
+- **Projects page** (`renderProjects()`, `pages/projects/`): the projects of the records (`project` and `projectMerge`,
+  see `sync.md`), grouped by name whatever the repository. `projectRows()` of `site/domain/projects.js` gives those whose
+  span meets the period, the earliest started first: their life over every record, whatever the period and the squad
+  (`projectLife()`: start, merges of the project branch, last activity, status at the last sync, delivered when merged
+  with no pull request of the project opened since, else ongoing, or stalled after `STALLED_AFTER_DAYS` without
+  activity; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
+  last merge of the branch), and their figures over the period from the records of the squad picked
+  (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers, lines,
+  median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range and squad,
+  with the share of the team (or of the squad) their authors are; `projectSummary()` gives the tiles (`PROJECT_TILES`).
+  The search applies to the timeline, the cards and the table. Without any project in the stats (`anyProject()`), the
+  page says how one is found.
+  - The timeline (`ganttChart()` of `ui/charts/gantt-chart.js`, drawn from `renderCharts()` as the page resizes): in
+    HTML, in percents of its track, the name and status pill of each project in a left column, a rounded bar in the
+    color of its status (`PROJECT_STATUSES`, a little lighter than the series, the stalled ones lighter still; never
+    without the word), fading out where it goes on or where the period cuts it, flat where it stalled, small ringed dots
+    at the merges of its branch, faint month lines and a dashed line at the last sync. On a phone, the left column
+    narrows. A row shows its dates and figures in the tooltip, a click opens the project.
+  - A card per project (`projectCard()`, the repository card's style): status, dates and duration, the avatars of its
+    authors (`avatarStack()` of `ui/people.js`, shared with the squads, « +N » beyond `CARD_AVATARS`), its repositories,
+    `PROJECT_CARD_STATS`. It opens `openProjectDialog()`, the card dialog with its tilt: its life, its figures over the
+    median of the projects of the period, its authors with their pull requests and lines, its reviewers, its
+    repositories, and the merges of its branch, each with its pull request.
+  - The table (`TABLES.projects`, `PROJECT_COLUMNS`): fourteen columns, tighter than the other tables (short dates, the
+    repositories under the name, the share of the team under the people) so that it fits at 1080 px; the status sorts
+    by `STATUS_ORDER` (ongoing, stalled, delivered), never by its word.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.
@@ -294,7 +320,7 @@ paths:
   to 1535 px they stick to the top of the window instead, on a band of the page's background, underlined once stuck
   (`is-stuck`, set by an `IntersectionObserver`: their top sits one pixel above the window). Tables
   fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
-- Card dialogs (a person, a repository, a squad: `showCardDialog()`): never taller than the window; the head, its
+- Card dialogs (a person, a repository, a squad, a project: `showCardDialog()`): never taller than the window; the head, its
   first child, stays in place with the close button, the rest goes in `.person-dialog-body`, which scrolls only when
   it does not fit (`fitCardDialog()`, `is-scrollable`, measured again by a `ResizeObserver`): a scrolling box
   flattens the layers that come apart as the card leans. The dialog itself never scrolls. The filters at the top all

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
 import './environment.mjs'
+import { projectIndex } from '../../scripts/sync/projects.mjs'
 import { fetchOpenChecks, withOpenChecks } from '../../scripts/sync/pull-requests.mjs'
 import { classify, deliveryIndex, toPeriodRecord } from '../../scripts/sync/records.mjs'
 import { minutes, pullRequest } from './pull-request.mjs'
@@ -190,6 +191,41 @@ describe('toPeriodRecord', () => {
     assert.equal('title' in record, false)
     assert.equal('head' in record, false)
     assert.equal('base' in record, false)
+  })
+})
+
+describe('the project of a record', () => {
+  const PULL_REQUESTS = {
+    feature: pullRequest({ number: 40, head: 'feature/cart', base: 'project/paper-kite/main', mergedAt: '2026-03-03T10:00:00Z' }),
+    stacked: pullRequest({ number: 41, head: 'feature/cart-total', base: 'feature/cart' }),
+    merge: pullRequest({ number: 42, head: 'project/paper-kite/main', base: 'develop', mergedAt: '2026-03-09T10:00:00Z' }),
+    syncDevelop: pullRequest({ number: 43, head: 'project/paper-kite/sync-develop', base: 'project/paper-kite/main' }),
+    dependency: pullRequest({ number: 44, author: 'dependabot', head: 'dependabot/npm_and_yarn/vite-6.0.0', base: 'project/paper-kite/main' }),
+    outside: pullRequest({ number: 45, head: 'feature/menu', base: 'develop' }),
+  }
+  const index = deliveryIndex(Object.values(PULL_REQUESTS))
+  const projects = projectIndex(Object.values(PULL_REQUESTS))
+  const recordOf = (name) => toPeriodRecord(PULL_REQUESTS[name], index, null, projects)
+
+  test('a code pull request of a project carries its name, stacked or not', () => {
+    assert.equal(recordOf('feature').project, 'paper-kite')
+    assert.equal(recordOf('stacked').project, 'paper-kite')
+    assert.equal(recordOf('feature').projectMerge, undefined)
+  })
+
+  test('the merge of the project branch into a long-lived branch says so', () => {
+    const record = recordOf('merge')
+    assert.equal(record.kind, 'integration')
+    assert.deepEqual([record.project, record.projectMerge], ['paper-kite', true])
+  })
+
+  test('other integrations, bots and pull requests outside any project carry none', () => {
+    assert.equal(recordOf('syncDevelop').kind, 'integration')
+    assert.equal('project' in recordOf('syncDevelop'), false)
+    assert.equal('project' in recordOf('dependency'), false)
+    assert.equal('project' in recordOf('outside'), false)
+    // Without the index of the projects, none at all.
+    assert.equal('project' in toPeriodRecord(PULL_REQUESTS.feature, index), false)
   })
 })
 

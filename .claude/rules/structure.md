@@ -7,7 +7,7 @@ enforces what can be checked; the rest is for review.
 
 | Layer | Holds | May import |
 |---|---|---|
-| `domain/` | The rules shared with the sync: stats of a range, CI, open pull requests, timeline, months, comparisons, analysis, full sync password, auto sync. Pure, no DOM: Node runs it | `domain/` |
+| `domain/` | The rules shared with the sync: stats of a range, CI, open pull requests, timeline, months, comparisons, analysis, projects, full sync password, auto sync. Pure, no DOM: Node runs it | `domain/` |
 | `lib/` | Formats (French numbers, working time, dates), small arithmetic, the force layout of the networks. No DOM | `domain/` |
 | `model/` | The state of the page (`state`) and what it reads of the stats for the filters picked: period, comparison, squad, people, repositories, badges, months. No DOM: unit tested in Node | `domain/`, `lib/` |
 | `services/` | The outside world: published stats and their key, the build, the GitHub API, notifications | the layers above |
@@ -49,7 +49,8 @@ enforces what can be checked; the rest is for review.
 
 `scripts/sync.mjs` runs a sync; its parts live in `scripts/sync/`, one per responsibility: `config.mjs` (the
 environment, read when loaded: the only module that does), `github.mjs` (calls, retries, concurrency), `queries.mjs`
-(GraphQL), `pull-requests.mjs`, `runs.mjs`, `people.mjs`, `repositories.mjs`, `records.mjs` (classification, published
+(GraphQL), `pull-requests.mjs`, `runs.mjs`, `people.mjs`, `repositories.mjs`, `projects.mjs` (the project of each pull request),
+`records.mjs` (classification, published
 records), `backfill.mjs`, `history.mjs` (monthly history), `publish.mjs` (snapshot, encryption, feed), `full-sync.mjs`,
 `run.mjs` (one sync, end to end). The sync imports the rules it shares with the page from `site/domain/`.
 `scripts/serve.mjs` serves `site/` locally; `scripts/module-map.mjs` writes the module block of `index.html`.

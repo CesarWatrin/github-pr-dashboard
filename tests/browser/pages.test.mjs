@@ -149,12 +149,14 @@ for (const language of ['fr', 'en']) {
       })
     }
 
-    test('a name, a repository, a pull request and a squad open their dialog', async () => {
+    test('a name, a repository, a pull request, a squad and a project open their dialog', async () => {
       for (const [route, opener, dialog] of [
         ['team', '.person-link', '[data-person-dialog]'],
         ['repositories', '.repo-link', '[data-person-dialog]'],
         ['unblock', 'a[aria-haspopup="dialog"]', '[data-pr-dialog]'],
         ['squads', '.squad-card button', '[data-person-dialog]'],
+        ['projects', '.project-card-head', '[data-person-dialog]'],
+        ['projects', '.gantt-row', '[data-person-dialog]'],
       ]) {
         await show(route)
         await page.evaluate(`document.querySelector('[data-route="${route}"] ${opener}').click()`)
@@ -163,6 +165,20 @@ for (const language of ['fr', 'en']) {
         await noteFrench(`${route} dialog`, dialog)
         await page.evaluate(`document.querySelector('${dialog}').close()`)
       }
+    })
+
+    test('the projects show every status, and their table sorts on it, the ongoing ones first', async () => {
+      await show('projects')
+      const statuses = `[...document.querySelectorAll('[data-projects] tbody .project-status')].map((tag) => tag.className.split('is-')[1])`
+      assert.deepEqual(new Set(await page.evaluate(statuses)), new Set(['ongoing', 'stalled', 'delivered']))
+      const sortOnStatus = `[...document.querySelectorAll('[data-projects] thead button')][1].click()`
+      await page.evaluate(sortOnStatus)
+      const sorted = await page.evaluate(statuses)
+      assert.deepEqual(sorted, sorted.toSorted((a, b) => ['ongoing', 'stalled', 'delivered'].indexOf(a) - ['ongoing', 'stalled', 'delivered'].indexOf(b)))
+      await page.evaluate(sortOnStatus)
+      assert.deepEqual(await page.evaluate(statuses), sorted.toReversed())
+      // A merge of a project branch shows on the timeline.
+      assert.ok(await page.evaluate(`document.querySelectorAll('[data-project-timeline] .gantt-marker').length > 0`))
     })
 
     test('a period, the search and a squad apply to the pages', async () => {

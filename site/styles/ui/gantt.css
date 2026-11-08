@@ -1,0 +1,161 @@
+/* A timeline as a Gantt chart (ui/charts/gantt-chart.js): the names in a column on the left, a quiet rounded bar per row
+   in its color, dots at its milestones, faint lines at each week or month, a dashed line at now. */
+.gantt {
+  margin-top: 8px;
+}
+
+.gantt-chart {
+  --gantt-head: 260px;
+  --gantt-row: 34px;
+  position: relative;
+}
+
+.gantt-axis,
+.gantt-row {
+  display: grid;
+  grid-template-columns: var(--gantt-head) minmax(0, 1fr);
+}
+
+.gantt-axis-track {
+  position: relative;
+  height: 20px;
+}
+
+.gantt-axis-label {
+  position: absolute;
+  top: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gantt-axis-label.is-now {
+  color: var(--text-secondary);
+}
+
+.gantt-rows {
+  position: relative;
+}
+
+/* The lines down the track, behind the rows. */
+.gantt-grid {
+  position: absolute;
+  inset: 0 0 0 var(--gantt-head);
+  pointer-events: none;
+}
+
+.gantt-gridline,
+.gantt-now {
+  position: absolute;
+  top: -4px;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--gridline);
+}
+
+.gantt-now {
+  border-left: 1px dashed var(--text-muted);
+}
+
+.gantt-row {
+  position: relative;
+  align-items: center;
+  width: 100%;
+  height: var(--gantt-row);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gantt-row:hover {
+  background: var(--surface-hover);
+}
+
+.gantt-row:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: -2px;
+}
+
+.gantt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px 0 8px;
+}
+
+.gantt-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gantt-track {
+  position: relative;
+  height: 100%;
+}
+
+/* A bar: rounded, in its color, without outline; it fades where it goes on or where the range cuts it (an inline
+   gradient), and ends flat where it stopped. */
+.gantt-bar {
+  --bar-fill: var(--bar-color);
+  position: absolute;
+  top: 50%;
+  height: 10px;
+  min-width: 10px;
+  margin-top: -5px;
+  border-radius: 999px;
+}
+
+.gantt-bar.is-flat-end {
+  border-radius: 999px 1px 1px 999px;
+}
+
+/* A milestone: a small dot of a darker shade of the bar, ringed with the surface. */
+.gantt-marker {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bar-color) 62%, #000);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.gantt-row:hover .gantt-marker {
+  box-shadow: 0 0 0 2px var(--surface-hover);
+}
+
+.gantt-legend-merge {
+  border-radius: 50%;
+  background: var(--text-secondary);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* On a phone, the column of the names narrows, the status under the name: the track keeps the rest. */
+@media (max-width: 600px) {
+  .gantt-chart {
+    --gantt-head: 118px;
+    --gantt-row: 44px;
+  }
+
+  .gantt-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding-right: 8px;
+  }
+
+  .gantt-name {
+    max-width: 100%;
+  }
+}

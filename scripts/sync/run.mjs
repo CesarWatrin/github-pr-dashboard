@@ -7,6 +7,7 @@ import { publishedSyncTrigger } from './full-sync.mjs'
 import { HISTORY_LEAD_DAYS, mergeMonthlyHistory, MONTHLY_REVISION, readPublishedHistory } from './history.mjs'
 import { fetchFirstPullRequests, isBot, people, peopleOf, peopleToLookUp } from './people.mjs'
 import { computeEvents, computeToday, encrypt, readSnapshot, SNAPSHOT_VERSION, writeJson } from './publish.mjs'
+import { projectIndex } from './projects.mjs'
 import { fetchUpdatedSince, fetchWindow, keyOf, readOpenChecks, withOpenChecks } from './pull-requests.mjs'
 import { deliveryIndex, DETAILS_DAYS, minutes, toPeriodRecord } from './records.mjs'
 import { fetchRepositoryDetails, repositoryCategory, technologyShares } from './repositories.mjs'
@@ -94,8 +95,9 @@ export async function sync({ full, fullSync = null, refused = false }) {
   }
 
   const index = deliveryIndex(inWindow)
+  const projects = projectIndex(inWindow)
   const records = /** @type {PullRequestRecord[]} */ (
-    inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS))).filter(Boolean)
+    inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS), projects)).filter(Boolean)
   )
   // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none. Without
   // any, the history starts from the data, counted the current way.

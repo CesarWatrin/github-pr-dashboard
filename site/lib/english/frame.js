@@ -251,4 +251,15 @@ export const FRAME = {
   'Moment de la période': 'Moment of the period',
   'Vitesse': 'Speed',
   'Le film parcourt la période et la squad choisies ; les personnes parties y figurent aussi, c’est l’histoire. Un dépôt apparaît à sa première PR et grossit avec les lignes ajoutées par ses PR mergées. Une personne apparaît quand elle ouvre, relit ou merge une PR, son nom quelques jours, et s’efface après 30 jours sans rien faire. Un point part d’elle vers le dépôt quand elle ouvre une PR (plein) ou en relit une (creux) ; un merge fait briller le dépôt. Le curseur parcourt la période, la vitesse se règle.': 'The film goes through the period and squad picked; people who left show too, it is history. A repository appears with its first PR and grows with the lines added by its merged PRs. A person appears when they open, review or merge a PR, their name for a few days, and fades after 30 days without doing anything. A dot goes from them to the repository when they open a PR (full) or review one (hollow); a merge lights the repository up. The slider goes through the period, the speed can be set.',
+  'Projets': 'Projects',
+  'Aucun projet': 'No project',
+  'Un projet se développe sur une branche <code>project/&lt;nom&gt;/main</code> : ses branches en partent, leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucune PR de code des données synchronisées n’appartient à un projet.':
+    'A project is developed on a branch <code>project/&lt;name&gt;/main</code>: its branches start from it, their PRs come back to it, then it is merged into a long-lived branch. No code PR of the synced data belongs to a project.',
+  'Les projets de la période': 'The projects of the period',
+  'Calendrier': 'Timeline',
+  'Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas livré, dans la couleur de son statut à la dernière synchro. Un point marque chaque merge de sa branche dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt finit net, une barre coupée par la période s’estompe à ce bord. Un clic ouvre sa fiche.':
+    'Each bar runs from the first PR of the project to its delivery, or to its last activity if it is not delivered, in the color of its status as of the last sync. A dot marks each merge of its branch into a long-lived branch. An ongoing bar fades out on the right, a stalled one ends flat, a bar cut by the period fades at that edge. A click opens its card.',
+  'Comparer les projets': 'Compare the projects',
+  'Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période et la squad choisies. Un clic sur une colonne trie les projets.':
+    'The dates, the duration and the status hold for the whole project; the other figures, for the period and the squad picked. A click on a column sorts the projects.',
 }

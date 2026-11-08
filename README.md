@@ -71,6 +71,15 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   la stack de chaque personne (front, back, mobile ou full-stack, et ses technologies principales) et ses lignes
   ajoutées et supprimées ; l'effet de la taille des PR sur le délai de merge et la profondeur de review.
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
+- **Projets** : les projets menés sur une branche `project/<nom>/main`, d'où partent leurs branches et vers laquelle
+  vont leurs PR (empilées ou non), puis mergée dans une branche principale. Un projet du même nom dans plusieurs dépôts
+  n'en fait qu'un, détaillé par dépôt. En tête, les projets en cours, ceux livrés sur la période, leur durée médiane et
+  leur délai d'intégration médian (de la dernière PR mergée dans la branche du projet au merge de celle-ci) ; puis un
+  calendrier, une barre par projet de sa première PR à sa livraison ou à sa dernière activité, dans la couleur de son
+  statut (en cours, livré, à l'arrêt après 30 jours sans activité), un point à chaque merge de sa branche ; une carte
+  par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts) qui ouvre sa fiche ; et
+  un tableau pour les comparer, trié au clic. La vie d'un projet vaut quelles que soient la période et la squad, ses
+  chiffres les suivent, comme la recherche.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
@@ -263,6 +272,9 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   `project/*/main` → `develop`/`master`, branches de projet qui en ramènent une autre, comme
   `project/*/merge-develop`, `project/*/develop-into-main` ou `project/*/sync-develop`) sont comptées à part : les
   merges, taux, délais et lignes portent sur les PR de code.
+- Le projet d'une PR de code se déduit des branches que le snapshot garde déjà (`scripts/sync/projects.mjs`) : elle
+  vise `project/<nom>/main` ou une branche nommée `project/<nom>/…`, ou la branche d'une autre PR du projet dans le
+  même dépôt, sinon sa propre branche est nommée ainsi. Seul le nom du projet est publié, jamais les branches.
 
 ## En local
 

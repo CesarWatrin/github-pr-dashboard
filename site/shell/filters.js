@@ -13,6 +13,7 @@ import { renderCollaboration } from '../pages/collaboration.js'
 import { renderCycleTiles } from '../pages/cycle.js'
 import { renderDevopsTiles } from '../pages/devops.js'
 import { renderFeed, renderTotals } from '../pages/overview.js'
+import { renderProjects } from '../pages/projects/projects.js'
 import { renderRepositories } from '../pages/repositories.js'
 import { renderTeam } from '../pages/team.js'
 import { renderTmaTiles } from '../pages/tma.js'
@@ -204,6 +205,7 @@ export function setupFilters({ render }) {
       renderCollaboration()
       renderTeam()
       renderRepositories()
+      renderProjects('update')
       renderFeed(false)
       renderUnblock('enter')
       renderUnapproved(false)

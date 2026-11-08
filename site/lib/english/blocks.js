@@ -447,4 +447,7 @@ export const BLOCKS = {
   '{count} à moi : toutes mes PR ouvertes, brouillons compris': '{count} of mine: all my open PRs, drafts included',
   'Cartographie': 'Map',
   'L’équipe en réseau : qui relit qui, et qui écrit où': 'The team as a network: who reviews whom, and who writes where',
+  'Projets': 'Projects',
+  'Les projets menés sur une branche project/…, quand ils ont commencé, avancé et été livrés':
+    'The projects carried on a project/… branch: when they started, moved on and were delivered',
 }

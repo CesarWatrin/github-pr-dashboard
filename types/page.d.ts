@@ -64,6 +64,12 @@ interface State {
   squadRecordsCache: { stats: Stats; records: Map<string, PullRequestRecord[]> } | null
   squadPeriodsCache: { stats: Stats | null; periods: Map<string, PeriodStats> } | null
   squadSort: { key: string; reversed: boolean }
+  projectsCache: {
+    stats: Stats
+    key: string
+    rows: import('../site/model/projects.js').ProjectPeriod[]
+    summary: ReturnType<typeof import('../site/domain/projects.js').projectSummary>
+  } | null
   squadPerMember: boolean
   me: string | null
   notify: boolean

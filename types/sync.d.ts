@@ -193,3 +193,10 @@ interface DeliveryIndex {
   deployments: Map<string, string[]>
   branchMerges: Map<string, string[]>
 }
+
+// Per repository:branch, the pull requests opened from it, newest first, and the project of each branch once worked
+// out (null for none).
+interface ProjectIndex {
+  fromBranch: Map<string, Pick<SnapshotPullRequest, 'repo' | 'head' | 'base' | 'createdAt'>[]>
+  branches: Map<string, string | null>
+}
