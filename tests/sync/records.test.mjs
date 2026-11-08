@@ -202,6 +202,8 @@ describe('the project of a record', () => {
     syncDevelop: pullRequest({ number: 43, head: 'project/paper-kite/sync-develop', base: 'project/paper-kite/main' }),
     dependency: pullRequest({ number: 44, author: 'dependabot', head: 'dependabot/npm_and_yarn/vite-6.0.0', base: 'project/paper-kite/main' }),
     outside: pullRequest({ number: 45, head: 'feature/menu', base: 'develop' }),
+    abandoned: pullRequest({ number: 46, head: 'project/paper-kite/old-idea', base: 'project/paper-kite/main', state: 'CLOSED', closedAt: '2026-03-06T17:00:00Z' }),
+    closedOutside: pullRequest({ number: 47, head: 'feature/old-menu', base: 'develop', state: 'CLOSED', closedAt: '2026-03-06T17:00:00Z' }),
   }
   const index = deliveryIndex(Object.values(PULL_REQUESTS))
   const projects = projectIndex(Object.values(PULL_REQUESTS))
@@ -226,6 +228,14 @@ describe('the project of a record', () => {
     assert.equal('project' in recordOf('outside'), false)
     // Without the index of the projects, none at all.
     assert.equal('project' in toPeriodRecord(PULL_REQUESTS.feature, index), false)
+  })
+
+  test('a pull request of a project closed without a merge says when, the others do not', () => {
+    const abandoned = recordOf('abandoned')
+    assert.deepEqual([abandoned.project, abandoned.closed, abandoned.closedAt], ['paper-kite', true, Date.parse('2026-03-06T17:00:00Z') / 60_000])
+    assert.equal('closedAt' in recordOf('merge'), false)
+    assert.equal('closedAt' in recordOf('feature'), false)
+    assert.equal('closedAt' in recordOf('closedOutside'), false)
   })
 })
 

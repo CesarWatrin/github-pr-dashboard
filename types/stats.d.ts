@@ -44,6 +44,8 @@ interface PullRequestRecord {
   requestedReviewers?: string[]
   project?: string
   projectMerge?: boolean
+  // When a pull request of a project was closed without being merged.
+  closedAt?: number
   title?: string
   checks?: CheckState | null
 }

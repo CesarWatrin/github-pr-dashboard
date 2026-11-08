@@ -220,6 +220,9 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
     // branch into a long-lived one says so: when it is merged, the project is in the code of the repository.
     ...(project && { project }),
     ...(project && projectMerge && { projectMerge: true }),
+    // When a pull request of a project was closed without a merge: until then the project was not over, and its name
+    // taken up again after makes another project (site/domain/projects.js).
+    ...(project && pr.state === 'CLOSED' && pr.closedAt && { closedAt: minutes(pr.closedAt) }),
     // Only for the timelines the page opens: the title, and the state of the checks of the last commit (null without
     // any), read again at each sync for an open pull request.
     ...(hasDetails(pr, detailsSince) && { title: pr.title, checks: pr.checks ?? null }),

@@ -112,7 +112,9 @@ classification and the records in `records.mjs`, the project of each pull reques
   `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
   the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.
 - `project` on the code pull requests of people that belong to a project, and on the merges of a project branch into
-  a long-lived branch, which `projectMerge` flags: the name of the project only, never its branches.
+  a long-lived branch, which `projectMerge` flags: the name of the project only, never its branches. `closedAt` on those
+  closed without a merge: until then the project was not over (a name taken up again after it is another project, see
+  `site/domain/projects.js`). The snapshot already kept it: no `SNAPSHOT_VERSION` bump.
 - Never publish bodies, branch names or anything not needed by a stat or a view: what is published must stay minimal,
   even encrypted. Titles are the one exception, with the state of the checks (`checks`), and only for the pull
   requests the page opens the timeline of (`hasDetails()`: open, or with an opening, a merge, a closing, a review or a
