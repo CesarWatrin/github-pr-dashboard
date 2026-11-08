@@ -1401,6 +1401,10 @@
                 Chaque PR de code ouverte sur la période compte une fois : pour un projet d’abord, sinon pour la TMA (une
                 branche <code>hotfix</code>), sinon pour une AC, sinon dans le reste. Maintenir, c’est la TMA ; construire,
                 les projets et les AC : leurs parts se comptent entre elles, le reste à part.
+                Le reste, ce sont les PR de code qui ne sont ni d’un projet, ni de la TMA, ni d’une AC : par exemple des
+                corrections (<code>fix/…</code>), des refactorings (<code>refactor/…</code>) ou de la maintenance technique
+                (<code>chore/…</code>, <code>ci/…</code>) envoyées dans <code>develop</code> sans branche <code>feature/…</code>,
+                ou une branche <code>feature/…</code> qui ne part pas de <code>develop</code>.
               </p>
             </section>
 
@@ -1660,7 +1664,11 @@
                   travail, dans cet ordre : un <strong>projet</strong> quand elle en a un, comme sur la page Projets ;
                   sinon la <strong>TMA</strong>, quand sa branche commence par <code>hotfix</code> ; sinon une
                   <strong>AC</strong> ; sinon <strong>le reste</strong>. Un hotfix d’une branche de projet compte ainsi pour
-                  le projet. <strong>Maintenir</strong>, c’est la TMA ; <strong>construire</strong>, les projets et les
+                  le projet. <strong>Le reste</strong> réunit les PR de code qui ne sont ni d’un projet, ni de la TMA, ni d’une AC :
+                  par exemple des corrections (<code>fix/…</code>), des refactorings (<code>refactor/…</code>) ou de la
+                  maintenance technique (<code>chore/…</code>, <code>ci/…</code>, montées de version) envoyées dans
+                  <code>develop</code> sans branche <code>feature/…</code>, ou une branche <code>feature/…</code> qui ne part pas
+                  de <code>develop</code> (vers <code>master</code>, par exemple). <strong>Maintenir</strong>, c’est la TMA ; <strong>construire</strong>, les projets et les
                   AC : la part de maintenir se compte sur les deux, le reste à part, et se compare à la période d’avant ou
                   à l’an dernier. Les PR se comptent, quelle que soit leur taille : le survol des graphiques donne aussi
                   les lignes ajoutées par celles mergées. La page montre cette répartition période par période, squad par
