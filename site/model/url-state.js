@@ -8,7 +8,7 @@ import { state } from './state.js'
 /** @typedef {'person' | 'repo' | 'project' | 'squad'} CardKind */
 /** @type {CardKind[]} */
 const CARD_KINDS = ['person', 'repo', 'project', 'squad']
-const PROJECT_STATUSES = ['ongoing', 'stalled', 'delivered']
+const PROJECT_STATUSES = ['ongoing', 'stalled', 'abandoned', 'delivered']
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const MONTH = /^\d{4}-\d{2}$/
 

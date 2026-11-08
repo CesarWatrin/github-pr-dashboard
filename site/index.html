@@ -678,7 +678,7 @@
 
               <section class="card" aria-labelledby="overview-projects-title">
                 <h2 id="overview-projects-title">Les projets de la période</h2>
-                <p class="card-sub">En cours, puis à l’arrêt, puis livrés, à la dernière synchro</p>
+                <p class="card-sub">En cours, puis à l’arrêt, abandonnés, puis livrés, à la dernière synchro</p>
                 <ol class="feed" data-overview-projects-list></ol>
               </section>
             </div>
@@ -1400,7 +1400,7 @@
                 <p class="card-note">
                   Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas
                   livré, dans la couleur de son statut à la dernière synchro. Un point marque chaque merge de sa branche
-                  dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt finit net, une
+                  dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt ou abandonnée finit net, une
                   barre coupée par la période s’estompe à ce bord. Un clic ouvre sa fiche.
                 </p>
               </section>
@@ -1552,7 +1552,8 @@
                   données synchronisées : son début, sa première PR ouverte ; ses merges, ceux de sa branche dans une branche
                   principale ; sa dernière activité, sa dernière PR ouverte ou mergée, review ou commentaire. Il est
                   <strong>livré</strong> quand sa branche a été mergée et qu’aucune PR du projet n’a été ouverte depuis le
-                  dernier merge (une PR ouverte après le remet au travail) ; sinon <strong>en cours</strong> s’il a bougé
+                  dernier merge (une PR ouverte après le remet au travail) ; <strong>abandonné</strong> quand toutes les PR qui mergent
+                  sa branche ont été fermées sans merge et qu’aucune PR du projet n’est ouverte ; sinon <strong>en cours</strong> s’il a bougé
                   dans les 30 derniers jours, <strong>à l’arrêt</strong> au-delà, à la dernière synchro. Sa durée, au
                   calendrier, va de son début à sa livraison, ou à sa dernière activité. Le délai d’intégration compte
                   les heures ouvrées de la dernière PR de code mergée avant le dernier merge de sa branche jusqu’à ce

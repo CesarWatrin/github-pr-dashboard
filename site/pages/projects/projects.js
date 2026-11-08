@@ -73,7 +73,8 @@ export const PROJECT_COLUMNS = [
     key: 'status',
     label: t('Statut'),
     kind: 'text',
-    // Sorted as they call for attention, whatever the language of their words: under way, stalled, then delivered.
+    // Sorted as they call for attention, whatever the language of their words: under way, stalled, abandoned, then
+    // delivered.
     value: (row) => STATUS_ORDER.indexOf(row.status),
     format: (row) => PROJECT_STATUSES[row.status].label,
     cell: (row) => el('td', { className: 'text' }, statusTag(row.status)),
@@ -128,7 +129,7 @@ function timelineRow(row, rows) {
     to: row.span.to,
     fadeStart: row.span.cutStart,
     fadeEnd: row.span.cutEnd || row.status === 'ongoing',
-    flatEnd: row.status === 'stalled' && !row.span.cutEnd,
+    flatEnd: (row.status === 'stalled' || row.status === 'abandoned') && !row.span.cutEnd,
     color: status.color,
     markers: row.merges,
     ariaLabel: [`${label}, ${status.label}, ${dates}.`, ...(cut ? [cut] : [])].join(' '),
