@@ -109,6 +109,18 @@ tbody th {
   animation-delay: calc(var(--delay, 0ms) + 120ms);
 }
 
+/* A column of shares grows whole from the axis, its parts with it. */
+.is-entering .chart .stacked-group {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: grow-up 700ms var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + 120ms);
+}
+
+.is-entering .chart .stacked-group .bar {
+  animation: none;
+}
+
 .is-entering .bar-chart .bar {
   transform-box: fill-box;
   transform-origin: 0 50%;

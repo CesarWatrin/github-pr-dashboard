@@ -531,4 +531,19 @@ export const PAGES = {
   'Hotfix mergés en': 'Hotfixes merged in',
   'Médiane, de la création au merge des hotfix de la squad, en heures ouvrées.': 'Median, from the creation to the merge of the hotfixes of the squad, in working hours.',
   'Sa TMA': 'Their maintenance',
+  'Maintenir': 'Maintain',
+  'Construire': 'Build',
+  'PR pour maintenir': 'PRs to maintain',
+  'PR pour construire': 'PRs to build',
+  'maintenir, le reste à part': 'maintain, the rest aside',
+  'Les personnes de l’équipe qui ont ouvert des PR de code sur la période, la plus active d’abord':
+    'The people of the team who opened code PRs over the period, the busiest first',
+  'L’effort {bucket}': 'Effort {bucket}',
+  'Part de la TMA, des projets, des AC et du reste dans les PR de code {bucket}, {period}':
+    'Share of maintenance, projects, improvements and the rest in the code PRs {bucket}, {period}',
+  'Part de chaque type de travail dans les PR de code de chaque squad, {period}':
+    'Share of each kind of work in the code PRs of each squad, {period}',
+  'Part de chaque type de travail dans les PR de code de chaque personne, {period}':
+    'Share of each kind of work in the code PRs of each person, {period}',
+  'Où va son effort': 'Where their effort goes',
 }
