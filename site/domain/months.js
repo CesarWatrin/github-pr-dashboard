@@ -2,14 +2,16 @@
 // series (trends): rolling median, last month against the year before.
 
 import { getOrCreate, median } from './math.js'
+import { projectsOf } from './projects.js'
 import { MINUTE_MS, parisDay } from './time.js'
 
 // The figures of each person's month, those of monthlyActivity().
 /** @type {(keyof MonthlyFigures)[]} */
-export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted', 'opened']
+export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted', 'opened', 'projects']
 
 // What each person did per Paris month ('YYYY-MM'), whatever the range, for the badges of the team page: code pull
-// requests opened and hotfixes among them, pull requests of others reviewed (once a month however many reviews),
+// requests opened, hotfixes among them and those of a project (projectsOf(): one with a few code pull requests, a branch
+// made by mistake aside), pull requests of others reviewed (once a month however many reviews),
 // comments left, and the lines added and deleted by their code pull requests merged that month. The month of the merge
 // rather than of the opening: the sync keeps a month for good a week after its end, and a pull request merged later
 // would miss it. Like the stats of a range, only code pull requests written by people count, but for the pull
@@ -22,6 +24,7 @@ export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'add
 export function monthlyActivity(records) {
   /** @type {Map<string, Map<string, MonthlyFigures>>} */
   const people = new Map()
+  const onProjects = new Set(projectsOf(records).flatMap((project) => project.records))
   /** @param {number} at */
   const monthOf = (at) => parisDay(at * MINUTE_MS).slice(0, 7)
   /**
@@ -46,6 +49,9 @@ export function monthlyActivity(records) {
     if (pr.hotfix) {
       opened.hotfixes++
     }
+    if (onProjects.has(pr)) {
+      opened.projects++
+    }
     if (pr.mergedAt !== null) {
       const merged = entry(pr.author, monthOf(pr.mergedAt))
       merged.added += pr.lines - (pr.deleted ?? 0)
@@ -66,6 +72,24 @@ export function monthlyActivity(records) {
 
   return people
 }
+
+// A month of a monthly history kept before some of the figures of monthlyActivity() existed: none of its people has
+// them all.
+/** @type {(kept: MonthlyHistory[string]) => boolean} */
+export const isOutdated = (kept) =>
+  Object.keys(kept).length > 0 && Object.values(kept).every((figures) => MONTHLY_FIGURES.some((key) => !(key in figures)))
+
+// Such a month with the figures it lacks, worked out again from the records (worked): the figures it kept stay, and the
+// people only those new figures name join it.
+/**
+ * @param {MonthlyHistory[string]} kept
+ * @param {MonthlyHistory[string]} worked
+ * @returns {MonthlyHistory[string]}
+ */
+export const withNewFigures = (kept, worked) =>
+  Object.fromEntries(
+    [...new Set([...Object.keys(kept), ...Object.keys(worked)])].sort((a, b) => a.localeCompare(b)).map((login) => [login, { ...worked[login], ...kept[login] }]),
+  )
 
 // The top of the team for one figure of a monthly history ({ 'YYYY-MM': { login: figures } }), month by month, oldest
 // first: how much, and who did that much, ties sharing it. A month nobody did any of it has no leader.

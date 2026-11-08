@@ -157,6 +157,9 @@ for (const language of ['fr', 'en']) {
         ['squads', '.squad-card button', '[data-person-dialog]'],
         ['projects', '.project-card-head', '[data-person-dialog]'],
         ['projects', '.gantt-row', '[data-person-dialog]'],
+        // A project named on another page opens its dialog too.
+        ['overview', '.project-link', '[data-person-dialog]'],
+        ['team', '.project-line .project-link', '[data-person-dialog]'],
       ]) {
         await show(route)
         await page.evaluate(`document.querySelector('[data-route="${route}"] ${opener}').click()`)

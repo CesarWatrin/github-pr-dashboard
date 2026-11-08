@@ -61,8 +61,8 @@ export const FRAME = {
   'Mes PR ouvertes': 'My open PRs',
   'Mes brouillons': 'My drafts',
   'Les chiffres du mois': 'The month’s figures',
-  'Chaque mois compte les PR ouvertes ce mois-là, et les reviews, merges, déploiements et exécutions de CI de ce mois-là, comme une période choisie sur les autres pages. Une évolution en vert va dans le bon sens, en orange dans le mauvais ; les autres sont neutres.':
-    'Each month counts the PRs opened that month, and the reviews, merges, deployments and CI runs of that month, like a period picked on the other pages. A change in green goes the right way, in orange the wrong way; the others are neutral.',
+  'Chaque mois compte les PR ouvertes ce mois-là, et les reviews, merges, déploiements et exécutions de CI de ce mois-là, comme une période choisie sur les autres pages ; ses projets sont ceux dont la vie croise le mois. Une évolution en vert va dans le bon sens, en orange dans le mauvais ; les autres sont neutres.':
+    'Each month counts the PRs opened that month, and the reviews, merges, deployments and CI runs of that month, like a period picked on the other pages; its projects are those whose life meets the month. A change in green goes the right way, in orange the wrong way; the others are neutral.',
   'Champions du mois': 'Champions of the month',
   'Les badges du Palmarès': 'The badges of the Awards',
   'Dépôts les plus actifs': 'Most active repositories',
@@ -119,8 +119,8 @@ export const FRAME = {
   'Tableau d’honneur': 'Hall of fame',
   'Les badges de chaque personne de l’équipe : bronze pour un mois en tête, argent pour deux d’affilée, or pour trois ou plus':
     'The badges of each person of the team: bronze for a month on top, silver for two in a row, gold for three or more',
-  'Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement. Un mois reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs. Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau seulement.':
-    'A badge goes to whoever did the most of the whole team over a whole month, ties included; lines added and deleted count in the month their PR was merged. The Shark counts every PR opened, branch merges included, releases aside; the other badges, code PRs only. A month is settled a week after its end, whatever the period and repositories picked elsewhere. People who left count in the race: they show by name in this table only.',
+  'Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, et la Fusée celles des projets. Un mois reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs. Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau seulement.':
+    'A badge goes to whoever did the most of the whole team over a whole month, ties included; lines added and deleted count in the month their PR was merged. The Shark counts every PR opened, branch merges included, releases aside; the other badges, code PRs only, and the Rocket those of projects. A month is settled a week after its end, whatever the period and repositories picked elsewhere. People who left count in the race: they show by name in this table only.',
   'Aucune squad': 'No squad',
   'Les squads se déclarent dans la variable <code>SQUADS</code> de la synchro, un secret de l’environnement <code>github-pages</code> : <code>nom:login,login;nom:login,…</code>.':
     'Squads are declared in the <code>SQUADS</code> variable of the sync, a secret of the <code>github-pages</code> environment: <code>name:login,login;name:login,…</code>.',
@@ -266,4 +266,8 @@ export const FRAME = {
   'Comparer les projets': 'Compare the projects',
   'Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période, la squad et les dépôts choisis. Un clic sur une colonne trie les projets.':
     'The dates, the duration and the status hold for the whole project; the other figures, for the period, the squad and the repositories picked. A click on a column sorts the projects.',
+  'Projets du mois': 'Projects of the month',
+  'Démarrés': 'Started',
+  'Livrés': 'Delivered',
+  'En cours, puis à l’arrêt, puis livrés, à la dernière synchro': 'Ongoing, then stalled, then delivered, as of the last sync',
 }

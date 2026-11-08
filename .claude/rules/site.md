@@ -221,6 +221,9 @@ paths:
   charts would sit under the dialog. In the dialog it opens below the medals, clear of the close button. A card and
   the dialog show the `SHOWN_BADGES` best medals, the others under a « +N » (`moreBadges()`) whose tooltip names
   them.
+  - A month the history kept before a figure existed (`isOutdated()` of `site/domain/months.js`) gets it from the pull
+    requests while the window holds it (`withNewFigures()`, shared with the sync): a new badge shows before the next
+    sync.
   - The awards page (`renderAwards()`) shows the leaders of the last whole month and of the current one so far, the
     holders of each badge still in the team, and the leaders of every month of the history. Each badge's holders
     scroll past five or so, so that the page does not grow as months go by: there, the medals take the tooltip of the
@@ -273,6 +276,18 @@ paths:
   - The table (`TABLES.projects`, `PROJECT_COLUMNS`): fourteen columns, tighter than the other tables (short dates, the
     repositories under the name, the share of the team under the people) so that it fits at 1080 px; the status sorts
     by `STATUS_ORDER` (ongoing, stalled, delivered), never by its word.
+  - Elsewhere: what every page shows of a project lives in `ui/projects.js` (`PROJECT_STATUSES`, `projectLabel()`,
+    `statusTag()`, and `projectLink()`, which asks for its dialog with `OPEN_PROJECT`: `setupProjectDialog()` of
+    `pages/projects/cards.js` opens it, from `projectOf()`, over the whole data when the period misses the project), and
+    what the pages read of them in `model/projects.js`. The overview (`pages/overview/projects.js`): a « Projets » group
+    of tiles (`projectTotals()`, against `comparedProjectTotals()`), the projects living, started and delivered bucket by
+    bucket (`projectSeries()` of `domain/projects/series.js`) and the list of those of the period, ongoing first. The
+    cards and dialogs of people (`personProjects()`, the repositories of the team page) and squads (`squadProjects()`)
+    name their projects (`projectLine()`, `projectList()`), the dialog of a repository its own (`repositoryProjects()`),
+    the timeline of a pull request its project (`projectKeyOf()`). The monthly report: a « Projets » group
+    (`monthStats().projects`, `projectSummary()` with `withCodeShare()`) and « Projets du mois », started and delivered;
+    two trends; two rules of the analysis (`domain/analysis/project-rules.js`, its cards in
+    `pages/analysis/project-findings.js`); and the 🚀 Fusée badge, from the `projects` of the monthly figures.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.

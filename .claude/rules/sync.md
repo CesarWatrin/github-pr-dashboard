@@ -104,7 +104,8 @@ classification and the records in `records.mjs`, the project of each pull reques
   (`MONTH_FINAL_AFTER_MS`), then it is final: worked out again, it would lose the reviews of pull requests created
   before the window as the window moves on. A final month kept before some figure of `MONTHLY_FIGURES` existed (the
   lines added and deleted came later) gets the missing figures once, from its records still within the window: what
-  it kept stays. A new monthly figure goes into `MONTHLY_FIGURES`, and the history fills itself. A fix that changes
+  it kept stays (`isOutdated()` and `withNewFigures()` of `site/domain/months.js`, which the page uses the same way). A
+  new monthly figure goes into `MONTHLY_FIGURES`, and the history fills itself. A fix that changes
   how a month counts (a classification, a figure) bumps `MONTHLY_REVISION`, kept with the history as `monthlyRevision`
   in the snapshot and the stats: the next sync works out again, once, every whole month of the history still in the
   window, final or not; the older months stay as kept. The history lives in

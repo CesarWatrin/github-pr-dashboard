@@ -67,6 +67,32 @@ export function formatDuration(hours) {
   return t('{value} j', { value: numberFormat.format(Math.round((hours / WORK_DAY_HOURS) * 10) / 10) })
 }
 
+// A month of the calendar, in days, for a duration.
+const MONTH_DAYS = 365.25 / 12
+
+// A duration on the calendar, from days: in days under two weeks, in weeks under two months, else in months; the weeks
+// short in the table.
+/**
+ * @param {MaybeNumber} days
+ * @param {{ short?: boolean }} [options]
+ */
+export function formatSpan(days, { short = false } = {}) {
+  if (isMissing(days)) {
+    return '–'
+  }
+  if (days < 1) {
+    return t('moins d’un jour')
+  }
+  if (days < 14) {
+    return plural(Math.round(days), 'jour')
+  }
+  if (days < 9 * 7) {
+    return short ? t('{count} sem.', { count: formatNumber(Math.round(days / 7)) }) : plural(Math.round(days / 7), 'semaine')
+  }
+
+  return plural(Math.round(days / MONTH_DAYS), 'mois', 'mois')
+}
+
 /** @param {string} iso */
 export function formatRelative(iso) {
   const seconds = (Date.parse(iso) - Date.now()) / 1000

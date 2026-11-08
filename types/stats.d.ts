@@ -67,6 +67,8 @@ interface MonthlyFigures {
   added: number
   deleted: number
   opened: number
+  // Code pull requests of a project.
+  projects: number
 }
 // Per month ('YYYY-MM'), each person's figures.
 type MonthlyHistory = Record<string, Record<string, Partial<MonthlyFigures>>>

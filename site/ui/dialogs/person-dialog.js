@@ -11,6 +11,7 @@ import {
 import { t } from '../../lib/i18n.js'
 import { SHOWN_BADGES } from '../../model/badges.js'
 import { displayName, isFormer } from '../../model/people.js'
+import { personProjects } from '../../model/projects.js'
 import { topTechnologies } from '../../model/repositories.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
@@ -19,6 +20,7 @@ import { badgeRow } from '../badges.js'
 import { el } from '../dom.js'
 import { avatarUrl, githubPill, githubUrl, OPEN_PERSON } from '../links.js'
 import { formerText, seniorityText, squadTags, stackLine } from '../people.js'
+import { projectList } from '../projects.js'
 import { repoFilterLabel, repoOptions } from '../repo-filter.js'
 import { dialogSection, showCardDialog, statList, topList } from './card-dialog.js'
 
@@ -119,6 +121,7 @@ export function openPersonDialog(row, opener) {
   const peers = (keep) => details.peers.details.filter(keep)
   const writers = peers(({ row: other }) => other.code > 0)
   const reviewers = peers(({ row: other }) => other.reviewed > 0)
+  const projects = personProjects(row.login)
 
   showCardDialog(
     [
@@ -157,6 +160,7 @@ export function openPersonDialog(row, opener) {
       }),
       dialogSection(t('Ce que la personne écrit'), statList(PERSON_WRITTEN, details, writers)),
       dialogSection(t('Ce que la personne relit'), statList(PERSON_REVIEWED, details, reviewers)),
+      ...(projects.length ? [dialogSection(t('Ses projets'), el('div', { className: 'person-dialog-columns' }, projectList(t('Projets, PR de code sur la période'), projects)))] : []),
       dialogSection(
         t('Avec qui, et où'),
         statList(PERSON_CIRCULATION, details, writers),

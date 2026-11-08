@@ -31,6 +31,8 @@ const TREND_FIGURES = [
   REPORT_FIGURES.get('Taux de reprise'),
   REPORT_FIGURES.get('Part de hotfix'),
   { ...REPORT_FIGURES.get('En échec'), label: t('CI en échec'), ci: true },
+  REPORT_FIGURES.get('Projets actifs'),
+  REPORT_FIGURES.get('Projets livrés'),
 ]
 // A month's rolling median covers it and the months just before it, this many in all.
 const TREND_ROLLING_MONTHS = 3

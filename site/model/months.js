@@ -4,19 +4,22 @@
 import { computeCi } from '../domain/ci.js'
 import { isMissing, median } from '../domain/math.js'
 import { computePeriod } from '../domain/period.js'
+import { projectRows, projectSummary } from '../domain/projects.js'
 import { parisDay, parisMidnight } from '../domain/time.js'
-import { formatDecimal, formatDuration, formatNumber, formatShare } from '../lib/format.js'
+import { formatDecimal, formatDuration, formatNumber, formatShare, formatSpan } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { badgeMonths } from './badges.js'
+import { withCodeShare } from './projects.js'
 import { ciStart } from './selection.js'
 import { scopedRecords, squadKey } from './squads.js'
 import { loadedStats, state } from './state.js'
 
-// The figures of the monthly report, read from { period, ci } of a month, in groups. kind tells how two months compare:
-// counts and durations by how much they changed, shares by how many points. better tells which way is good, when one
+// The figures of the monthly report, read from { period, ci, projects } of a month, in groups. kind tells how two months
+// compare: counts and durations (working time, or on the calendar: span) by how much they changed, shares by how many
+// points. better tells which way is good, when one
 // is: the change then takes its color.
 /**
- * @typedef {'count' | 'duration' | 'share' | 'decimal'} FigureKind
+ * @typedef {'count' | 'duration' | 'span' | 'share' | 'decimal'} FigureKind
  * @typedef {{ label: string, value: (month: MonthStats) => number | null | undefined, kind: FigureKind, better?: 'up' | 'down' }} ReportFigure
  */
 
@@ -59,6 +62,16 @@ const GROUPS = [
     ],
   },
   {
+    label: 'Projets',
+    figures: [
+      { label: 'Projets actifs', value: ({ projects }) => projects.active, kind: 'count' },
+      { label: 'Projets démarrés', value: ({ projects }) => projects.started, kind: 'count' },
+      { label: 'Projets livrés', value: ({ projects }) => projects.delivered, kind: 'count' },
+      { label: 'Durée médiane des projets livrés', value: ({ projects }) => projects.medianDays, kind: 'span' },
+      { label: 'PR de code sur des projets', value: ({ projects }) => projects.codeShare, kind: 'share' },
+    ],
+  },
+  {
     label: 'Équipe',
     figures: [
       { label: 'Auteurs de PR de code', value: ({ period }) => period.authors.filter((person) => Object.values(person.repos).some((stats) => stats.code > 0)).length, kind: 'count' },
@@ -76,7 +89,7 @@ export const REPORT_GROUPS = GROUPS.map((group) => ({
   figures: group.figures.map((figure) => /** @type {ReportFigure} */ (REPORT_FIGURES.get(figure.label))),
 }))
 /** @type {Record<FigureKind, (value: number | null | undefined) => string>} */
-export const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, share: formatShare, decimal: formatDecimal }
+export const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, span: formatSpan, share: formatShare, decimal: formatDecimal }
 // A month of the report is set against the median of this many last whole months.
 export const REPORT_YEAR_MONTHS = 12
 
@@ -93,8 +106,9 @@ export function reportMonths() {
   return [...badgeMonths(), parisDay(Date.parse(loadedStats().generatedAt)).slice(0, 7)]
 }
 
-// The stats of a month, worked out once per stats and squad: those of a period and of the CI over its Paris days, up to
-// the last sync for the current month. The CI stays that of the whole organization: no run belongs to a squad.
+// The stats of a month, worked out once per stats and squad: those of a period, of the CI and of the projects over its
+// Paris days, up to the last sync for the current month. The CI stays that of the whole organization: no run belongs to a
+// squad. The projects are those whose life meets the month (projectRows()), with what they add up to.
 /**
  * @param {string} month 'YYYY-MM'
  * @returns {MonthStats}
@@ -115,7 +129,9 @@ export function monthStats(month) {
     }
     // A month the runs do not cover whole has no CI: GitHub had forgotten its runs.
     const ci = range.start >= ciStart() ? computeCi(stats.ci ?? [], range) : null
-    months.set(key, { period: computePeriod(scopedRecords(), range), ci })
+    const period = computePeriod(scopedRecords(), range)
+    const rows = projectRows(scopedRecords(), range, { all: stats.pullRequests, now: Date.parse(stats.generatedAt) })
+    months.set(key, { period, ci, projects: { ...withCodeShare(projectSummary(rows, range), period), rows } })
   }
 
   return /** @type {MonthStats} */ (months.get(key))

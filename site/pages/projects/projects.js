@@ -3,7 +3,7 @@
 // data, the page says how one is found.
 
 import { parisDay } from '../../domain/time.js'
-import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
+import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare, formatSpan } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { displayName } from '../../model/people.js'
 import { anyProject, currentProjects } from '../../model/projects.js'
@@ -14,8 +14,9 @@ import { renderLegend } from '../../ui/charts/legend.js'
 import { $, $$, el } from '../../ui/dom.js'
 import { LINES_COLUMN } from '../../ui/tables/cells.js'
 import { renderTiles } from '../../ui/tiles.js'
-import { openProjectDialog, projectCard } from './cards.js'
-import { formatDay, formatShortDay, formatSpan, lastMergeOf, PROJECT_FIGURES, PROJECT_STATUSES, projectLabel, STATUS_ORDER, statusTag } from './figures.js'
+import { openProjectDialog, projectCard, setupProjectDialog } from './cards.js'
+import { formatDay, PROJECT_STATUSES, projectLabel, STATUS_ORDER, statusTag } from '../../ui/projects.js'
+import { formatShortDay, lastMergeOf, PROJECT_FIGURES } from './figures.js'
 
 const PROJECT_TILES = [
   { key: 'ongoing', label: t('Projets en cours') },
@@ -213,8 +214,9 @@ export function renderProjects(mode = 'enter') {
   renderProjectTimeline()
 }
 
-// Listens to « Par début / Par statut » of the timeline and the cards.
+// Listens to « Par début / Par statut » of the timeline and the cards, and to a project named on another page.
 export function setupProjects() {
+  setupProjectDialog()
   for (const button of $$('[data-project-order]')) {
     button.addEventListener('click', () => {
       state.projectOrder = /** @type {'start' | 'status'} */ (button.dataset.projectOrder)

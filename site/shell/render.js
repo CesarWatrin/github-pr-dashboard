@@ -19,7 +19,8 @@ import {
   renderTechnologiesChart,
   renderToday,
   renderTotals,
-} from '../pages/overview.js'
+} from '../pages/overview/overview.js'
+import { renderProjectChart, renderProjectList } from '../pages/overview/projects.js'
 import { renderProjects, renderProjectTimeline } from '../pages/projects/projects.js'
 import { renderReport } from '../pages/report.js'
 import { renderRepositories } from '../pages/repositories.js'
@@ -41,6 +42,7 @@ export function renderCharts() {
     return
   }
   renderActivityChart()
+  renderProjectChart()
   renderSizeCharts()
   renderTechnologiesChart()
   renderTmaCharts()
@@ -79,6 +81,7 @@ export function render(animate) {
   renderPersonPicker()
   renderCharts()
   renderChartTable()
+  renderProjectList()
   for (const name of repoFilterNames()) {
     renderRepoFilter(name)
   }

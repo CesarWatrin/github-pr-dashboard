@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
 import { MIN_PROJECT_CODE, projectLife, projectRows, projectsOf, projectSummary, REUSED_AFTER_DAYS, spanInRange } from '../../site/domain/projects.js'
+import { projectSeries } from '../../site/domain/projects/series.js'
 import { DAY_MS, parisMidnight } from '../../site/domain/time.js'
 import { at, record } from './records.mjs'
 
@@ -341,11 +342,15 @@ describe('projectRows', () => {
 })
 
 describe('projectSummary', () => {
-  test('ongoing now, delivered within the range, and the medians of the delivered ones', () => {
+  test('living and started within the range, ongoing now, delivered within the range, their code, and the medians of the delivered ones', () => {
     const rows = projectRows(ALL, SPRING, { now: NOW })
+    // paper-kite and quiet-otter, both started within the range; blue-falcon was over before it.
     assert.deepEqual(projectSummary(rows, SPRING), {
+      active: 2,
+      started: 2,
       ongoing: 1,
       delivered: 1,
+      code: 5,
       medianDays: (Date.parse('2026-05-05T09:00:00Z') - Date.parse('2026-03-02T09:00:00Z')) / DAY_MS,
       medianIntegrationHours: 10,
     })
@@ -357,3 +362,22 @@ describe('projectSummary', () => {
     assert.deepEqual([summary.delivered, summary.medianDays], [0, null])
   })
 })
+
+describe('projectSeries', () => {
+  test('month by month, the projects living, started and delivered', () => {
+    /** @type {TimeRange} */
+    const range = { start: parisMidnight('2026-03-01'), end: parisMidnight('2026-06-01'), bucket: 'month' }
+    // paper-kite lives from March to its delivery in May; quiet-otter starts in May.
+    assert.deepEqual(projectSeries(projectRows(ALL, range, { now: NOW }), range), [
+      { key: '2026-03', partial: false, active: 1, started: 1, delivered: 0 },
+      { key: '2026-04', partial: false, active: 1, started: 0, delivered: 0 },
+      { key: '2026-05', partial: false, active: 2, started: 1, delivered: 1 },
+    ])
+  })
+
+  test('week by week, a bucket the range does not cover whole is partial', () => {
+    const points = projectSeries(projectRows(ALL, SPRING, { now: NOW }), { ...SPRING, start: parisMidnight('2026-03-04') })
+    assert.deepEqual([points[0].key, points[0].partial, points[0].active, points.at(-1).partial], ['2026-03-02', true, 1, false])
+  })
+})
+

@@ -21,8 +21,10 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 
 - **Vue d'ensemble** : l'activité du jour, puis celle de la période en trois volets, livraison (PR ouvertes et
   mergées, délai de merge, mises en production, part de hotfix), lignes de code (ajoutées, supprimées, taille médiane
-  des PR) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR mergées sans review), chaque
-  tuile menant à sa page ; l'activité par période et le fil des 7 derniers jours ; la part de chaque technologie dans
+  des PR) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR mergées sans review), et les
+  projets (actifs, démarrés, livrés, part des PR de code sur des projets), chaque tuile menant à sa page ; l'activité
+  par période et le fil des 7 derniers jours ; les projets par période (actifs, démarrés, livrés) et la liste de ceux
+  de la période, en cours d'abord, chacun ouvrant sa fiche ; la part de chaque technologie dans
   les PR de code, ou au choix dans les lignes ajoutées,
   avec son logo (les langages d'un dépôt sont regroupés sous le framework que déclarent ses fichiers de
   dépendances : Laravel, Nuxt, NestJS, Flutter…) ; le tableau des dépôts (type, technos, PR, contributeurs, lignes
@@ -49,21 +51,24 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand « Mes PR » est à l'écran, aucune pour les PR
   déjà là à l'ouverture de l'onglet.
 - **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
-  livraison (lignes ajoutées et supprimées comprises), revue, intégration continue et équipe, chaque évolution en
-  vert ou en orange quand elle a un bon sens ;
-  les champions du mois, les dépôts les plus actifs et les arrivées. Il s'ouvre sur le mois en cours, provisoire et
+  livraison (lignes ajoutées et supprimées comprises), revue, intégration continue, projets (actifs, démarrés, livrés,
+  durée médiane des livrés, part des PR de code sur des projets) et équipe, chaque évolution en vert ou en orange
+  quand elle a un bon sens ;
+  les champions du mois, les dépôts les plus actifs, les arrivées et les projets démarrés ou livrés dans le mois. Il s'ouvre sur le mois en cours, provisoire et
   sans comparaison ; les mois complets se choisissent dans la liste. « Copier le bilan » le copie en texte, prêt à
   coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec son évolution, 🟢 ou 🟠 quand elle va
   dans le bon ou le mauvais sens, puis le lien de la page.
 - **Tendances** : les indicateurs clés du bilan (PR de code mergées, délai de merge, attente de la première review,
-  commentaires par PR relue, délai jusqu'en prod, taux de reprise, part de hotfix, CI en échec) mois après mois, sur
+  commentaires par PR relue, délai jusqu'en prod, taux de reprise, part de hotfix, CI en échec, projets actifs et
+  livrés) mois après mois, sur
   les mois que touche la période choisie (36 mois : tout l'historique), avec leur médiane sur 3 mois ; pour chacun, le
   dernier mois complet de la période comparé au même mois un an plus tôt et à la médiane des 12 mois complets jusqu'à
   lui, même avant la période.
-- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Dix règles fixes croisent les chiffres :
+- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Douze règles fixes croisent les chiffres :
   taille des PR et délai de merge, PR géantes mergées sans review plus souvent que les autres, étape qui retient les
   PR avant leur merge, dépôts suspendus à un relecteur ou mergés sans review, workflows qui échouent souvent ou qui
-  sont lents, PR fermées sans merge, et ce qui se dégrade ou s'améliore d'une moitié de la période à l'autre. Chaque
+  sont lents, PR fermées sans merge, projets à l'arrêt, projets qui attendent leur livraison une fois leur code fini,
+  et ce qui se dégrade ou s'améliore d'une moitié de la période à l'autre. Chaque
   constat, prioritaire ou à surveiller, donne ses chiffres, une piste et la page qui le détaille ; une règle ne parle
   qu'au-delà de son seuil, sur assez de PR ou d'exécutions, et les autres sont listées sous « Rien à signaler ». Les
   seuils sont dans la Méthode. La recherche ne s'y applique pas.
@@ -82,7 +87,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts) qui ouvre sa fiche ; et
   un tableau pour les comparer, trié au clic. Le calendrier et les cartes se rangent par début ou par statut. La vie
   d'un projet vaut quels que soient la période, la squad et les dépôts choisis ; ses chiffres les suivent. La recherche
-  trouve un projet par son nom, ses dépôts ou ses auteurs.
+  trouve un projet par son nom, ses dépôts ou ses auteurs. Ailleurs, les cartes et fiches des personnes et des squads
+  nomment leurs projets de la période, la fiche d'un dépôt les siens, la frise d'une PR son projet : chacun ouvre la
+  fiche du projet.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
@@ -126,13 +133,14 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
   collaborateurs.
 - **Badges**, sur les cartes et dans la fiche, à la façon des succès GitHub : 🦈 Requin des PR, 🔍 Œil de lynx,
-  🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur et 🧹 Coup de balai, pour le plus de PR ouvertes (merges de branches compris,
-  releases à part), de PR relues, de commentaires de review, de hotfix, de lignes ajoutées ou de lignes supprimées de
-  toute l'équipe sur un mois complet (les lignes au mois du merge ; hors Requin, seules les PR de code comptent). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
+  🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur, 🧹 Coup de balai et 🚀 Fusée, pour le plus de PR ouvertes (merges de branches
+  compris, releases à part), de PR relues, de commentaires de review, de hotfix, de lignes ajoutées, de lignes
+  supprimées ou de PR de code sur des projets de toute l'équipe sur un mois complet (les lignes au mois du merge ; hors Requin, seules les PR de code comptent). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
   s'affiche au survol. Une carte et une fiche en montrent trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
   mensuel de chacun au-delà de la fenêtre de 36 mois, dans son snapshot, et le relit dans les stats déjà publiées si
   le cache d'Actions s'est perdu. Quand une correction change la façon de compter, la synchro suivante recompte une
-  fois les mois encore dans la fenêtre ; les mois plus anciens restent tels quels.
+  fois les mois encore dans la fenêtre ; les mois plus anciens restent tels quels. Un chiffre nouveau (les PR de projet,
+  pour la Fusée) s'ajoute de même aux mois encore dans la fenêtre, et la page le calcule déjà en attendant la synchro.
 - **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
   le tableau d'honneur, qui détient quel badge et à quel niveau ; les champions de chaque mois depuis la première
   synchro. Les personnes parties comptent dans la course, et n'apparaissent sous leur nom que dans ce dernier tableau.

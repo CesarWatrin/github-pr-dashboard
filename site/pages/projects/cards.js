@@ -1,18 +1,20 @@
 // The card of a project and its dialog: its life, who took part, its figures, each in the dialog over the median of the
 // projects of the period.
 
-import { formatLines, formatNumber, plural } from '../../lib/format.js'
+import { formatLines, formatNumber, formatSpan, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { isCurrent } from '../../model/people.js'
+import { projectOf } from '../../model/projects.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { dialogSection, showCardDialog, statList, topList } from '../../ui/dialogs/card-dialog.js'
 import { el } from '../../ui/dom.js'
-import { personLink, pullRequestLink, repoLink } from '../../ui/links.js'
+import { OPEN_PROJECT, personLink, pullRequestLink, repoLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
 import { repoFilterLabel, repoOptions } from '../../ui/repo-filter.js'
-import { formatDay, formatSpan, namesakesText, PROJECT_STATUSES, projectFigures, projectLabel, statusTag } from './figures.js'
+import { formatDay, PROJECT_STATUSES, projectLabel, statusTag } from '../../ui/projects.js'
+import { namesakesText, projectFigures } from './figures.js'
 
 const PROJECT_CARD_STATS = projectFigures('code', 'merged', 'lines', 'reviewers', 'medianTimeToMergeHours', 'perWeek')
 const PROJECT_LIFE = projectFigures('start', 'lastMerge', 'lastActivity', 'days', 'integrationHours')
@@ -72,14 +74,19 @@ const mergeList = (row) =>
 
 // The dialog of a project, like those of a person, a repository or a squad: its life, and the other projects of its
 // name, then its figures, each set against the median of the projects of the period, then who wrote and reviewed it,
-// where, and when its branch was merged.
-export function openProjectDialog(row, rows, opener) {
+// where, and when its branch was merged. Opened from another page (projectLink()), it counts every repository; for a
+// project the period misses, the whole data (whole).
+export function openProjectDialog(row, rows, opener, { fromPage = true, whole = false } = {}) {
   const peers = rows.filter((other) => other.code > 0)
   const writers = row.authors.filter((author) => isCurrent(author.login))
   const readers = row.reviewers.filter((reviewer) => isCurrent(reviewer.login))
   const label = projectLabel(row)
   const namesakes = namesakesText(row)
-  const scope = state.repos.projects ? `${periodTitle()} · ${repoFilterLabel('projects', repoOptions('projects'))}` : periodTitle()
+  const scope = whole
+    ? t('Toutes les données synchronisées')
+    : fromPage && state.repos.projects
+      ? `${periodTitle()} · ${repoFilterLabel('projects', repoOptions('projects'))}`
+      : periodTitle()
 
   showCardDialog(
     [
@@ -129,4 +136,14 @@ export function openProjectDialog(row, rows, opener) {
     ],
     opener,
   )
+}
+
+// A project named on another page (projectLink() of ui/projects.js) opens its dialog, in place of the one shown if any.
+export function setupProjectDialog() {
+  document.addEventListener(OPEN_PROJECT, (event) => {
+    const found = projectOf(/** @type {CustomEvent} */ (event).detail)
+    if (found) {
+      openProjectDialog(found.row, found.rows, event.target, { fromPage: false, whole: found.whole })
+    }
+  })
 }

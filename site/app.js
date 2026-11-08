@@ -14,7 +14,8 @@ import { state } from './model/state.js'
 import { setupReplay } from './pages/cartography/replay.js'
 import { DEPLOYMENT_SERIES } from './pages/devops.js'
 import { setupMe } from './pages/me.js'
-import { ACTIVITY_SERIES, setupOverview } from './pages/overview.js'
+import { ACTIVITY_SERIES, setupOverview } from './pages/overview/overview.js'
+import { PROJECT_SERIES } from './pages/overview/projects.js'
 import { setupProjects } from './pages/projects/projects.js'
 import { setupReport } from './pages/report.js'
 import { setupReviewers } from './pages/reviewers.js'
@@ -75,6 +76,7 @@ renderLanguageToggle()
 renderRoute()
 renderPeriodSelector()
 renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)
+renderLegend($('[data-projects-chart-legend]'), PROJECT_SERIES)
 renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
 renderLegend($('[data-squads-stages-legend]'), CYCLE_STAGES)

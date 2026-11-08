@@ -2,6 +2,7 @@
 // needs, and from when what it measures stands out.
 
 import { SIZE_BUCKETS } from '../period/sizes.js'
+import { WORK_DAY_HOURS } from '../time.js'
 
 export const MINUTE_MS = 60_000
 // Small under SMALL_PR_LINES changed lines, big from BIG_PR_LINES, huge from HUGE_PR_LINES: the size buckets of the
@@ -35,3 +36,10 @@ export const SETTLE_DAYS = 7
 export const DRIFT_RATIO = 1.5
 export const DRIFT_POINTS = 0.05
 export const DRIFT_SHARE_RATIO = 4 / 3
+// The projects whose life meets the range, for those that stalled; the projects delivered within it, for their
+// integration. Stalled projects call for priority from half of them; the integration of the delivered ones is slow
+// from a week of work in median, from the last code pull request merged to the merge of the project branch.
+export const MIN_PROJECTS = 3
+export const STALLED_PROJECTS_HIGH_SHARE = 0.5
+export const MIN_DELIVERED_PROJECTS = 2
+export const SLOW_INTEGRATION_HOURS = 5 * WORK_DAY_HOURS

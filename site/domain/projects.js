@@ -2,7 +2,7 @@
 // branch, project/<name>/main, into a long-lived branch (projectMerge), grouped by name whatever the repository, a name
 // taken up again long after its project was over making another project. What each project is over the whole data, its
 // life (start, merges, last activity, status), and its figures over a range, those of computePeriod() over its pull
-// requests.
+// requests. The projects bucket by bucket in projects/series.js.
 
 import { getOrCreate, median } from './math.js'
 import { openPullRequests } from './open-pull-requests.js'
@@ -253,20 +253,25 @@ export function projectRows(records, range, { all = records, now = range.end } =
 
 /** @typedef {ReturnType<typeof projectRows>[number]} ProjectRow */
 
-// What the projects of a range add up to: how many are under way now, how many were delivered within the range, and,
-// over these, the median days from their start to their delivery and the median integration delay (working hours).
+// What the projects of a range (projectRows()) add up to: how many lived within it (active) and started within it, how
+// many are under way now, how many were delivered within the range, the code pull requests they carry over the range,
+// and, over those delivered, the median days from their start to their delivery and the median integration delay
+// (working hours).
 /**
- * @param {Pick<ProjectRow, 'status' | 'deliveredAt' | 'days' | 'integrationHours'>[]} rows
+ * @param {Pick<ProjectRow, 'start' | 'status' | 'deliveredAt' | 'days' | 'integrationHours' | 'code'>[]} rows
  * @param {Pick<TimeRange, 'start' | 'end'>} range
  */
 export function projectSummary(rows, range) {
-  const delivered = rows.filter(
-    (row) => row.status === 'delivered' && row.deliveredAt !== null && row.deliveredAt * MINUTE_MS >= range.start && row.deliveredAt * MINUTE_MS < range.end,
-  )
+  /** @param {number | null} at */
+  const within = (at) => at !== null && at * MINUTE_MS >= range.start && at * MINUTE_MS < range.end
+  const delivered = rows.filter((row) => row.status === 'delivered' && within(row.deliveredAt))
 
   return {
+    active: rows.length,
+    started: rows.filter((row) => within(row.start)).length,
     ongoing: rows.filter((row) => row.status === 'ongoing').length,
     delivered: delivered.length,
+    code: rows.reduce((total, row) => total + row.code, 0),
     medianDays: median(delivered.map((row) => row.days)),
     medianIntegrationHours: median(delivered.flatMap((row) => (row.integrationHours === null ? [] : [row.integrationHours]))),
   }

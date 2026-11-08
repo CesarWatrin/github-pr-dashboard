@@ -1,10 +1,22 @@
 // Tests of the projects of the period (site/model/projects.js): worked out once per stats, period, squad and
-// repositories, the share of the team their authors are, and the repositories the filter lists. Every project, squad,
-// repository and person here is made up.
+// repositories, the share of the team their authors are, the repositories the filter lists, and what the other pages
+// read of them. Every project, squad, repository and person here is made up.
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, describe, test } from 'node:test'
 
-import { anyProject, currentProjects, projectRepoCounts } from '../../site/model/projects.js'
+import {
+  anyProject,
+  comparedProjectTotals,
+  currentProjects,
+  personProjects,
+  projectChart,
+  projectKeyOf,
+  projectOf,
+  projectRepoCounts,
+  projectTotals,
+  repositoryProjects,
+  squadProjects,
+} from '../../site/model/projects.js'
 import { state } from '../../site/model/state.js'
 import { record, useStats } from './stats.mjs'
 
@@ -21,6 +33,7 @@ const records = [
 beforeEach(() => {
   useStats({ squads: [{ name: 'Boutique', members: ['ada', 'cleo'] }], pullRequests: records })
   state.repos.projects = null
+  state.repos.team = null
   // The page reads the hash of its address: a made-up one, all the model needs.
   Object.defineProperty(globalThis, 'location', { value: { hash: '#/projets' }, configurable: true, writable: true })
 })
@@ -77,3 +90,37 @@ describe('currentProjects', () => {
     assert.equal(anyProject(), false)
   })
 })
+
+describe('the projects on the other pages', () => {
+  test('what they add up to on the overview, with the share of the code pull requests they carry', () => {
+    const totals = projectTotals()
+    // Four of the six code pull requests of the period, the stray branch aside.
+    assert.deepEqual([totals.active, totals.started, totals.delivered, totals.code, totals.codeShare], [2, 2, 0, 4, 4 / 6])
+    assert.equal(comparedProjectTotals(), null)
+  })
+
+  test('month by month, the projects living and started', () => {
+    const points = projectChart()
+    const month = (key) => points.find((point) => point.key === key)
+    // paper-kite lives from its start on 4 May to its last pull request on 20 May; quiet-otter starts in June.
+    assert.deepEqual([month('2026-05').active, month('2026-05').started, month('2026-06').active, month('2026-06').started], [1, 1, 1, 1])
+  })
+
+  test('the projects of a person, of a squad and of a repository, the busiest first', () => {
+    assert.deepEqual(personProjects('ada').map(({ row, code }) => [row.key, code]), [['paper-kite', 1], ['quiet-otter', 1]])
+    assert.deepEqual(personProjects('cleo'), [])
+    assert.deepEqual(squadProjects({ name: 'Boutique', members: ['ada', 'cleo'] }).map(({ row, code }) => [row.key, code]), [['paper-kite', 1], ['quiet-otter', 1]])
+    assert.deepEqual(repositoryProjects('mobile').map(({ row, code }) => [row.key, code]), [['quiet-otter', 2]])
+  })
+
+  test('the project of a pull request, and a project by its key, over the whole data when the period misses it', () => {
+    assert.equal(projectKeyOf(records[1]), 'paper-kite')
+    assert.equal(projectKeyOf(records[5]), null)
+    assert.deepEqual([projectOf('quiet-otter').row.name, projectOf('quiet-otter').whole], ['quiet-otter', false])
+    const old = [record('ada', '2024-02-05T09:00:00Z', { project: 'old-heron' }), record('ben', '2024-02-06T09:00:00Z', { project: 'old-heron' })]
+    useStats({ pullRequests: [...records, ...old] })
+    assert.deepEqual([projectOf('old-heron').row.name, projectOf('old-heron').whole], ['old-heron', true])
+    assert.equal(projectOf('nowhere'), null)
+  })
+})
+

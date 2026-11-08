@@ -2,7 +2,7 @@
 
 import { readFile } from 'node:fs/promises'
 
-import { MONTHLY_FIGURES, monthlyActivity } from '../../site/domain/months.js'
+import { isOutdated, monthlyActivity, withNewFigures } from '../../site/domain/months.js'
 import { DAY_MS, parisDay, parisMidnight } from '../../site/domain/time.js'
 import { STATS_PATH } from './config.mjs'
 import { decrypt } from './publish.mjs'
@@ -45,12 +45,6 @@ export function wholeMonthsWithin(start, end) {
   return months
 }
 
-// A month of the history kept before some of the figures of monthlyActivity() existed: none of its people has them all.
-/** @type {(kept: MonthlyHistory[string]) => boolean} */
-const isOutdated = (kept) =>
-  Object.keys(kept).length > 0 &&
-  Object.values(kept).every((figures) => MONTHLY_FIGURES.some((key) => !(key in figures)))
-
 // The monthly history of each person's figures, as { 'YYYY-MM': { login: figures } } (see monthlyActivity()), for the
 // badges, back to the first sync. A whole month of the window is worked out from its records until it has been over for
 // MONTH_FINAL_AFTER_MS, for the data synced late; from then on it is final and stays as kept. Worked out again later, it
@@ -79,12 +73,7 @@ export function mergeMonthlyHistory(history, records, { windowStart, now, revisi
     if (revised || !(month in history) || parisMidnight(`${nextMonth(month)}-01`) > now - MONTH_FINAL_AFTER_MS) {
       merged[month] = worked
     } else if (isOutdated(history[month])) {
-      const kept = history[month]
-      merged[month] = Object.fromEntries(
-        [...new Set([...Object.keys(kept), ...Object.keys(worked)])]
-          .sort((a, b) => a.localeCompare(b))
-          .map((login) => [login, { ...worked[login], ...kept[login] }]),
-      )
+      merged[month] = withNewFigures(history[month], worked)
     }
   }
 

@@ -250,3 +250,40 @@ describe('halves of the range', () => {
     assert.ok(analyze([...half(firstHalf, 50), ...half(secondHalf, 200).slice(1)], [], range).few.includes('drift'))
   })
 })
+
+describe('projects', () => {
+  // The last sync, seven weeks after the start of the projects: one of them, still open, has stalled since.
+  const NOW = Date.parse('2026-04-20T08:00:00Z')
+  // Two code pull requests of a project, merged an hour after their opening, then the merge of its branch.
+  const code = (project) => merged(2, { project })
+  const branchMerge = (project, iso) =>
+    record({ project, projectMerge: true, kind: 'integration', createdAt: at(iso) - HOUR, mergedAt: at(iso) })
+  // Delivered two and three weeks after their last code pull request; the third one waits, open, since Monday the 2nd.
+  const KITE = [...code('kite'), branchMerge('kite', '2026-03-16T09:00:00Z')]
+  const OTTER = [...code('otter'), branchMerge('otter', '2026-03-20T09:00:00Z')]
+  const HERON = [record({ project: 'heron' }), record({ project: 'heron' })]
+
+  test('the projects that stalled, and those delivered that waited a week of work or more for the merge of their branch', () => {
+    const result = analyze([...KITE, ...OTTER, ...HERON], [], { ...MARCH, now: NOW })
+    const stalled = findingOf(result, 'stalledProjects')
+    assert.deepEqual([stalled.level, stalled.count, stalled.total, stalled.open, stalled.projects.map((project) => project.key)], ['watch', 1, 3, 2, ['heron']])
+    const integration = findingOf(result, 'integration')
+    // From 11:00 on Monday the 2nd: 89 working hours to the 16th, 125 to the 20th.
+    assert.deepEqual([integration.level, integration.count, integration.medianHours], ['watch', 2, 107])
+    assert.deepEqual(integration.projects.map((project) => project.key), ['otter', 'kite'])
+  })
+
+  test('half of the projects stalled call for priority', () => {
+    const stalled = findingOf(analyze([...KITE, ...HERON, record({ project: 'wren' }), record({ project: 'wren' })], [], { ...MARCH, now: NOW }), 'stalledProjects')
+    assert.deepEqual([stalled.level, stalled.count], ['high', 2])
+  })
+
+  test('nothing when none stalled and the branches merge within a day, too little under three projects or two delivered', () => {
+    const quick = [...code('kite'), branchMerge('kite', '2026-03-03T09:00:00Z'), ...code('otter'), branchMerge('otter', '2026-03-03T10:00:00Z'), ...HERON]
+    const result = analyze(quick, [], MARCH)
+    assert.deepEqual(['stalledProjects', 'integration'].map((key) => result.clear.includes(key)), [true, true])
+    const few = analyze(KITE, [], { ...MARCH, now: NOW })
+    assert.deepEqual(['stalledProjects', 'integration'].map((key) => few.few.includes(key)), [true, true])
+  })
+})
+
