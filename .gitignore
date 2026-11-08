@@ -3,3 +3,6 @@ node_modules/
 site/data/
 .env
 .DS_Store
+# Local tools: the captures of the Playwright browser, the worktrees of Claude Code agents.
+.playwright-mcp/
+.claude/worktrees/
