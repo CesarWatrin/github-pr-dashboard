@@ -3,7 +3,7 @@
 
 import { isBot } from './people.mjs'
 import { acOf } from './acs.mjs'
-import { isProjectMerge, LONG_LIVED_BRANCHES, projectOf } from './projects.mjs'
+import { isProjectMerge, LONG_LIVED_BRANCHES, projectStageOf } from './projects.mjs'
 
 // The pull requests the page opens the timeline of carry their title and the state of their checks: the open ones, and
 // those with any activity over the last DETAILS_DAYS, which covers the 7-day feed and the merges without approval of
@@ -187,7 +187,8 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
   // The projects page only reads the code pull requests of people, and the merges of a project branch into a long-lived
   // one: the others carry no project.
   const projectMerge = isProjectMerge(pr)
-  const project = projects && !bot && (kind === 'code' || projectMerge) ? projectOf(pr, projects) : null
+  const ofProject = projects && !bot && (kind === 'code' || projectMerge) ? projectStageOf(pr, projects) : null
+  const project = ofProject?.project ?? null
   // Likewise the AC page: a code pull request of a project is none of an AC.
   const ac = projects && !bot && kind === 'code' && !project ? acOf(pr, projects) : null
 
@@ -223,6 +224,8 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
     // The project of a code pull request, by its name only: the branches stay unpublished. The merge of the project
     // branch into a long-lived one says so: when it is merged, the project is in the code of the repository.
     ...(project && { project }),
+    // Its stage, when the project goes in stages: never the branch, only what tells the stage (2.1, 3, pilot).
+    ...(ofProject?.stage && { stage: ofProject.stage }),
     ...(project && projectMerge && { projectMerge: true }),
     // When a pull request of a project was closed without a merge: until then the project was not over, and its name
     // taken up again after makes another project (site/domain/projects.js).

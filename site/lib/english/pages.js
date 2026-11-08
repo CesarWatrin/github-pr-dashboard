@@ -393,12 +393,15 @@ export const PAGES = {
   'À l’arrêt': 'Stalled',
   'Sa branche n’est pas mergée depuis sa dernière PR, et il a bougé dans les {days} derniers jours.':
     'Its branch has not been merged since its last PR, and it moved within the last {days} days.',
-  'Sa branche project/…/main est mergée dans une branche principale, et aucune PR du projet n’a été ouverte depuis.':
-    'Its project/…/main branch is merged into a long-lived branch, and no PR of the project has been opened since.',
+  'Sa branche project/…/main est mergée dans une branche principale (pour un projet en étapes, chacune livrée ou abandonnée), et aucune PR du projet n’a été ouverte depuis.':
+    'Its project/…/main branch is merged into a long-lived branch (for a project in stages, each of them delivered or abandoned), and no PR of the project has been opened since.',
   'Pas livré, et plus rien depuis {days} jours : ni PR, ni review, ni commentaire, ni merge.':
     'Not delivered, and nothing for {days} days: no PR, review, comment or merge.',
   'jour': 'day',
   'jours': 'days',
+  'étape': 'stage',
+  'étapes': 'stages',
+  'Ses étapes': 'Its stages',
   'semaine': 'week',
   'semaines': 'weeks',
   'Statut': 'Status',
@@ -407,8 +410,8 @@ export const PAGES = {
   'Début': 'Start',
   'Sa première PR ouverte, dans les données synchronisées.': 'Its first PR opened, within the synced data.',
   'Mergé le': 'Merged on',
-  'Le dernier merge de sa branche project/…/main dans une branche principale (develop, main, master, staging).':
-    'The last merge of its project/…/main branch into a long-lived branch (develop, main, master, staging).',
+  'Le dernier merge de sa branche project/…/main, ou de l’une de ses étapes, dans une branche principale (develop, main, master, staging).':
+    'The last merge of its project/…/main branch, or of one of its stages, into a long-lived branch (develop, main, master, staging).',
   'Dernière activité': 'Last activity',
   'Sa dernière PR ouverte ou mergée, review ou commentaire.': 'Its last PR opened or merged, review or comment.',
   'Durée': 'Duration',
@@ -447,8 +450,8 @@ export const PAGES = {
   'Durée médiane jusqu’à la livraison': 'Median time to delivery',
   'Intégration médiane': 'Median integration',
   'Projet': 'Project',
-  'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un. Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.':
-    'The name of its project/…/main branch, and its repositories under it: a project of the same name in several repositories is one. A name taken up again long after its project was over makes another one, named with the month it started.',
+  'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un, ses étapes aussi (project/…-2/main, project/…/main-1.1). Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.':
+    'The name of its project/…/main branch, and its repositories under it: a project of the same name in several repositories is one, and so are its stages (project/…-2/main, project/…/main-1.1). A name taken up again long after its project was over makes another one, named with the month it started.',
   '{name} ({month})': '{name} ({month})',
   'Un autre projet a porté ce nom, {spans}.': 'Another project went by this name, {spans}.',
   'D’autres projets ont porté ce nom, {spans}.': 'Other projects went by this name, {spans}.',

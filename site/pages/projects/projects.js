@@ -66,7 +66,7 @@ export const PROJECT_COLUMNS = [
     value: projectLabel,
     cell: nameCell,
     hint: t(
-      'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un. Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.',
+      'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un, ses étapes aussi (project/…-2/main, project/…/main-1.1). Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.',
     ),
   },
   {

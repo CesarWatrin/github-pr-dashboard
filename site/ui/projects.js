@@ -1,5 +1,5 @@
-// What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, the pull
-// request that merges its branch on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it
+// What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, the name
+// of a stage, the pull request that merges its branch on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it
 // shows, and the projects of a person or a squad, on their card and in their dialog.
 
 import { isMissing } from '../domain/math.js'
@@ -13,7 +13,7 @@ import { el, svg } from './dom.js'
 import { ICONS_URL } from './icons.js'
 import { askToOpen, githubUrl, OPEN_PROJECT, pullRequestPath } from './links.js'
 
-// Where a project stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
+// Where a project, or one of its stages, stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
 // stalled one lighter still, an abandoned one in the red of what was dropped; always with its word.
 export const PROJECT_STATUSES = {
   ongoing: {
@@ -26,13 +26,13 @@ export const PROJECT_STATUSES = {
     key: 'delivered',
     label: t('Livré'),
     color: 'color-mix(in srgb, var(--series-3) 85%, var(--surface))',
-    hint: t('Sa branche project/…/main est mergée dans une branche principale, et aucune PR du projet n’a été ouverte depuis.'),
+    hint: t('Sa branche project/…/main est mergée dans une branche principale (pour un projet en étapes, chacune livrée ou abandonnée), et aucune PR du projet n’a été ouverte depuis.'),
   },
   abandoned: {
     key: 'abandoned',
     label: t('Abandonné'),
     color: 'color-mix(in srgb, var(--diff-deleted) 50%, var(--surface))',
-    hint: t('Toutes les PR qui mergent sa branche project/…/main ont été fermées sans merge, et plus aucune PR du projet n’est ouverte.'),
+    hint: t('Toutes les PR qui mergent sa branche project/…/main, ou celles de chacune de ses étapes, ont été fermées sans merge, et plus aucune PR du projet n’est ouverte.'),
   },
   stalled: {
     key: 'stalled',
@@ -64,22 +64,42 @@ export function statusTag(status) {
   return el('span', { className: `project-status is-${status}`, title: hint }, dot, document.createTextNode(label))
 }
 
-// Where the branch of a project, project/<name>/main, comes back in one of its repositories, on GitHub: the pull request
-// that merges it into a long-lived branch (mergeRequestsOf() of domain/projects.js), merged, still open or closed
-// without a merge; else, without any, the pull requests of the project in that repository. Its state gives its color:
-// green once merged, red when closed, grey otherwise.
+// The name of a stage of a project (stage of domain/projects.js): « Étape 2.1 », « Étape pilot »; the main branch of the
+// project, merged on its own beside its stages, « Branche main ».
+/** @type {(stage: string | null) => string} */
+export const stageLabel = (stage) => (stage === null ? t('Branche main') : t('Étape {stage}', { stage }))
+
+// What the pull request of a merge brings, in its title: the branch of the project, one of its stages for a project in
+// stages, or the stage named.
 /**
- * @param {{ name: string, mergeRequests: Record<string, { number: number, state: 'merged' | 'open' | 'closed' }> }} row
+ * @param {{ name: string, stages?: unknown[] }} row
+ * @param {string | null} [stage] the stage named, null for the main branch of the project; none for the project
+ */
+export function mergedBranch(row, stage) {
+  if (stage === undefined && row.stages?.length) {
+    return t('une étape du projet')
+  }
+
+  return stage ? t('l’étape {stage}', { stage }) : `project/${row.name}/main`
+}
+
+// Where the branch of a project, project/<name>/main, or one of its stages, comes back in one of its repositories, on
+// GitHub: the pull request that merges it into a long-lived branch (mergeRequestsOf() of domain/projects.js), merged,
+// still open or closed without a merge; else, without any, the pull requests of the project in that repository. Its
+// state gives its color: green once merged, red when closed, grey otherwise.
+/**
+ * @param {{ name: string, stages?: unknown[], mergeRequests: Record<string, { number: number, state: 'merged' | 'open' | 'closed' }> }} row
  * @param {string} repo
+ * @param {string} [branch] what it merges, in its title (mergedBranch())
  * @returns {{ path: string, state: 'merged' | 'open' | 'closed' | 'none', title: string }}
  */
-export function projectMergeOf(row, repo) {
-  const branch = `project/${row.name}/main`
+export function projectMergeOf(row, repo, branch = mergedBranch(row)) {
   const request = row.mergeRequests[repo]
   if (!request) {
-    const query = encodeURIComponent(`is:pr head:${branch} OR base:${branch}`)
+    const own = `project/${row.name}/main`
+    const query = encodeURIComponent(`is:pr head:${own} OR base:${own}`)
 
-    return { path: `${state.stats.org}/${encodeURIComponent(repo)}/pulls?q=${query}`, state: 'none', title: t('Pas de PR de merge de {branch} dans {repo} : ses PR sur GitHub', { branch, repo }) }
+    return { path: `${state.stats.org}/${encodeURIComponent(repo)}/pulls?q=${query}`, state: 'none', title: t('Pas de PR de merge de {branch} dans {repo} : ses PR sur GitHub', { branch: own, repo }) }
   }
   const titles = {
     merged: t('La PR qui merge {branch} dans {repo}, mergée', { branch, repo }),

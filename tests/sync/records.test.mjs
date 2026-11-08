@@ -204,6 +204,8 @@ describe('the project of a record', () => {
     outside: pullRequest({ number: 45, head: 'feature/menu', base: 'develop' }),
     abandoned: pullRequest({ number: 46, head: 'project/paper-kite/old-idea', base: 'project/paper-kite/main', state: 'CLOSED', closedAt: '2026-03-06T17:00:00Z' }),
     closedOutside: pullRequest({ number: 47, head: 'feature/old-menu', base: 'develop', state: 'CLOSED', closedAt: '2026-03-06T17:00:00Z' }),
+    staged: pullRequest({ number: 48, head: 'feature/cart-v2', base: 'project/paper-kite-2/main' }),
+    stagedMerge: pullRequest({ number: 49, head: 'project/paper-kite-2/main', base: 'develop', mergedAt: '2026-04-09T10:00:00Z' }),
   }
   const index = deliveryIndex(Object.values(PULL_REQUESTS))
   const projects = projectIndex(Object.values(PULL_REQUESTS))
@@ -228,6 +230,15 @@ describe('the project of a record', () => {
     assert.equal('project' in recordOf('outside'), false)
     // Without the index of the projects, none at all.
     assert.equal('project' in toPeriodRecord(PULL_REQUESTS.feature, index), false)
+  })
+
+  test('a pull request of a stage carries its project and its stage, never its branch', () => {
+    const staged = recordOf('staged')
+    assert.deepEqual([staged.project, staged.stage], ['paper-kite', '2'])
+    const merge = recordOf('stagedMerge')
+    assert.deepEqual([merge.kind, merge.project, merge.stage, merge.projectMerge], ['integration', 'paper-kite', '2', true])
+    assert.equal('stage' in recordOf('feature'), false)
+    assert.equal(JSON.stringify(staged).includes('project/'), false)
   })
 
   test('a pull request of a project closed without a merge says when, the others do not', () => {

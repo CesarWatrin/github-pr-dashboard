@@ -83,9 +83,11 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
 - **Projets** : les projets menés sur une branche `project/<nom>/main`, d'où partent leurs branches et vers laquelle
   vont leurs PR (empilées ou non), puis mergée dans une branche principale. Un projet du même nom dans plusieurs dépôts
-  n'en fait qu'un, détaillé par dépôt ; un nom repris une fois son projet fini (toutes ses PR mergées ou fermées, rien
-  depuis 90 jours) en fait un autre, nommé avec son mois de début ; une branche de projet qui ne porte qu'une PR de code
-  (une erreur, un essai) n'en est pas un. En tête, les projets en cours, ceux livrés sur la période, leur durée médiane et
+  n'en fait qu'un, détaillé par dépôt ; un gros projet mené par étapes, chacune sur sa branche et livrée à part
+  (`project/<nom>-2-1/main`, `project/<nom>-step-3/main`, `project/<nom>/main-1.1`), n'en fait qu'un aussi, livré quand
+  chaque étape l'est, et sa fiche retrace chaque étape (dates, statut, PR de code, PR de merge) ; un nom repris une fois
+  son projet fini (toutes ses PR mergées ou fermées, rien depuis 90 jours) en fait un autre, nommé avec son mois de
+  début ; une branche de projet qui ne porte qu'une PR de code (une erreur, un essai) n'en est pas un. En tête, les projets en cours, ceux livrés sur la période, leur durée médiane et
   leur délai d'intégration médian (de la dernière PR mergée dans la branche du projet au merge de celle-ci) ; puis un
   calendrier, une barre par projet de sa première PR à sa livraison ou à sa dernière activité, dans la couleur de son
   statut (en cours, livré, à l'arrêt après 30 jours sans activité, abandonné quand toutes les PR qui mergent sa branche ont
@@ -302,8 +304,11 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   merges, taux, délais et lignes portent sur les PR de code.
 - Le projet d'une PR de code se déduit des branches que le snapshot garde déjà (`scripts/sync/projects.mjs`) : elle
   vise `project/<nom>/main` ou une branche nommée `project/<nom>/…`, ou la branche d'une autre PR du projet dans le
-  même dépôt, sinon sa propre branche est nommée ainsi. Seul le nom du projet est publié, jamais les branches, avec,
-  pour une PR de projet fermée sans merge, le moment où elle l'a été.
+  même dépôt, sinon sa propre branche est nommée ainsi. Son étape, pour un projet mené par étapes, est celle de la
+  branche où son code arrive : `project/<nom>-2-1/main` l'étape 2.1, `project/<nom>/main-1.1` (une variante de `main`
+  mergée dans une branche principale) l'étape 1.1, quand une branche `project/<nom>/…` existe ou qu'au moins deux
+  étapes partagent ce nom. Seuls le nom du projet et son étape sont publiés, jamais les branches, avec, pour une PR de
+  projet fermée sans merge, le moment où elle l'a été.
 - L'AC d'une PR de code se déduit de même (`scripts/sync/acs.mjs`) : sa branche `feature/<nom>` ou `feat/<nom>` vise
   `develop`, ou elle est empilée sur une telle branche. La branche de l'AC est publiée, pour la nommer et y mener.
 

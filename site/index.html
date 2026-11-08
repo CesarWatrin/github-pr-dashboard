@@ -1540,7 +1540,12 @@
                   profondeur), ou, à défaut, quand sa propre branche est nommée <code>project/&lt;nom&gt;/…</code>. Une
                   branche principale n’appartient jamais à un projet ; <code>project/&lt;nom&gt;</code> seul ou
                   <code>projects/…</code> ne comptent pas. Un projet du même nom dans plusieurs dépôts est un seul projet,
-                  détaillé par dépôt. Un nom repris une fois son projet fini, toutes ses PR mergées ou fermées et rien
+                  détaillé par dépôt. Un gros projet peut avancer par étapes, chacune sur sa branche et livrée à part :
+                  <code>project/&lt;nom&gt;-2-1/main</code>, <code>project/&lt;nom&gt;-step-3/main</code> ou
+                  <code>project/&lt;nom&gt;/main-1.1</code> (une variante de <code>main</code> mergée dans une branche
+                  principale). Ce sont les étapes 2.1, 3 et 1.1 d’un seul projet, <code>&lt;nom&gt;</code>, quand une branche
+                  porte ce nom ou qu’au moins deux étapes le partagent ; une PR est de l’étape de la branche où son code
+                  arrive. Sa fiche retrace chaque étape : ses dates, son statut, ses PR de code et ses PR de merge. Un nom repris une fois son projet fini, toutes ses PR mergées ou fermées et rien
                   de fait dessus depuis 90 jours, fait un autre projet : chacun a ses dates, ses chiffres et sa fiche, et
                   son nom porte alors le mois où il a commencé. Seules les PR de code des personnes et les merges de la
                   branche du projet dans une branche principale y comptent, et il en faut au moins deux de code : une
@@ -1554,7 +1559,8 @@
                   <strong>livré</strong> quand sa branche a été mergée et qu’aucune PR du projet n’a été ouverte depuis le
                   dernier merge (une PR ouverte après le remet au travail) ; <strong>abandonné</strong> quand toutes les PR qui mergent
                   sa branche ont été fermées sans merge et qu’aucune PR du projet n’est ouverte ; sinon <strong>en cours</strong> s’il a bougé
-                  dans les 30 derniers jours, <strong>à l’arrêt</strong> au-delà, à la dernière synchro. Sa durée, au
+                  dans les 30 derniers jours, <strong>à l’arrêt</strong> au-delà, à la dernière synchro. Un projet en étapes est livré quand chacune l’est, ou a été abandonnée, et qu’aucune PR du projet
+                  n’a été ouverte depuis la dernière livraison ; abandonné quand toutes l’ont été. Sa durée, au
                   calendrier, va de son début à sa livraison, ou à sa dernière activité. Le délai d’intégration compte
                   les heures ouvrées de la dernière PR de code mergée avant le dernier merge de sa branche jusqu’à ce
                   merge. Les autres chiffres suivent la période, la squad et les dépôts choisis : ses PR de code ouvertes

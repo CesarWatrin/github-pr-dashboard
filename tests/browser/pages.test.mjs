@@ -197,6 +197,13 @@ for (const language of ['fr', 'en']) {
       await noteFrench('project dialog of a name taken up again', '[data-person-dialog]')
       await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
 
+      // A project in stages: one card, and its stages in its dialog, each with the pull request of its merge.
+      await page.evaluate(`[...document.querySelectorAll('[data-project-cards] .project-card-head')].find((head) => head.textContent.startsWith('green-lark')).click()`)
+      assert.equal(await page.evaluate(`document.querySelectorAll('[data-person-dialog] .project-stage').length`), 2)
+      assert.ok(await page.evaluate(`document.querySelectorAll('[data-person-dialog] .project-stage-merges .is-merged').length >= 2`))
+      await noteFrench('project dialog of a project in stages', '[data-person-dialog]')
+      await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
+
       // The statuses picked: the stalled projects only, on the cards, the timeline and the table, and the filter says so.
       const statuses = (selector) => page.evaluate(`[...document.querySelectorAll('${selector} .project-status')].map((tag) => tag.className.split('is-')[1])`)
       const toggle = (status) => page.evaluate(`document.querySelector('[data-status-filter] input[data-status="${status}"]').click()`)

@@ -96,8 +96,8 @@ function later(random, after, hours) {
 // Made-up projects, as the sync tells them from their branches (project/<name>/main, the feature branches that target
 // it, the pull requests stacked on those): one in two repositories, merged into develop twice and delivered; one
 // delivered lately; one under way, a pull request still open and a draft; one left aside; the name of the first taken up
-// again months after it was delivered, another project; one given up, the merge of its branch closed. A generator of their own, so that the rest of the stats stays
-// the same.
+// again months after it was delivered, another project; one given up, the merge of its branch closed; one in two
+// stages, each merged on its own. A generator of their own, so that the rest of the stats stays the same.
 const PROJECTS = [
   { name: 'blue-falcon', repos: ['web-shop', 'core-api'], people: ['ada-l', 'cleo-m', 'ben-k', 'eli-p'], from: 430, to: 262, every: 6, merges: [300, 255] },
   { name: 'red-heron', repos: ['billing'], people: ['gus-t', 'ben-k'], from: 80, to: 24, every: 7, merges: [20] },
@@ -106,6 +106,9 @@ const PROJECTS = [
   { name: 'blue-falcon', repos: ['web-shop'], people: ['gus-t', 'hana-v'], from: 60, to: 30, every: 9, merges: [] },
   // Abandoned: the merge of its branch closed without a merge, nothing of it still open.
   { name: 'grey-wren', repos: ['core-api'], people: ['ivo-w', 'dev-o'], from: 160, to: 100, every: 8, merges: [], closedMerges: [95] },
+  // In stages, as project/green-lark-1/main and project/green-lark-2/main: one project, each stage delivered on its own.
+  { name: 'green-lark', stage: '1', repos: ['web-shop', 'core-api'], people: ['ada-l', 'gus-t'], from: 140, to: 90, every: 7, merges: [85] },
+  { name: 'green-lark', stage: '2', repos: ['web-shop'], people: ['ben-k', 'fay-r'], from: 100, to: 50, every: 8, merges: [45] },
 ]
 
 function addProjects({ now, add, ago, seed }) {
@@ -125,6 +128,7 @@ function addProjects({ now, add, ago, seed }) {
         author,
         kind: 'code',
         project: project.name,
+        ...(project.stage && { stage: project.stage }),
         createdAt: toMinutes(time),
         mergedAt: toMinutes(merged),
         lines,
@@ -147,6 +151,7 @@ function addProjects({ now, add, ago, seed }) {
         author,
         kind: 'integration',
         project: project.name,
+        ...(project.stage && { stage: project.stage }),
         projectMerge: true,
         createdAt: ago(day + 1),
         mergedAt: ago(day),
@@ -445,7 +450,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
       Object.keys(PEOPLE).map((login) => [login, Math.min(...pullRequests.filter((pr) => pr.author === login).map((pr) => pr.createdAt))]),
     ),
     monthly,
-    monthlyRevision: 3,
+    monthlyRevision: 4,
     ci,
     ciStart: new Date(ciStart).toISOString(),
     events: events.slice(0, 50),

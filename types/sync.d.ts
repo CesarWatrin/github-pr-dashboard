@@ -194,9 +194,16 @@ interface DeliveryIndex {
   branchMerges: Map<string, string[]>
 }
 
-// Per repository:branch, the pull requests opened from it, newest first, and the project of each branch once worked
-// out (null for none).
+// A project, and the stage of it (null for none): of a branch, a name of the project branches, a pull request.
+interface ProjectStage {
+  project: string
+  stage: string | null
+}
+
+// Per repository:branch, the pull requests opened from it, newest first; the project and stage of each name of the
+// project branches; and the project and stage of each branch once worked out (null for none).
 interface ProjectIndex {
   fromBranch: Map<string, Pick<SnapshotPullRequest, 'repo' | 'head' | 'base' | 'createdAt'>[]>
-  branches: Map<string, string | null>
+  names: Map<string, ProjectStage>
+  branches: Map<string, ProjectStage | null>
 }

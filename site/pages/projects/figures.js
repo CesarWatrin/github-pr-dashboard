@@ -53,7 +53,7 @@ export const PROJECT_FIGURES = {
     label: t('Mergé le'),
     value: lastMergeOf,
     format: formatDay,
-    hint: t('Le dernier merge de sa branche project/…/main dans une branche principale (develop, main, master, staging).'),
+    hint: t('Le dernier merge de sa branche project/…/main, ou de l’une de ses étapes, dans une branche principale (develop, main, master, staging).'),
   },
   lastActivity: {
     key: 'lastActivity',
