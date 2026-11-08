@@ -42,6 +42,8 @@ interface PullRequestRecord {
   draft?: boolean
   codeOwners?: (string | null)[] | null
   requestedReviewers?: string[]
+  project?: string
+  projectMerge?: boolean
   title?: string
   checks?: CheckState | null
 }

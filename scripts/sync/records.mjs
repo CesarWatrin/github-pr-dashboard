@@ -2,6 +2,7 @@
 // kind, its deployment, when it reached production.
 
 import { isBot } from './people.mjs'
+import { isProjectMerge, LONG_LIVED_BRANCHES, projectOf } from './projects.mjs'
 
 // The pull requests the page opens the timeline of carry their title and the state of their checks: the open ones, and
 // those with any activity over the last DETAILS_DAYS, which covers the 7-day feed and the merges without approval of
@@ -17,7 +18,7 @@ const INTEGRATION_BASES = ['develop', 'staging']
 // it brings in (project/<name>/develop-into-main, project/<name>-into-main, project/<name>/sync-develop…), brings another
 // branch into its project. A sync alone may be a feature, such as the sync of some data; and elsewhere than on project
 // branches, a branch with merge in its name may well be a feature too.
-const LONG_LIVED = '(develop|main|master|staging)'
+const LONG_LIVED = `(${LONG_LIVED_BRANCHES.join('|')})`
 const PROJECT_MERGE = new RegExp(
   `^project/(.*[/_-])?(merge|${LONG_LIVED}-into|into-${LONG_LIVED}|sync-${LONG_LIVED})([/_-]|$)`,
   'i',
@@ -159,15 +160,16 @@ function hasDetails(pr, detailsSince) {
 }
 
 // What the page needs of a pull request to compute the stats of any range, see site/domain/period.js, and to show its
-// timeline (detailsSince, see hasDetails()). Bot pull requests are only kept when they deploy or update a dependency
-// (Dependabot).
+// timeline (detailsSince, see hasDetails()), and its project (projects, see projects.mjs). Bot pull requests are only
+// kept when they deploy or update a dependency (Dependabot).
 /**
  * @param {SnapshotPullRequest} pr
  * @param {DeliveryIndex} index
  * @param {string | null} [detailsSince]
+ * @param {ProjectIndex | null} [projects]
  * @returns {PullRequestRecord | null}
  */
-export function toPeriodRecord(pr, index, detailsSince = null) {
+export function toPeriodRecord(pr, index, detailsSince = null, projects = null) {
   const kind = classify(pr)
   const production = kind === 'release' && RELEASE_BASES.includes(pr.base)
   const bot = isBot(pr.author)
@@ -180,6 +182,10 @@ export function toPeriodRecord(pr, index, detailsSince = null) {
   }
   // Only an open pull request ready for review waits for the people asked to review it.
   const requestedReviewers = pr.state === 'OPEN' && !pr.draft ? (pr.reviewRequests ?? []).filter((login) => !isBot(login)) : []
+  // The projects page only reads the code pull requests of people, and the merges of a project branch into a long-lived
+  // one: the others carry no project.
+  const projectMerge = isProjectMerge(pr)
+  const project = projects && !bot && (kind === 'code' || projectMerge) ? projectOf(pr, projects) : null
 
   return {
     repo: pr.repo,
@@ -210,6 +216,10 @@ export function toPeriodRecord(pr, index, detailsSince = null) {
     // An open pull request GitHub does not let merge yet, while code owners are still asked to review it.
     ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && (pr.codeOwnerRequests?.length ?? 0) > 0 && { codeOwners: pr.codeOwnerRequests }),
     ...(requestedReviewers.length > 0 && { requestedReviewers }),
+    // The project of a code pull request, by its name only: the branches stay unpublished. The merge of the project
+    // branch into a long-lived one says so: when it is merged, the project is in the code of the repository.
+    ...(project && { project }),
+    ...(project && projectMerge && { projectMerge: true }),
     // Only for the timelines the page opens: the title, and the state of the checks of the last commit (null without
     // any), read again at each sync for an open pull request.
     ...(hasDetails(pr, detailsSince) && { title: pr.title, checks: pr.checks ?? null }),
