@@ -38,29 +38,49 @@
   gap: 6px;
 }
 
-/* A repository of a project, then the GitHub mark of the branch of the project there, which leads to it on GitHub. */
+/* A repository of a project, then the GitHub mark of the pull request that merges the branch of the project there, in
+   the color of its state: green once merged, red when closed without a merge, grey otherwise. */
 .project-repo {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
-.project-branch-link {
+.project-merge-link {
   position: relative;
   z-index: 1;
   display: inline-flex;
   color: var(--text-secondary);
 }
 
-.project-branch-link:hover {
+.project-merge-link:hover {
   color: var(--text-primary);
 }
 
-.project-branch-link svg {
+.project-merge-link svg {
   fill: currentColor;
 }
 
-/* The branch of the project in each of its repositories, in its dialog: a GitHub pill per repository. */
+.project-merge-link.is-merged,
+.project-branches .is-merged {
+  color: var(--diff-added);
+}
+
+.project-merge-link.is-closed,
+.project-branches .is-closed {
+  color: var(--diff-deleted);
+}
+
+.project-branches .is-merged {
+  border-color: color-mix(in srgb, var(--diff-added) 45%, var(--border));
+}
+
+.project-branches .is-closed {
+  border-color: color-mix(in srgb, var(--diff-deleted) 45%, var(--border));
+}
+
+/* The pull request that merges the branch of the project in each of its repositories, in its dialog: a GitHub pill per
+   repository, in the color of its state. */
 .project-branches {
   display: flex;
   flex-wrap: wrap;

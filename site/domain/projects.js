@@ -94,10 +94,38 @@ export function projectsOf(records) {
   })
 }
 
+/** @typedef {'merged' | 'open' | 'closed'} MergeState */
+
+// For each repository of a project, the pull request that brings its branch into a long-lived branch which tells the
+// most: one still open (the latest), else one merged (the latest), else one closed without a merge (the latest); and
+// where it stands.
+/**
+ * @param {PullRequestRecord[]} records
+ * @returns {Record<string, { number: number, state: MergeState }>}
+ */
+export function mergeRequestsOf(records) {
+  /** @type {MergeState[]} */
+  const precedence = ['open', 'merged', 'closed']
+  /** @type {Record<string, { number: number, state: MergeState, createdAt: number }>} */
+  const byRepo = {}
+  for (const pr of records.filter((other) => other.projectMerge)) {
+    /** @type {MergeState} */
+    const state = pr.mergedAt !== null ? 'merged' : pr.closed ? 'closed' : 'open'
+    const kept = byRepo[pr.repo]
+    const better = !kept || precedence.indexOf(state) < precedence.indexOf(kept.state) || (state === kept.state && pr.createdAt > kept.createdAt)
+    if (better) {
+      byRepo[pr.repo] = { number: pr.number, state, createdAt: pr.createdAt }
+    }
+  }
+
+  return Object.fromEntries(Object.entries(byRepo).map(([repo, { number, state }]) => [repo, { number, state }]))
+}
+
 /**
  * A project over the whole data, from all its records, times in minutes since the epoch. start: its first pull request
  * opened. merges: the pull requests that merged its branch into a long-lived branch, and when, oldest first; mergeOpen:
- * such a merge still waits. lastActivity: its latest pull request opened or merged, review or comment. deliveredAt: its last merge, when
+ * such a merge still waits; mergeRequests: per repository, the pull request of such a merge that tells the most
+ * (mergeRequestsOf()). lastActivity: its latest pull request opened or merged, review or comment. deliveredAt: its last merge, when
  * no pull request of the project was opened after it (one opened after brings it back to work). end: delivered, else
  * its last activity. status at now (milliseconds): delivered, else stalled after STALLED_AFTER_DAYS without activity,
  * else ongoing. days: from its start to its end, on the calendar. integrationHours: the working hours from the last
@@ -132,6 +160,7 @@ export function projectLife(records, now) {
     lastActivity,
     merges,
     mergeOpen: records.some((pr) => pr.projectMerge && pr.mergedAt === null && !pr.closed),
+    mergeRequests: mergeRequestsOf(records),
     deliveredAt,
     status,
     days: (end - start) / DAY_MINUTES,

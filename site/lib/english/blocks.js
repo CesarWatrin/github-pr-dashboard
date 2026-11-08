@@ -479,7 +479,6 @@ export const BLOCKS = {
   'Ses projets': 'Their projects',
   'Projets, PR de code sur la période': 'Projects, code PRs over the period',
   'Projets, PR de code dans ce dépôt sur la période': 'Projects, code PRs in this repository over the period',
-  'La branche project/{name}/main de {repo} sur GitHub': 'The project/{name}/main branch of {repo} on GitHub',
   'AC démarrées': 'Improvements started',
   'AC livrées': 'Improvements delivered',
   'Délai médian des AC jusqu’au merge': 'Median time to merge of improvements',
@@ -518,4 +517,8 @@ export const BLOCKS = {
   'Améliorations continues livrées sur la période, celles des PR du dépôt.': 'Continuous improvements delivered over the period, those of the PRs of the repository.',
   'Part des PR de code du dépôt ouvertes pour des améliorations continues.': 'Share of the code PRs of the repository opened for continuous improvements.',
   'Part AC': 'Improvement share',
+  'Pas de PR de merge de {branch} dans {repo} : ses PR sur GitHub': 'No PR merging {branch} in {repo}: its PRs on GitHub',
+  'La PR qui merge {branch} dans {repo}, mergée': 'The PR that merges {branch} in {repo}, merged',
+  'La PR qui merge {branch} dans {repo}, encore ouverte': 'The PR that merges {branch} in {repo}, still open',
+  'La PR qui merge {branch} dans {repo}, fermée sans merge': 'The PR that merges {branch} in {repo}, closed without a merge',
 }

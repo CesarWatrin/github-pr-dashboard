@@ -86,7 +86,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   calendrier, une barre par projet de sa première PR à sa livraison ou à sa dernière activité, dans la couleur de son
   statut (en cours, livré, à l'arrêt après 30 jours sans activité), un point à chaque merge de sa branche ; une carte
   par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts, chacun avec un lien
-  vers la branche `project/<nom>/main` sur GitHub) qui ouvre sa fiche ; et
+  vers la PR qui y merge la branche `project/<nom>/main`, en vert une fois mergée, en rouge si elle a été fermée, en gris
+  sinon) qui ouvre sa fiche ; et
   un tableau pour les comparer, trié au clic. Un filtre de statut, à choix multiple, restreint toute la page aux projets en
   cours, à l'arrêt ou livrés. La vie
   d'un projet vaut quels que soient la période, la squad et les dépôts choisis ; ses chiffres les suivent. La recherche

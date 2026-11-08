@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { MIN_PROJECT_CODE, projectLife, projectRows, projectsOf, projectSummary, REUSED_AFTER_DAYS, spanInRange } from '../../site/domain/projects.js'
+import { mergeRequestsOf, MIN_PROJECT_CODE, projectLife, projectRows, projectsOf, projectSummary, REUSED_AFTER_DAYS, spanInRange } from '../../site/domain/projects.js'
 import { projectSeries } from '../../site/domain/projects/series.js'
 import { DAY_MS, parisMidnight } from '../../site/domain/time.js'
 import { at, record } from './records.mjs'
@@ -378,6 +378,28 @@ describe('projectSeries', () => {
   test('week by week, a bucket the range does not cover whole is partial', () => {
     const points = projectSeries(projectRows(ALL, SPRING, { now: NOW }), { ...SPRING, start: parisMidnight('2026-03-04') })
     assert.deepEqual([points[0].key, points[0].partial, points[0].active, points.at(-1).partial], ['2026-03-02', true, 1, false])
+  })
+})
+
+describe('mergeRequestsOf', () => {
+  const merge = (fields) => record({ kind: 'integration', project: 'paper-kite', projectMerge: true, author: 'alice', ...fields })
+
+  test('per repository, the merge of the project branch still open, else merged, else closed, the latest of each', () => {
+    assert.deepEqual(
+      mergeRequestsOf([
+        // web: merged, then a later merge still open, which tells more.
+        merge({ repo: 'web', number: 1, createdAt: at('2026-03-02T09:00:00Z'), mergedAt: at('2026-03-03T09:00:00Z') }),
+        merge({ repo: 'web', number: 2, createdAt: at('2026-04-02T09:00:00Z') }),
+        // api: closed, then merged: merged.
+        merge({ repo: 'api', number: 3, createdAt: at('2026-03-02T09:00:00Z'), closed: true }),
+        merge({ repo: 'api', number: 4, createdAt: at('2026-03-09T09:00:00Z'), mergedAt: at('2026-03-10T09:00:00Z') }),
+        // mobile: closed only.
+        merge({ repo: 'mobile', number: 5, createdAt: at('2026-03-02T09:00:00Z'), closed: true }),
+        // Code of the project, no merge of its branch.
+        record({ repo: 'admin', number: 6, author: 'bob', project: 'paper-kite', createdAt: at('2026-03-02T09:00:00Z') }),
+      ]),
+      { web: { number: 2, state: 'open' }, api: { number: 4, state: 'merged' }, mobile: { number: 5, state: 'closed' } },
+    )
   })
 })
 
