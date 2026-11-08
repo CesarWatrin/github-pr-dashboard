@@ -51,6 +51,7 @@
     <link rel="stylesheet" href="styles/pages/repositories.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/squads.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/projects.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/acs.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/force-graph.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/cartography.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/bus-factor.css?v=__BUILD__" />
@@ -67,7 +68,9 @@
     <script type="importmap">
     {
       "imports": {
+        "./domain/acs.js": "./domain/acs.js?v=__BUILD__",
         "./domain/analysis.js": "./domain/analysis.js?v=__BUILD__",
+        "./domain/analysis/ac-rules.js": "./domain/analysis/ac-rules.js?v=__BUILD__",
         "./domain/analysis/ci-rules.js": "./domain/analysis/ci-rules.js?v=__BUILD__",
         "./domain/analysis/drift-rules.js": "./domain/analysis/drift-rules.js?v=__BUILD__",
         "./domain/analysis/measures.js": "./domain/analysis/measures.js?v=__BUILD__",
@@ -106,6 +109,7 @@
         "./lib/format.js": "./lib/format.js?v=__BUILD__",
         "./lib/i18n.js": "./lib/i18n.js?v=__BUILD__",
         "./lib/math.js": "./lib/math.js?v=__BUILD__",
+        "./model/acs.js": "./model/acs.js?v=__BUILD__",
         "./model/badges.js": "./model/badges.js?v=__BUILD__",
         "./model/cartography.js": "./model/cartography.js?v=__BUILD__",
         "./model/contributors.js": "./model/contributors.js?v=__BUILD__",
@@ -123,6 +127,8 @@
         "./model/squads.js": "./model/squads.js?v=__BUILD__",
         "./model/state.js": "./model/state.js?v=__BUILD__",
         "./model/team.js": "./model/team.js?v=__BUILD__",
+        "./pages/acs.js": "./pages/acs.js?v=__BUILD__",
+        "./pages/analysis/ac-findings.js": "./pages/analysis/ac-findings.js?v=__BUILD__",
         "./pages/analysis/analysis.js": "./pages/analysis/analysis.js?v=__BUILD__",
         "./pages/analysis/evidence.js": "./pages/analysis/evidence.js?v=__BUILD__",
         "./pages/analysis/findings.js": "./pages/analysis/findings.js?v=__BUILD__",
@@ -197,12 +203,15 @@
         "./ui/tiles.js": "./ui/tiles.js?v=__BUILD__",
         "./ui/title.js": "./ui/title.js?v=__BUILD__",
         "./ui/tooltip.js": "./ui/tooltip.js?v=__BUILD__",
-        "./ui/translate.js": "./ui/translate.js?v=__BUILD__"
+        "./ui/translate.js": "./ui/translate.js?v=__BUILD__",
+        "./ui/work-line.js": "./ui/work-line.js?v=__BUILD__"
       }
     }
     </script>
     <link rel="modulepreload" href="app.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/acs.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/ac-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/ci-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/drift-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/measures.js?v=__BUILD__" />
@@ -236,6 +245,7 @@
     <link rel="modulepreload" href="lib/format.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/i18n.js?v=__BUILD__" />
     <link rel="modulepreload" href="lib/math.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/acs.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/badges.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/cartography.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/contributors.js?v=__BUILD__" />
@@ -253,6 +263,8 @@
     <link rel="modulepreload" href="model/squads.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/state.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/team.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/acs.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/analysis/ac-findings.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/analysis/analysis.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/analysis/evidence.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/analysis/findings.js?v=__BUILD__" />
@@ -328,6 +340,7 @@
     <link rel="modulepreload" href="ui/title.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/tooltip.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/translate.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/work-line.js?v=__BUILD__" />
     <!-- /modules -->
     <script type="module" src="app.js?v=__BUILD__"></script>
   </head>
@@ -433,6 +446,12 @@
               <path d="M4.5 5v6M11.5 6.5c0 2.5-1.5 3-4 3.3-1.6.2-3 .7-3 2.2" />
             </svg>
             Projets
+          </a>
+          <a class="nav-link" href="#/ac" data-route-link="acs">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M2.5 13.5 8 8M9.5 2.5a3 3 0 0 0 4 4l-2 2a3 3 0 0 1-4-4Z" /><path d="M10.5 10.5 13.5 13.5" />
+            </svg>
+            Améliorations continues
           </a>
           <a class="nav-link" href="#/cycle" data-route-link="cycle">
             <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8.5" r="5.5" /><path d="M8 5.5v3l2 1.5M6.5 1.5h3" /></svg>
@@ -620,6 +639,8 @@
               <div class="tiles" data-totals-review></div>
               <h3 class="tile-group" data-totals-projects-title>Projets</h3>
               <div class="tiles" data-totals-projects></div>
+              <h3 class="tile-group" data-totals-acs-title>Améliorations continues</h3>
+              <div class="tiles" data-totals-acs></div>
             </section>
 
             <div class="grid-2">
@@ -657,6 +678,16 @@
                 <ol class="feed" data-overview-projects-list></ol>
               </section>
             </div>
+
+            <section class="card" aria-labelledby="acs-overview-chart-title" data-overview-acs>
+              <h2 id="acs-overview-chart-title" data-acs-overview-chart-title>AC</h2>
+              <div class="legend" data-acs-overview-chart-legend></div>
+              <div class="chart" data-acs-overview-chart></div>
+              <details class="chart-data">
+                <summary>Voir les données du graphique</summary>
+                <div class="table-wrap" data-acs-overview-chart-table></div>
+              </details>
+            </section>
 
             <section class="card" aria-labelledby="technologies-title">
               <div class="card-toolbar">
@@ -1183,7 +1214,8 @@
               <p class="card-note">
                 Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les
                 lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR
-                ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, et la Fusée celles des projets. Un mois reste acquis une semaine
+                ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, la Fusée celles des
+                projets et l’Artisan celles des améliorations continues. Un mois reste acquis une semaine
                 après sa fin, quelles que soient la période et les dépôts choisis ailleurs.
                 Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau
                 seulement.
@@ -1278,6 +1310,66 @@
           </div>
 
           <!-- Projets -->
+          <!-- Améliorations continues -->
+          <div class="route" data-route="acs" hidden>
+            <section class="card" aria-labelledby="acs-empty-title" data-acs-empty hidden>
+              <h2 id="acs-empty-title">Aucune amélioration continue</h2>
+              <p class="card-note">
+                Une amélioration continue se développe sur une branche <code>feature/&lt;nom&gt;</code> ou
+                <code>feat/&lt;nom&gt;</code> partie de <code>develop</code>, et sa PR y revient. Aucune dans les données
+                synchronisées.
+              </p>
+            </section>
+
+            <div class="acs-content" data-acs-content>
+              <section class="card" aria-labelledby="acs-title">
+                <h2 id="acs-title" data-acs-title>Sur la période</h2>
+                <h3 class="tile-group">Rythme</h3>
+                <div class="tiles" data-acs-tiles></div>
+                <h3 class="tile-group">Délais et taille</h3>
+                <div class="tiles" data-acs-delays></div>
+                <p class="card-note">
+                  Une AC est démarrée à sa première PR, livrée quand toutes ses PR sont mergées dans <code>develop</code> ou
+                  fermées, en prod quand celles mergées y sont arrivées. Les délais comptent les heures ouvrées depuis sa
+                  première PR.
+                </p>
+              </section>
+
+              <section class="card" aria-labelledby="acs-chart-title">
+                <h2 id="acs-chart-title" data-acs-chart-title>AC</h2>
+                <div class="legend" data-acs-chart-legend></div>
+                <div class="chart" data-acs-chart></div>
+                <details class="chart-data">
+                  <summary>Voir les données du graphique</summary>
+                  <div class="table-wrap" data-acs-chart-table></div>
+                </details>
+              </section>
+
+              <div class="grid-2 grid-even">
+                <section class="card" aria-labelledby="acs-repos-title">
+                  <h2 id="acs-repos-title">Par dépôt</h2>
+                  <p class="card-sub">AC livrées sur la période, les dix dépôts qui en comptent le plus</p>
+                  <div class="bar-chart" data-acs-repos></div>
+                </section>
+                <section class="card" aria-labelledby="acs-people-title">
+                  <h2 id="acs-people-title">Par personne</h2>
+                  <p class="card-sub">AC livrées sur la période, les dix personnes de l’équipe qui en comptent le plus</p>
+                  <div class="bar-chart" data-acs-people></div>
+                </section>
+                <section class="card" aria-labelledby="acs-squads-title" data-acs-squads-card>
+                  <h2 id="acs-squads-title">Par squad</h2>
+                  <p class="card-sub">AC livrées sur la période, celles des PR de ses membres</p>
+                  <div class="bar-chart" data-acs-squads></div>
+                </section>
+                <section class="card" aria-labelledby="acs-sizes-title">
+                  <h2 id="acs-sizes-title">Par taille</h2>
+                  <p class="card-sub" data-acs-sizes-sub></p>
+                  <div class="bar-chart" data-acs-sizes></div>
+                </section>
+              </div>
+            </div>
+          </div>
+
           <div class="route" data-route="projects" hidden>
             <section class="card" aria-labelledby="projects-empty-title" data-projects-empty hidden>
               <h2 id="projects-empty-title">Aucun projet</h2>
@@ -1478,6 +1570,19 @@
                   ceux qui y ont des PR de code ; la frise d’une PR, son projet. Le bilan du mois, les tendances,
                   l’analyse et le badge Fusée les comptent aussi.
                 </dd>
+                <dt>Améliorations continues</dt>
+                <dd>
+                  Une amélioration continue (AC) se développe sur une branche <code>feature/&lt;nom&gt;</code> ou
+                  <code>feat/&lt;nom&gt;</code> partie de <code>develop</code> : sa PR revient dans <code>develop</code>,
+                  parfois avec des PR empilées sur sa branche. Une branche de ce nom qui va ailleurs (une branche de
+                  projet, <code>master</code>) n’en est pas une, ni une PR de projet. Une AC du même nom dans plusieurs
+                  dépôts est une seule AC ; un nom repris plus de 30 jours après sa dernière PR en fait une autre. Elle
+                  démarre à sa première PR, est livrée quand toutes ses PR sont mergées ou fermées, l’une au moins mergée,
+                  abandonnée si aucune ne l’est, et en prod quand celles mergées y sont arrivées ; ses délais comptent les
+                  heures ouvrées depuis sa première PR. Trop nombreuses pour être montrées une à une, elles sont comptées :
+                  leur page, la vue d’ensemble, les fiches des personnes et des squads, le bilan du mois, les tendances et
+                  le badge Artisan.
+                </dd>
                 <dt>PR de code</dt>
                 <dd>
                   Toutes les PR sauf celles de release (<code>release/*</code>, release-please, <code>develop</code> vers
@@ -1580,8 +1685,9 @@
                 </dd>
                 <dt>Analyse</dt>
                 <dd>
-                  Douze règles fixes croisent les chiffres de la période ; chacune ne parle que sur au moins 20 PR (10 pour
-                  un dépôt, 30 exécutions pour un workflow, 3 projets ou 2 projets livrés pour les projets), et dit sinon
+                  Quatorze règles fixes croisent les chiffres de la période ; chacune ne parle que sur au moins 20 PR (10 pour
+                  un dépôt, 30 exécutions pour un workflow, 3 projets ou 2 projets livrés pour les projets, 10 AC
+                  livrées pour les AC), et dit sinon
                   qu’elle manque de données. Les délais sont ceux
                   des PR relues, en heures ouvrées. <strong>Taille</strong> : les PR de 500 lignes ou plus mettent au
                   moins deux fois plus de temps à être mergées que celles de moins de 100 lignes.
@@ -1597,7 +1703,9 @@
                   <strong>Projets à l’arrêt</strong> : un projet ou plus, parmi ceux dont la vie croise la période, est à
                   l’arrêt à la dernière synchro ; prioritaire dès la moitié d’entre eux. <strong>Livraison des
                   projets</strong> : les projets livrés sur la période ont attendu une semaine ouvrée ou plus en médiane
-                  entre leur dernière PR de code mergée et le dernier merge de leur branche.
+                  entre leur dernière PR de code mergée et le dernier merge de leur branche. <strong>AC qui traînent</strong> : les AC
+                  livrées sur la période ont mis deux jours ouvrés ou plus en médiane de leur première PR à leur merge.
+                  <strong>AC trop grosses</strong> : une AC livrée sur quatre ou plus change 500 lignes ou plus.
                   <strong>Tendance</strong> : la seconde moitié de la période face à la première, sa dernière semaine à
                   part (ses PR ne sont pas toutes relues ou mergées), sur au moins 50 PR mergées par moitié ; une médiane
                   bouge quand elle varie de moitié, une part de 5 points et d’un tiers. Un constat est prioritaire quand

@@ -5,6 +5,7 @@ import { openPullRequests } from '../../domain/open-pull-requests.js'
 import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { isCurrent, mePeople } from '../../model/people.js'
+import { squadAcs } from '../../model/acs.js'
 import { squadProjects } from '../../model/projects.js'
 import { requiredApprovals } from '../../model/pull-requests.js'
 import { periodRange } from '../../model/selection.js'
@@ -72,6 +73,14 @@ export const SQUAD_FIGURES = {
   },
   commentsPerPr: { key: 'commentsPerPr', label: t('Comm. / PR'), format: formatDecimal, hint: t('Commentaires et reviews « commentaire », par PR relue.') },
   hotfixShare: { key: 'hotfixShare', label: t('Hotfix'), format: formatShare, better: 'down', hint: t('Part des PR de code ouvertes depuis une branche hotfix.') },
+  hotfixes: { key: 'hotfixes', label: t('Hotfix ouverts'), hint: t('PR de code des membres ouvertes sur la période depuis une branche qui commence par hotfix.') },
+  hotfixMergeHours: {
+    key: 'hotfixMergeHours',
+    label: t('Hotfix mergés en'),
+    format: formatDuration,
+    better: 'down',
+    hint: t('Médiane, de la création au merge des hotfix de la squad, en heures ouvrées.'),
+  },
   reworkRate: {
     key: 'reworkRate',
     label: t('Reprise'),
@@ -91,6 +100,25 @@ export const SQUAD_FIGURES = {
     format: formatShare,
     hint: t('Part des PR de code de la squad ouvertes sur des projets.'),
   },
+  acsDelivered: {
+    key: 'acsDelivered',
+    label: t('AC livrées'),
+    value: (row) => row.acs?.delivered ?? null,
+    hint: t('Améliorations continues livrées sur la période, celles des PR des membres.'),
+  },
+  acTimeToMerge: {
+    key: 'acTimeToMerge',
+    label: t('AC mergées en'),
+    format: formatDuration,
+    value: (row) => row.acs?.medianTimeToMergeHours ?? null,
+    hint: t('Médiane, de la première PR d’une AC à sa livraison dans develop, en heures ouvrées.'),
+  },
+  acShare: {
+    key: 'acShare',
+    label: t('Part AC'),
+    format: formatShare,
+    hint: t('Part des PR de code de la squad ouvertes pour des améliorations continues.'),
+  },
   open: {
     key: 'open',
     label: t('En attente'),
@@ -109,7 +137,8 @@ const byRepoTotal = (rows, field) =>
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 
 // One squad over the period, or the whole organization ('*', without members): its figures (SQUAD_FIGURES), its members
-// by pull requests merged, who reads its code, its repositories, and the projects its members wrote code for.
+// by pull requests merged, who reads its code, its repositories, the projects its members wrote code for, and what their
+// AC and their hotfixes add up to.
 function squadRow(name, members, range, organization) {
   const records = members ? squadRecords({ name, members }) : state.stats.pullRequests
   const period = name === '*' ? organization : squadPeriod(name, records, range)
@@ -127,6 +156,7 @@ function squadRow(name, members, range, organization) {
   const writers = new Map(byRepoTotal(period.authors, 'merged'))
   const code = repoTotal(period.authors, 'code')
   const projects = members ? squadProjects({ name, members }) : []
+  const acs = members ? squadAcs({ name, members }) : null
 
   return {
     name,
@@ -151,6 +181,10 @@ function squadRow(name, members, range, organization) {
     open: openPullRequests(records, { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author)).length,
     projects,
     projectShare: members && code ? projects.reduce((total, share) => total + share.code, 0) / code : null,
+    acs,
+    acShare: acs && code ? acs.code / code : null,
+    hotfixes: period.tma.opened,
+    hotfixMergeHours: period.tma.medianTimeToMergeHours,
     writers: (members ?? []).map((login) => [login, writers.get(login) ?? 0]).sort((a, b) => b[1] - a[1]),
     readers,
     repos: [...repos].filter(([, code]) => code > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),

@@ -63,15 +63,15 @@ describe('monthlyActivity', () => {
 
   test('code pull requests and hotfixes count in the Paris month opened, their lines in that of the merge', () => {
     assert.deepEqual(Object.fromEntries(activity.get('ana')), {
-      '2026-03': { code: 1, hotfixes: 1, reviewed: 0, comments: 0, added: 0, deleted: 0, opened: 2, projects: 0 },
-      '2026-04': { code: 1, hotfixes: 0, reviewed: 0, comments: 0, added: 25, deleted: 15, opened: 1, projects: 0 },
+      '2026-03': { code: 1, hotfixes: 1, reviewed: 0, comments: 0, added: 0, deleted: 0, opened: 2, projects: 0, acs: 0 },
+      '2026-04': { code: 1, hotfixes: 0, reviewed: 0, comments: 0, added: 25, deleted: 15, opened: 1, projects: 0, acs: 0 },
     })
   })
 
   test('a pull request counts once a month for its reviewer, comments all count', () => {
     assert.deepEqual(Object.fromEntries(activity.get('ben')), {
-      '2026-03': { code: 0, hotfixes: 0, reviewed: 1, comments: 3, added: 0, deleted: 0, opened: 0, projects: 0 },
-      '2026-04': { code: 0, hotfixes: 0, reviewed: 1, comments: 1, added: 0, deleted: 0, opened: 0, projects: 0 },
+      '2026-03': { code: 0, hotfixes: 0, reviewed: 1, comments: 3, added: 0, deleted: 0, opened: 0, projects: 0, acs: 0 },
+      '2026-04': { code: 0, hotfixes: 0, reviewed: 1, comments: 1, added: 0, deleted: 0, opened: 0, projects: 0, acs: 0 },
     })
   })
 
@@ -89,6 +89,14 @@ describe('monthlyActivity', () => {
       record({ repo: 'web', number: 43, author: 'cleo', project: 'blue-falcon', createdAt: at('2026-03-10T09:00:00Z') }),
     ])
     assert.deepEqual([projects.get('cleo').get('2026-03').projects, projects.get('cleo').get('2026-03').code], [2, 3])
+  })
+
+  test('the code pull requests of an AC count apart', () => {
+    const acs = monthlyActivity([
+      record({ repo: 'web', number: 50, author: 'dan', ac: 'feature/csv-export', createdAt: at('2026-03-02T09:00:00Z') }),
+      record({ repo: 'web', number: 51, author: 'dan', createdAt: at('2026-03-03T09:00:00Z') }),
+    ])
+    assert.deepEqual([acs.get('dan').get('2026-03').acs, acs.get('dan').get('2026-03').code], [1, 2])
   })
 })
 

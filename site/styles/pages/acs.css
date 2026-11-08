@@ -1,0 +1,6 @@
+/* Améliorations continues: what the AC of the period add up to, their chart, then those delivered by repository,
+   person, squad and size, two by two. */
+.acs-content {
+  display: grid;
+  gap: 16px;
+}

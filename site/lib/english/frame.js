@@ -119,8 +119,8 @@ export const FRAME = {
   'Tableau d’honneur': 'Hall of fame',
   'Les badges de chaque personne de l’équipe : bronze pour un mois en tête, argent pour deux d’affilée, or pour trois ou plus':
     'The badges of each person of the team: bronze for a month on top, silver for two in a row, gold for three or more',
-  'Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, et la Fusée celles des projets. Un mois reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs. Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau seulement.':
-    'A badge goes to whoever did the most of the whole team over a whole month, ties included; lines added and deleted count in the month their PR was merged. The Shark counts every PR opened, branch merges included, releases aside; the other badges, code PRs only, and the Rocket those of projects. A month is settled a week after its end, whatever the period and repositories picked elsewhere. People who left count in the race: they show by name in this table only.',
+  'Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, la Fusée celles des projets et l’Artisan celles des améliorations continues. Un mois reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs. Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau seulement.':
+    'A badge goes to whoever did the most of the whole team over a whole month, ties included; lines added and deleted count in the month their PR was merged. The Shark counts every PR opened, branch merges included, releases aside; the other badges, code PRs only, the Rocket those of projects and the Craftsman those of continuous improvements. A month is settled a week after its end, whatever the period and repositories picked elsewhere. People who left count in the race: they show by name in this table only.',
   'Aucune squad': 'No squad',
   'Les squads se déclarent dans la variable <code>SQUADS</code> de la synchro, un secret de l’environnement <code>github-pages</code> : <code>nom:login,login;nom:login,…</code>.':
     'Squads are declared in the <code>SQUADS</code> variable of the sync, a secret of the <code>github-pages</code> environment: <code>name:login,login;name:login,…</code>.',
@@ -267,4 +267,16 @@ export const FRAME = {
   'Démarrés': 'Started',
   'Livrés': 'Delivered',
   'En cours, puis à l’arrêt, puis livrés, à la dernière synchro': 'Ongoing, then stalled, then delivered, as of the last sync',
+  'Améliorations continues': 'Improvements',
+  'Aucune amélioration continue': 'No continuous improvement',
+  'Une amélioration continue se développe sur une branche <code>feature/&lt;nom&gt;</code> ou <code>feat/&lt;nom&gt;</code> partie de <code>develop</code>, et sa PR y revient. Aucune dans les données synchronisées.': 'A continuous improvement is developed on a <code>feature/&lt;name&gt;</code> or <code>feat/&lt;name&gt;</code> branch cut from <code>develop</code>, and its PR goes back into it. None in the synced data.',
+  'Rythme': 'Pace',
+  'Délais et taille': 'Delays and size',
+  'Une AC est démarrée à sa première PR, livrée quand toutes ses PR sont mergées dans <code>develop</code> ou fermées, en prod quand celles mergées y sont arrivées. Les délais comptent les heures ouvrées depuis sa première PR.': 'An improvement starts with its first PR, is delivered once all its PRs are merged into <code>develop</code> or closed, and in production once those merged got there. Delays count the working hours since its first PR.',
+  'AC': 'Improvements',
+  'AC livrées sur la période, les dix dépôts qui en comptent le plus': 'Improvements delivered over the period, the ten repositories with the most',
+  'AC livrées sur la période, les dix personnes de l’équipe qui en comptent le plus': 'Improvements delivered over the period, the ten people of the team with the most',
+  'Par squad': 'By squad',
+  'AC livrées sur la période, celles des PR de ses membres': 'Improvements delivered over the period, those of the PRs of its members',
+  'Par taille': 'By size',
 }

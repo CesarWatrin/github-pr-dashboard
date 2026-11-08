@@ -2,6 +2,7 @@
 // kind, its deployment, when it reached production.
 
 import { isBot } from './people.mjs'
+import { acOf } from './acs.mjs'
 import { isProjectMerge, LONG_LIVED_BRANCHES, projectOf } from './projects.mjs'
 
 // The pull requests the page opens the timeline of carry their title and the state of their checks: the open ones, and
@@ -160,7 +161,8 @@ function hasDetails(pr, detailsSince) {
 }
 
 // What the page needs of a pull request to compute the stats of any range, see site/domain/period.js, and to show its
-// timeline (detailsSince, see hasDetails()), and its project (projects, see projects.mjs). Bot pull requests are only
+// timeline (detailsSince, see hasDetails()), and its project or its AC (projects, the index of the branches, see
+// projects.mjs and acs.mjs). Bot pull requests are only
 // kept when they deploy or update a dependency (Dependabot).
 /**
  * @param {SnapshotPullRequest} pr
@@ -186,6 +188,8 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
   // one: the others carry no project.
   const projectMerge = isProjectMerge(pr)
   const project = projects && !bot && (kind === 'code' || projectMerge) ? projectOf(pr, projects) : null
+  // Likewise the AC page: a code pull request of a project is none of an AC.
+  const ac = projects && !bot && kind === 'code' && !project ? acOf(pr, projects) : null
 
   return {
     repo: pr.repo,
@@ -223,6 +227,9 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
     // When a pull request of a project was closed without a merge: until then the project was not over, and its name
     // taken up again after makes another project (site/domain/projects.js).
     ...(project && pr.state === 'CLOSED' && pr.closedAt && { closedAt: minutes(pr.closedAt) }),
+    // The branch of the AC of a code pull request, feature/<name> or feat/<name>: the page names the AC after it, and
+    // links to it.
+    ...(ac && { ac }),
     // Only for the timelines the page opens: the title, and the state of the checks of the last commit (null without
     // any), read again at each sync for an open pull request.
     ...(hasDetails(pr, detailsSince) && { title: pr.title, checks: pr.checks ?? null }),

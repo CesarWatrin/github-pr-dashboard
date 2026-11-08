@@ -8,14 +8,17 @@ type ActivityBounds = ReturnType<typeof import('../site/domain/team.js').activit
 type Analysis = ReturnType<typeof import('../site/domain/analysis.js').analyze>
 type PersonalQueue = ReturnType<typeof import('../site/domain/open-pull-requests.js').personalQueue>
 
-// What the page shows over a whole month: its stats, its CI when the runs cover it, and its projects: those whose life
-// meets it (rows), and what they add up to.
+// What the page shows over a whole month: its stats, its CI when the runs cover it, its projects (those whose life
+// meets it, rows, and what they add up to) and what its AC add up to, each with the share of the code pull requests they
+// carry.
 interface MonthStats {
   period: PeriodStats
   ci: CiStats | null
-  projects: ReturnType<typeof import('../site/model/projects.js').withCodeShare> & {
+  projects: ReturnType<typeof import('../site/domain/projects.js').projectSummary> & {
+    codeShare: number | null
     rows: import('../site/domain/projects.js').ProjectRow[]
   }
+  acs: import('../site/domain/acs.js').AcSummary & { codeShare: number | null }
 }
 
 // Picked days, 'YYYY-MM-DD', both included.

@@ -96,3 +96,10 @@
 .project-dialog-list .project-link {
   min-width: 0;
 }
+
+/* Under it, the AC delivered and the hotfixes opened over the period (ui/work-line.js), quiet. */
+.work-line {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}

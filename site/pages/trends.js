@@ -33,6 +33,8 @@ const TREND_FIGURES = [
   { ...REPORT_FIGURES.get('En échec'), label: t('CI en échec'), ci: true },
   REPORT_FIGURES.get('Projets actifs'),
   REPORT_FIGURES.get('Projets livrés'),
+  REPORT_FIGURES.get('AC livrées'),
+  REPORT_FIGURES.get('Délai médian des AC jusqu’au merge'),
 ]
 // A month's rolling median covers it and the months just before it, this many in all.
 const TREND_ROLLING_MONTHS = 3

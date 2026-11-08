@@ -10,12 +10,13 @@ import {
 } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { SHOWN_BADGES } from '../../model/badges.js'
+import { personAcs } from '../../model/acs.js'
 import { displayName, isFormer } from '../../model/people.js'
 import { personProjects } from '../../model/projects.js'
 import { topTechnologies } from '../../model/repositories.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
-import { personDetails, teamRows } from '../../model/team.js'
+import { personDetails, teamRows, tmaOf } from '../../model/team.js'
 import { badgeRow } from '../badges.js'
 import { el } from '../dom.js'
 import { avatarUrl, githubPill, githubUrl, OPEN_PERSON } from '../links.js'
@@ -107,6 +108,30 @@ export const DEPENDENCY_STAT = {
   hint: t('Dans la fiche d’une personne : part de ses PR relues sur lesquelles intervient son relecteur principal, la personne qui relit le plus son code. Proche de 100 % : son code ne circule qu’entre deux personnes.'),
 }
 
+// The AC of the person over the period, read from what they add up to (personAcs()).
+const PERSON_ACS = [
+  { label: t('AC démarrées'), value: (acs) => acs.started, hint: t('Améliorations continues commencées sur la période dont la personne a ouvert une PR.') },
+  { label: t('AC livrées'), value: (acs) => acs.delivered, hint: t('Parmi ses AC, celles livrées dans develop sur la période.') },
+  {
+    label: t('AC mergées en'),
+    value: (acs) => acs.medianTimeToMergeHours,
+    format: formatDuration,
+    hint: t('Médiane, de la première PR d’une AC à sa livraison dans develop, en heures ouvrées.'),
+  },
+]
+
+// The hotfixes of the person over the period (TMA), read from what they add up to (tmaOf()).
+const PERSON_TMA = [
+  { label: t('Hotfix'), value: (tma) => tma.hotfixes, hint: t('PR de code ouvertes sur la période depuis une branche qui commence par hotfix.') },
+  { label: t('Part de hotfix'), value: (tma) => tma.share, format: formatShare, hint: t('Part de ses PR de code ouvertes sur la période qui sont des hotfix.') },
+  {
+    label: t('Hotfix mergés en'),
+    value: (tma) => tma.medianTimeToMergeHours,
+    format: formatDuration,
+    hint: t('Médiane, de la création au merge de ses hotfix, en heures ouvrées.'),
+  },
+]
+
 const PERSON_CIRCULATION = [
   { label: t('Relecteurs distincts'), value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
   DEPENDENCY_STAT,
@@ -122,6 +147,8 @@ export function openPersonDialog(row, opener) {
   const writers = peers(({ row: other }) => other.code > 0)
   const reviewers = peers(({ row: other }) => other.reviewed > 0)
   const projects = personProjects(row.login)
+  const acs = personAcs(row.login)
+  const tma = tmaOf(row.login)
 
   showCardDialog(
     [
@@ -161,6 +188,10 @@ export function openPersonDialog(row, opener) {
       dialogSection(t('Ce que la personne écrit'), statList(PERSON_WRITTEN, details, writers)),
       dialogSection(t('Ce que la personne relit'), statList(PERSON_REVIEWED, details, reviewers)),
       ...(projects.length ? [dialogSection(t('Ses projets'), projectList(t('Projets, PR de code sur la période'), projects))] : []),
+      ...(acs.started || acs.delivered
+        ? [dialogSection(t('Ses améliorations continues'), statList(PERSON_ACS, acs, writers.map(({ row: other }) => personAcs(other.login))))]
+        : []),
+      ...(tma.hotfixes ? [dialogSection(t('Sa TMA'), statList(PERSON_TMA, tma, writers.map(({ row: other }) => tmaOf(other.login))))] : []),
       dialogSection(
         t('Avec qui, et où'),
         statList(PERSON_CIRCULATION, details, writers),

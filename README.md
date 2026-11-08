@@ -64,10 +64,11 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   les mois que touche la période choisie (36 mois : tout l'historique), avec leur médiane sur 3 mois ; pour chacun, le
   dernier mois complet de la période comparé au même mois un an plus tôt et à la médiane des 12 mois complets jusqu'à
   lui, même avant la période.
-- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Douze règles fixes croisent les chiffres :
+- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Quatorze règles fixes croisent les chiffres :
   taille des PR et délai de merge, PR géantes mergées sans review plus souvent que les autres, étape qui retient les
   PR avant leur merge, dépôts suspendus à un relecteur ou mergés sans review, workflows qui échouent souvent ou qui
-  sont lents, PR fermées sans merge, projets à l'arrêt, projets qui attendent leur livraison une fois leur code fini,
+  sont lents, PR fermées sans merge, projets à l'arrêt, projets qui attendent leur livraison une fois leur code fini, AC
+  qui traînent avant leur merge ou trop grosses,
   et ce qui se dégrade ou s'améliore d'une moitié de la période à l'autre. Chaque
   constat, prioritaire ou à surveiller, donne ses chiffres, une piste et la page qui le détaille ; une règle ne parle
   qu'au-delà de son seuil, sur assez de PR ou d'exécutions, et les autres sont listées sous « Rien à signaler ». Les
@@ -92,6 +93,14 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   trouve un projet par son nom, ses dépôts ou ses auteurs. Ailleurs, les cartes et fiches des personnes et des squads
   nomment leurs projets de la période, la fiche d'un dépôt les siens, la frise d'une PR son projet : chacun ouvre la
   fiche du projet.
+- **Améliorations continues** : les AC, menées sur une branche `feature/<nom>` ou `feat/<nom>` partie de `develop` et
+  dont la PR y revient (une PR de projet, ou une branche qui va ailleurs, n'en est pas une). Trop nombreuses pour une
+  carte ou une barre chacune, elles sont comptées : démarrées, livrées, en prod, en cours, abandonnées, part des PR de
+  code, délais jusqu'au merge et jusqu'en prod, taille, personnes, comparés à la période d'avant ; démarrées et livrées
+  par période ; livrées par dépôt, par personne, par squad et par taille. On les retrouve sur la vue d'ensemble (tuiles
+  et graphique par période), les cartes des personnes, des squads et des dépôts (avec leurs hotfix), leurs fiches (avec
+  une section « Sa TMA » : hotfix, part, délai de merge, face à la médiane des pairs), le bilan du mois, les tendances, l'analyse (AC qui traînent ou trop
+  grosses), la frise d'une PR et le badge 🛠️ Artisan.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
@@ -135,9 +144,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   de quoi situer la personne parmi celles qui font le même travail, sans score ni classement. En bas, les anciens
   collaborateurs.
 - **Badges**, sur les cartes et dans la fiche, à la façon des succès GitHub : 🦈 Requin des PR, 🔍 Œil de lynx,
-  🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur, 🧹 Coup de balai et 🚀 Fusée, pour le plus de PR ouvertes (merges de branches
-  compris, releases à part), de PR relues, de commentaires de review, de hotfix, de lignes ajoutées, de lignes
-  supprimées ou de PR de code sur des projets de toute l'équipe sur un mois complet (les lignes au mois du merge ; hors Requin, seules les PR de code comptent). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
+  🪶 Plume, 🚒 Pompier, 🏗️ Bâtisseur, 🧹 Coup de balai, 🚀 Fusée et 🛠️ Artisan, pour le plus de PR ouvertes (merges de
+  branches compris, releases à part), de PR relues, de commentaires de review, de hotfix, de lignes ajoutées, de lignes
+  supprimées, de PR de code sur des projets ou de PR d'amélioration continue de toute l'équipe sur un mois complet (les lignes au mois du merge ; hors Requin, seules les PR de code comptent). Bronze pour un mois, argent pour deux mois d'affilée, or pour trois ou plus ; leur sens
   s'affiche au survol. Une carte et une fiche en montrent trois, les autres sous un « +N » qui les nomme au survol. Ils se gagnent depuis la première synchro et restent acquis : la synchro garde l'historique
   mensuel de chacun au-delà de la fenêtre de 36 mois, dans son snapshot, et le relit dans les stats déjà publiées si
   le cache d'Actions s'est perdu. Quand une correction change la façon de compter, la synchro suivante recompte une
@@ -289,6 +298,8 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   vise `project/<nom>/main` ou une branche nommée `project/<nom>/…`, ou la branche d'une autre PR du projet dans le
   même dépôt, sinon sa propre branche est nommée ainsi. Seul le nom du projet est publié, jamais les branches, avec,
   pour une PR de projet fermée sans merge, le moment où elle l'a été.
+- L'AC d'une PR de code se déduit de même (`scripts/sync/acs.mjs`) : sa branche `feature/<nom>` ou `feat/<nom>` vise
+  `develop`, ou elle est empilée sur une telle branche. La branche de l'AC est publiée, pour la nommer et y mener.
 
 ## En local
 

@@ -46,6 +46,8 @@ interface PullRequestRecord {
   projectMerge?: boolean
   // When a pull request of a project was closed without being merged.
   closedAt?: number
+  // The branch of the AC (amélioration continue) of a code pull request: feature/<name> or feat/<name>, cut from develop.
+  ac?: string
   title?: string
   checks?: CheckState | null
 }
@@ -69,6 +71,8 @@ interface MonthlyFigures {
   opened: number
   // Code pull requests of a project.
   projects: number
+  // Code pull requests of an AC.
+  acs: number
 }
 // Per month ('YYYY-MM'), each person's figures.
 type MonthlyHistory = Record<string, Record<string, Partial<MonthlyFigures>>>

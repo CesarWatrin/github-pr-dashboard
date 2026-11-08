@@ -237,6 +237,15 @@ describe('the project of a record', () => {
     assert.equal('closedAt' in recordOf('feature'), false)
     assert.equal('closedAt' in recordOf('closedOutside'), false)
   })
+
+  test('a code pull request from a branch feature/… into develop carries the branch of its AC, one of a project none', () => {
+    assert.equal(recordOf('outside').ac, 'feature/menu')
+    assert.equal(recordOf('closedOutside').ac, 'feature/old-menu')
+    assert.equal('ac' in recordOf('feature'), false)
+    assert.equal('ac' in recordOf('stacked'), false)
+    assert.equal('ac' in recordOf('dependency'), false)
+    assert.equal('ac' in toPeriodRecord(PULL_REQUESTS.outside, index), false)
+  })
 })
 
 describe('timeline details', () => {

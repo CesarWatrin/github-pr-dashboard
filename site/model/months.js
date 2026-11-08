@@ -1,6 +1,7 @@
 // Whole months of the synced data and their stats, for the monthly report and the trends: the figures each one
 // shows, and how two months compare.
 
+import { acSummary } from '../domain/acs.js'
 import { computeCi } from '../domain/ci.js'
 import { isMissing, median } from '../domain/math.js'
 import { computePeriod } from '../domain/period.js'
@@ -8,6 +9,7 @@ import { projectRows, projectSummary } from '../domain/projects.js'
 import { parisDay, parisMidnight } from '../domain/time.js'
 import { formatDecimal, formatDuration, formatNumber, formatShare, formatSpan } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
+import { acsFor } from './acs.js'
 import { badgeMonths } from './badges.js'
 import { withCodeShare } from './projects.js'
 import { ciStart } from './selection.js'
@@ -72,6 +74,15 @@ const GROUPS = [
     ],
   },
   {
+    label: 'Améliorations continues',
+    figures: [
+      { label: 'AC démarrées', value: ({ acs }) => acs.started, kind: 'count' },
+      { label: 'AC livrées', value: ({ acs }) => acs.delivered, kind: 'count' },
+      { label: 'Délai médian des AC jusqu’au merge', value: ({ acs }) => acs.medianTimeToMergeHours, kind: 'duration', better: 'down' },
+      { label: 'PR de code en AC', value: ({ acs }) => acs.codeShare, kind: 'share' },
+    ],
+  },
+  {
     label: 'Équipe',
     figures: [
       { label: 'Auteurs de PR de code', value: ({ period }) => period.authors.filter((person) => Object.values(person.repos).some((stats) => stats.code > 0)).length, kind: 'count' },
@@ -108,7 +119,8 @@ export function reportMonths() {
 
 // The stats of a month, worked out once per stats and squad: those of a period, of the CI and of the projects over its
 // Paris days, up to the last sync for the current month. The CI stays that of the whole organization: no run belongs to a
-// squad. The projects are those whose life meets the month (projectRows()), with what they add up to.
+// squad. The projects are those whose life meets the month (projectRows()), with what they add up to; and what its AC add
+// up to (acSummary()).
 /**
  * @param {string} month 'YYYY-MM'
  * @returns {MonthStats}
@@ -131,7 +143,12 @@ export function monthStats(month) {
     const ci = range.start >= ciStart() ? computeCi(stats.ci ?? [], range) : null
     const period = computePeriod(scopedRecords(), range)
     const rows = projectRows(scopedRecords(), range, { all: stats.pullRequests, now: Date.parse(stats.generatedAt) })
-    months.set(key, { period, ci, projects: { ...withCodeShare(projectSummary(rows, range), period), rows } })
+    months.set(key, {
+      period,
+      ci,
+      projects: { ...withCodeShare(projectSummary(rows, range), period), rows },
+      acs: withCodeShare(acSummary(acsFor(scopedRecords()), range), period),
+    })
   }
 
   return /** @type {MonthStats} */ (months.get(key))

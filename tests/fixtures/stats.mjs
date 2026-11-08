@@ -234,6 +234,8 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
       deployedAt: toMinutes(hotfix ? merged : later(random, merged, random.int(2, 60))),
       ...(random.chance(0.05) && { checksFailed: true }),
       ...(now - merged < 30 * DAY_MS && { title: `Change ${numbers[repo]} to ${repo}`, checks: 'SUCCESS' }),
+      // One in four, a branch feature/… cut from develop: an AC. Told by its number, so that the rest stays as it was.
+      ...(!hotfix && numbers[repo] % 4 === 0 && { ac: `feature/improvement-${numbers[repo]}` }),
     })
   }
 

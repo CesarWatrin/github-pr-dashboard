@@ -4,6 +4,7 @@ import { CUSTOM_PERIOD, DEFAULT_PERIOD, PERIODS } from '../model/periods.js'
 import { clampRange, periodAvailable } from '../model/selection.js'
 import { squadKey } from '../model/squads.js'
 import { state } from '../model/state.js'
+import { renderAcCharts, renderAcs } from '../pages/acs.js'
 import { renderAnalysis } from '../pages/analysis/analysis.js'
 import { renderSizeCharts } from '../pages/authors.js'
 import { renderAwards } from '../pages/awards.js'
@@ -20,7 +21,7 @@ import {
   renderToday,
   renderTotals,
 } from '../pages/overview/overview.js'
-import { renderProjectChart, renderProjectList } from '../pages/overview/projects.js'
+import { renderAcOverviewChart, renderAcOverviewTable, renderProjectChart, renderProjectList } from '../pages/overview/projects.js'
 import { renderProjects, renderProjectTimeline } from '../pages/projects/projects.js'
 import { renderReport } from '../pages/report.js'
 import { renderRepositories } from '../pages/repositories.js'
@@ -43,6 +44,7 @@ export function renderCharts() {
   }
   renderActivityChart()
   renderProjectChart()
+  renderAcOverviewChart()
   renderSizeCharts()
   renderTechnologiesChart()
   renderTmaCharts()
@@ -53,6 +55,7 @@ export function renderCharts() {
   renderTrends()
   renderSquadCharts()
   renderProjectTimeline()
+  renderAcCharts()
   if (state.person) {
     renderMiniCharts()
   }
@@ -82,6 +85,7 @@ export function render(animate) {
   renderCharts()
   renderChartTable()
   renderProjectList()
+  renderAcOverviewTable()
   for (const name of repoFilterNames()) {
     renderRepoFilter(name)
   }
@@ -92,6 +96,7 @@ export function render(animate) {
   renderAnalysis()
   renderRepositories()
   renderProjects(tileMode)
+  renderAcs(tileMode)
   renderSquads()
   renderFeed(animate)
   renderUnblock(tileMode)

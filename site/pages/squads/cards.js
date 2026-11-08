@@ -11,13 +11,16 @@ import { personLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
 import { projectLine, projectList } from '../../ui/projects.js'
+import { workLine } from '../../ui/work-line.js'
 import { squadFigures } from './figures.js'
 
 const SQUAD_CARD_STATS = squadFigures('code', 'merged', 'reviews', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours', 'open')
-const SQUAD_WRITTEN = squadFigures('code', 'merged', 'lines', 'unreviewedRate', 'hotfixShare')
+const SQUAD_WRITTEN = squadFigures('code', 'merged', 'lines', 'unreviewedRate')
 const SQUAD_REVIEWED = squadFigures('reviews', 'comments', 'commentsPerPr', 'insideReviewRate', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours')
 const SQUAD_DELIVERED = squadFigures('medianLeadTimeHours', 'reworkRate', 'open')
 const SQUAD_PROJECTS = squadFigures('projects', 'projectShare')
+const SQUAD_ACS = squadFigures('acsDelivered', 'acTimeToMerge', 'acShare')
+const SQUAD_TMA = squadFigures('hotfixes', 'hotfixShare', 'hotfixMergeHours')
 
 // The readers and repositories listed on a squad's dialog.
 const SQUAD_TOP = 5
@@ -45,6 +48,7 @@ export function squadCard(row, index, rows) {
     ...squadLead(row, 'squad-lead'),
     avatarStack(row.members, { size: 28, lead: row.lead }),
     ...projectLine(row.projects),
+    ...workLine({ acs: row.acs?.delivered ?? 0, hotfixes: row.hotfixes }),
     statList(SQUAD_CARD_STATS, row),
   )
   card.setAttribute('aria-label', row.name)
@@ -54,7 +58,7 @@ export function squadCard(row, index, rows) {
 }
 
 // The dialog of a squad, like those of a person or a repository: its figures, each set against the median of the
-// squads, its projects, then who it is, who reads its code and where it writes.
+// squads, its projects, its AC and its TMA, then who it is, who reads its code and where it writes.
 export function openSquadDialog(row, rows, opener) {
   const peers = rows.filter((other) => other.code > 0)
 
@@ -88,6 +92,8 @@ export function openSquadDialog(row, rows, opener) {
         statList(SQUAD_PROJECTS, row, peers),
         projectList(t('Ses projets, PR de code de la squad'), row.projects),
       ),
+      dialogSection(t('Ses améliorations continues'), statList(SQUAD_ACS, row, peers)),
+      dialogSection(t('Sa TMA'), statList(SQUAD_TMA, row, peers)),
       dialogSection(
         t('Qui, et où'),
         el(

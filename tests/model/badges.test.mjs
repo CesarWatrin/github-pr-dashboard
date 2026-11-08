@@ -6,7 +6,8 @@ import { describe, test } from 'node:test'
 import { badgeStandings } from '../../site/model/badges.js'
 import { record, useStats } from './stats.mjs'
 
-const figures = (fields) => ({ code: 0, hotfixes: 0, reviewed: 0, comments: 0, added: 0, deleted: 0, opened: 0, ...fields })
+// Every figure but those of projects, which the months below were kept without.
+const figures = (fields) => ({ code: 0, hotfixes: 0, reviewed: 0, comments: 0, added: 0, deleted: 0, opened: 0, acs: 0, ...fields })
 
 describe('badgeStandings', () => {
   test('a month the history kept before a figure existed gets it from the pull requests, the others stay as kept', () => {
