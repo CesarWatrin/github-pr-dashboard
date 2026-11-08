@@ -89,6 +89,9 @@ export const state = {
   squadPerMember: false,
   // The statuses of the projects the projects page shows, all of them while null.
   projectStatuses: null,
+  // The card open in the dialog of the cards, and the pull request whose timeline is open: the address names them.
+  openCard: null,
+  openPullRequest: null,
   // The projects of the period for the squad picked, worked out once per stats, range and squad.
   projectsCache: null,
   // Who the « Mes PR » page is for, null until picked.

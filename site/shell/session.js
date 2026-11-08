@@ -11,6 +11,7 @@ import { renderTitle } from '../ui/title.js'
 import { render } from './render.js'
 import { setNavOpen } from './router.js'
 import { autoSync, checkFullSyncRefused, renderSyncStatus, settleSyncRequest } from './sync.js'
+import { openFromUrl } from './url-state.js'
 
 export function showLock(message = '') {
   setNavOpen(false, { focus: false })
@@ -90,6 +91,8 @@ function applyStats(stats) {
   render(isUpdate)
   if (!isUpdate) {
     playEntrance()
+    // A shared address waited for the stats, the password typed if need be: its card opens now.
+    openFromUrl()
   }
   if (isUpdate) {
     for (const status of $$('[data-sync]')) {

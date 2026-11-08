@@ -23,6 +23,16 @@ paths:
   analysis, trends, squads and AC pages the period only (`search: false`). The Méthode page has no link among the pages: a
   button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
   screens, only the periods of the filters stack (`.filters .segmented`), the other segmented pickers keep their row.
+- **The address** follows the filters and the card open, so that a place of the page can be shared: after the hash of
+  the page, a query (`urlQueryOf()` of `model/url-state.js`: the period, or `custom` with `from` and `to`; `compare`,
+  `squad`, `q`, `repos-<name>` for each repository filter narrowed, `statuses` of the projects, `month` on the report,
+  `card` as `person:`, `repo:`, `project:` or `squad:` and its key, `pr` as `repo#number`). `shell/url-state.js` writes
+  it back with `history.replaceState()` (no new entry in the history) after `render()` and after any click, input,
+  change or dialog closing; it reads it at load (`readUrlState()`, before the first render, so that an address opened
+  before the password is typed keeps it) and when an address is pasted in the tab (`hashchange`), and opens its card
+  once the first stats are drawn (`openFromUrl()`, through the `OPEN_…` events, `OPEN_SQUAD` among them). An address
+  with a query is a whole state: what it does not say goes back to the defaults (`applyUrlQuery()`); one without keeps
+  the choices the browser remembers. `currentRoute()` reads the page before the query.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to

@@ -31,6 +31,7 @@ import { refresh, setupSession, showDashboard, showLock } from './shell/session.
 import { refreshClock, setupSync } from './shell/sync.js'
 import { registerTables, renderTableLegends } from './shell/tables.js'
 import { renderThemeToggle, setupTheme } from './shell/theme.js'
+import { readUrlState, setupUrlState } from './shell/url-state.js'
 import { renderLegend } from './ui/charts/legend.js'
 import { setupCardDialog } from './ui/dialogs/card-dialog.js'
 import { setupPersonDialog } from './ui/dialogs/person-dialog.js'
@@ -46,12 +47,14 @@ const POLL_INTERVAL_MS = 60_000
 const SYNC_POLL_INTERVAL_MS = 10_000
 const CLOCK_INTERVAL_MS = 30_000
 
-// The static texts first, before anything writes in the page.
+// The static texts first, before anything writes in the page; then the filters a shared address holds.
 translatePage()
 registerTables()
+readUrlState()
 
 setupNavigation()
 setupFilters({ render })
+setupUrlState({ render })
 setupTheme()
 setupLanguage()
 setupSync()

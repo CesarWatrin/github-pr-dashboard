@@ -294,6 +294,23 @@ for (const language of ['fr', 'en']) {
       assert.equal(await page.evaluate(`document.querySelector('[data-replay-play]').getAttribute('aria-pressed')`), 'false')
     })
 
+    test('the address holds the filters and the card open, and an address pasted leads back to them', async () => {
+      await show('projects')
+      await page.evaluate(`document.querySelector('[data-project-cards] .project-card-head').click()`)
+      await page.waitFor(`location.hash.startsWith('#/projets?') && location.hash.includes('card=project%3A')`)
+      await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
+      await page.waitFor(`!location.hash.includes('card=')`)
+      // Another place, pasted in the tab: its page, its period, its search and its card.
+      await page.evaluate(`location.hash = '#/equipe?period=90d&q=ada&card=person%3Aada-l'`)
+      await page.waitFor(`document.querySelector('[data-person-dialog]').open`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-search]').value`), 'ada')
+      assert.equal(await page.evaluate(`document.querySelector('[data-person-dialog] h2').textContent.length > 0`), true)
+      await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
+      // Back to the defaults for the tests after.
+      await page.evaluate(`location.hash = '#/?period=365d'`)
+      await page.waitFor(`document.querySelector('[data-search]').value === '' && !location.hash.includes('q=')`)
+    })
+
     test('the theme toggles, and locking asks first', async () => {
       const theme = await page.evaluate(`document.documentElement.dataset.theme ?? ''`)
       await page.evaluate(`document.querySelector('[data-theme-toggle]').click()`)

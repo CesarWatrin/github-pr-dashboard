@@ -60,6 +60,7 @@ export function squadCard(row, index, rows) {
 // The dialog of a squad, like those of a person or a repository: its figures, each set against the median of the
 // squads, its projects, its AC and its TMA, then who it is, who reads its code and where it writes.
 export function openSquadDialog(row, rows, opener) {
+  state.openCard = { kind: 'squad', key: row.name }
   const peers = rows.filter((other) => other.code > 0)
 
   showCardDialog(

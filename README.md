@@ -7,6 +7,10 @@ défaut : elle se configure avec la variable `ORG`.
 Site statique sans build ni dépendance, déployé sur GitHub Pages par un workflow planifié. La page relit les données
 chaque minute et anime les compteurs quand de nouvelles PR, merges ou reviews arrivent.
 
+L'adresse de la page suit les filtres (période ou dates, comparaison, squad, recherche, dépôts, statuts des projets, mois
+du bilan) et la fiche ouverte (personne, dépôt, projet, squad, frise d'une PR) : copiée et envoyée, elle mène au même
+endroit, même s'il faut d'abord saisir le mot de passe.
+
 Le dashboard est découpé en pages, dans une barre latérale. Sous 1280 px, une barre en haut garde le nom et l'état de
 la synchro, et son bouton menu ouvre la barre latérale par-dessus la page, sans défilement horizontal. La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour

@@ -7,6 +7,7 @@ import { periodTitle } from '../../model/selection.js'
 import { squadsOf } from '../../model/squads.js'
 import { state } from '../../model/state.js'
 import { $, $$, el } from '../../ui/dom.js'
+import { OPEN_SQUAD } from '../../ui/links.js'
 import { linesCell } from '../../ui/tables/cells.js'
 import { openSquadDialog, squadCard } from './cards.js'
 import { renderSquadCharts } from './charts.js'
@@ -123,8 +124,15 @@ export function renderSquads() {
   renderSquadCharts({ squads, organization })
 }
 
-// Listens to « Total / Par personne » of the ranking.
+// Listens to « Total / Par personne » of the ranking, and to a squad named elsewhere (the address of the page) to open.
 export function setupSquads() {
+  document.addEventListener(OPEN_SQUAD, (event) => {
+    const { squads } = squadRows()
+    const row = squads.find((other) => other.name === /** @type {CustomEvent} */ (event).detail)
+    if (row) {
+      openSquadDialog(row, squads, event.target)
+    }
+  })
   for (const button of $$('[data-squad-measure]')) {
     button.addEventListener('click', () => {
       state.squadPerMember = button.dataset.squadMeasure === 'member'

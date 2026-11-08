@@ -125,6 +125,7 @@ export function busFactorTag(value) {
 // The dialog of a repository: its figures over the period, each set against the median of the repositories of the same
 // type that have such figures, or of all of them when that type has too few; who writes it and who reviews it.
 export function openRepoDialog(row, opener) {
+  state.openCard = { kind: 'repo', key: row.repo }
   const all = repositoryRows({ all: true })
   const sameType = all.filter((other) => other.category === row.category)
   const peers = sameType.length >= MIN_PEERS ? sameType : all

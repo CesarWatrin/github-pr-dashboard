@@ -89,6 +89,7 @@ const mergeList = (row) =>
 // where, and when its branch was merged. Opened from another page (projectLink()), it counts every repository; for a
 // project the period misses, the whole data (whole).
 export function openProjectDialog(row, rows, opener, { fromPage = true, whole = false } = {}) {
+  state.openCard = { kind: 'project', key: row.key }
   const peers = rows.filter((other) => other.code > 0)
   const writers = row.authors.filter((author) => isCurrent(author.login))
   const readers = row.reviewers.filter((reviewer) => isCurrent(reviewer.login))

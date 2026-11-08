@@ -138,6 +138,7 @@ const PERSON_CIRCULATION = [
 ]
 
 export function openPersonDialog(row, opener) {
+  state.openCard = { kind: 'person', key: row.login }
   const details = personDetails(row)
   const name = displayName(row.login)
   const technologies = topTechnologies(row.stack.technologies)
