@@ -96,7 +96,7 @@ function later(random, after, hours) {
 // Made-up projects, as the sync tells them from their branches (project/<name>/main, the feature branches that target
 // it, the pull requests stacked on those): one in two repositories, merged into develop twice and delivered; one
 // delivered lately; one under way, a pull request still open and a draft; one left aside; the name of the first taken up
-// again months after it was delivered, another project. A generator of their own, so that the rest of the stats stays
+// again months after it was delivered, another project; one given up, the merge of its branch closed. A generator of their own, so that the rest of the stats stays
 // the same.
 const PROJECTS = [
   { name: 'blue-falcon', repos: ['web-shop', 'core-api'], people: ['ada-l', 'cleo-m', 'ben-k', 'eli-p'], from: 430, to: 262, every: 6, merges: [300, 255] },
@@ -104,6 +104,8 @@ const PROJECTS = [
   { name: 'paper-kite', repos: ['mobile-app'], people: ['dev-o', 'hana-v', 'eli-p'], from: 75, to: 4, every: 4, merges: [] },
   { name: 'quiet-otter', repos: ['back-office'], people: ['fay-r', 'cleo-m'], from: 210, to: 120, every: 8, merges: [] },
   { name: 'blue-falcon', repos: ['web-shop'], people: ['gus-t', 'hana-v'], from: 60, to: 30, every: 9, merges: [] },
+  // Abandoned: the merge of its branch closed without a merge, nothing of it still open.
+  { name: 'grey-wren', repos: ['core-api'], people: ['ivo-w', 'dev-o'], from: 160, to: 100, every: 8, merges: [], closedMerges: [95] },
 ]
 
 function addProjects({ now, add, ago, seed }) {
@@ -154,6 +156,22 @@ function addProjects({ now, add, ago, seed }) {
         ...(day < 30 && { title: `Merge ${project.name} into develop`, checks: 'SUCCESS' }),
       })
     })
+    // A merge of the project branch closed without being merged.
+    for (const day of project.closedMerges ?? []) {
+      add({
+        repo: project.repos[0],
+        author: project.people[0],
+        kind: 'integration',
+        project: project.name,
+        projectMerge: true,
+        createdAt: ago(day + 2),
+        mergedAt: null,
+        closed: true,
+        closedAt: ago(day),
+        lines: 1800,
+        interventions: [],
+      })
+    }
   }
   // Under way: a pull request of the project still open, asking for a review, and a draft.
   add({

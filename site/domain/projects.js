@@ -20,7 +20,7 @@ export const MIN_PROJECT_CODE = 2
 const WEEK_MINUTES = 7 * 24 * 60
 const DAY_MINUTES = DAY_MS / MINUTE_MS
 
-/** @typedef {'ongoing' | 'delivered' | 'stalled'} ProjectStatus */
+/** @typedef {'ongoing' | 'delivered' | 'stalled' | 'abandoned'} ProjectStatus */
 
 /**
  * A project and its records. key: its name, followed from the second project of that name on by its rank
@@ -127,8 +127,8 @@ export function mergeRequestsOf(records) {
  * such a merge still waits; mergeRequests: per repository, the pull request of such a merge that tells the most
  * (mergeRequestsOf()). lastActivity: its latest pull request opened or merged, review or comment. deliveredAt: its last merge, when
  * no pull request of the project was opened after it (one opened after brings it back to work). end: delivered, else
- * its last activity. status at now (milliseconds): delivered, else stalled after STALLED_AFTER_DAYS without activity,
- * else ongoing. days: from its start to its end, on the calendar. integrationHours: the working hours from the last
+ * its last activity. status at now (milliseconds): delivered, else abandoned when every merge of its branch was closed
+ * without a merge and nothing of it is still open, else stalled after STALLED_AFTER_DAYS without activity, else ongoing. days: from its start to its end, on the calendar. integrationHours: the working hours from the last
  * code pull request merged before its last merge to that merge, null without either.
  * @param {PullRequestRecord[]} records
  * @param {number} now
@@ -147,8 +147,15 @@ export function projectLife(records, now) {
   const lastMerge = merges.at(-1)?.at ?? null
   const deliveredAt = lastMerge !== null && records.every((pr) => pr.createdAt <= lastMerge) ? lastMerge : null
   const end = deliveredAt ?? lastActivity
+  const mergeRequests = mergeRequestsOf(records)
+  // Every merge of its branch closed without a merge, nothing of it still open: given up.
+  const abandoned =
+    Object.values(mergeRequests).length > 0 &&
+    Object.values(mergeRequests).every((request) => request.state === 'closed') &&
+    records.every((pr) => pr.mergedAt !== null || pr.closed)
   /** @type {ProjectStatus} */
-  const status = deliveredAt !== null ? 'delivered' : now - lastActivity * MINUTE_MS > STALLED_AFTER_DAYS * DAY_MS ? 'stalled' : 'ongoing'
+  const status =
+    deliveredAt !== null ? 'delivered' : abandoned ? 'abandoned' : now - lastActivity * MINUTE_MS > STALLED_AFTER_DAYS * DAY_MS ? 'stalled' : 'ongoing'
   const lastFeatureMerge = records.reduce(
     (latest, pr) => (pr.kind === 'code' && pr.mergedAt !== null && lastMerge !== null && pr.mergedAt <= lastMerge ? Math.max(latest ?? -Infinity, pr.mergedAt) : latest),
     /** @type {number | null} */ (null),
@@ -160,7 +167,7 @@ export function projectLife(records, now) {
     lastActivity,
     merges,
     mergeOpen: records.some((pr) => pr.projectMerge && pr.mergedAt === null && !pr.closed),
-    mergeRequests: mergeRequestsOf(records),
+    mergeRequests,
     deliveredAt,
     status,
     days: (end - start) / DAY_MINUTES,

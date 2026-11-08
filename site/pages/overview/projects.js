@@ -112,7 +112,7 @@ export function renderAcOverviewTable() {
   )
 }
 
-// The projects of the period, those under way first, then those stalled, then those delivered, each with its code pull
+// The projects of the period, those under way first, then those stalled, abandoned, then those delivered, each with its code pull
 // requests over the period; and the data of the chart, as a table.
 export function renderProjectList() {
   const any = anyProject()

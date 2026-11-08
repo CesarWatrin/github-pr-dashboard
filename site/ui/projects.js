@@ -14,7 +14,7 @@ import { ICONS_URL } from './icons.js'
 import { askToOpen, githubUrl, OPEN_PROJECT, pullRequestPath } from './links.js'
 
 // Where a project stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
-// stalled one lighter still; always with its word.
+// stalled one lighter still, an abandoned one in the red of what was dropped; always with its word.
 export const PROJECT_STATUSES = {
   ongoing: {
     key: 'ongoing',
@@ -28,6 +28,12 @@ export const PROJECT_STATUSES = {
     color: 'color-mix(in srgb, var(--series-3) 85%, var(--surface))',
     hint: t('Sa branche project/…/main est mergée dans une branche principale, et aucune PR du projet n’a été ouverte depuis.'),
   },
+  abandoned: {
+    key: 'abandoned',
+    label: t('Abandonné'),
+    color: 'color-mix(in srgb, var(--diff-deleted) 50%, var(--surface))',
+    hint: t('Toutes les PR qui mergent sa branche project/…/main ont été fermées sans merge, et plus aucune PR du projet n’est ouverte.'),
+  },
   stalled: {
     key: 'stalled',
     label: t('À l’arrêt'),
@@ -37,7 +43,7 @@ export const PROJECT_STATUSES = {
 }
 
 // The order of the statuses in the table: those that call for attention first.
-export const STATUS_ORDER = ['ongoing', 'stalled', 'delivered']
+export const STATUS_ORDER = ['ongoing', 'stalled', 'abandoned', 'delivered']
 
 // A project's day, from minutes since the epoch: « 3 mars 2026 ».
 /** @type {(minutes: number | null | undefined) => string} */

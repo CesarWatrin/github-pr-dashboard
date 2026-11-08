@@ -403,3 +403,19 @@ describe('mergeRequestsOf', () => {
   })
 })
 
+describe('an abandoned project', () => {
+  const code = (fields) => record({ repo: 'web', author: 'alice', project: 'grey-wren', createdAt: at('2026-03-02T09:00:00Z'), mergedAt: at('2026-03-03T09:00:00Z'), ...fields })
+  const merge = (fields) => record({ repo: 'web', author: 'alice', kind: 'integration', project: 'grey-wren', projectMerge: true, createdAt: at('2026-03-20T09:00:00Z'), ...fields })
+  const statusOf = (records) => projectLife(records, NOW).status
+
+  test('every merge of its branch closed without a merge, nothing of it still open', () => {
+    assert.equal(statusOf([code({ number: 1 }), code({ number: 2 }), merge({ number: 3, closed: true }), merge({ repo: 'api', number: 4, closed: true })]), 'abandoned')
+  })
+
+  test('not while a merge is still open, a pull request of it is, or a repository merged it', () => {
+    assert.equal(statusOf([code({ number: 1 }), merge({ number: 3, closed: true }), merge({ repo: 'api', number: 4 })]), 'stalled')
+    assert.equal(statusOf([code({ number: 1, mergedAt: null }), merge({ number: 3, closed: true })]), 'stalled')
+    assert.equal(statusOf([code({ number: 1 }), merge({ number: 3, closed: true }), merge({ repo: 'api', number: 4, mergedAt: at('2026-03-21T09:00:00Z') })]), 'delivered')
+  })
+})
+

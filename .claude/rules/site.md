@@ -260,8 +260,8 @@ paths:
   end of the others (`namesakes`, `namesakesText()`). `projectRows()` gives those whose
   span meets the period, the earliest started first: their life over every record, whatever the period and the squad
   (`projectLife()`: start, merges of the project branch, last activity, status at the last sync, delivered when merged
-  with no pull request of the project opened since, else ongoing, or stalled after `STALLED_AFTER_DAYS` without
-  activity; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
+  with no pull request of the project opened since, else abandoned when every merge of its branch was closed without a
+  merge and nothing of it is still open, else ongoing, or stalled after `STALLED_AFTER_DAYS` without activity; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
   last merge of the branch), and their figures over the period from the records of the squad and the repositories
   picked (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers,
   lines, median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range,

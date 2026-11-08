@@ -173,11 +173,12 @@ for (const language of ['fr', 'en']) {
     test('the projects show every status, and their table sorts on it, the ongoing ones first', async () => {
       await show('projects')
       const statuses = `[...document.querySelectorAll('[data-projects] tbody .project-status')].map((tag) => tag.className.split('is-')[1])`
-      assert.deepEqual(new Set(await page.evaluate(statuses)), new Set(['ongoing', 'stalled', 'delivered']))
+      assert.deepEqual(new Set(await page.evaluate(statuses)), new Set(['ongoing', 'stalled', 'abandoned', 'delivered']))
       const sortOnStatus = `[...document.querySelectorAll('[data-projects] thead button')][1].click()`
       await page.evaluate(sortOnStatus)
       const sorted = await page.evaluate(statuses)
-      assert.deepEqual(sorted, sorted.toSorted((a, b) => ['ongoing', 'stalled', 'delivered'].indexOf(a) - ['ongoing', 'stalled', 'delivered'].indexOf(b)))
+      const order = ['ongoing', 'stalled', 'abandoned', 'delivered']
+      assert.deepEqual(sorted, sorted.toSorted((a, b) => order.indexOf(a) - order.indexOf(b)))
       await page.evaluate(sortOnStatus)
       assert.deepEqual(await page.evaluate(statuses), sorted.toReversed())
       // A merge of a project branch shows on the timeline.
@@ -200,6 +201,7 @@ for (const language of ['fr', 'en']) {
       const statuses = (selector) => page.evaluate(`[...document.querySelectorAll('${selector} .project-status')].map((tag) => tag.className.split('is-')[1])`)
       const toggle = (status) => page.evaluate(`document.querySelector('[data-status-filter] input[data-status="${status}"]').click()`)
       await toggle('ongoing')
+      await toggle('abandoned')
       await toggle('delivered')
       for (const selector of ['[data-project-cards]', '[data-project-timeline]', '[data-projects] tbody']) {
         const shown = await statuses(selector)
@@ -207,6 +209,7 @@ for (const language of ['fr', 'en']) {
       }
       assert.equal(await page.evaluate(`document.querySelector('[data-status-filter] [data-status-label]').textContent`), read('À l’arrêt'))
       await toggle('ongoing')
+      await toggle('abandoned')
       await toggle('delivered')
       assert.equal(await page.evaluate(`document.querySelector('[data-status-filter] [data-status-label]').textContent`), read('Tous les statuts'))
 

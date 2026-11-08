@@ -88,7 +88,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   (une erreur, un essai) n'en est pas un. En tête, les projets en cours, ceux livrés sur la période, leur durée médiane et
   leur délai d'intégration médian (de la dernière PR mergée dans la branche du projet au merge de celle-ci) ; puis un
   calendrier, une barre par projet de sa première PR à sa livraison ou à sa dernière activité, dans la couleur de son
-  statut (en cours, livré, à l'arrêt après 30 jours sans activité), un point à chaque merge de sa branche ; une carte
+  statut (en cours, livré, à l'arrêt après 30 jours sans activité, abandonné quand toutes les PR qui mergent sa branche ont
+  été fermées sans merge), un point à chaque merge de sa branche ; une carte
   par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts, chacun avec un lien
   vers la PR qui y merge la branche `project/<nom>/main`, en vert une fois mergée, en rouge si elle a été fermée, en gris
   sinon) qui ouvre sa fiche ; et
