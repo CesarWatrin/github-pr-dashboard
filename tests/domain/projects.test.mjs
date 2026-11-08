@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { projectLife, projectRows, projectSummary, recordsByProject, spanInRange, weeklyOpened } from '../../site/domain/projects.js'
+import { projectLife, projectRows, projectSummary, recordsByProject, spanInRange } from '../../site/domain/projects.js'
 import { DAY_MS, parisMidnight } from '../../site/domain/time.js'
 import { at, record } from './records.mjs'
 
@@ -198,15 +198,6 @@ describe('spanInRange', () => {
   })
 })
 
-describe('weeklyOpened', () => {
-  test('counts the code pull requests opened each week of a span', () => {
-    const from = at('2026-03-02T00:00:00Z')
-    assert.deepEqual(weeklyOpened(KITE, from, at('2026-04-12T00:00:00Z')), [1, 0, 0, 0, 0, 2])
-    // A span shorter than a week has one.
-    assert.deepEqual(weeklyOpened(KITE, from, from + 10 * 60), [1])
-  })
-})
-
 describe('projectRows', () => {
   const rows = projectRows(ALL, SPRING, { now: NOW })
   const row = (name) => rows.find((item) => item.name === name)
@@ -237,12 +228,11 @@ describe('projectRows', () => {
     assert.equal(row('quiet-otter').open, 1)
   })
 
-  test('cut at the end of the range, its weeks and its pace within it', () => {
+  test('cut at the end of the range, and its pace within it', () => {
     const otter = row('quiet-otter')
     assert.equal(otter.span.cutEnd, true)
     assert.equal(otter.span.to, SPRING.end / 60_000)
-    // Two code pull requests opened over the three weeks from its start to the end of May.
-    assert.deepEqual(otter.weeks, [1, 1, 0])
+    // Two code pull requests opened over the three weeks or so from its start to the end of May.
     assert.equal(otter.perWeek, 2 / ((SPRING.end / 60_000 - at('2026-05-11T09:00:00Z')) / (7 * 24 * 60)))
   })
 

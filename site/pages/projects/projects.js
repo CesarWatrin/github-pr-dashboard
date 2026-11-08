@@ -2,8 +2,10 @@
 // them. Every part follows the period, the squad and the search; without any project in the data, the page says how one
 // is found.
 
+import { parisDay } from '../../domain/time.js'
 import { capitalize, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { STALLED_AFTER_DAYS } from '../../domain/projects.js'
 import { anyProject, currentProjects } from '../../model/projects.js'
 import { matchesQuery, periodRange, periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
@@ -13,7 +15,7 @@ import { $, el } from '../../ui/dom.js'
 import { LINES_COLUMN, topReposCell } from '../../ui/tables/cells.js'
 import { renderTiles } from '../../ui/tiles.js'
 import { openProjectDialog, projectCard } from './cards.js'
-import { formatDay, formatSpan, lastMergeOf, PROJECT_FIGURES, PROJECT_STATUSES, statusTag } from './figures.js'
+import { formatDay, formatSpan, lastMergeOf, PROJECT_FIGURES, PROJECT_STATUSES, STATUS_ORDER, statusTag } from './figures.js'
 
 const PROJECT_TILES = [
   { key: 'ongoing', label: t('Projets en cours') },
@@ -31,7 +33,7 @@ function nameCell(row) {
   pick.setAttribute('aria-haspopup', 'dialog')
   pick.addEventListener('click', () => openProjectDialog(row, currentProjects().rows, pick))
 
-  return el('td', { className: 'text project-name-cell' }, pick, statusTag(row.status))
+  return el('td', { className: 'text project-name-cell' }, pick)
 }
 
 // A figure of a project as a column of the table (shell/tables.js): sorted on its value, shown in its format. Their
@@ -49,7 +51,19 @@ export const PROJECT_COLUMNS = [
     kind: 'text',
     value: (row) => row.name,
     cell: nameCell,
-    hint: t('Le nom de sa branche project/…/main, un projet du même nom dans plusieurs dépôts n’en faisant qu’un ; son statut à la dernière synchro : en cours, livré, ou à l’arrêt.'),
+    hint: t('Le nom de sa branche project/…/main : un projet du même nom dans plusieurs dépôts n’en fait qu’un.'),
+  },
+  {
+    key: 'status',
+    label: t('Statut'),
+    kind: 'text',
+    // Sorted as they call for attention, whatever the language of their words: under way, stalled, then delivered.
+    value: (row) => STATUS_ORDER.indexOf(row.status),
+    format: (row) => PROJECT_STATUSES[row.status].label,
+    cell: (row) => el('td', { className: 'text' }, statusTag(row.status)),
+    hint: t('À la dernière synchro : en cours, à l’arrêt depuis {days} jours sans activité, ou livré. Le tri les range dans cet ordre.', {
+      days: STALLED_AFTER_DAYS,
+    }),
   },
   column('start'),
   column('lastMerge'),
@@ -78,8 +92,8 @@ export const PROJECT_COLUMNS = [
   },
 ]
 
-// What the timeline shows of a project: its span within the period, its color and word, its busy weeks, its merges, and
-// its dates and figures on hover.
+// What the timeline shows of a project: its name and status, its span within the period, fading in where the period cuts
+// it and out where it goes on, flat where it stopped; its merges; its dates and figures on hover.
 function timelineRow(row, rows) {
   const status = PROJECT_STATUSES[row.status]
   const lastMerge = lastMergeOf(row)
@@ -94,14 +108,13 @@ function timelineRow(row, rows) {
 
   return {
     key: row.name,
-    label: row.name,
+    head: [el('span', { className: 'gantt-name', textContent: row.name, title: row.name }), statusTag(row.status)],
     from: row.span.from,
     to: row.span.to,
-    cutStart: row.span.cutStart,
-    cutEnd: row.span.cutEnd,
+    fadeStart: row.span.cutStart,
+    fadeEnd: row.span.cutEnd || row.status === 'ongoing',
+    flatEnd: row.status === 'stalled' && !row.span.cutEnd,
     color: status.color,
-    tag: status.label,
-    weeks: row.weeks,
     markers: row.merges,
     ariaLabel: [`${row.name}, ${status.label}, ${dates}.`, ...(cut ? [cut] : [])].join(' '),
     tooltip: {
@@ -122,7 +135,8 @@ function timelineRow(row, rows) {
   }
 }
 
-// The timeline of the projects, as wide as its card: drawn when the page shows, and again as it resizes.
+// The timeline of the projects, as wide as its card: drawn when the page shows, and again as it resizes. A dashed line
+// marks the last sync, « Aujourd’hui » when it was today.
 export function renderProjectTimeline() {
   const container = $('[data-project-timeline]')
   if (!state.stats || container.clientWidth === 0 || !anyProject()) {
@@ -134,22 +148,20 @@ export function renderProjectTimeline() {
 
     return
   }
+  const lastSync = Date.parse(state.stats.generatedAt)
   ganttChart(container, {
     range: periodRange(),
     rows: rows.map((row) => timelineRow(row, currentProjects().rows)),
     ariaLabel: t('Calendrier des projets, {period}', { period: periodTitle() }),
+    now: { at: lastSync, label: parisDay(lastSync) === parisDay(Date.now()) ? t('Aujourd’hui') : formatDay(lastSync / 60_000) },
   })
 }
 
-// The words of the timeline's colors and marks.
+// The words of the timeline's colors, and its dots.
 function renderTimelineLegend() {
   const legend = $('[data-project-timeline-legend]')
   renderLegend(legend, Object.values(PROJECT_STATUSES))
-  legend.append(
-    el('span', {}, el('span', { className: 'project-legend-marker', textContent: '◆' }), document.createTextNode(t('Merge dans une branche principale'))),
-    el('span', {}, el('span', { className: 'project-legend-cut', textContent: '‹ ›' }), document.createTextNode(t('Coupé par la période'))),
-    el('span', {}, el('span', { className: 'project-legend-weeks' }), document.createTextNode(t('PR ouvertes chaque semaine'))),
-  )
+  legend.append(el('span', {}, el('span', { className: 'swatch gantt-legend-merge' }), document.createTextNode(t('Merge dans une branche principale'))))
 }
 
 export function renderProjects(mode = 'enter') {
@@ -176,3 +188,4 @@ export function renderProjects(mode = 'enter') {
   }
   renderProjectTimeline()
 }
+

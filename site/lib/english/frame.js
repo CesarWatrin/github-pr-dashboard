@@ -257,8 +257,8 @@ export const FRAME = {
     'A project is developed on a branch <code>project/&lt;name&gt;/main</code>: its branches start from it, their PRs come back to it, then it is merged into a long-lived branch. No code PR of the synced data belongs to a project.',
   'Les projets de la période': 'The projects of the period',
   'Calendrier': 'Timeline',
-  'Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas livré, sa couleur et son mot disant où il en est à la dernière synchro ; elle se remplit d’autant plus qu’une semaine a vu de PR de code ouvertes. Un clic ouvre sa fiche.':
-    'Each bar runs from the first PR of the project to its delivery, or to its last activity if it is not delivered, its color and its word telling where it stands as of the last sync; it fills up the more code PRs a week saw opened. A click opens its card.',
+  'Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas livré, dans la couleur de son statut à la dernière synchro. Un point marque chaque merge de sa branche dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt finit net, une barre coupée par la période s’estompe à ce bord. Un clic ouvre sa fiche.':
+    'Each bar runs from the first PR of the project to its delivery, or to its last activity if it is not delivered, in the color of its status as of the last sync. A dot marks each merge of its branch into a long-lived branch. An ongoing bar fades out on the right, a stalled one ends flat, a bar cut by the period fades at that edge. A click opens its card.',
   'Comparer les projets': 'Compare the projects',
   'Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période et la squad choisies. Un clic sur une colonne trie les projets.':
     'The dates, the duration and the status hold for the whole project; the other figures, for the period and the squad picked. A click on a column sorts the projects.',

@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="styles/ui/layout.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/tiles.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/charts.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/gantt.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/team.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/report.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/trends.css?v=__BUILD__" />
@@ -415,6 +416,13 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" /><circle cx="8" cy="8" r="2" /></svg>
             Relecteurs
           </a>
+          <a class="nav-link" href="#/projets" data-route-link="projects">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="4.5" cy="3.5" r="1.5" /><circle cx="4.5" cy="12.5" r="1.5" /><circle cx="11.5" cy="5" r="1.5" />
+              <path d="M4.5 5v6M11.5 6.5c0 2.5-1.5 3-4 3.3-1.6.2-3 .7-3 2.2" />
+            </svg>
+            Projets
+          </a>
           <a class="nav-link" href="#/cycle" data-route-link="cycle">
             <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8.5" r="5.5" /><path d="M8 5.5v3l2 1.5M6.5 1.5h3" /></svg>
             Cycle de vie
@@ -459,13 +467,6 @@
               <path d="M3.5 13V3.5a1 1 0 0 1 1-1h8v9h-7.5a1.5 1.5 0 0 0 0 3h7.5" /><path d="M6.5 5.5h3" />
             </svg>
             Dépôts
-          </a>
-          <a class="nav-link" href="#/projets" data-route-link="projects">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <circle cx="4.5" cy="3.5" r="1.5" /><circle cx="4.5" cy="12.5" r="1.5" /><circle cx="11.5" cy="5" r="1.5" />
-              <path d="M4.5 5v6M11.5 6.5c0 2.5-1.5 3-4 3.3-1.6.2-3 .7-3 2.2" />
-            </svg>
-            Projets
           </a>
           <a class="nav-link" href="#/tma" data-route-link="tma">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 2.5a3.5 3.5 0 0 0-3.2 4.9L2.5 11.7l1.8 1.8 4.3-4.3A3.5 3.5 0 0 0 13.5 6l-2 .5-1.5-1.5.5-2Z" /></svg>
@@ -1257,8 +1258,9 @@
                 <div class="gantt" data-project-timeline></div>
                 <p class="card-note">
                   Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas
-                  livré, sa couleur et son mot disant où il en est à la dernière synchro ; elle se remplit d’autant plus
-                  qu’une semaine a vu de PR de code ouvertes. Un clic ouvre sa fiche.
+                  livré, dans la couleur de son statut à la dernière synchro. Un point marque chaque merge de sa branche
+                  dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt finit net, une
+                  barre coupée par la période s’estompe à ce bord. Un clic ouvre sa fiche.
                 </p>
               </section>
               <div class="repo-cards" data-project-cards></div>
@@ -1415,7 +1417,7 @@
                   l’équipe (ou de la squad) qu’elles sont, ses relecteurs, ses lignes ajoutées et supprimées, le délai
                   médian de merge, et son rythme : les PR de code ouvertes par semaine sur la partie de la période où
                   il avance. Le calendrier montre chaque projet dont la vie croise la période, coupé à ses bords, un
-                  losange à chaque merge de sa branche ; les tuiles comptent les projets en cours, ceux livrés sur la
+                  point à chaque merge de sa branche ; les tuiles comptent les projets en cours, ceux livrés sur la
                   période, et sur ces derniers la durée et le délai d’intégration médians.
                 </dd>
                 <dt>PR de code</dt>

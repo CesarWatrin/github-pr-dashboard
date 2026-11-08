@@ -97,25 +97,6 @@ export function spanInRange({ start, end }, range) {
   return { from: Math.max(start, rangeStart), to: Math.min(end, rangeEnd), cutStart: start < rangeStart, cutEnd: end > rangeEnd }
 }
 
-// The code pull requests opened in each week of a span (minutes), the first week starting with it: how busy a project
-// was along its bar.
-/**
- * @param {PullRequestRecord[]} records
- * @param {number} from
- * @param {number} to
- * @returns {number[]}
- */
-export function weeklyOpened(records, from, to) {
-  const counts = Array.from({ length: Math.max(1, Math.ceil((to - from) / WEEK_MINUTES)) }, () => 0)
-  for (const pr of records) {
-    if (pr.kind === 'code' && pr.createdAt >= from && pr.createdAt <= to) {
-      counts[Math.min(counts.length - 1, Math.floor((pr.createdAt - from) / WEEK_MINUTES))]++
-    }
-  }
-
-  return counts
-}
-
 /**
  * The projects whose span meets a range, the earliest started first: their life over all the records (all, every
  * person's: the start, the merges and the status are the project's whatever the squad), and their figures over the
@@ -124,7 +105,7 @@ export function weeklyOpened(records, from, to) {
  * pull requests, those merged and their lines, and reviewers, with the pull requests they reviewed and their comments,
  * the busiest first; added and deleted lines; the median time to merge; perWeek: the code pull requests opened a week
  * while the project was under way within the range; repos: every repository of the project, by its code pull requests
- * over the range; weeks: the code pull requests opened each week of its span within the range.
+ * over the range.
  * @param {PullRequestRecord[]} records
  * @param {TimeRange} range
  * @param {{ all?: PullRequestRecord[], now?: number }} [options]
@@ -186,7 +167,6 @@ export function projectRows(records, range, { all = records, now = range.end } =
           medianTimeToMergeHours: period.totals.medianTimeToMergeHours,
           perWeek: code / Math.max(1, (span.to - span.from) / WEEK_MINUTES),
           repos: [...repos].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
-          weeks: weeklyOpened(project, span.from, span.to),
         },
       ]
     })

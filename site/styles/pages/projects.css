@@ -83,89 +83,15 @@
   color: var(--diff-deleted);
 }
 
-/* The name of a project in the table opens its dialog; its status follows. */
+/* The name of a project in the table opens its dialog. */
 .project-name-cell {
   white-space: nowrap;
 }
 
-.project-name-cell .project-status {
-  margin-left: 8px;
-}
-
-/* The timeline: a bar per project, tinted with the color of its status, filled where its weeks were busy. */
-.gantt {
-  margin-top: 8px;
-}
-
-.gantt svg {
-  display: block;
-  overflow: visible;
-}
-
-.gantt-label {
-  fill: var(--text-primary);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.gantt-tag {
-  fill: var(--text-secondary);
+/* On the timeline, the status follows the name of the project, in the column of the names. */
+.gantt-head .project-status {
+  flex: none;
+  padding: 0 7px;
   font-size: 11px;
 }
 
-.gantt-bar {
-  fill: var(--bar-color);
-  fill-opacity: 0.18;
-  stroke: var(--bar-color);
-  stroke-width: 1.25;
-  transition: fill-opacity 0.15s;
-}
-
-.gantt-week {
-  fill: var(--bar-color);
-  opacity: 0.75;
-}
-
-.gantt-cut {
-  fill: none;
-  stroke: var(--text-primary);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.gantt-marker {
-  fill: var(--surface);
-  stroke: var(--text-primary);
-  stroke-width: 1.5;
-}
-
-.gantt-hit {
-  cursor: pointer;
-  outline: none;
-}
-
-.gantt-row.is-active .gantt-bar {
-  fill-opacity: 0.32;
-}
-
-.gantt-row.is-active .gantt-hit,
-.gantt-hit:focus-visible {
-  fill: var(--highlight);
-}
-
-/* The marks of the legend: a merge, a bar cut by the period, the busy weeks. */
-.project-legend-marker,
-.project-legend-cut {
-  color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.project-legend-weeks {
-  width: 16px;
-  height: 10px;
-  border: 1px solid var(--text-secondary);
-  border-radius: 2px;
-  background: linear-gradient(to top, var(--text-secondary) 55%, transparent 55%);
-}

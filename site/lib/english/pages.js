@@ -403,8 +403,8 @@ export const PAGES = {
   'semaine': 'week',
   'semaines': 'weeks',
   'Statut': 'Status',
-  'À la dernière synchro : livré, en cours, ou à l’arrêt depuis {days} jours sans activité.':
-    'As of the last sync: delivered, ongoing, or stalled after {days} days without activity.',
+  'À la dernière synchro : en cours, à l’arrêt depuis {days} jours sans activité, ou livré. Le tri les range dans cet ordre.':
+    'As of the last sync: ongoing, stalled after {days} days without activity, or delivered. Sorting ranks them in that order.',
   'Début': 'Start',
   'Sa première PR ouverte, dans les données synchronisées.': 'Its first PR opened, within the synced data.',
   'Mergé le': 'Merged on',
@@ -449,8 +449,8 @@ export const PAGES = {
   'Durée médiane jusqu’à la livraison': 'Median time to delivery',
   'Intégration médiane': 'Median integration',
   'Projet': 'Project',
-  'Le nom de sa branche project/…/main, un projet du même nom dans plusieurs dépôts n’en faisant qu’un ; son statut à la dernière synchro : en cours, livré, ou à l’arrêt.':
-    'The name of its project/…/main branch, a project of the same name in several repositories being one; its status as of the last sync: ongoing, delivered, or stalled.',
+  'Le nom de sa branche project/…/main : un projet du même nom dans plusieurs dépôts n’en fait qu’un.':
+    'The name of its project/…/main branch: a project of the same name in several repositories is one.',
   'Personnes qui ont ouvert ces PR, parties comprises, et la part de l’équipe (ou de la squad choisie) encore là qu’elles sont.':
     'People who opened these PRs, those who left included, and the share of the team (or of the squad picked) still here they are.',
   '{count} · {share}': '{count} · {share}',
@@ -470,8 +470,6 @@ export const PAGES = {
   'Aucun projet à montrer': 'No project to show',
   'Calendrier des projets, {period}': 'Timeline of the projects, {period}',
   'Merge dans une branche principale': 'Merge into a long-lived branch',
-  'Coupé par la période': 'Cut by the period',
-  'PR ouvertes chaque semaine': 'PRs opened each week',
   '{period} : les projets dont la vie croise la période, du premier commencé au dernier':
     '{period}: the projects whose life crosses the period, from the first started to the last',
   'Aucun projet ne correspond à cette recherche': 'No project matches this search',

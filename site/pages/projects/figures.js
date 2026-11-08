@@ -12,27 +12,31 @@ import { el } from '../../ui/dom.js'
 // A month of the calendar, in days, for a duration.
 const MONTH_DAYS = 365.25 / 12
 
-// Where a project stands at the last sync: a color for the timeline and its legend, always with its word.
+// Where a project stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
+// stalled one lighter still; always with its word.
 export const PROJECT_STATUSES = {
   ongoing: {
     key: 'ongoing',
     label: t('En cours'),
-    color: 'var(--series-1)',
+    color: 'color-mix(in srgb, var(--series-1) 85%, var(--surface))',
     hint: t('Sa branche n’est pas mergée depuis sa dernière PR, et il a bougé dans les {days} derniers jours.', { days: STALLED_AFTER_DAYS }),
   },
   delivered: {
     key: 'delivered',
     label: t('Livré'),
-    color: 'var(--series-3)',
+    color: 'color-mix(in srgb, var(--series-3) 85%, var(--surface))',
     hint: t('Sa branche project/…/main est mergée dans une branche principale, et aucune PR du projet n’a été ouverte depuis.'),
   },
   stalled: {
     key: 'stalled',
     label: t('À l’arrêt'),
-    color: 'var(--series-2)',
+    color: 'color-mix(in srgb, var(--series-2) 55%, var(--surface))',
     hint: t('Pas livré, et plus rien depuis {days} jours : ni PR, ni review, ni commentaire, ni merge.', { days: STALLED_AFTER_DAYS }),
   },
 }
+
+// The order of the statuses in the table: those that call for attention first.
+export const STATUS_ORDER = ['ongoing', 'stalled', 'delivered']
 
 // A project's day, from minutes since the epoch: « 3 mars 2026 ».
 /** @type {(minutes: number | null | undefined) => string} */
@@ -82,7 +86,9 @@ export const PROJECT_FIGURES = {
     key: 'status',
     label: t('Statut'),
     format: (status) => PROJECT_STATUSES[status].label,
-    hint: t('À la dernière synchro : livré, en cours, ou à l’arrêt depuis {days} jours sans activité.', { days: STALLED_AFTER_DAYS }),
+    hint: t('À la dernière synchro : en cours, à l’arrêt depuis {days} jours sans activité, ou livré. Le tri les range dans cet ordre.', {
+      days: STALLED_AFTER_DAYS,
+    }),
   },
   start: { key: 'start', label: t('Début'), format: formatDay, hint: t('Sa première PR ouverte, dans les données synchronisées.') },
   lastMerge: {
