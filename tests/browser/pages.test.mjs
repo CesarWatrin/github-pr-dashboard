@@ -19,6 +19,8 @@ const stats = madeUpStats()
 const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-collaboration-pairs', 'data-ci-cut'])
 
 const skip = !browserPath() && !process.env.CI && 'Chrome not found: set CHROME_PATH'
+// Where a test stops the clock of the page, in the session of the tab: it holds across reloads.
+const FROZEN_CLOCK_KEY = 'test-frozen-clock'
 // What reads as French: accented letters, French quotes, common French words. The made-up stats have none (plain ASCII
 // names and titles): in English, whatever shows with any of them is a text left in French, wrapped in t() or not.
 const FRENCH = /[àâçéèêëîïôûùüÿœæ«»]|\b(?:les|des|une|avec|sans|pour|dans|aucun|aucune|depuis|jours|mois|personnes)\b/i
@@ -57,13 +59,18 @@ for (const language of ['fr', 'en']) {
       await page.send('Network.enable')
       // Nothing leaves the machine: avatars and the GitHub API are refused.
       await page.send('Network.setBlockedURLs', { urls: ['*://github.com/*', '*://api.github.com/*', '*://avatars.githubusercontent.com/*'] })
-      // The clock of the page stands five minutes after the last sync of the stats.
+      // The clock of the page stands five minutes after the last sync of the stats. A test may stop it, across reloads
+      // (FROZEN_CLOCK_KEY), so that a page and its address loaded again read the same time.
       const now = Date.parse(stats.generatedAt) + 5 * 60_000
       await page.send('Page.addScriptToEvaluateOnNewDocument', {
         source: `(() => {
           const RealDate = Date
           const start = performance.now()
-          const now = () => ${now} + Math.floor(performance.now() - start)
+          let frozen = null
+          try {
+            frozen = Number(sessionStorage.getItem('${FROZEN_CLOCK_KEY}')) || null
+          } catch {}
+          const now = () => frozen ?? ${now} + Math.floor(performance.now() - start)
           globalThis.Date = class extends RealDate {
             constructor(...args) { super(...(args.length ? args : [now()])) }
             static now() { return now() }
@@ -320,6 +327,126 @@ for (const language of ['fr', 'en']) {
       await page.evaluate(`location.hash = '#/?period=365d'`)
       await page.waitFor(`document.querySelector('[data-search]').value === '' && !location.hash.includes('q=')`)
     })
+
+    // A filter changed draws again whatever it changes: every page then shows what loading its address again shows,
+    // with the same filters. A filter that draws again only some pages leaves the others behind until a reload, which
+    // no other test sees: a page is drawn by render() and only shown when going to it. Every filter, every page, the
+    // filters of a page found in it (a new one is covered without a word here). In French only: the language changes
+    // no drawing.
+    if (language === 'fr') {
+      test('any filter changed, every page shows what its address loaded again shows', { timeout: 600_000 }, async () => {
+        const ready = `document.readyState === 'complete' && document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`
+        // The address of a page with every filter at its default, loaded afresh.
+        async function load(route) {
+          await page.evaluate(`location.hash = ${JSON.stringify(`${ROUTES[route].hash}?period=365d`)}; location.reload()`)
+          await page.waitFor(ready)
+        }
+        async function reload() {
+          await page.evaluate('location.reload()')
+          await page.waitFor(ready)
+        }
+        // What a page shows once it no longer moves (a page may finish drawing after it shows): its text, then how many
+        // of its elements are in each state (is-found, is-active…), what a text does not tell (the people the search
+        // lights up on a network, say).
+        async function pageText(route) {
+          // Gone to only from another page: going to the page shown would draw it again, and hide what it left behind.
+          await page.evaluate(`document.querySelector('[data-route="${route}"]').hidden && (location.hash = ${JSON.stringify(ROUTES[route].hash)})`)
+          // Shown, and done working (aria-busy: the trends work their months out one at a time).
+          await page.waitFor(`!document.querySelector('[data-route="${route}"]').hidden && !document.querySelector('[data-route="${route}"][aria-busy="true"], [data-route="${route}"] [aria-busy="true"]')`)
+          const shown = `(() => {
+            const root = document.querySelector('[data-route="${route}"]')
+            const states = {}
+            for (const element of root.querySelectorAll('[class*="is-"]')) {
+              for (const name of element.classList) {
+                if (name.startsWith('is-')) {
+                  states[name] = (states[name] ?? 0) + 1
+                }
+              }
+            }
+            const counted = Object.entries(states).sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => name + ' × ' + count)
+            return root.innerText + '\\n' + counted.join('\\n')
+          })()`
+          let previous = null
+          for (let tries = 0; tries < 40; tries++) {
+            await page.evaluate(`new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 30)))`)
+            const current = await page.evaluate(shown)
+            if (current === previous) {
+              break
+            }
+            previous = current
+          }
+
+          return previous
+        }
+        // A change run on the page shown, once the address follows it.
+        async function run(script) {
+          const before = await page.evaluate('location.hash')
+          await page.evaluate(script)
+          await page.waitFor(`location.hash !== ${JSON.stringify(before)}`)
+        }
+        // The first line where two texts of a page part, to say what was left behind.
+        const firstDifference = (left, right) => {
+          const [a, b] = [left.split('\n'), right.split('\n')]
+          const index = a.findIndex((line, at) => line !== b[at])
+          const at = index < 0 ? a.length : index
+
+          return `line ${at + 1}: ${JSON.stringify(a[at] ?? '')} after the change, ${JSON.stringify(b[at] ?? '')} once loaded again`
+        }
+
+        await page.evaluate(`sessionStorage.setItem('${FROZEN_CLOCK_KEY}', String(Date.now()))`)
+        await load('overview')
+        const routes = Object.keys(ROUTES)
+        // The filters of the frame, changed from every page in turn; those of a page (its repositories, the statuses of
+        // the projects), from their page.
+        const scoped = await page.evaluate(`[...document.querySelectorAll('[data-route] [data-repo-filter], [data-route] [data-status-filter]')].map((filter) => ({
+          route: filter.closest('[data-route]').dataset.route,
+          selector: filter.dataset.repoFilter ? '[data-repo-filter="' + filter.dataset.repoFilter + '"]' : '[data-status-filter]',
+        }))`)
+        assert.ok(scoped.length >= 2, 'the filters of the pages are found')
+        const pick = (selector, value, type = 'change') =>
+          `(() => { const field = document.querySelector('${selector}'); field.value = ${JSON.stringify(value)}; field.dispatchEvent(new Event('${type}')) })()`
+        const changes = [
+          { name: 'the period', run: `document.querySelector('[data-period="90d"]').click()`, undo: `document.querySelector('[data-period="365d"]').click()` },
+          { name: 'the comparison', run: pick('[data-compare]', 'previous'), undo: pick('[data-compare]', 'none') },
+          { name: 'the squad', run: pick('[data-squad-filter]', 'Shop'), undo: pick('[data-squad-filter]', '') },
+          { name: 'the search', run: pick('[data-search]', 'ada', 'input'), undo: pick('[data-search]', '', 'input') },
+          // A page's filter: its first choice taken away.
+          ...scoped.map(({ route, selector }) => ({ name: selector, routes: [route], run: `document.querySelector('${selector} input:not([data-category])').click()` })),
+        ]
+        for (const change of changes) {
+          const from = change.routes ?? routes
+          await load(from[0])
+          // Changed on a page, that page shows it at once.
+          const onPage = {}
+          for (const route of from) {
+            await pageText(route)
+            await run(change.run)
+            onPage[route] = await pageText(route)
+            if (change.undo) {
+              await run(change.undo)
+            }
+          }
+          if (change.undo) {
+            await run(change.run)
+          }
+          // And every other page, when going to it.
+          const changed = {}
+          for (const route of routes) {
+            changed[route] = await pageText(route)
+          }
+          await reload()
+          for (const route of routes) {
+            const loaded = await pageText(route)
+            if (route in onPage) {
+              assert.ok(onPage[route] === loaded, `${change.name} changed on ${route}, that page is behind: ${firstDifference(onPage[route], loaded)}`)
+            }
+            assert.ok(changed[route] === loaded, `${change.name} changed, ${route} is behind when going to it: ${firstDifference(changed[route], loaded)}`)
+          }
+        }
+        await page.evaluate(`sessionStorage.removeItem('${FROZEN_CLOCK_KEY}')`)
+        await load('overview')
+      })
+    }
 
     test('the theme toggles, and locking asks first', async () => {
       const theme = await page.evaluate(`document.documentElement.dataset.theme ?? ''`)

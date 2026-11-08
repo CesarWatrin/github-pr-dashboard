@@ -26,6 +26,8 @@ paths:
 - **The address** follows the filters and the card open, so that a place of the page can be shared: after the hash of
   the page, a query (`urlQueryOf()` of `model/url-state.js`: the period, or `custom` with `from` and `to`; `compare`,
   `squad`, `q`, `repos-<name>` for each repository filter narrowed, `statuses` of the projects, `month` on the report,
+  `person` on the reviewers page once someone is picked for the reviews over time (else the busiest reviewer of the
+  period shows, never stored),
   `card` as `person:`, `repo:`, `project:` or `squad:` and its key, `pr` as `repo#number`). `shell/url-state.js` writes
   it back with `history.replaceState()` (no new entry in the history) after `render()` and after any click, input,
   change or dialog closing; it reads it at load (`readUrlState()`, before the first render, so that an address opened
@@ -33,6 +35,13 @@ paths:
   once the first stats are drawn (`openFromUrl()`, through the `OPEN_…` events, `OPEN_SQUAD` among them). An address
   with a query is a whole state: what it does not say goes back to the defaults (`applyUrlQuery()`); one without keeps
   the choices the browser remembers. `currentRoute()` reads the page before the query.
+- **A filter changed draws again every page that reads it.** A page is drawn by `render()` and only shown when going
+  to it, its charts aside: a filter that draws again only some pages leaves the others behind until a reload. The
+  period, the comparison and the squad call `render()`; the search, at each key, draws again what reads it (a whole
+  `render()` would lag behind the typing), and the filter of a page its page. The browser test « any filter changed,
+  every page shows what its address loaded again shows » changes every filter from every page and compares each page,
+  its text and the states of its elements (`is-…`), with its address loaded again: a page left behind fails it. A page
+  that works on after it shows says so with `aria-busy` (the trends, month by month), so that it waits for it.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
   `PERIODS` (30 and 90 days, 12, 24 and 36 months); a preset the data does not cover yet (`periodAvailable()`, from
   `windowStart`) is disabled while the sync reads the older months back. Picked dates (`CUSTOM_PERIOD`) are clamped to

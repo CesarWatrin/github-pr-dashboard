@@ -189,7 +189,10 @@ export function renderTrends() {
   }
   const months = reportMonths()
   const status = $('[data-trends-status]')
-  if (!months.every(monthReady)) {
+  // Busy while the months are worked out, for a screen reader (and the tests) to wait for the cards.
+  const busy = !months.every(monthReady)
+  $('[data-route="trends"]').setAttribute('aria-busy', String(busy))
+  if (busy) {
     // New stats keep the cards of the previous ones in the meantime.
     status.hidden = Boolean(state.trendsCards)
     status.textContent = t('Calcul des tendances, mois par mois…')
