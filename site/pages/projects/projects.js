@@ -5,7 +5,6 @@
 import { parisDay } from '../../domain/time.js'
 import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { STALLED_AFTER_DAYS } from '../../domain/projects.js'
 import { anyProject, currentProjects } from '../../model/projects.js'
 import { matchesQuery, periodRange, periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
@@ -64,9 +63,7 @@ export const PROJECT_COLUMNS = [
     value: (row) => STATUS_ORDER.indexOf(row.status),
     format: (row) => PROJECT_STATUSES[row.status].label,
     cell: (row) => el('td', { className: 'text' }, statusTag(row.status)),
-    hint: t('À la dernière synchro : en cours, à l’arrêt depuis {days} jours sans activité, ou livré. Le tri les range dans cet ordre.', {
-      days: STALLED_AFTER_DAYS,
-    }),
+    hint: PROJECT_FIGURES.status.hint,
   },
   dateColumn('start'),
   dateColumn('lastMerge'),

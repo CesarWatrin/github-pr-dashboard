@@ -18,10 +18,10 @@ const WEEK_AXIS_MAX_DAYS = 120
 
 /**
  * A row: the nodes of its head; its span (from and to, minutes since the epoch, within the range); whether it fades in
- * (fadeStart, cut by the range), fades out (fadeEnd: it goes on) or ends flat (flatEnd: it stopped); its color, lighter
- * when quiet; the milestones dotted on it; its tooltip, the label read aloud, and what opens it.
+ * (fadeStart, cut by the range), fades out (fadeEnd: it goes on) or ends flat (flatEnd: it stopped); its color; the
+ * milestones dotted on it; its tooltip, the label read aloud, and what opens it.
  * @typedef {{ key: string, head: Node[], from: number, to: number, fadeStart: boolean, fadeEnd: boolean, flatEnd: boolean,
- *   color: string, quiet?: boolean, markers: { at: number }[], tooltip: import('../tooltip.js').Tooltip, ariaLabel: string,
+ *   color: string, markers: { at: number }[], tooltip: import('../tooltip.js').Tooltip, ariaLabel: string,
  *   open: (opener: Element) => void }} GanttRow
  */
 
@@ -80,7 +80,7 @@ export function ganttChart(container, { range, rows, ariaLabel, now = null }) {
       const from = percent(row.from * MINUTE_MS)
       const to = percent(row.to * MINUTE_MS)
       const bar = el('span', {
-        className: ['gantt-bar', row.quiet ? 'is-quiet' : '', row.flatEnd ? 'is-flat-end' : ''].filter(Boolean).join(' '),
+        className: row.flatEnd ? 'gantt-bar is-flat-end' : 'gantt-bar',
       })
       bar.style.left = `${from}%`
       bar.style.width = `${Math.max(0, to - from)}%`

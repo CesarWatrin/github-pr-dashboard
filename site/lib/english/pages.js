@@ -433,7 +433,6 @@ export const PAGES = {
   '{count} sem.': '{count} wk',
   'PR de code ouvertes par semaine, sur la partie de la période où le projet avance.':
     'Code PRs opened per week, over the part of the period the project moves in.',
-  'Dépôts où le projet a des PR.': 'Repositories where the project has PRs.',
   'Du {start} au {end}': 'From {start} to {end}',
   'projets': 'projects',
   'Sa vie': 'Its life',

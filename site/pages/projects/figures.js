@@ -161,6 +161,5 @@ export const PROJECT_FIGURES = {
     format: (value) => (isMissing(value) ? '–' : t('{value} / sem.', { value: formatDecimal(Math.round(value * 10) / 10) })),
     hint: t('PR de code ouvertes par semaine, sur la partie de la période où le projet avance.'),
   },
-  repos: { key: 'repos', label: t('Dépôts'), value: (row) => row.repos.length, format: formatNumber, hint: t('Dépôts où le projet a des PR.') },
 }
 export const projectFigures = (...keys) => keys.map((key) => PROJECT_FIGURES[key])
