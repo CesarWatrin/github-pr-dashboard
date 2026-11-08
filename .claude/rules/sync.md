@@ -8,7 +8,7 @@ paths:
 
 Each part has its module in `scripts/sync/` (`structure.md`): the fetching below lives in `pull-requests.mjs`,
 `runs.mjs`, `people.mjs`, `repositories.mjs` and `backfill.mjs`, on top of `github.mjs` and `queries.mjs`; the
-classification and the records in `records.mjs`; the monthly history in `history.mjs`; what is written in
+classification and the records in `records.mjs`, the project of each pull request in `projects.mjs`; the monthly history in `history.mjs`; what is written in
 `publish.mjs`; the configuration in `config.mjs`; one sync end to end in `run.mjs`.
 
 ## Fetching
@@ -54,6 +54,15 @@ classification and the records in `records.mjs`; the monthly history in `history
   merges, delays, sizes, lines and reviews. A sync alone may be a feature (the sync of some data), and elsewhere than
   on project branches a merge in the name may be what a feature is about: both stay code.
 - **Hotfix**: a head starting with `hotfix`. **Revert**: a title starting with "Revert".
+- **Project** (`projectOf()`, over `projectIndex()` of the pull requests of the window): the branch a pull request
+  targets first, where its code lands: named under a project (`project/<name>/…`, its long-lived branch
+  `project/<name>/main` among them), or itself the head of a pull request of a project in the same repository, the newest
+  that belongs to one (stacked pull requests, however deep; a cycle gives none); else the project its own branch is named
+  under. A long-lived branch (`LONG_LIVED_BRANCHES`: develop, main, master, staging) never belongs to a project, even
+  brought into one; `project/<name>` alone or `projects/…` are not project branches. A project of the same name in two
+  repositories is one project: the page groups by name. `isProjectMerge()`: `project/<name>/main` into a long-lived
+  branch. The snapshot already kept the head and base of every pull request: no `SNAPSHOT_VERSION` bump, the next sync
+  publishes the projects of the whole window.
 - **Bots**: GitHub Apps (actor type other than `User`), `ghost`, and the logins of `BOT_USERS`. Bot pull requests are
   only kept when they deploy or are Dependabot updates; bot reviews and comments never count.
 - **Deployment**: a pull request merged into `master` or `main`, back-merges between them aside. A code pull request
@@ -102,6 +111,8 @@ classification and the records in `records.mjs`; the monthly history in `history
   the snapshot; without one (a lost Actions cache, a
   `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
   the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.
+- `project` on the code pull requests of people that belong to a project, and on the merges of a project branch into
+  a long-lived branch, which `projectMerge` flags: the name of the project only, never its branches.
 - Never publish bodies, branch names or anything not needed by a stat or a view: what is published must stay minimal,
   even encrypted. Titles are the one exception, with the state of the checks (`checks`), and only for the pull
   requests the page opens the timeline of (`hasDetails()`: open, or with an opening, a merge, a closing, a review or a
