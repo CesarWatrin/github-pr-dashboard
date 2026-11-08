@@ -37,6 +37,7 @@ import { renderRepoFilter, repoFilterNames } from '../ui/repo-filter.js'
 import { renderTables } from '../ui/tables/table.js'
 import { renderPeriodSelector, renderSquadFilter } from './filters.js'
 import { renderSyncMenu } from './sync.js'
+import { scheduleUrlWrite } from './url-state.js'
 
 export function renderCharts() {
   if (!state.stats) {
@@ -103,6 +104,7 @@ export function render(animate) {
   renderMe(tileMode)
   renderUnapproved(animate)
   renderSyncMenu()
+  scheduleUrlWrite()
 }
 
 // Draws the charts again as the page changes width: they are measured to fit it.

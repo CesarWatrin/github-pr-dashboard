@@ -1,5 +1,5 @@
-// What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, its branch
-// on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it
+// What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, the pull
+// request that merges its branch on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it
 // shows, and the projects of a person or a squad, on their card and in their dialog.
 
 import { isMissing } from '../domain/math.js'
@@ -11,7 +11,7 @@ import { t } from '../lib/i18n.js'
 import { state } from '../model/state.js'
 import { el, svg } from './dom.js'
 import { ICONS_URL } from './icons.js'
-import { askToOpen, githubUrl, OPEN_PROJECT } from './links.js'
+import { askToOpen, githubUrl, OPEN_PROJECT, pullRequestPath } from './links.js'
 
 // Where a project stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
 // stalled one lighter still; always with its word.
@@ -58,21 +58,44 @@ export function statusTag(status) {
   return el('span', { className: `project-status is-${status}`, title: hint }, dot, document.createTextNode(label))
 }
 
-// Where the branch of a project, project/<name>/main, lives on GitHub in one of its repositories.
-/** @type {(repo: string, name: string) => string} */
-export const projectBranchPath = (repo, name) => `${state.stats.org}/${encodeURIComponent(repo)}/tree/project/${encodeURIComponent(name)}/main`
-
-// The branch of a project in one of its repositories, as the GitHub mark: a link to it on GitHub, named on hover.
+// Where the branch of a project, project/<name>/main, comes back in one of its repositories, on GitHub: the pull request
+// that merges it into a long-lived branch (mergeRequestsOf() of domain/projects.js), merged, still open or closed
+// without a merge; else, without any, the pull requests of the project in that repository. Its state gives its color:
+// green once merged, red when closed, grey otherwise.
 /**
+ * @param {{ name: string, mergeRequests: Record<string, { number: number, state: 'merged' | 'open' | 'closed' }> }} row
  * @param {string} repo
- * @param {string} name
+ * @returns {{ path: string, state: 'merged' | 'open' | 'closed' | 'none', title: string }}
  */
-export function projectBranchLink(repo, name) {
-  const label = t('La branche project/{name}/main de {repo} sur GitHub', { name, repo })
+export function projectMergeOf(row, repo) {
+  const branch = `project/${row.name}/main`
+  const request = row.mergeRequests[repo]
+  if (!request) {
+    const query = encodeURIComponent(`is:pr head:${branch} OR base:${branch}`)
+
+    return { path: `${state.stats.org}/${encodeURIComponent(repo)}/pulls?q=${query}`, state: 'none', title: t('Pas de PR de merge de {branch} dans {repo} : ses PR sur GitHub', { branch, repo }) }
+  }
+  const titles = {
+    merged: t('La PR qui merge {branch} dans {repo}, mergée', { branch, repo }),
+    open: t('La PR qui merge {branch} dans {repo}, encore ouverte', { branch, repo }),
+    closed: t('La PR qui merge {branch} dans {repo}, fermée sans merge', { branch, repo }),
+  }
+
+  return { path: pullRequestPath(repo, request.number), state: request.state, title: titles[request.state] }
+}
+
+// The pull request that merges the branch of a project in one of its repositories, as the GitHub mark in the color of its
+// state: a link to it on GitHub, named on hover.
+/**
+ * @param {Parameters<typeof projectMergeOf>[0]} row
+ * @param {string} repo
+ */
+export function projectMergeLink(row, repo) {
+  const { path, state: mergeState, title } = projectMergeOf(row, repo)
   const mark = svg('svg', { viewBox: '0 0 24 24', width: 14, height: 14, 'aria-hidden': 'true' })
   mark.append(svg('use', { href: `${ICONS_URL}#github` }))
-  const link = el('a', { className: 'project-branch-link', href: githubUrl(projectBranchPath(repo, name)), target: '_blank', rel: 'noopener', title: label }, mark)
-  link.setAttribute('aria-label', label)
+  const link = el('a', { className: `project-merge-link is-${mergeState}`, href: githubUrl(path), target: '_blank', rel: 'noopener', title }, mark)
+  link.setAttribute('aria-label', title)
 
   return link
 }

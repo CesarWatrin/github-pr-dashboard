@@ -13,7 +13,7 @@ import { githubPill, OPEN_PROJECT, personLink, pullRequestLink, repoLink } from 
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
 import { repoFilterLabel, repoOptions } from '../../ui/repo-filter.js'
-import { formatDay, PROJECT_STATUSES, projectBranchPath, projectBranchLink, projectLabel, statusTag } from '../../ui/projects.js'
+import { formatDay, PROJECT_STATUSES, projectLabel, projectMergeLink, projectMergeOf, statusTag } from '../../ui/projects.js'
 import { namesakesText, projectFigures } from './figures.js'
 
 const PROJECT_CARD_STATS = projectFigures('code', 'merged', 'lines', 'reviewers', 'medianTimeToMergeHours', 'perWeek')
@@ -26,9 +26,20 @@ const CARD_AVATARS = 8
 // From its start to its end, and how long: « Du 3 mars 2026 au 5 mai 2026 · 9 semaines ».
 const datesText = (row) => `${t('Du {start} au {end}', { start: formatDay(row.start), end: formatDay(row.end) })} · ${formatSpan(row.days)}`
 
-// The repositories of a project, each opening its own dialog, with the branch of the project there on GitHub.
+// The repositories of a project, each opening its own dialog, with the pull request that merges the branch of the
+// project there, on GitHub, in the color of its state.
 const repoLinks = (row) =>
-  el('p', { className: 'project-repos' }, ...row.repos.map(([repo]) => el('span', { className: 'project-repo' }, repoLink(repo), projectBranchLink(repo, row.name))))
+  el('p', { className: 'project-repos' }, ...row.repos.map(([repo]) => el('span', { className: 'project-repo' }, repoLink(repo), projectMergeLink(row, repo))))
+
+// The same in the dialog: a GitHub pill per repository, in the color of the state of its merge.
+function mergePill(row, repo) {
+  const { path, state, title } = projectMergeOf(row, repo)
+  const pill = githubPill(path, repo)
+  pill.classList.add(`is-${state}`)
+  pill.title = title
+
+  return pill
+}
 
 export function projectCard(row, index, rows) {
   const label = projectLabel(row)
@@ -78,6 +89,7 @@ const mergeList = (row) =>
 // where, and when its branch was merged. Opened from another page (projectLink()), it counts every repository; for a
 // project the period misses, the whole data (whole).
 export function openProjectDialog(row, rows, opener, { fromPage = true, whole = false } = {}) {
+  state.openCard = { kind: 'project', key: row.key }
   const peers = rows.filter((other) => other.code > 0)
   const writers = row.authors.filter((author) => isCurrent(author.login))
   const readers = row.reviewers.filter((reviewer) => isCurrent(reviewer.login))
@@ -100,12 +112,8 @@ export function openProjectDialog(row, rows, opener, { fromPage = true, whole = 
           el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: label, title: label }), statusTag(row.status)),
           el('p', { className: 'person-dialog-meta', textContent: `${datesText(row)} · ${PROJECT_STATUSES[row.status].hint}` }),
           ...(namesakes ? [el('p', { className: 'person-dialog-meta project-namesakes', textContent: namesakes })] : []),
-          // The branch of the project in each of its repositories, on GitHub.
-          el(
-            'p',
-            { className: 'project-branches', title: t('La branche project/{name}/main de chaque dépôt sur GitHub', { name: row.name }) },
-            ...row.repos.map(([repo]) => githubPill(projectBranchPath(repo, row.name), repo)),
-          ),
+          // The pull request that merges the branch of the project in each of its repositories, on GitHub.
+          el('p', { className: 'project-branches' }, ...row.repos.map(([repo]) => mergePill(row, repo))),
           avatarStack(row.authors.map((author) => author.login), { size: 36 }),
         ),
       ),

@@ -134,6 +134,7 @@ const pullRequestStatus = (pr) => (pr.mergedAt !== null ? 'merged' : pr.closed ?
 
 // The dialog of a pull request. Closing gives the focus back to the link that opened it, when still there.
 export function openPullRequestDialog(pr, opener) {
+  state.openPullRequest = `${pr.repo}#${pr.number}`
   const { steps, pending, people, durations } = pullRequestTimeline(pr, Date.parse(state.stats.generatedAt) / 60_000)
   const close = el(
     'button',
@@ -228,6 +229,9 @@ export function openPullRequestDialog(pr, opener) {
 // its backdrop: its card fills the dialog, so only a click on the backdrop reaches the dialog itself.
 export function setupPullRequestDialog() {
   document.addEventListener(OPEN_PULL_REQUEST, (event) => openPullRequestDialog(/** @type {CustomEvent} */ (event).detail, event.target))
+  $('[data-pr-dialog]').addEventListener('close', () => {
+    state.openPullRequest = null
+  })
   $('[data-pr-dialog]').addEventListener('click', (event) => {
     if (event.target === event.currentTarget) {
       /** @type {HTMLDialogElement} */ (event.currentTarget).close()

@@ -48,4 +48,5 @@ export const ROUTES = {
 }
 
 /** @type {() => string} */
-export const currentRoute = () => Object.keys(ROUTES).find((key) => ROUTES[key].hash === location.hash) ?? 'overview'
+// The page of the address, whatever filters follow it (model/url-state.js).
+export const currentRoute = () => Object.keys(ROUTES).find((key) => ROUTES[key].hash === location.hash.split('?')[0]) ?? 'overview'

@@ -4,6 +4,7 @@
 import { isMissing, median } from '../../domain/math.js'
 import { formatNumber, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { state } from '../../model/state.js'
 import { $, el, svg } from '../dom.js'
 import { personLink, repoLink } from '../links.js'
 import { reducedMotion } from '../motion.js'
@@ -144,6 +145,9 @@ export function setupCardDialog() {
     }
   })
   $('[data-person-dialog]').addEventListener('close', resetPersonTilt)
+  $('[data-person-dialog]').addEventListener('close', () => {
+    state.openCard = null
+  })
   $('[data-person-dialog-scene]').addEventListener('pointermove', tiltPersonCard)
   $('[data-person-dialog-scene]').addEventListener('pointerleave', resetPersonTilt)
 }

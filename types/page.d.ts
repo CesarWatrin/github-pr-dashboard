@@ -86,6 +86,8 @@ interface State {
   > | null
   squadPerMember: boolean
   projectStatuses: Set<string> | null
+  openCard: { kind: 'person' | 'repo' | 'project' | 'squad'; key: string } | null
+  openPullRequest: string | null
   me: string | null
   notify: boolean
   // The pull requests of the lists of « Mes PR » the person picked there has to act on, as of the last sync.

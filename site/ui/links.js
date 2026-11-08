@@ -9,11 +9,12 @@ import { ICONS_URL } from './icons.js'
 
 // A click on a name asks for its dialog with one of these events, bubbling from the name; the dialogs listen to them
 // (setupPersonDialog() and the others), so that a link knows no dialog. Its detail: the login, the repository, the
-// record of the pull request, or the key of the project.
+// record of the pull request, the key of the project, or the name of the squad.
 export const OPEN_PERSON = 'dashboard:open-person'
 export const OPEN_REPOSITORY = 'dashboard:open-repository'
 export const OPEN_PULL_REQUEST = 'dashboard:open-pull-request'
 export const OPEN_PROJECT = 'dashboard:open-project'
+export const OPEN_SQUAD = 'dashboard:open-squad'
 
 export const askToOpen = (opener, type, detail) => opener.dispatchEvent(new CustomEvent(type, { bubbles: true, detail }))
 
