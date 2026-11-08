@@ -211,7 +211,7 @@ for (const language of ['fr', 'en']) {
       await page.evaluate(`document.querySelector('[data-repo-filter="projects"] [data-preset="all"]').click()`)
 
       // The search finds a project by its name, and says so.
-      assert.equal(await page.evaluate(`document.querySelector('[data-search]').placeholder`), read('Filtrer un projet, une personne ou un dépôt'))
+      assert.equal(await page.evaluate(`document.querySelector('[data-search]').placeholder`), read('Filtrer projet, personne ou dépôt'))
       await page.evaluate(`(() => {
         const search = document.querySelector('[data-search]')
         search.value = 'kite'

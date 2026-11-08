@@ -34,7 +34,7 @@ export const ROUTES = {
     hash: '#/projets',
     title: t('Projets'),
     subtitle: t('Les projets menés sur une branche project/…, quand ils ont commencé, avancé et été livrés'),
-    searchLabel: t('Filtrer un projet, une personne ou un dépôt'),
+    searchLabel: t('Filtrer projet, personne ou dépôt'),
   },
   tma: { hash: '#/tma', title: t('TMA'), subtitle: t('Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait') },
   devops: { hash: '#/devops', title: t('DevOps'), subtitle: t('Mises en production, intégration continue et mises à jour de dépendances') },
