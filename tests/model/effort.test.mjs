@@ -60,12 +60,11 @@ describe('where the effort goes, as the pages read it', () => {
   })
 
   test('per person still in the team, the busiest first, and for the squad picked', () => {
-    assert.deepEqual(peopleEfforts().rows.map((person) => person.login), ['ben', 'ada', 'cleo'])
-    assert.equal(peopleEfforts().total, 3)
+    assert.deepEqual(peopleEfforts().map((person) => person.login), ['ben', 'ada', 'cleo'])
     assert.deepEqual(personEffort('ben').counts, { projects: 1, tma: 1, acs: 0, rest: 1 })
     assert.equal(personEffort('eve'), null)
     state.squad = 'Boutique'
     assert.deepEqual(currentEffort().counts, { projects: 1, tma: 0, acs: 1, rest: 1 })
-    assert.deepEqual(peopleEfforts().rows.map((person) => person.login), ['ada', 'cleo'])
+    assert.deepEqual(peopleEfforts().map((person) => person.login), ['ada', 'cleo'])
   })
 })

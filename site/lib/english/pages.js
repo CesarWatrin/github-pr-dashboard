@@ -536,8 +536,6 @@ export const PAGES = {
   'PR pour maintenir': 'PRs to maintain',
   'PR pour construire': 'PRs to build',
   'maintenir, le reste à part': 'maintain, the rest aside',
-  'Les {count} personnes de l’équipe qui ont ouvert le plus de PR de code sur la période, sur {total}':
-    'The {count} people of the team who opened the most code PRs over the period, out of {total}',
   'Les personnes de l’équipe qui ont ouvert des PR de code sur la période, la plus active d’abord':
     'The people of the team who opened code PRs over the period, the busiest first',
   'L’effort {bucket}': 'Effort {bucket}',

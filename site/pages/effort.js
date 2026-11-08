@@ -100,11 +100,7 @@ export function renderEffort(mode = 'enter') {
         formatNumber(point.code),
       ]),
   )
-  const { rows, total } = peopleEfforts()
-  $('[data-effort-people-sub]').textContent =
-    total > rows.length
-      ? t('Les {count} personnes de l’équipe qui ont ouvert le plus de PR de code sur la période, sur {total}', { count: rows.length, total })
-      : t('Les personnes de l’équipe qui ont ouvert des PR de code sur la période, la plus active d’abord')
+  $('[data-effort-people-sub]').textContent = t('Les personnes de l’équipe qui ont ouvert des PR de code sur la période, la plus active d’abord')
 }
 
 // A bar per group of code pull requests (a squad, a person), cut into the share of each kind of work.
@@ -152,7 +148,7 @@ export function renderEffortCharts() {
   }
   effortShares(
     $('[data-effort-people]'),
-    peopleEfforts().rows.map((person) => ({ ...person, label: displayName(person.login) })),
+    peopleEfforts().map((person) => ({ ...person, label: displayName(person.login) })),
     t('Part de chaque type de travail dans les PR de code de chaque personne, {period}', { period: periodTitle() }),
   )
 }

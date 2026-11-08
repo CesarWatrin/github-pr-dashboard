@@ -346,7 +346,7 @@ paths:
   `model/effort.js` works them out once per stats, range and squad: `currentEffort()` against `comparedEffort()` (the
   tiles, the TMA and maintaining better down), `effortChart()` (`effortSeries()`, drawn by `stackedChart()`, the data
   table under it), `squadEfforts()` (each squad whatever squad is picked, the organization last, `shareChart()`),
-  `peopleEfforts()` (the `EFFORT_TOP_PEOPLE` people still in the team with the most code pull requests, for the squad
+  `peopleEfforts()` (every person still in the team who opened code pull requests, the busiest first, for the squad
   picked), `personEffort()` and `squadEffort()`. `EFFORT_SERIES` of `ui/effort.js` shows the kinds, the TMA first so
   that its share reads from the axis, in `--series-2` (TMA), `--series-1` (projects), `--series-3` (AC) and
   `--text-muted` (the rest); `effortBar()` draws « Où va son effort » in the dialogs of people and squads: a bar cut

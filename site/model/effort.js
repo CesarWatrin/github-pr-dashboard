@@ -12,9 +12,6 @@ import { loadedStats } from './state.js'
 
 /** @typedef {import('../domain/effort.js').EffortSummary} EffortSummary */
 
-// The people the page shows, the busiest first.
-export const EFFORT_TOP_PEOPLE = 15
-
 /** @type {import('../domain/effort.js').OnProject} */
 const onProject = (pr) => projectKeyOf(pr) !== null
 const options = { onProject }
@@ -76,17 +73,14 @@ export function squadEfforts() {
 /** @returns {Map<string, EffortSummary>} */
 const authorEfforts = () => once(`authors:${squadKey()}:${rangeKey(periodRange())}`, () => effortByAuthor(scopedRecords(), periodRange(), options))
 
-// The people still in the team who opened code pull requests over the period, for the squad picked: the
-// EFFORT_TOP_PEOPLE who opened the most (rows), out of all of them (total).
-/** @returns {{ rows: (EffortSummary & { login: string })[], total: number }} */
-export function peopleEfforts() {
-  const people = [...authorEfforts()]
+// Every person still in the team who opened code pull requests over the period, for the squad picked, the busiest
+// first.
+/** @returns {(EffortSummary & { login: string })[]} */
+export const peopleEfforts = () =>
+  [...authorEfforts()]
     .filter(([login]) => isCurrent(login))
     .map(([login, effort]) => ({ login, ...effort }))
     .sort((a, b) => b.code - a.code || displayName(a.login).localeCompare(displayName(b.login), 'fr'))
-
-  return { rows: people.slice(0, EFFORT_TOP_PEOPLE), total: people.length }
-}
 
 // Where the effort of a person goes over the period: their dialog. Null without any code pull request.
 /** @type {(login: string) => EffortSummary | null} */
