@@ -1,6 +1,6 @@
 // What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, its branch
-// on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it shows, and the projects of
-// a person or a squad, on their card and in their dialog.
+// on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it
+// shows, and the projects of a person or a squad, on their card and in their dialog.
 
 import { isMissing } from '../domain/math.js'
 import { STALLED_AFTER_DAYS } from '../domain/projects.js'
