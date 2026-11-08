@@ -66,7 +66,8 @@ export async function launch() {
         await exited
         clearTimeout(forced)
       }
-      await rm(profile, { recursive: true, force: true })
+      // Its helper processes may still write to the profile for a moment after it exits: removing it tries again.
+      await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
     },
   }
 }
