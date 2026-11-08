@@ -4,7 +4,7 @@ import { t } from '../lib/i18n.js'
 import { BADGES_LEGEND } from '../model/badges.js'
 import { authorRows, reviewerRows } from '../model/contributors.js'
 import { displayName, isCurrent, SENIORITY_LEGEND } from '../model/people.js'
-import { currentProjects, projectRepoCounts } from '../model/projects.js'
+import { projectRepoCounts, shownProjects } from '../model/projects.js'
 import { withCategory } from '../model/repositories.js'
 import { currentCi, currentPeriod } from '../model/selection.js'
 import { currentNetwork } from '../model/team.js'
@@ -116,7 +116,7 @@ export function registerTables() {
     },
     projects: {
       columns: PROJECT_COLUMNS,
-      rows: () => currentProjects().rows,
+      rows: () => shownProjects().rows,
       rowKey: (row) => row.key,
       searchTexts: projectSearchTexts,
       // The filter of the whole page: the repositories of the projects of the period, whatever those picked.

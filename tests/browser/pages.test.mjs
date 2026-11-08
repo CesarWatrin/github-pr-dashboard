@@ -184,7 +184,7 @@ for (const language of ['fr', 'en']) {
       assert.ok(await page.evaluate(`document.querySelectorAll('[data-project-timeline] .gantt-marker').length > 0`))
     })
 
-    test('a name taken up again makes two projects, and the projects sort by status, filter by repository and search', async () => {
+    test('a name taken up again makes two projects, and the projects filter by status, by repository and search', async () => {
       await show('projects')
       const cards = `[...document.querySelectorAll('[data-project-cards] .repo-card-name')].map((name) => name.textContent)`
       // Each project of the name carries the month it started, and its dialog names the other one.
@@ -196,16 +196,19 @@ for (const language of ['fr', 'en']) {
       await noteFrench('project dialog of a name taken up again', '[data-person-dialog]')
       await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
 
-      // By status: under way, stalled, then delivered, on the cards as on the timeline.
-      const order = ['ongoing', 'stalled', 'delivered']
+      // The statuses picked: the stalled projects only, on the cards, the timeline and the table, and the filter says so.
       const statuses = (selector) => page.evaluate(`[...document.querySelectorAll('${selector} .project-status')].map((tag) => tag.className.split('is-')[1])`)
-      await page.evaluate(`document.querySelector('[data-project-order="status"]').click()`)
-      for (const selector of ['[data-project-cards]', '[data-project-timeline]']) {
+      const toggle = (status) => page.evaluate(`document.querySelector('[data-status-filter] input[data-status="${status}"]').click()`)
+      await toggle('ongoing')
+      await toggle('delivered')
+      for (const selector of ['[data-project-cards]', '[data-project-timeline]', '[data-projects] tbody']) {
         const shown = await statuses(selector)
-        assert.deepEqual(shown, shown.toSorted((a, b) => order.indexOf(a) - order.indexOf(b)), selector)
+        assert.ok(shown.length > 0 && shown.every((status) => status === 'stalled'), `${selector}: ${shown.join(', ')}`)
       }
-      assert.equal(await page.evaluate(`document.querySelector('[data-project-order="status"]').getAttribute('aria-checked')`), 'true')
-      await page.evaluate(`document.querySelector('[data-project-order="start"]').click()`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-status-filter] [data-status-label]').textContent`), read('À l’arrêt'))
+      await toggle('ongoing')
+      await toggle('delivered')
+      assert.equal(await page.evaluate(`document.querySelector('[data-status-filter] [data-status-label]').textContent`), read('Tous les statuts'))
 
       // The repositories picked: the projects with pull requests there only.
       await page.evaluate(`document.querySelector('[data-repo-filter="projects"] [data-preset="none"]').click()`)

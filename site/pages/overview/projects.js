@@ -1,10 +1,11 @@
 // The projects on the overview: what they add up to over the period, how many lived, started and were delivered bucket
-// by bucket, and the list of those of the period; and what the AC add up to. Every repository, for the squad picked;
-// nothing of either shows without any project or AC in the data.
+// by bucket, and the list of those of the period; and the AC: what they add up to, how many started and were delivered
+// bucket by bucket. Every repository, for the squad picked; nothing of either shows without any project or AC in the
+// data.
 
 import { formatDuration, formatNumber, formatShare, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { acTotals, anyAc, comparedAcTotals } from '../../model/acs.js'
+import { acChart, acTotals, anyAc, comparedAcTotals } from '../../model/acs.js'
 import { BUCKET_TITLES } from '../../model/periods.js'
 import { anyProject, comparedProjectTotals, projectChart, projectsOfPeriod, projectTotals } from '../../model/projects.js'
 import { periodRange, periodTitle } from '../../model/selection.js'
@@ -38,6 +39,11 @@ export const PROJECT_SERIES = [
   { label: t('livrés'), color: 'var(--series-3)', value: (point) => point.delivered },
 ]
 
+export const AC_OVERVIEW_SERIES = [
+  { label: t('AC démarrées'), color: 'var(--series-2)', value: (point) => point.started },
+  { label: t('AC livrées'), color: 'var(--series-3)', value: (point) => point.delivered },
+]
+
 // The tiles of the projects and of the AC, under those of the reviews, against the period compared.
 export function renderProjectTotals(mode) {
   const any = anyProject()
@@ -67,6 +73,43 @@ export function renderProjectChart() {
     series: PROJECT_SERIES,
     ariaLabel: t('Projets actifs, démarrés et livrés {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
   })
+}
+
+// The chart of the AC, as wide as its card, like that of the projects: drawn when the page shows, and again as it
+// resizes.
+export function renderAcOverviewChart() {
+  if (!anyAc()) {
+    return
+  }
+  const { bucket } = periodRange()
+  $('[data-acs-overview-chart-title]').textContent = t('AC {bucket}', { bucket: BUCKET_TITLES[bucket] })
+  columnChart($('[data-acs-overview-chart]'), {
+    points: acChart(),
+    bucket,
+    series: AC_OVERVIEW_SERIES,
+    ariaLabel: t('AC démarrées et livrées {bucket}, {period}', { bucket: BUCKET_TITLES[bucket], period: periodTitle() }),
+  })
+}
+
+// The data of the chart of the AC, as a table; the card hides without any AC.
+export function renderAcOverviewTable() {
+  const any = anyAc()
+  $('[data-overview-acs]').hidden = !any
+  if (!any) {
+    return
+  }
+  const { bucket } = periodRange()
+  dataTable(
+    $('[data-acs-overview-chart-table]'),
+    [t('Période'), t('AC démarrées'), t('AC livrées')],
+    acChart()
+      .toReversed()
+      .map((point) => [
+        point.partial ? t('{bucket} (incomplète)', { bucket: bucketTitle(point.key, bucket) }) : bucketTitle(point.key, bucket),
+        formatNumber(point.started),
+        formatNumber(point.delivered),
+      ]),
+  )
 }
 
 // The projects of the period, those under way first, then those stalled, then those delivered, each with its code pull

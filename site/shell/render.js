@@ -21,7 +21,7 @@ import {
   renderToday,
   renderTotals,
 } from '../pages/overview/overview.js'
-import { renderProjectChart, renderProjectList } from '../pages/overview/projects.js'
+import { renderAcOverviewChart, renderAcOverviewTable, renderProjectChart, renderProjectList } from '../pages/overview/projects.js'
 import { renderProjects, renderProjectTimeline } from '../pages/projects/projects.js'
 import { renderReport } from '../pages/report.js'
 import { renderRepositories } from '../pages/repositories.js'
@@ -44,6 +44,7 @@ export function renderCharts() {
   }
   renderActivityChart()
   renderProjectChart()
+  renderAcOverviewChart()
   renderSizeCharts()
   renderTechnologiesChart()
   renderTmaCharts()
@@ -84,6 +85,7 @@ export function render(animate) {
   renderCharts()
   renderChartTable()
   renderProjectList()
+  renderAcOverviewTable()
   for (const name of repoFilterNames()) {
     renderRepoFilter(name)
   }

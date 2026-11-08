@@ -85,7 +85,7 @@ interface State {
     >
   > | null
   squadPerMember: boolean
-  projectOrder: 'start' | 'status'
+  projectStatuses: Set<string> | null
   me: string | null
   notify: boolean
   // The pull requests of the lists of « Mes PR » the person picked there has to act on, as of the last sync.

@@ -87,8 +87,8 @@ export const state = {
   squadPeriodsCache: null,
   squadSort: { key: 'merged', reversed: false },
   squadPerMember: false,
-  // The order of the projects on their timeline and cards: as they started, or by status.
-  projectOrder: 'start',
+  // The statuses of the projects the projects page shows, all of them while null.
+  projectStatuses: null,
   // The projects of the period for the squad picked, worked out once per stats, range and squad.
   projectsCache: null,
   // Who the « Mes PR » page is for, null until picked.

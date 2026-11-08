@@ -1,21 +1,22 @@
 // Projets: what the projects of the period add up to, their timeline, a card per project, and the table that compares
-// them. Every part follows the period, the squad, the repositories picked and the search; without any project in the
-// data, the page says how one is found.
+// them. Every part follows the period, the squad, the repositories and the statuses picked, and the search; without any
+// project in the data, the page says how one is found.
 
 import { parisDay } from '../../domain/time.js'
 import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare, formatSpan } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { displayName } from '../../model/people.js'
-import { anyProject, currentProjects } from '../../model/projects.js'
+import { anyProject, currentProjects, shownProjects } from '../../model/projects.js'
 import { matchesQuery, periodRange, periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { ganttChart } from '../../ui/charts/gantt-chart.js'
 import { renderLegend } from '../../ui/charts/legend.js'
-import { $, $$, el } from '../../ui/dom.js'
+import { $, el } from '../../ui/dom.js'
+import { formatDay, PROJECT_STATUSES, projectLabel, STATUS_ORDER, statusTag } from '../../ui/projects.js'
 import { LINES_COLUMN } from '../../ui/tables/cells.js'
+import { renderTable } from '../../ui/tables/table.js'
 import { renderTiles } from '../../ui/tiles.js'
 import { openProjectDialog, projectCard, setupProjectDialog } from './cards.js'
-import { formatDay, PROJECT_STATUSES, projectLabel, STATUS_ORDER, statusTag } from '../../ui/projects.js'
 import { formatShortDay, lastMergeOf, PROJECT_FIGURES } from './figures.js'
 
 const PROJECT_TILES = [
@@ -33,13 +34,8 @@ export const projectSearchTexts = (row) => [
   ...row.authors.flatMap((author) => [author.login, displayName(author.login)]),
 ]
 
-// The projects the search finds, in the order picked: as they started, or by status (STATUS_ORDER: under way, stalled,
-// then delivered), each status as they started.
-function foundRows() {
-  const rows = currentProjects().rows.filter((row) => matchesQuery(...projectSearchTexts(row)))
-
-  return state.projectOrder === 'status' ? rows.toSorted((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)) : rows
-}
+// The projects of the statuses picked that the search finds, as they started.
+const foundRows = () => shownProjects().rows.filter((row) => matchesQuery(...projectSearchTexts(row)))
 
 // The name of a project in the table opens its dialog, as its card does; its repositories follow, under it.
 function nameCell(row) {
@@ -191,15 +187,9 @@ export function renderProjects(mode = 'enter') {
   if (!any) {
     return
   }
-  const { summary } = currentProjects()
-  const order =
-    state.projectOrder === 'status'
-      ? t('{period} : les projets dont la vie croise la période, en cours, puis à l’arrêt, puis livrés', { period: capitalize(periodTitle()) })
-      : t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', { period: capitalize(periodTitle()) })
-  $('[data-projects-sub]').textContent = order
-  for (const button of $$('[data-project-order]')) {
-    button.setAttribute('aria-checked', String(button.dataset.projectOrder === state.projectOrder))
-  }
+  const { summary } = shownProjects()
+  $('[data-projects-sub]').textContent = t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', { period: capitalize(periodTitle()) })
+  renderStatusFilter()
   renderTiles($('[data-project-tiles]'), PROJECT_TILES, summary, mode)
   renderTimelineLegend()
   const rows = foundRows()
@@ -214,13 +204,69 @@ export function renderProjects(mode = 'enter') {
   renderProjectTimeline()
 }
 
-// Listens to « Par début / Par statut » of the timeline and the cards, and to a project named on another page.
+// The status filter: which statuses are picked, how many projects of the period each has (for the repositories picked),
+// and its label, updated in place so that the focus stays where it is.
+function renderStatusFilter() {
+  const filter = $('[data-status-filter]', HTMLDetailsElement)
+  const picked = state.projectStatuses
+  const { rows } = currentProjects()
+  filter.classList.toggle('is-filtered', picked !== null)
+  filter.querySelector('[data-status-label]').textContent = !picked
+    ? t('Tous les statuts')
+    : picked.size === 0
+      ? t('Aucun statut')
+      : STATUS_ORDER.filter((status) => picked.has(status))
+          .map((status) => PROJECT_STATUSES[status].label)
+          .join(', ')
+  for (const input of /** @type {NodeListOf<HTMLInputElement>} */ (filter.querySelectorAll('input[data-status]'))) {
+    input.checked = !picked || picked.has(input.dataset.status)
+    input.closest('label').querySelector('.repo-count').textContent = formatNumber(rows.filter((row) => row.status === input.dataset.status).length)
+  }
+}
+
+// Builds the status filter once: a checkbox per status, in the order they call for attention.
+function buildStatusFilter() {
+  const filter = $('[data-status-filter]', HTMLDetailsElement)
+  const list = el(
+    'ul',
+    { className: 'repo-filter-list' },
+    ...STATUS_ORDER.map((status) => {
+      const input = el('input', { type: 'checkbox', checked: true })
+      input.dataset.status = status
+      const dot = el('span', { className: 'project-status-dot' })
+      dot.style.background = PROJECT_STATUSES[status].color
+
+      return el(
+        'li',
+        {},
+        el('label', {}, input, el('span', { className: 'repo-name status-name' }, dot, document.createTextNode(PROJECT_STATUSES[status].label)), el('span', { className: 'repo-count' })),
+      )
+    }),
+  )
+  list.setAttribute('aria-label', t('Statuts'))
+  const label = el('span', { className: 'repo-filter-label', textContent: t('Tous les statuts') })
+  label.dataset.statusLabel = ''
+  filter.append(
+    el('summary', { className: 'search' }, label),
+    el('div', { className: 'repo-filter-panel' }, el('p', { className: 'repo-filter-note', textContent: t('Projets de la période, selon leur statut à la dernière synchro') }), list),
+  )
+  list.addEventListener('change', () => {
+    const inputs = [.../** @type {NodeListOf<HTMLInputElement>} */ (list.querySelectorAll('input[data-status]'))]
+    const checked = inputs.filter((input) => input.checked).map((input) => /** @type {string} */ (input.dataset.status))
+    state.projectStatuses = checked.length === inputs.length ? null : new Set(checked)
+    renderProjects('update')
+    renderTable('projects', false)
+  })
+  filter.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && filter.open) {
+      filter.open = false
+      filter.querySelector('summary').focus()
+    }
+  })
+}
+
+// Listens to the status filter of the page, and to a project named on another page.
 export function setupProjects() {
   setupProjectDialog()
-  for (const button of $$('[data-project-order]')) {
-    button.addEventListener('click', () => {
-      state.projectOrder = /** @type {'start' | 'status'} */ (button.dataset.projectOrder)
-      renderProjects()
-    })
-  }
+  buildStatusFilter()
 }

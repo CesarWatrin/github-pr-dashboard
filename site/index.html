@@ -673,6 +673,16 @@
               </section>
             </div>
 
+            <section class="card" aria-labelledby="acs-overview-chart-title" data-overview-acs>
+              <h2 id="acs-overview-chart-title" data-acs-overview-chart-title>AC</h2>
+              <div class="legend" data-acs-overview-chart-legend></div>
+              <div class="chart" data-acs-overview-chart></div>
+              <details class="chart-data">
+                <summary>Voir les données du graphique</summary>
+                <div class="table-wrap" data-acs-overview-chart-table></div>
+              </details>
+            </section>
+
             <section class="card" aria-labelledby="technologies-title">
               <div class="card-toolbar">
                 <h2 id="technologies-title">Technologies</h2>
@@ -1368,10 +1378,7 @@
                 <div class="card-toolbar">
                   <h2 id="projects-title">Les projets de la période</h2>
                   <div class="card-toolbar-actions">
-                    <div class="segmented" role="radiogroup" aria-label="Ordre des projets">
-                      <button type="button" role="radio" data-project-order="start">Par début</button>
-                      <button type="button" role="radio" data-project-order="status">Par statut</button>
-                    </div>
+                    <details class="repo-filter status-filter" data-status-filter></details>
                     <details class="repo-filter" data-repo-filter="projects"></details>
                   </div>
                 </div>

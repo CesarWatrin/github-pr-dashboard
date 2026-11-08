@@ -468,8 +468,6 @@ export const PAGES = {
   'Aucun projet à montrer': 'No project to show',
   'Calendrier des projets, {period}': 'Timeline of the projects, {period}',
   'Merge dans une branche principale': 'Merge into a long-lived branch',
-  '{period} : les projets dont la vie croise la période, en cours, puis à l’arrêt, puis livrés':
-    '{period}: the projects whose life crosses the period, ongoing, then stalled, then delivered',
   '{period} : les projets dont la vie croise la période, du premier commencé au dernier':
     '{period}: the projects whose life crosses the period, from the first started to the last',
   'Aucun projet ne correspond à cette recherche': 'No project matches this search',
@@ -499,7 +497,7 @@ export const PAGES = {
   'AC livrées': 'Improvements delivered',
   'Délai médian des AC jusqu’au merge': 'Median time to merge of improvements',
   'PR de code en AC': 'Code PRs on improvements',
-  'Améliorations continues': 'Continuous improvements',
+  'Améliorations continues': 'Improvements',
   'Les AC menées sur une branche feature/… ou feat/… partie de develop : combien, à quel rythme, par qui': 'The improvements carried on a feature/… or feat/… branch cut from develop: how many, at what pace, by whom',
   'Livrées et en prod': 'Delivered and in production',
   'AC en cours': 'Improvements under way',
@@ -523,4 +521,8 @@ export const PAGES = {
   'Médiane, de la première PR d’une AC à sa livraison dans develop, en heures ouvrées.': 'Median, from the first PR of an improvement to its delivery into develop, in working hours.',
   'Part AC': 'Improvement share',
   'Part des PR de code de la squad ouvertes pour des améliorations continues.': 'Share of the code PRs of the squad opened for continuous improvements.',
+  'Tous les statuts': 'All statuses',
+  'Aucun statut': 'No status',
+  'Statuts': 'Statuses',
+  'Projets de la période, selon leur statut à la dernière synchro': 'Projects of the period, by their status at the last sync',
 }

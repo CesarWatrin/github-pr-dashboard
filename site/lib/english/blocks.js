@@ -484,7 +484,7 @@ export const BLOCKS = {
   'AC livrées': 'Improvements delivered',
   'Délai médian des AC jusqu’au merge': 'Median time to merge of improvements',
   'PR de code en AC': 'Code PRs on improvements',
-  'Améliorations continues': 'Continuous improvements',
+  'Améliorations continues': 'Improvements',
   'Artisan': 'Craftsman',
   'le plus de PR d’amélioration continue': 'the most continuous improvement PRs',
   'PR d’AC (singulier)': 'improvement PR',
