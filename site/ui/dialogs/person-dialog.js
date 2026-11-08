@@ -160,7 +160,7 @@ export function openPersonDialog(row, opener) {
       }),
       dialogSection(t('Ce que la personne écrit'), statList(PERSON_WRITTEN, details, writers)),
       dialogSection(t('Ce que la personne relit'), statList(PERSON_REVIEWED, details, reviewers)),
-      ...(projects.length ? [dialogSection(t('Ses projets'), el('div', { className: 'person-dialog-columns' }, projectList(t('Projets, PR de code sur la période'), projects)))] : []),
+      ...(projects.length ? [dialogSection(t('Ses projets'), projectList(t('Projets, PR de code sur la période'), projects))] : []),
       dialogSection(
         t('Avec qui, et où'),
         statList(PERSON_CIRCULATION, details, writers),

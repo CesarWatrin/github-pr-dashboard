@@ -49,31 +49,50 @@
   text-decoration: underline;
 }
 
-/* The projects of the period on the overview: the name, then where it stands and what it carries. */
+/* The projects of the period on the overview: the name, then under it where it stands and what it carries. */
 .project-feed-item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 12px;
+  display: grid;
+  justify-items: start;
+  gap: 2px;
   padding: 8px;
   border-radius: 8px;
 }
 
-/* The projects of a person or a squad on their card, under their tags, above the button that stretches across it. */
+.project-feed-item .project-link {
+  max-width: 100%;
+}
+
+/* The projects of a person or a squad on their card, under their tags, above the button that stretches across it: a
+   single line, how many kept whole, the name of the busiest cut short when it does not fit. */
 .project-line {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
+  gap: 12px;
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: var(--text-secondary);
   font-size: 13px;
+  white-space: nowrap;
+}
+
+.project-line > span {
+  flex: none;
 }
 
 .project-line .project-link {
   position: relative;
   z-index: 1;
-  max-width: 100%;
+  flex: 0 1 auto;
   color: var(--text-primary);
+}
+
+/* The projects of a person, a squad or a repository in their dialog: across its width, in as many columns as fit. */
+.project-dialog-list {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 24px;
+}
+
+.project-dialog-list .project-link {
+  min-width: 0;
 }

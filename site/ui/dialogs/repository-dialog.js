@@ -160,7 +160,7 @@ export function openRepoDialog(row, opener) {
           topList(t('Ses relecteurs'), row.readers.slice(0, PERSON_TOP), true),
         ),
       ),
-      ...(projects.length ? [dialogSection(t('Ses projets'), el('div', { className: 'person-dialog-columns' }, projectList(t('Projets, PR de code dans ce dépôt sur la période'), projects)))] : []),
+      ...(projects.length ? [dialogSection(t('Ses projets'), projectList(t('Projets, PR de code dans ce dépôt sur la période'), projects))] : []),
     ],
     opener,
   )

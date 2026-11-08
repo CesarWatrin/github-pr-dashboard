@@ -69,35 +69,26 @@ export function projectLink(row) {
   return button
 }
 
-// The projects a card shows, the busiest first, the others under a « +N ».
-const CARD_PROJECTS = 3
-
 /**
  * A project a person or a squad wrote code for over the period, and how many code pull requests (model/projects.js).
  * @typedef {{ row: { key: string, name: string, runs: number, start: number, status: string }, code: number }} ProjectShare
  */
 
-// The projects of a person or a squad on their card, on a line of their own; none without any.
+// The projects of a person or a squad on their card, on a single line of their own: how many, then the busiest one, its
+// name cut short when it does not fit, every one of them named on hover; none without any.
 /** @param {ProjectShare[]} shares */
 export function projectLine(shares) {
   if (shares.length === 0) {
     return []
   }
-  const more = shares.length - CARD_PROJECTS
+  const line = el('p', { className: 'project-line' }, el('span', { textContent: plural(shares.length, 'projet') }), projectLink(shares[0].row))
+  line.title = shares.map(({ row }) => projectLabel(row)).join(', ')
 
-  return [
-    el(
-      'p',
-      { className: 'project-line' },
-      el('span', { textContent: t('Projets') }),
-      ...shares.slice(0, CARD_PROJECTS).map(({ row }) => projectLink(row)),
-      ...(more > 0 ? [el('span', { textContent: `+${more}`, title: shares.slice(CARD_PROJECTS).map(({ row }) => projectLabel(row)).join(', ') })] : []),
-    ),
-  ]
+  return [line]
 }
 
-// The projects of a person or a squad in their dialog, each with its code pull requests over the period and where it
-// stands; else what says why the list is empty.
+// The projects of a person, a squad or a repository in their dialog, across its width, each with its code pull requests
+// over the period and where it stands; else what says why the list is empty.
 /**
  * @param {string} title
  * @param {ProjectShare[]} shares
@@ -106,7 +97,7 @@ export function projectList(title, shares) {
   const list = shares.length
     ? el(
         'ul',
-        { className: 'person-dialog-list' },
+        { className: 'person-dialog-list project-dialog-list' },
         ...shares.map(({ row, code }) =>
           el(
             'li',

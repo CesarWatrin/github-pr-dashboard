@@ -86,7 +86,7 @@ export function openSquadDialog(row, rows, opener) {
       dialogSection(
         t('Ses projets'),
         statList(SQUAD_PROJECTS, row, peers),
-        el('div', { className: 'person-dialog-columns' }, projectList(t('Ses projets, PR de code de la squad'), row.projects)),
+        projectList(t('Ses projets, PR de code de la squad'), row.projects),
       ),
       dialogSection(
         t('Qui, et où'),
