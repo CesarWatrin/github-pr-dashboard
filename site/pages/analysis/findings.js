@@ -33,6 +33,7 @@ import {
   strong,
   workflowName,
 } from './evidence.js'
+import { PROJECT_FINDINGS, PROJECT_RULE_LABELS } from './project-findings.js'
 
 const FINDING_LEVELS = { high: t('Prioritaire'), watch: t('À surveiller'), good: t('En progrès') }
 
@@ -235,6 +236,7 @@ const FINDINGS = {
     action: () => t('Une grosse PR abandonnée est souvent un travail parti loin sans retour : l’ouvrir tôt en brouillon, pour en parler avant.'),
     route: 'authors',
   },
+  ...PROJECT_FINDINGS,
   progress: {
     area: t('Tendance'),
     title: () => t('Ce qui s’améliore'),
@@ -256,6 +258,7 @@ export const RULE_LABELS = {
   failingWorkflows: t('Workflows qui échouent souvent'),
   slowWorkflows: t('Workflows lents'),
   abandoned: t('PR fermées sans merge'),
+  ...PROJECT_RULE_LABELS,
   progress: t('Ce qui s’améliore'),
 }
 

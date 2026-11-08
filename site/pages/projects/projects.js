@@ -1,20 +1,23 @@
 // Projets: what the projects of the period add up to, their timeline, a card per project, and the table that compares
-// them. Every part follows the period, the squad and the search; without any project in the data, the page says how one
-// is found.
+// them. Every part follows the period, the squad, the repositories and the statuses picked, and the search; without any
+// project in the data, the page says how one is found.
 
 import { parisDay } from '../../domain/time.js'
-import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
+import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare, formatSpan } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { anyProject, currentProjects } from '../../model/projects.js'
+import { displayName } from '../../model/people.js'
+import { anyProject, currentProjects, shownProjects } from '../../model/projects.js'
 import { matchesQuery, periodRange, periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { ganttChart } from '../../ui/charts/gantt-chart.js'
 import { renderLegend } from '../../ui/charts/legend.js'
 import { $, el } from '../../ui/dom.js'
+import { formatDay, PROJECT_STATUSES, projectLabel, STATUS_ORDER, statusTag } from '../../ui/projects.js'
 import { LINES_COLUMN } from '../../ui/tables/cells.js'
+import { renderTable } from '../../ui/tables/table.js'
 import { renderTiles } from '../../ui/tiles.js'
-import { openProjectDialog, projectCard } from './cards.js'
-import { formatDay, formatShortDay, formatSpan, lastMergeOf, PROJECT_FIGURES, PROJECT_STATUSES, STATUS_ORDER, statusTag } from './figures.js'
+import { openProjectDialog, projectCard, setupProjectDialog } from './cards.js'
+import { formatShortDay, lastMergeOf, PROJECT_FIGURES } from './figures.js'
 
 const PROJECT_TILES = [
   { key: 'ongoing', label: t('Projets en cours') },
@@ -23,12 +26,21 @@ const PROJECT_TILES = [
   { key: 'medianIntegrationHours', label: t('Intégration médiane'), format: formatDuration },
 ]
 
-// The projects the search finds, by their name or their repositories.
-const foundRows = () => currentProjects().rows.filter((row) => matchesQuery(row.name, ...row.repos.map(([repo]) => repo)))
+// What the search finds a project by: its name, its repositories, and the people who wrote it.
+/** @type {(row: import('../../model/projects.js').ProjectPeriod) => string[]} */
+export const projectSearchTexts = (row) => [
+  projectLabel(row),
+  ...row.repos.map(([repo]) => repo),
+  ...row.authors.flatMap((author) => [author.login, displayName(author.login)]),
+]
+
+// The projects of the statuses picked that the search finds, as they started.
+const foundRows = () => shownProjects().rows.filter((row) => matchesQuery(...projectSearchTexts(row)))
 
 // The name of a project in the table opens its dialog, as its card does; its repositories follow, under it.
 function nameCell(row) {
-  const pick = el('button', { type: 'button', className: 'squad-pick project-pick', textContent: row.name, title: row.name })
+  const label = projectLabel(row)
+  const pick = el('button', { type: 'button', className: 'squad-pick project-pick', textContent: label, title: label })
   pick.setAttribute('aria-haspopup', 'dialog')
   pick.addEventListener('click', () => openProjectDialog(row, currentProjects().rows, pick))
   const repos = row.repos.map(([repo]) => repo).join(', ')
@@ -51,9 +63,11 @@ export const PROJECT_COLUMNS = [
     key: 'name',
     label: t('Projet'),
     kind: 'text',
-    value: (row) => row.name,
+    value: projectLabel,
     cell: nameCell,
-    hint: t('Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un.'),
+    hint: t(
+      'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un. Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.',
+    ),
   },
   {
     key: 'status',
@@ -96,6 +110,7 @@ export const PROJECT_COLUMNS = [
 // it and out where it goes on, flat where it stopped; its merges; its dates and figures on hover.
 function timelineRow(row, rows) {
   const status = PROJECT_STATUSES[row.status]
+  const label = projectLabel(row)
   const lastMerge = lastMergeOf(row)
   const cut = row.span.cutStart
     ? row.span.cutEnd
@@ -107,8 +122,8 @@ function timelineRow(row, rows) {
   const dates = t('du {start} au {end}', { start: formatDay(row.start), end: formatDay(row.end) })
 
   return {
-    key: row.name,
-    head: [el('span', { className: 'gantt-name', textContent: row.name, title: row.name }), statusTag(row.status)],
+    key: row.key,
+    head: [el('span', { className: 'gantt-name', textContent: label, title: label }), statusTag(row.status)],
     from: row.span.from,
     to: row.span.to,
     fadeStart: row.span.cutStart,
@@ -116,9 +131,9 @@ function timelineRow(row, rows) {
     flatEnd: row.status === 'stalled' && !row.span.cutEnd,
     color: status.color,
     markers: row.merges,
-    ariaLabel: [`${row.name}, ${status.label}, ${dates}.`, ...(cut ? [cut] : [])].join(' '),
+    ariaLabel: [`${label}, ${status.label}, ${dates}.`, ...(cut ? [cut] : [])].join(' '),
     tooltip: {
-      title: row.name,
+      title: label,
       rows: [
         { color: status.color, value: status.label, label: t('à la dernière synchro') },
         { value: formatDay(row.start), label: t('début') },
@@ -164,6 +179,7 @@ function renderTimelineLegend() {
   legend.append(el('span', {}, el('span', { className: 'swatch gantt-legend-merge' }), document.createTextNode(t('Merge dans une branche principale'))))
 }
 
+// The page, drawn again by render() and as its repositories picked change.
 export function renderProjects(mode = 'enter') {
   const any = anyProject()
   $('[data-projects-empty]').hidden = any
@@ -171,10 +187,9 @@ export function renderProjects(mode = 'enter') {
   if (!any) {
     return
   }
-  const { summary } = currentProjects()
-  $('[data-projects-sub]').textContent = t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', {
-    period: capitalize(periodTitle()),
-  })
+  const { summary } = shownProjects()
+  $('[data-projects-sub]').textContent = t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', { period: capitalize(periodTitle()) })
+  renderStatusFilter()
   renderTiles($('[data-project-tiles]'), PROJECT_TILES, summary, mode)
   renderTimelineLegend()
   const rows = foundRows()
@@ -189,3 +204,69 @@ export function renderProjects(mode = 'enter') {
   renderProjectTimeline()
 }
 
+// The status filter: which statuses are picked, how many projects of the period each has (for the repositories picked),
+// and its label, updated in place so that the focus stays where it is.
+function renderStatusFilter() {
+  const filter = $('[data-status-filter]', HTMLDetailsElement)
+  const picked = state.projectStatuses
+  const { rows } = currentProjects()
+  filter.classList.toggle('is-filtered', picked !== null)
+  filter.querySelector('[data-status-label]').textContent = !picked
+    ? t('Tous les statuts')
+    : picked.size === 0
+      ? t('Aucun statut')
+      : STATUS_ORDER.filter((status) => picked.has(status))
+          .map((status) => PROJECT_STATUSES[status].label)
+          .join(', ')
+  for (const input of /** @type {NodeListOf<HTMLInputElement>} */ (filter.querySelectorAll('input[data-status]'))) {
+    input.checked = !picked || picked.has(input.dataset.status)
+    input.closest('label').querySelector('.repo-count').textContent = formatNumber(rows.filter((row) => row.status === input.dataset.status).length)
+  }
+}
+
+// Builds the status filter once: a checkbox per status, in the order they call for attention.
+function buildStatusFilter() {
+  const filter = $('[data-status-filter]', HTMLDetailsElement)
+  const list = el(
+    'ul',
+    { className: 'repo-filter-list' },
+    ...STATUS_ORDER.map((status) => {
+      const input = el('input', { type: 'checkbox', checked: true })
+      input.dataset.status = status
+      const dot = el('span', { className: 'project-status-dot' })
+      dot.style.background = PROJECT_STATUSES[status].color
+
+      return el(
+        'li',
+        {},
+        el('label', {}, input, el('span', { className: 'repo-name status-name' }, dot, document.createTextNode(PROJECT_STATUSES[status].label)), el('span', { className: 'repo-count' })),
+      )
+    }),
+  )
+  list.setAttribute('aria-label', t('Statuts'))
+  const label = el('span', { className: 'repo-filter-label', textContent: t('Tous les statuts') })
+  label.dataset.statusLabel = ''
+  filter.append(
+    el('summary', { className: 'search' }, label),
+    el('div', { className: 'repo-filter-panel' }, el('p', { className: 'repo-filter-note', textContent: t('Projets de la période, selon leur statut à la dernière synchro') }), list),
+  )
+  list.addEventListener('change', () => {
+    const inputs = [.../** @type {NodeListOf<HTMLInputElement>} */ (list.querySelectorAll('input[data-status]'))]
+    const checked = inputs.filter((input) => input.checked).map((input) => /** @type {string} */ (input.dataset.status))
+    state.projectStatuses = checked.length === inputs.length ? null : new Set(checked)
+    renderProjects('update')
+    renderTable('projects', false)
+  })
+  filter.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && filter.open) {
+      filter.open = false
+      filter.querySelector('summary').focus()
+    }
+  })
+}
+
+// Listens to the status filter of the page, and to a project named on another page.
+export function setupProjects() {
+  setupProjectDialog()
+  buildStatusFilter()
+}

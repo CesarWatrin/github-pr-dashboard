@@ -4,13 +4,15 @@ import { pullRequestTimeline } from '../../domain/timeline.js'
 import { minuteDate } from '../../lib/dates.js'
 import { dateTimeFormat, formatDuration, formatNumber, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { projectKeyOf, projectOf } from '../../model/projects.js'
 import { state } from '../../model/state.js'
 import { $, el, svg } from '../dom.js'
 import { githubPill, OPEN_PULL_REQUEST, personLink, pullRequestPath } from '../links.js'
+import { projectLink } from '../projects.js'
 import { kindTag } from '../stances.js'
 
 // Timeline of a pull request: its steps, the working time it waited before each, what it still waits for, and who
-// intervened (pullRequestTimeline() of site/domain/timeline.js), as of the last sync.
+// intervened (pullRequestTimeline() of site/domain/timeline.js), as of the last sync; and the project it belongs to.
 
 const TIMELINE_STEPS = {
   opened: { label: t('Ouverte'), by: t('par') },
@@ -151,6 +153,9 @@ export function openPullRequestDialog(pr, opener) {
   )
   // The title when the stats carry it, the repository and number above it; else these as the title.
   const reference = `${pr.repo}#${pr.number}`
+  // The project of the pull request, which opens its dialog over this one.
+  const projectKey = projectKeyOf(pr)
+  const project = projectKey === null ? null : projectOf(projectKey)
   const head = el(
     'header',
     { className: 'pr-dialog-head' },
@@ -161,6 +166,7 @@ export function openPullRequestDialog(pr, opener) {
       { className: 'pr-dialog-meta' },
       el('span', {}, document.createTextNode(`${t('Par')} `), personLink(pr.author, { withAvatar: false })),
       el('span', { textContent: t('{count} lignes modifiées', { count: formatNumber(pr.lines) }) }),
+      ...(project ? [el('span', { className: 'pr-dialog-project' }, document.createTextNode(`${t('Projet')} `), projectLink(project.row))] : []),
       ...checksTag(pr),
       githubPill(pullRequestPath(pr.repo, pr.number), t('Voir sur GitHub')),
     ),

@@ -221,6 +221,9 @@ paths:
   charts would sit under the dialog. In the dialog it opens below the medals, clear of the close button. A card and
   the dialog show the `SHOWN_BADGES` best medals, the others under a « +N » (`moreBadges()`) whose tooltip names
   them.
+  - A month the history kept before a figure existed (`isOutdated()` of `site/domain/months.js`) gets it from the pull
+    requests while the window holds it (`withNewFigures()`, shared with the sync): a new badge shows before the next
+    sync.
   - The awards page (`renderAwards()`) shows the leaders of the last whole month and of the current one so far, the
     holders of each badge still in the team, and the leaders of every month of the history. Each badge's holders
     scroll past five or so, so that the page does not grow as months go by: there, the medals take the tooltip of the
@@ -239,17 +242,29 @@ paths:
     the same type (or of all of them under `MIN_PEERS`), and who writes and reviews it. `repositoryRows({ all: true })`
     gives a row to every repository with anything over the period, whatever the filter.
 - **Projects page** (`renderProjects()`, `pages/projects/`): the projects of the records (`project` and `projectMerge`,
-  see `sync.md`), grouped by name whatever the repository. `projectRows()` of `site/domain/projects.js` gives those whose
+  see `sync.md`), grouped by name whatever the repository (`projectsOf()` of `site/domain/projects.js`). A name taken up
+  again once its project was over (`isOver()`: none of its pull requests still open, merged or closed, `closedAt` of the
+  records, and nothing done on it for `REUSED_AFTER_DAYS`) makes another project, with a key of its own (`name#2`); a
+  project needs `MIN_PROJECT_CODE` code pull requests over its life, else it is none (a branch made by mistake). Several
+  projects of a name show it with the month each started (`projectLabel()`), and the dialog of each gives the start and
+  end of the others (`namesakes`, `namesakesText()`). `projectRows()` gives those whose
   span meets the period, the earliest started first: their life over every record, whatever the period and the squad
   (`projectLife()`: start, merges of the project branch, last activity, status at the last sync, delivered when merged
   with no pull request of the project opened since, else ongoing, or stalled after `STALLED_AFTER_DAYS` without
   activity; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
-  last merge of the branch), and their figures over the period from the records of the squad picked
-  (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers, lines,
-  median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range and squad,
-  with the share of the team (or of the squad) their authors are; `projectSummary()` gives the tiles (`PROJECT_TILES`).
-  The search applies to the timeline, the cards and the table. Without any project in the stats (`anyProject()`), the
-  page says how one is found.
+  last merge of the branch), and their figures over the period from the records of the squad and the repositories
+  picked (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers,
+  lines, median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range,
+  squad and repositories, with the share of the team (or of the squad) their authors are; `projectSummary()` gives the
+  tiles (`PROJECT_TILES`). The page's repository filter (`REPO_FILTERS.projects`, the filter of its table) lists the
+  repositories of the projects of the period whatever those picked (`projectRepoCounts()`, through the `repos` of its
+  entry) and applies to the whole page. The search finds a project by its name, its repositories and its authors
+  (`projectSearchTexts()`), and its field says so on this page (`searchLabel` of the route); it applies to the timeline,
+  the cards and the table. The status filter (`[data-status-filter]`, the look of the repository filter, beside it in
+  the toolbar of the first card: a checkbox per status of `STATUS_ORDER`, with its count of projects of the period)
+  keeps the whole page to the statuses picked (`state.projectStatuses`, null for all of them; `shownProjects()` of
+  `model/projects.js`, its tiles worked out again over them), the timeline and the cards as the projects started.
+  Without any project in the stats (`anyProject()`), the page says how one is found.
   - The timeline (`ganttChart()` of `ui/charts/gantt-chart.js`, drawn from `renderCharts()` as the page resizes): in
     HTML, in percents of its track, the name and status pill of each project in a left column, a rounded bar in the
     color of its status (`PROJECT_STATUSES`, a little lighter than the series, the stalled ones lighter still; never
@@ -258,12 +273,25 @@ paths:
     narrows. A row shows its dates and figures in the tooltip, a click opens the project.
   - A card per project (`projectCard()`, the repository card's style): status, dates and duration, the avatars of its
     authors (`avatarStack()` of `ui/people.js`, shared with the squads, « +N » beyond `CARD_AVATARS`), its repositories,
-    `PROJECT_CARD_STATS`. It opens `openProjectDialog()`, the card dialog with its tilt: its life, its figures over the
+    each followed by the GitHub mark of its branch there (`projectBranchLink()`; in the dialog, a GitHub pill per
+    repository), `PROJECT_CARD_STATS`. It opens `openProjectDialog()`, the card dialog with its tilt: its life, its figures over the
     median of the projects of the period, its authors with their pull requests and lines, its reviewers, its
     repositories, and the merges of its branch, each with its pull request.
   - The table (`TABLES.projects`, `PROJECT_COLUMNS`): fourteen columns, tighter than the other tables (short dates, the
     repositories under the name, the share of the team under the people) so that it fits at 1080 px; the status sorts
     by `STATUS_ORDER` (ongoing, stalled, delivered), never by its word.
+  - Elsewhere: what every page shows of a project lives in `ui/projects.js` (`PROJECT_STATUSES`, `projectLabel()`,
+    `statusTag()`, and `projectLink()`, which asks for its dialog with `OPEN_PROJECT`: `setupProjectDialog()` of
+    `pages/projects/cards.js` opens it, from `projectOf()`, over the whole data when the period misses the project), and
+    what the pages read of them in `model/projects.js`. The overview (`pages/overview/projects.js`): a « Projets » group
+    of tiles (`projectTotals()`, against `comparedProjectTotals()`), the projects living, started and delivered bucket by
+    bucket (`projectSeries()` of `domain/projects/series.js`) and the list of those of the period, ongoing first. The
+    cards and dialogs of people (`personProjects()`, the repositories of the team page) and squads (`squadProjects()`)
+    name their projects (`projectLine()`, `projectList()`), the dialog of a repository its own (`repositoryProjects()`),
+    the timeline of a pull request its project (`projectKeyOf()`). The monthly report: a « Projets » group
+    (`monthStats().projects`, `projectSummary()` with `withCodeShare()`) and « Projets du mois », started and delivered;
+    two trends; two rules of the analysis (`domain/analysis/project-rules.js`, its cards in
+    `pages/analysis/project-findings.js`); and the 🚀 Fusée badge, from the `projects` of the monthly figures.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.

@@ -61,6 +61,14 @@ h3 {
   gap: 8px 16px;
 }
 
+/* Several pickers at the end of a card's toolbar, side by side: an order and the repository filter, say. */
+.card-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .definitions {
   display: grid;
   grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);

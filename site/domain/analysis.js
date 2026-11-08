@@ -5,6 +5,7 @@
 
 import { failingWorkflowsRule, slowWorkflowsRule } from './analysis/ci-rules.js'
 import { driftRule, halves, progressRule } from './analysis/drift-rules.js'
+import { integrationRule, stalledProjectsRule } from './analysis/project-rules.js'
 import {
   abandonedRule,
   bottleneckRule,
@@ -16,7 +17,8 @@ import {
 import { MINUTE_MS } from './analysis/thresholds.js'
 import { computeCi } from './ci.js'
 import { computePeriod } from './period.js'
-/** @import { Context, Halves, Level, MergedRecord } from './analysis/measures.js' */
+import { projectRows } from './projects.js'
+/** @import { Context, Halves, Level, MergedRecord, ProjectRow } from './analysis/measures.js' */
 
 // In the order findings of the same level show.
 export const RULES = [
@@ -29,6 +31,8 @@ export const RULES = [
   { key: 'failingWorkflows', check: failingWorkflowsRule },
   { key: 'slowWorkflows', check: slowWorkflowsRule },
   { key: 'abandoned', check: abandonedRule },
+  { key: 'stalledProjects', check: stalledProjectsRule },
+  { key: 'integration', check: integrationRule },
   { key: 'progress', check: progressRule },
 ]
 /** @type {Level[]} */
@@ -37,20 +41,25 @@ const LEVELS = ['high', 'watch', 'good']
 /** @typedef {ReturnType<(typeof RULES)[number]['check']>} RuleResult */
 
 // The findings of the range [start, end), in milliseconds, most urgent first, and the rules that found nothing (clear)
-// or had too little to go on (few). records: the pull requests of the stats; workflows: their CI runs; isCurrent:
-// whether a person is still in the team, for the reviewers a finding names.
+// or had too little to go on (few). records: the pull requests counted (a squad's, say); workflows: their CI runs;
+// isCurrent: whether a person is still in the team, for the reviewers a finding names; all: every pull request of the
+// stats, which the life of a project comes from whatever the squad; now: the last sync, in milliseconds, which the status
+// of a project stands at.
 /**
  * @param {PullRequestRecord[]} records
  * @param {WorkflowRuns[]} workflows
- * @param {{ start: number, end: number, isCurrent?: (login: string) => boolean }} range
+ * @param {{ start: number, end: number, isCurrent?: (login: string) => boolean, all?: PullRequestRecord[], now?: number }} range
  */
-export function analyze(records, workflows, { start, end, isCurrent = () => true }) {
+export function analyze(records, workflows, { start, end, isCurrent = () => true, all = records, now = end }) {
   const startAt = Math.floor(start / MINUTE_MS)
   const endAt = Math.ceil(end / MINUTE_MS)
   const code = records.filter((pr) => !pr.bot && pr.kind === 'code' && pr.createdAt >= startAt && pr.createdAt < endAt)
   // Both halves of the range, worked out once for the rules that compare them.
   /** @type {Halves | null | undefined} */
   let split
+  // The projects, worked out once for the rules that read them.
+  /** @type {{ rows: ProjectRow[], delivered: ProjectRow[] } | undefined} */
+  let projects
   /** @type {Context} */
   const context = {
     code,
@@ -59,6 +68,15 @@ export function analyze(records, workflows, { start, end, isCurrent = () => true
     ci: computeCi(workflows, { start, end, bucket: 'month' }),
     isCurrent,
     halves: () => (split === undefined ? (split = halves({ records, start, end })) : split),
+    projects: () => {
+      if (!projects) {
+        const rows = projectRows(records, { start, end, bucket: 'month' }, { all, now })
+        const delivered = rows.filter((row) => row.status === 'delivered' && row.deliveredAt !== null && row.deliveredAt >= startAt && row.deliveredAt < endAt)
+        projects = { rows, delivered }
+      }
+
+      return projects
+    },
   }
   const results = RULES.map(({ key, check }) => ({ key, ...check(context) }))
   /**

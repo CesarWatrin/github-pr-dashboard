@@ -9,11 +9,15 @@ import { TOP_ROWS } from './thresholds.js'
 // The CI of the range, and one of its workflows, with a median and rates once it has runs.
 /** @typedef {CiStats} Ci */
 /** @typedef {Ci['workflows'][number] & { failureRate: number, medianSeconds: number }} BusyWorkflow */
+// A project whose life meets the range, with its figures over it (domain/projects.js).
+/** @typedef {import('../projects.js').ProjectRow} ProjectRow */
 // What every rule reads: the code pull requests opened in the range and those merged, their cycles, the CI, who is still
-// in the team, and both halves of the range, worked out on demand.
+// in the team, both halves of the range, and the projects whose life meets it and those of them delivered within it,
+// both worked out on demand.
 /**
  * @typedef {{ code: PullRequestRecord[], merged: MergedRecord[], cycles: Cycle[], ci: Ci,
- *   isCurrent: (login: string) => boolean, halves: () => Halves | null }} Context
+ *   isCurrent: (login: string) => boolean, halves: () => Halves | null,
+ *   projects: () => { rows: ProjectRow[], delivered: ProjectRow[] } }} Context
  */
 /** @typedef {'high' | 'watch' | 'good'} Level */
 // The two halves of the range, for the rules that set one against the other (analysis/drift-rules.js).

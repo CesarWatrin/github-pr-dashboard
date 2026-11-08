@@ -1,4 +1,5 @@
-// Bilan du mois: a month against the one before and the year, on the page and as text to paste.
+// Bilan du mois: a month against the one before and the year, its champions, repositories, arrivals and projects, on the
+// page and as text to paste.
 
 import { isMissing, median } from '../domain/math.js'
 import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
@@ -22,6 +23,7 @@ import { amountOf, leadersLine } from '../ui/badges.js'
 import { $, el } from '../ui/dom.js'
 import { personLink, repoLink } from '../ui/links.js'
 import { renderList } from '../ui/list.js'
+import { projectLabel, projectLink } from '../ui/projects.js'
 
 // The busiest repositories of a month, on the report.
 const REPORT_TOP_REPOS = 5
@@ -72,11 +74,27 @@ function reportContent() {
     champions: reportChampions(month, current),
     repos: reportRepositories(stats.period),
     arrivals: reportArrivals(month),
+    projects: reportProjects(month, stats.projects.rows),
+  }
+}
+
+// The projects that started in the month, and those delivered in it, as they started or were delivered.
+/**
+ * @param {string} month
+ * @param {import('../domain/projects.js').ProjectRow[]} rows
+ */
+function reportProjects(month, rows) {
+  /** @param {number | null} at */
+  const inMonth = (at) => at !== null && parisDay(at * 60_000).slice(0, 7) === month
+
+  return {
+    started: rows.filter((row) => inMonth(row.start)).sort((a, b) => a.start - b.start),
+    delivered: rows.filter((row) => row.status === 'delivered' && inMonth(row.deliveredAt)).sort((a, b) => a.deliveredAt - b.deliveredAt),
   }
 }
 
 export function renderReport() {
-  const { months, month, current, previous, whole, groups, champions, repos, arrivals } = reportContent()
+  const { months, month, current, previous, whole, groups, champions, repos, arrivals, projects } = reportContent()
   const picker = $('[data-report-month]', HTMLSelectElement)
   picker.replaceChildren(
     ...months.toReversed().map((option) => new Option(option === months.at(-1) ? t('{month}, en cours', { month: capitalize(monthName(option)) }) : capitalize(monthName(option)), option)),
@@ -147,6 +165,18 @@ export function renderReport() {
     ),
     t('Aucune arrivée ce mois-ci'),
   )
+  for (const { key, at, empty } of [
+    { key: 'started', at: (row) => row.start, empty: t('Aucun projet démarré ce mois-ci') },
+    { key: 'delivered', at: (row) => row.deliveredAt, empty: t('Aucun projet livré ce mois-ci') },
+  ]) {
+    renderList(
+      $(`[data-report-projects="${key}"]`),
+      projects[key].map((row) =>
+        el('li', {}, projectLink(row), el('span', { className: 'pair-count', textContent: t('le {date}', { date: dayMonthFormat.format(dayDate(parisDay(at(row) * 60_000))) }) })),
+      ),
+      empty,
+    )
+  }
 }
 
 // The champions of each badge for the month: from the history, or so far for the current month.
@@ -190,7 +220,7 @@ function reportArrivals(month) {
 // GitHub had forgotten the runs of, are left out.
 const REPORT_TONE_MARKS = { better: ' 🟢', worse: ' 🟠', neutral: '' }
 
-function reportText({ month, current, previous, groups, champions, repos, arrivals }) {
+function reportText({ month, current, previous, groups, champions, repos, arrivals, projects }) {
   const lines = [
     `*${t('Bilan de {month}', { month: monthName(month) })}*`,
     current
@@ -233,6 +263,10 @@ function reportText({ month, current, previous, groups, champions, repos, arriva
     repoLine(t('PR de code ouvertes'), repos.code),
     repoLine(t('Déploiements'), repos.deployments),
   )
+  if (projects.started.length || projects.delivered.length) {
+    const projectLine = (label, rows) => `• ${t('{label} : {value}', { label, value: rows.length ? rows.map(projectLabel).join(', ') : t('aucun') })}`
+    lines.push('', `*${t('Projets du mois')}*`, projectLine(t('Démarrés'), projects.started), projectLine(t('Livrés'), projects.delivered))
+  }
   if (arrivals.length) {
     lines.push('', t('{label} : {value}', { label: `*${t('Arrivées')}*`, value: arrivals.map(({ login }) => displayName(login)).join(', ') }))
   }

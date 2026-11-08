@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="styles/ui/tiles.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/charts.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/gantt.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/ui/projects.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/team.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/report.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/trends.css?v=__BUILD__" />
@@ -70,6 +71,7 @@
         "./domain/analysis/ci-rules.js": "./domain/analysis/ci-rules.js?v=__BUILD__",
         "./domain/analysis/drift-rules.js": "./domain/analysis/drift-rules.js?v=__BUILD__",
         "./domain/analysis/measures.js": "./domain/analysis/measures.js?v=__BUILD__",
+        "./domain/analysis/project-rules.js": "./domain/analysis/project-rules.js?v=__BUILD__",
         "./domain/analysis/review-rules.js": "./domain/analysis/review-rules.js?v=__BUILD__",
         "./domain/analysis/thresholds.js": "./domain/analysis/thresholds.js?v=__BUILD__",
         "./domain/auto-sync.js": "./domain/auto-sync.js?v=__BUILD__",
@@ -90,6 +92,7 @@
         "./domain/period/series.js": "./domain/period/series.js?v=__BUILD__",
         "./domain/period/sizes.js": "./domain/period/sizes.js?v=__BUILD__",
         "./domain/projects.js": "./domain/projects.js?v=__BUILD__",
+        "./domain/projects/series.js": "./domain/projects/series.js?v=__BUILD__",
         "./domain/team.js": "./domain/team.js?v=__BUILD__",
         "./domain/time.js": "./domain/time.js?v=__BUILD__",
         "./domain/timeline.js": "./domain/timeline.js?v=__BUILD__",
@@ -123,6 +126,7 @@
         "./pages/analysis/analysis.js": "./pages/analysis/analysis.js?v=__BUILD__",
         "./pages/analysis/evidence.js": "./pages/analysis/evidence.js?v=__BUILD__",
         "./pages/analysis/findings.js": "./pages/analysis/findings.js?v=__BUILD__",
+        "./pages/analysis/project-findings.js": "./pages/analysis/project-findings.js?v=__BUILD__",
         "./pages/authors.js": "./pages/authors.js?v=__BUILD__",
         "./pages/awards.js": "./pages/awards.js?v=__BUILD__",
         "./pages/cartography/cartography.js": "./pages/cartography/cartography.js?v=__BUILD__",
@@ -132,7 +136,8 @@
         "./pages/cycle.js": "./pages/cycle.js?v=__BUILD__",
         "./pages/devops.js": "./pages/devops.js?v=__BUILD__",
         "./pages/me.js": "./pages/me.js?v=__BUILD__",
-        "./pages/overview.js": "./pages/overview.js?v=__BUILD__",
+        "./pages/overview/overview.js": "./pages/overview/overview.js?v=__BUILD__",
+        "./pages/overview/projects.js": "./pages/overview/projects.js?v=__BUILD__",
         "./pages/projects/cards.js": "./pages/projects/cards.js?v=__BUILD__",
         "./pages/projects/figures.js": "./pages/projects/figures.js?v=__BUILD__",
         "./pages/projects/projects.js": "./pages/projects/projects.js?v=__BUILD__",
@@ -184,6 +189,7 @@
         "./ui/list.js": "./ui/list.js?v=__BUILD__",
         "./ui/motion.js": "./ui/motion.js?v=__BUILD__",
         "./ui/people.js": "./ui/people.js?v=__BUILD__",
+        "./ui/projects.js": "./ui/projects.js?v=__BUILD__",
         "./ui/repo-filter.js": "./ui/repo-filter.js?v=__BUILD__",
         "./ui/stances.js": "./ui/stances.js?v=__BUILD__",
         "./ui/tables/cells.js": "./ui/tables/cells.js?v=__BUILD__",
@@ -200,6 +206,7 @@
     <link rel="modulepreload" href="domain/analysis/ci-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/drift-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/measures.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/analysis/project-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/review-rules.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/analysis/thresholds.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/auto-sync.js?v=__BUILD__" />
@@ -220,6 +227,7 @@
     <link rel="modulepreload" href="domain/period/series.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/period/sizes.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/projects.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/projects/series.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/team.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/time.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/timeline.js?v=__BUILD__" />
@@ -248,6 +256,7 @@
     <link rel="modulepreload" href="pages/analysis/analysis.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/analysis/evidence.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/analysis/findings.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/analysis/project-findings.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/authors.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/awards.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/cartography/cartography.js?v=__BUILD__" />
@@ -257,7 +266,8 @@
     <link rel="modulepreload" href="pages/cycle.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/devops.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/me.js?v=__BUILD__" />
-    <link rel="modulepreload" href="pages/overview.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/overview/overview.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/overview/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/projects/cards.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/projects/figures.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/projects/projects.js?v=__BUILD__" />
@@ -309,6 +319,7 @@
     <link rel="modulepreload" href="ui/list.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/motion.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/people.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/repo-filter.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/stances.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/tables/cells.js?v=__BUILD__" />
@@ -607,6 +618,8 @@
               <div class="tiles" data-totals-lines></div>
               <h3 class="tile-group">Revue</h3>
               <div class="tiles" data-totals-review></div>
+              <h3 class="tile-group" data-totals-projects-title>Projets</h3>
+              <div class="tiles" data-totals-projects></div>
             </section>
 
             <div class="grid-2">
@@ -624,6 +637,24 @@
                 <h2 id="feed-title">Activité récente</h2>
                 <p class="card-sub">7 derniers jours</p>
                 <ol class="feed" data-feed></ol>
+              </section>
+            </div>
+
+            <div class="grid-2" data-overview-projects>
+              <section class="card" aria-labelledby="projects-chart-title">
+                <h2 id="projects-chart-title" data-projects-chart-title>Projets</h2>
+                <div class="legend" data-projects-chart-legend></div>
+                <div class="chart" data-projects-chart></div>
+                <details class="chart-data">
+                  <summary>Voir les données du graphique</summary>
+                  <div class="table-wrap" data-projects-chart-table></div>
+                </details>
+              </section>
+
+              <section class="card" aria-labelledby="overview-projects-title">
+                <h2 id="overview-projects-title">Les projets de la période</h2>
+                <p class="card-sub">En cours, puis à l’arrêt, puis livrés, à la dernière synchro</p>
+                <ol class="feed" data-overview-projects-list></ol>
               </section>
             </div>
 
@@ -815,8 +846,8 @@
               <div class="table-wrap" data-report-table></div>
               <p class="card-note">
                 Chaque mois compte les PR ouvertes ce mois-là, et les reviews, merges, déploiements et exécutions de CI
-                de ce mois-là, comme une période choisie sur les autres pages. Une évolution en vert va dans le bon sens,
-                en orange dans le mauvais ; les autres sont neutres.
+                de ce mois-là, comme une période choisie sur les autres pages ; ses projets sont ceux dont la vie croise
+                le mois. Une évolution en vert va dans le bon sens, en orange dans le mauvais ; les autres sont neutres.
               </p>
             </section>
 
@@ -839,6 +870,14 @@
                 <h2 id="report-arrivals-title">Arrivées</h2>
                 <p class="card-sub">Première PR dans l’organisation ce mois-ci, ou première review ou premier commentaire s’ils sont plus anciens</p>
                 <ul class="report-list" data-report-arrivals></ul>
+              </section>
+
+              <section class="card" aria-labelledby="report-projects-title">
+                <h2 id="report-projects-title">Projets du mois</h2>
+                <div class="minis">
+                  <div class="mini"><h3>Démarrés</h3><ol class="report-list" data-report-projects="started"></ol></div>
+                  <div class="mini"><h3>Livrés</h3><ol class="report-list" data-report-projects="delivered"></ol></div>
+                </div>
               </section>
             </div>
           </div>
@@ -1144,7 +1183,7 @@
               <p class="card-note">
                 Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les
                 lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR
-                ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement. Un mois reste acquis une semaine
+                ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, et la Fusée celles des projets. Un mois reste acquis une semaine
                 après sa fin, quelles que soient la période et les dépôts choisis ailleurs.
                 Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau
                 seulement.
@@ -1244,13 +1283,19 @@
               <h2 id="projects-empty-title">Aucun projet</h2>
               <p class="card-sub">
                 Un projet se développe sur une branche <code>project/&lt;nom&gt;/main</code> : ses branches en partent,
-                leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucune PR de code des données
-                synchronisées n’appartient à un projet.
+                leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucun projet des données
+                synchronisées n’a encore deux PR de code.
               </p>
             </section>
             <div class="projects-content" data-projects-content>
               <section class="card" aria-labelledby="projects-title">
-                <h2 id="projects-title">Les projets de la période</h2>
+                <div class="card-toolbar">
+                  <h2 id="projects-title">Les projets de la période</h2>
+                  <div class="card-toolbar-actions">
+                    <details class="repo-filter status-filter" data-status-filter></details>
+                    <details class="repo-filter" data-repo-filter="projects"></details>
+                  </div>
+                </div>
                 <p class="card-sub" data-projects-sub></p>
                 <div class="tiles" data-project-tiles></div>
                 <h3 class="tile-group">Calendrier</h3>
@@ -1267,8 +1312,8 @@
               <section class="card" aria-labelledby="projects-table-title">
                 <h2 id="projects-table-title">Comparer les projets</h2>
                 <p class="card-sub">
-                  Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période et la
-                  squad choisies. Un clic sur une colonne trie les projets.
+                  Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période, la
+                  squad et les dépôts choisis. Un clic sur une colonne trie les projets.
                 </p>
                 <div class="table-wrap" data-projects></div>
                 <dl class="table-legend" data-table-legend="projects"></dl>
@@ -1399,26 +1444,39 @@
                   profondeur), ou, à défaut, quand sa propre branche est nommée <code>project/&lt;nom&gt;/…</code>. Une
                   branche principale n’appartient jamais à un projet ; <code>project/&lt;nom&gt;</code> seul ou
                   <code>projects/…</code> ne comptent pas. Un projet du même nom dans plusieurs dépôts est un seul projet,
-                  détaillé par dépôt. Seules les PR de code des personnes et les merges de la branche du projet dans une
-                  branche principale y comptent.
+                  détaillé par dépôt. Un nom repris une fois son projet fini, toutes ses PR mergées ou fermées et rien
+                  de fait dessus depuis 90 jours, fait un autre projet : chacun a ses dates, ses chiffres et sa fiche, et
+                  son nom porte alors le mois où il a commencé. Seules les PR de code des personnes et les merges de la
+                  branche du projet dans une branche principale y comptent, et il en faut au moins deux de code : une
+                  branche de projet créée par erreur, une PR seule ou du code poussé sans PR ne font pas un projet.
                 </dd>
                 <dt>Chiffres d’un projet</dt>
                 <dd>
-                  Sa vie vaut pour tout le projet, quelles que soient la période et la squad, dans les données
-                  synchronisées : son début, sa première PR ouverte ; ses merges, ceux de sa branche dans une branche
+                  Sa vie vaut pour tout le projet, quels que soient la période, la squad et les dépôts choisis, dans les
+                  données synchronisées : son début, sa première PR ouverte ; ses merges, ceux de sa branche dans une branche
                   principale ; sa dernière activité, sa dernière PR ouverte ou mergée, review ou commentaire. Il est
                   <strong>livré</strong> quand sa branche a été mergée et qu’aucune PR du projet n’a été ouverte depuis le
                   dernier merge (une PR ouverte après le remet au travail) ; sinon <strong>en cours</strong> s’il a bougé
                   dans les 30 derniers jours, <strong>à l’arrêt</strong> au-delà, à la dernière synchro. Sa durée, au
                   calendrier, va de son début à sa livraison, ou à sa dernière activité. Le délai d’intégration compte
                   les heures ouvrées de la dernière PR de code mergée avant le dernier merge de sa branche jusqu’à ce
-                  merge. Les autres chiffres suivent la période et la squad : ses PR de code ouvertes et mergées, ses
+                  merge. Les autres chiffres suivent la période, la squad et les dépôts choisis : ses PR de code ouvertes
+                  et mergées, ses
                   PR ouvertes à la dernière synchro hors brouillons, les personnes qui les ont ouvertes et la part de
                   l’équipe (ou de la squad) qu’elles sont, ses relecteurs, ses lignes ajoutées et supprimées, le délai
                   médian de merge, et son rythme : les PR de code ouvertes par semaine sur la partie de la période où
                   il avance. Le calendrier montre chaque projet dont la vie croise la période, coupé à ses bords, un
                   point à chaque merge de sa branche ; les tuiles comptent les projets en cours, ceux livrés sur la
                   période, et sur ces derniers la durée et le délai d’intégration médians.
+                </dd>
+                <dt>Les projets ailleurs</dt>
+                <dd>
+                  La vue d’ensemble compte les projets actifs sur la période (ceux dont la vie la croise), ceux qui y ont
+                  démarré, ceux qui y ont été livrés et la part des PR de code ouvertes sur des projets ; elle les montre
+                  période par période et les liste, en cours d’abord. Les cartes et les fiches des personnes et des squads
+                  nomment les projets pour lesquels elles ont ouvert des PR de code sur la période ; la fiche d’un dépôt,
+                  ceux qui y ont des PR de code ; la frise d’une PR, son projet. Le bilan du mois, les tendances,
+                  l’analyse et le badge Fusée les comptent aussi.
                 </dd>
                 <dt>PR de code</dt>
                 <dd>
@@ -1500,7 +1558,10 @@
                 <dd>
                   Un mois compte, comme une période choisie, les PR ouvertes ce mois-là et les reviews, merges,
                   déploiements et exécutions de CI de ce mois-là. Il se compare au mois précédent (en pourcentage, ou en
-                  points pour les parts) et à la médiane des 12 derniers mois complets. Une évolution est en
+                  points pour les parts) et à la médiane des 12 derniers mois complets. Ses projets sont ceux dont la vie
+                  croise le mois : les actifs, ceux qui y ont démarré ou y ont été livrés, la durée médiane des livrés et la
+                  part des PR de code du mois ouvertes sur des projets ; la carte « Projets du mois » nomme ceux démarrés et
+                  livrés. Une évolution est en
                   vert quand elle va dans le bon sens (délais, hotfix, reprises, PR sans review, échecs de CI en baisse),
                   en orange sinon ; les volumes restent neutres. La page s’ouvre sur le mois en cours : incomplet, il
                   ne se compare pas.
@@ -1519,8 +1580,9 @@
                 </dd>
                 <dt>Analyse</dt>
                 <dd>
-                  Dix règles fixes croisent les chiffres de la période ; chacune ne parle que sur au moins 20 PR (10 pour
-                  un dépôt, 30 exécutions pour un workflow), et dit sinon qu’elle manque de données. Les délais sont ceux
+                  Douze règles fixes croisent les chiffres de la période ; chacune ne parle que sur au moins 20 PR (10 pour
+                  un dépôt, 30 exécutions pour un workflow, 3 projets ou 2 projets livrés pour les projets), et dit sinon
+                  qu’elle manque de données. Les délais sont ceux
                   des PR relues, en heures ouvrées. <strong>Taille</strong> : les PR de 500 lignes ou plus mettent au
                   moins deux fois plus de temps à être mergées que celles de moins de 100 lignes.
                   <strong>PR géantes</strong> : les PR de 1 000 lignes ou plus sont mergées sans review ni commentaire au
@@ -1532,6 +1594,10 @@
                   d’un dépôt. <strong>Dépôts sans review</strong> : la moitié ou plus des PR mergées d’un dépôt l’ont été
                   sans review. <strong>Workflows</strong> : un sur cinq ou plus de leurs exécutions échoue, ou leur durée
                   médiane atteint 10 minutes. <strong>Abandon</strong> : 10 % ou plus des PR de code fermées sans merge.
+                  <strong>Projets à l’arrêt</strong> : un projet ou plus, parmi ceux dont la vie croise la période, est à
+                  l’arrêt à la dernière synchro ; prioritaire dès la moitié d’entre eux. <strong>Livraison des
+                  projets</strong> : les projets livrés sur la période ont attendu une semaine ouvrée ou plus en médiane
+                  entre leur dernière PR de code mergée et le dernier merge de leur branche.
                   <strong>Tendance</strong> : la seconde moitié de la période face à la première, sa dernière semaine à
                   part (ses PR ne sont pas toutes relues ou mergées), sur au moins 50 PR mergées par moitié ; une médiane
                   bouge quand elle varie de moitié, une part de 5 points et d’un tiers. Un constat est prioritaire quand

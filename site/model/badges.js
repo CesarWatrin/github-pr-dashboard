@@ -1,6 +1,6 @@
 // The badges: the leaders of each month over the history the sync publishes, and the medals each person holds.
 
-import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
+import { isOutdated, monthlyActivity, monthlyLeaders, withNewFigures } from '../domain/months.js'
 import { parisDay } from '../domain/time.js'
 import { formatLines } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -48,6 +48,7 @@ export const BADGES = [
     units: ['ligne supprimée', 'lignes supprimées'],
     format: formatLines,
   },
+  { key: 'projects', icon: '🚀', name: t('Fusée'), what: t('le plus de PR de code sur des projets'), units: ['PR de projet', 'PR de projet'] },
 ]
 /** @type {Record<Tier, string>} */
 export const BADGE_TIERS = { bronze: t('Bronze'), silver: t('Argent'), gold: t('Or') }
@@ -85,16 +86,24 @@ export function badgeMonths() {
 
 // The monthly figures the badges are won over, as { 'YYYY-MM': { login: figures } }: the history the sync keeps since
 // its first run, whole months only, so that badges outlast the window. Stats published before it come without one:
-// the whole months of the window are then worked out from its pull requests.
+// the whole months of the window are then worked out from its pull requests. A month the history kept before some of
+// the figures existed (isOutdated()) gets them from the pull requests while the window still holds it, as the next sync
+// will (mergeMonthlyHistory()): a new badge shows at once.
 /** @returns {MonthlyHistory} */
 function badgeHistory() {
   const stats = loadedStats()
-  if (stats.monthly) {
-    return stats.monthly
+  const months = badgeMonths()
+  const { monthly } = stats
+  const outdated = monthly ? months.filter((month) => month in monthly && isOutdated(monthly[month])) : months
+  if (monthly && outdated.length === 0) {
+    return monthly
   }
   const activity = monthlyActivity(stats.pullRequests)
+  if (!monthly) {
+    return Object.fromEntries(months.map((month) => [month, monthFigures(activity, month)]))
+  }
 
-  return Object.fromEntries(badgeMonths().map((month) => [month, monthFigures(activity, month)]))
+  return { ...monthly, ...Object.fromEntries(outdated.map((month) => [month, withNewFigures(monthly[month], monthFigures(activity, month))])) }
 }
 
 // Everyone's figures of a month, from monthlyActivity(), as the history keeps them.

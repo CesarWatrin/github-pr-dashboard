@@ -5,6 +5,7 @@ import { openPullRequests } from '../../domain/open-pull-requests.js'
 import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { isCurrent, mePeople } from '../../model/people.js'
+import { squadProjects } from '../../model/projects.js'
 import { requiredApprovals } from '../../model/pull-requests.js'
 import { periodRange } from '../../model/selection.js'
 import { squadPeriod, squadRecords, squadsOf } from '../../model/squads.js'
@@ -78,6 +79,18 @@ export const SQUAD_FIGURES = {
     better: 'down',
     hint: t('Part des mises en production de la squad suivies d’un correctif.'),
   },
+  projects: {
+    key: 'projects',
+    label: t('Projets'),
+    value: (row) => row.projects.length,
+    hint: t('Projets sur lesquels les membres ont ouvert des PR de code sur la période.'),
+  },
+  projectShare: {
+    key: 'projectShare',
+    label: t('Part projets'),
+    format: formatShare,
+    hint: t('Part des PR de code de la squad ouvertes sur des projets.'),
+  },
   open: {
     key: 'open',
     label: t('En attente'),
@@ -96,7 +109,7 @@ const byRepoTotal = (rows, field) =>
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 
 // One squad over the period, or the whole organization ('*', without members): its figures (SQUAD_FIGURES), its members
-// by pull requests merged, who reads its code, and its repositories.
+// by pull requests merged, who reads its code, its repositories, and the projects its members wrote code for.
 function squadRow(name, members, range, organization) {
   const records = members ? squadRecords({ name, members }) : state.stats.pullRequests
   const period = name === '*' ? organization : squadPeriod(name, records, range)
@@ -112,13 +125,15 @@ function squadRow(name, members, range, organization) {
     }
   }
   const writers = new Map(byRepoTotal(period.authors, 'merged'))
+  const code = repoTotal(period.authors, 'code')
+  const projects = members ? squadProjects({ name, members }) : []
 
   return {
     name,
     members: members ?? [],
     size: members ? members.length : mePeople().length,
     period,
-    code: repoTotal(period.authors, 'code'),
+    code,
     merged: period.totals.merged,
     reviews: repoTotal(own(organization.reviewers), 'prs'),
     comments: repoTotal(own(organization.reviewers), 'comments'),
@@ -134,6 +149,8 @@ function squadRow(name, members, range, organization) {
     hotfixShare: period.totals.hotfixShare,
     reworkRate: period.delivery.reworkRate,
     open: openPullRequests(records, { requiredApprovals: requiredApprovals() }).filter((pr) => isCurrent(pr.author)).length,
+    projects,
+    projectShare: members && code ? projects.reduce((total, share) => total + share.code, 0) / code : null,
     writers: (members ?? []).map((login) => [login, writers.get(login) ?? 0]).sort((a, b) => b[1] - a[1]),
     readers,
     repos: [...repos].filter(([, code]) => code > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),

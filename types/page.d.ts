@@ -8,10 +8,14 @@ type ActivityBounds = ReturnType<typeof import('../site/domain/team.js').activit
 type Analysis = ReturnType<typeof import('../site/domain/analysis.js').analyze>
 type PersonalQueue = ReturnType<typeof import('../site/domain/open-pull-requests.js').personalQueue>
 
-// What the page shows over a whole month: its stats, and its CI when the runs cover it.
+// What the page shows over a whole month: its stats, its CI when the runs cover it, and its projects: those whose life
+// meets it (rows), and what they add up to.
 interface MonthStats {
   period: PeriodStats
   ci: CiStats | null
+  projects: ReturnType<typeof import('../site/model/projects.js').withCodeShare> & {
+    rows: import('../site/domain/projects.js').ProjectRow[]
+  }
 }
 
 // Picked days, 'YYYY-MM-DD', both included.
@@ -64,13 +68,21 @@ interface State {
   squadRecordsCache: { stats: Stats; records: Map<string, PullRequestRecord[]> } | null
   squadPeriodsCache: { stats: Stats | null; periods: Map<string, PeriodStats> } | null
   squadSort: { key: string; reversed: boolean }
-  projectsCache: {
-    stats: Stats
-    key: string
-    rows: import('../site/model/projects.js').ProjectPeriod[]
-    summary: ReturnType<typeof import('../site/domain/projects.js').projectSummary>
-  } | null
+  // The projects of the period for the repositories picked (shown), for all of them (all: the filter, the overview, the
+  // dialogs), for those picked on the team page (team), and over the period compared (compared).
+  projectsCache: Partial<
+    Record<
+      'shown' | 'all' | 'team' | 'compared',
+      {
+        stats: Stats
+        key: string
+        rows: import('../site/model/projects.js').ProjectPeriod[]
+        summary: ReturnType<typeof import('../site/domain/projects.js').projectSummary>
+      }
+    >
+  > | null
   squadPerMember: boolean
+  projectStatuses: Set<string> | null
   me: string | null
   notify: boolean
   // The pull requests of the lists of « Mes PR » the person picked there has to act on, as of the last sync.

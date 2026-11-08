@@ -4,6 +4,7 @@ import { dateFormat } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { SHOWN_BADGES } from '../model/badges.js'
 import { activities, displayName, isFormer } from '../model/people.js'
+import { personProjects } from '../model/projects.js'
 import { matchesQuery } from '../model/selection.js'
 import { inSquad } from '../model/squads.js'
 import { state } from '../model/state.js'
@@ -15,6 +16,7 @@ import { $, el } from '../ui/dom.js'
 import { avatarUrl, personLink } from '../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../ui/motion.js'
 import { seniorityText, squadTags, stackLine } from '../ui/people.js'
+import { projectLine } from '../ui/projects.js'
 
 const nameLines = (name, login) => [
   el('strong', { textContent: name, title: name }),
@@ -36,7 +38,16 @@ function personCard(row, index) {
   const badges = badgeRow(row.login, 'person-badges', 'small', SHOWN_BADGES)
   // Above the button of the card for their hover, the badges still open the dialog.
   badges[0]?.addEventListener('click', () => open.click())
-  const card = el('article', { className: 'person-card' }, open, stackLine(row.stack), ...squadTags(row.login), ...badges, statList(TEAM_STATS, row))
+  const card = el(
+    'article',
+    { className: 'person-card' },
+    open,
+    stackLine(row.stack),
+    ...squadTags(row.login),
+    ...badges,
+    ...projectLine(personProjects(row.login)),
+    statList(TEAM_STATS, row),
+  )
   card.setAttribute('aria-label', name)
   card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
 

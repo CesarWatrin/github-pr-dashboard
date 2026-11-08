@@ -44,6 +44,8 @@ interface PullRequestRecord {
   requestedReviewers?: string[]
   project?: string
   projectMerge?: boolean
+  // When a pull request of a project was closed without being merged.
+  closedAt?: number
   title?: string
   checks?: CheckState | null
 }
@@ -65,6 +67,8 @@ interface MonthlyFigures {
   added: number
   deleted: number
   opened: number
+  // Code pull requests of a project.
+  projects: number
 }
 // Per month ('YYYY-MM'), each person's figures.
 type MonthlyHistory = Record<string, Record<string, Partial<MonthlyFigures>>>

@@ -157,6 +157,9 @@ for (const language of ['fr', 'en']) {
         ['squads', '.squad-card button', '[data-person-dialog]'],
         ['projects', '.project-card-head', '[data-person-dialog]'],
         ['projects', '.gantt-row', '[data-person-dialog]'],
+        // A project named on another page opens its dialog too.
+        ['overview', '.project-link', '[data-person-dialog]'],
+        ['team', '.project-line .project-link', '[data-person-dialog]'],
       ]) {
         await show(route)
         await page.evaluate(`document.querySelector('[data-route="${route}"] ${opener}').click()`)
@@ -179,6 +182,55 @@ for (const language of ['fr', 'en']) {
       assert.deepEqual(await page.evaluate(statuses), sorted.toReversed())
       // A merge of a project branch shows on the timeline.
       assert.ok(await page.evaluate(`document.querySelectorAll('[data-project-timeline] .gantt-marker').length > 0`))
+    })
+
+    test('a name taken up again makes two projects, and the projects filter by status, by repository and search', async () => {
+      await show('projects')
+      const cards = `[...document.querySelectorAll('[data-project-cards] .repo-card-name')].map((name) => name.textContent)`
+      // Each project of the name carries the month it started, and its dialog names the other one.
+      const falcons = (await page.evaluate(cards)).filter((name) => name.startsWith('blue-falcon'))
+      assert.equal(falcons.length, 2)
+      assert.ok(falcons.every((name) => /^blue-falcon \(.+\)$/.test(name)), falcons.join(', '))
+      await page.evaluate(`[...document.querySelectorAll('[data-project-cards] .project-card-head')].find((head) => head.textContent.startsWith('blue-falcon')).click()`)
+      assert.ok(await page.evaluate(`document.querySelector('[data-person-dialog] .project-namesakes').textContent.length > 0`))
+      await noteFrench('project dialog of a name taken up again', '[data-person-dialog]')
+      await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
+
+      // The statuses picked: the stalled projects only, on the cards, the timeline and the table, and the filter says so.
+      const statuses = (selector) => page.evaluate(`[...document.querySelectorAll('${selector} .project-status')].map((tag) => tag.className.split('is-')[1])`)
+      const toggle = (status) => page.evaluate(`document.querySelector('[data-status-filter] input[data-status="${status}"]').click()`)
+      await toggle('ongoing')
+      await toggle('delivered')
+      for (const selector of ['[data-project-cards]', '[data-project-timeline]', '[data-projects] tbody']) {
+        const shown = await statuses(selector)
+        assert.ok(shown.length > 0 && shown.every((status) => status === 'stalled'), `${selector}: ${shown.join(', ')}`)
+      }
+      assert.equal(await page.evaluate(`document.querySelector('[data-status-filter] [data-status-label]').textContent`), read('À l’arrêt'))
+      await toggle('ongoing')
+      await toggle('delivered')
+      assert.equal(await page.evaluate(`document.querySelector('[data-status-filter] [data-status-label]').textContent`), read('Tous les statuts'))
+
+      // The repositories picked: the projects with pull requests there only.
+      await page.evaluate(`document.querySelector('[data-repo-filter="projects"] [data-preset="none"]').click()`)
+      await page.evaluate(`document.querySelector('[data-repo-filter="projects"] input[data-repo="billing"]').click()`)
+      assert.deepEqual(await page.evaluate(cards), ['red-heron'])
+      await page.evaluate(`document.querySelector('[data-repo-filter="projects"] [data-preset="all"]').click()`)
+
+      // The search finds a project by its name, and says so.
+      assert.equal(await page.evaluate(`document.querySelector('[data-search]').placeholder`), read('Filtrer projet, personne ou dépôt'))
+      await page.evaluate(`(() => {
+        const search = document.querySelector('[data-search]')
+        search.value = 'kite'
+        search.dispatchEvent(new Event('input'))
+      })()`)
+      assert.deepEqual(await page.evaluate(cards), ['paper-kite'])
+      await page.evaluate(`(() => {
+        const search = document.querySelector('[data-search]')
+        search.value = ''
+        search.dispatchEvent(new Event('input'))
+      })()`)
+      await show('authors')
+      assert.equal(await page.evaluate(`document.querySelector('[data-search]').placeholder`), read('Filtrer une personne ou un dépôt'))
     })
 
     test('a period, the search and a squad apply to the pages', async () => {

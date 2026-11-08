@@ -5,28 +5,6 @@
   gap: 16px;
 }
 
-/* Where a project stands: a dot of the color of its bar, and its word, in the ink of the text. */
-.project-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 1px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.project-status-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
 .project-card-head .project-status,
 .person-dialog-title .project-status {
   flex: none;
@@ -51,6 +29,43 @@
 .project-card .repo-link {
   position: relative;
   z-index: 1;
+}
+
+/* A status of the status filter: the dot of its color, then its word. */
+.status-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A repository of a project, then the GitHub mark of the branch of the project there, which leads to it on GitHub. */
+.project-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-branch-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+
+.project-branch-link:hover {
+  color: var(--text-primary);
+}
+
+.project-branch-link svg {
+  fill: currentColor;
+}
+
+/* The branch of the project in each of its repositories, in its dialog: a GitHub pill per repository. */
+.project-branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
 }
 
 /* The people beyond those an avatar stack shows: « +3 », as round as an avatar. */

@@ -3,6 +3,7 @@
 import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { inTeam } from '../../model/people.js'
+import { repositoryProjects } from '../../model/projects.js'
 import { CATEGORIES } from '../../model/repositories.js'
 import { repositoryRows } from '../../model/repository-rows.js'
 import { periodTitle } from '../../model/selection.js'
@@ -11,6 +12,7 @@ import { MIN_PEERS, PERSON_TOP } from '../../model/team.js'
 import { el } from '../dom.js'
 import { technologyIcon } from '../icons.js'
 import { githubPill, githubUrl, OPEN_REPOSITORY } from '../links.js'
+import { projectList } from '../projects.js'
 import { formatTechnologyShare, repoTypeTag } from '../tables/cells.js'
 import { dialogSection, showCardDialog, statList, topList } from './card-dialog.js'
 
@@ -121,6 +123,7 @@ export function openRepoDialog(row, opener) {
   const peersLabel = peers === all ? t('dépôts') : type.key === 'other' ? t('autres dépôts') : t('dépôts {type}', { type: type.label.toLowerCase() })
   const technologies = row.technologies.map(([name, share]) => `${name} ${formatTechnologyShare(share)}`).join(' · ')
   const main = row.technologies[0]?.[0]
+  const projects = repositoryProjects(row.repo)
 
   showCardDialog(
     [
@@ -157,6 +160,7 @@ export function openRepoDialog(row, opener) {
           topList(t('Ses relecteurs'), row.readers.slice(0, PERSON_TOP), true),
         ),
       ),
+      ...(projects.length ? [dialogSection(t('Ses projets'), projectList(t('Projets, PR de code dans ce dépôt sur la période'), projects))] : []),
     ],
     opener,
   )

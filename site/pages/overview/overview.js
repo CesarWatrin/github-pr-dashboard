@@ -1,6 +1,7 @@
-// Vue d’ensemble: today, the totals of the period, the activity, the technologies, the repositories and the feed.
+// Vue d’ensemble: today, the totals of the period, the activity, the technologies, the repositories and the feed; its
+// projects in projects.js.
 
-import { median } from '../domain/math.js'
+import { median } from '../../domain/math.js'
 import {
   capitalize,
   dayLongFormat,
@@ -10,23 +11,24 @@ import {
   formatNumber,
   formatShare,
   plural,
-} from '../lib/format.js'
-import { t } from '../lib/i18n.js'
-import { displayName } from '../model/people.js'
-import { BUCKET_TITLES } from '../model/periods.js'
-import { repoInfo, technologyWeights } from '../model/repositories.js'
-import { comparedPeriod, currentPeriod, matchesQuery, periodTitle } from '../model/selection.js'
-import { activeSquad, inSquad } from '../model/squads.js'
-import { state } from '../model/state.js'
-import { bucketTitle } from '../ui/charts/axis.js'
-import { barChart } from '../ui/charts/bar-chart.js'
-import { columnChart } from '../ui/charts/column-chart.js'
-import { dataTable } from '../ui/charts/data-table.js'
-import { $, $$, el } from '../ui/dom.js'
-import { personLink, pullRequestLink } from '../ui/links.js'
-import { listItem, renderList } from '../ui/list.js'
-import { formatTechnologyShare, LINES_COLUMN, repoCell, technologiesCell } from '../ui/tables/cells.js'
-import { renderTiles } from '../ui/tiles.js'
+} from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
+import { displayName } from '../../model/people.js'
+import { BUCKET_TITLES } from '../../model/periods.js'
+import { repoInfo, technologyWeights } from '../../model/repositories.js'
+import { comparedPeriod, currentPeriod, matchesQuery, periodTitle } from '../../model/selection.js'
+import { activeSquad, inSquad } from '../../model/squads.js'
+import { state } from '../../model/state.js'
+import { bucketTitle } from '../../ui/charts/axis.js'
+import { barChart } from '../../ui/charts/bar-chart.js'
+import { columnChart } from '../../ui/charts/column-chart.js'
+import { dataTable } from '../../ui/charts/data-table.js'
+import { $, $$, el } from '../../ui/dom.js'
+import { personLink, pullRequestLink } from '../../ui/links.js'
+import { listItem, renderList } from '../../ui/list.js'
+import { formatTechnologyShare, LINES_COLUMN, repoCell, technologiesCell } from '../../ui/tables/cells.js'
+import { renderTiles } from '../../ui/tiles.js'
+import { renderProjectTotals } from './projects.js'
 
 const EVENT_VERBS = {
   opened: t('a ouvert'),
@@ -115,6 +117,7 @@ export function renderTotals(mode) {
   renderTiles($('[data-totals-delivery]'), DELIVERY_TILES, totals, mode, compared)
   renderTiles($('[data-totals-lines]'), LINES_TILES, totals, mode, compared)
   renderTiles($('[data-totals-review]'), REVIEW_TILES, totals, mode, compared)
+  renderProjectTotals(mode)
 }
 
 export function renderActivityChart() {

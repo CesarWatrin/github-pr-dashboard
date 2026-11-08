@@ -61,8 +61,8 @@ export const FRAME = {
   'Mes PR ouvertes': 'My open PRs',
   'Mes brouillons': 'My drafts',
   'Les chiffres du mois': 'The month’s figures',
-  'Chaque mois compte les PR ouvertes ce mois-là, et les reviews, merges, déploiements et exécutions de CI de ce mois-là, comme une période choisie sur les autres pages. Une évolution en vert va dans le bon sens, en orange dans le mauvais ; les autres sont neutres.':
-    'Each month counts the PRs opened that month, and the reviews, merges, deployments and CI runs of that month, like a period picked on the other pages. A change in green goes the right way, in orange the wrong way; the others are neutral.',
+  'Chaque mois compte les PR ouvertes ce mois-là, et les reviews, merges, déploiements et exécutions de CI de ce mois-là, comme une période choisie sur les autres pages ; ses projets sont ceux dont la vie croise le mois. Une évolution en vert va dans le bon sens, en orange dans le mauvais ; les autres sont neutres.':
+    'Each month counts the PRs opened that month, and the reviews, merges, deployments and CI runs of that month, like a period picked on the other pages; its projects are those whose life meets the month. A change in green goes the right way, in orange the wrong way; the others are neutral.',
   'Champions du mois': 'Champions of the month',
   'Les badges du Palmarès': 'The badges of the Awards',
   'Dépôts les plus actifs': 'Most active repositories',
@@ -119,8 +119,8 @@ export const FRAME = {
   'Tableau d’honneur': 'Hall of fame',
   'Les badges de chaque personne de l’équipe : bronze pour un mois en tête, argent pour deux d’affilée, or pour trois ou plus':
     'The badges of each person of the team: bronze for a month on top, silver for two in a row, gold for three or more',
-  'Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement. Un mois reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs. Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau seulement.':
-    'A badge goes to whoever did the most of the whole team over a whole month, ties included; lines added and deleted count in the month their PR was merged. The Shark counts every PR opened, branch merges included, releases aside; the other badges, code PRs only. A month is settled a week after its end, whatever the period and repositories picked elsewhere. People who left count in the race: they show by name in this table only.',
+  'Un badge revient à qui a fait le plus de toute l’équipe sur un mois complet, ex æquo compris ; les lignes ajoutées et supprimées comptent le mois du merge de leur PR. Le Requin compte toutes les PR ouvertes, merges de branches compris, releases à part ; les autres badges, les PR de code seulement, et la Fusée celles des projets. Un mois reste acquis une semaine après sa fin, quelles que soient la période et les dépôts choisis ailleurs. Les personnes parties comptent dans la course : elles apparaissent sous leur nom dans ce tableau seulement.':
+    'A badge goes to whoever did the most of the whole team over a whole month, ties included; lines added and deleted count in the month their PR was merged. The Shark counts every PR opened, branch merges included, releases aside; the other badges, code PRs only, and the Rocket those of projects. A month is settled a week after its end, whatever the period and repositories picked elsewhere. People who left count in the race: they show by name in this table only.',
   'Aucune squad': 'No squad',
   'Les squads se déclarent dans la variable <code>SQUADS</code> de la synchro, un secret de l’environnement <code>github-pages</code> : <code>nom:login,login;nom:login,…</code>.':
     'Squads are declared in the <code>SQUADS</code> variable of the sync, a secret of the <code>github-pages</code> environment: <code>name:login,login;name:login,…</code>.',
@@ -234,6 +234,7 @@ export const FRAME = {
   'PR ouvertes sur la période': 'PRs opened over the period',
   'PR relues sur la période': 'PRs reviewed over the period',
   'PR de code ouvertes sur la période': 'Code PRs opened over the period',
+  'PR de code des projets ouvertes sur la période': 'Code PRs of the projects opened over the period',
   'Passer en mode clair': 'Switch to light mode',
   'Passer en mode sombre': 'Switch to dark mode',
   '{pullRequest} de {author}': '{pullRequest} by {author}',
@@ -253,13 +254,17 @@ export const FRAME = {
   'Le film parcourt la période et la squad choisies ; les personnes parties y figurent aussi, c’est l’histoire. Un dépôt apparaît à sa première PR et grossit avec les lignes ajoutées par ses PR mergées. Une personne apparaît quand elle ouvre, relit ou merge une PR, son nom quelques jours, et s’efface après 30 jours sans rien faire. Un point part d’elle vers le dépôt quand elle ouvre une PR (plein) ou en relit une (creux) ; un merge fait briller le dépôt. Le curseur parcourt la période, la vitesse se règle.': 'The film goes through the period and squad picked; people who left show too, it is history. A repository appears with its first PR and grows with the lines added by its merged PRs. A person appears when they open, review or merge a PR, their name for a few days, and fades after 30 days without doing anything. A dot goes from them to the repository when they open a PR (full) or review one (hollow); a merge lights the repository up. The slider goes through the period, the speed can be set.',
   'Projets': 'Projects',
   'Aucun projet': 'No project',
-  'Un projet se développe sur une branche <code>project/&lt;nom&gt;/main</code> : ses branches en partent, leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucune PR de code des données synchronisées n’appartient à un projet.':
-    'A project is developed on a branch <code>project/&lt;name&gt;/main</code>: its branches start from it, their PRs come back to it, then it is merged into a long-lived branch. No code PR of the synced data belongs to a project.',
+  'Un projet se développe sur une branche <code>project/&lt;nom&gt;/main</code> : ses branches en partent, leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucun projet des données synchronisées n’a encore deux PR de code.':
+    'A project is developed on a branch <code>project/&lt;name&gt;/main</code>: its branches start from it, their PRs come back to it, then it is merged into a long-lived branch. No project of the synced data has two code PRs yet.',
   'Les projets de la période': 'The projects of the period',
   'Calendrier': 'Timeline',
   'Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas livré, dans la couleur de son statut à la dernière synchro. Un point marque chaque merge de sa branche dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt finit net, une barre coupée par la période s’estompe à ce bord. Un clic ouvre sa fiche.':
     'Each bar runs from the first PR of the project to its delivery, or to its last activity if it is not delivered, in the color of its status as of the last sync. A dot marks each merge of its branch into a long-lived branch. An ongoing bar fades out on the right, a stalled one ends flat, a bar cut by the period fades at that edge. A click opens its card.',
   'Comparer les projets': 'Compare the projects',
-  'Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période et la squad choisies. Un clic sur une colonne trie les projets.':
-    'The dates, the duration and the status hold for the whole project; the other figures, for the period and the squad picked. A click on a column sorts the projects.',
+  'Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période, la squad et les dépôts choisis. Un clic sur une colonne trie les projets.':
+    'The dates, the duration and the status hold for the whole project; the other figures, for the period, the squad and the repositories picked. A click on a column sorts the projects.',
+  'Projets du mois': 'Projects of the month',
+  'Démarrés': 'Started',
+  'Livrés': 'Delivered',
+  'En cours, puis à l’arrêt, puis livrés, à la dernière synchro': 'Ongoing, then stalled, then delivered, as of the last sync',
 }

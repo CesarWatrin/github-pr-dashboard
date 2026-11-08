@@ -1,82 +1,30 @@
 // The figures of a project, on its card, in its dialog and in the table, their hints making the legend under the table;
-// its statuses, their colors and words; how its dates and its duration read.
+// its short dates, the other projects of its name, its lines. Its statuses, its name and its day are those of every page
+// (ui/projects.js).
 
 import { isMissing } from '../../domain/math.js'
 import { STALLED_AFTER_DAYS } from '../../domain/projects.js'
 import { MINUTE_MS, parisDay } from '../../domain/time.js'
 import { dayDate } from '../../lib/dates.js'
-import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare, plural, rangeShortFormat } from '../../lib/format.js'
+import { formatDecimal, formatDuration, formatLines, formatShare, formatSpan } from '../../lib/format.js'
 import { LOCALE, t } from '../../lib/i18n.js'
 import { el } from '../../ui/dom.js'
-
-// A month of the calendar, in days, for a duration.
-const MONTH_DAYS = 365.25 / 12
-
-// Where a project stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
-// stalled one lighter still; always with its word.
-export const PROJECT_STATUSES = {
-  ongoing: {
-    key: 'ongoing',
-    label: t('En cours'),
-    color: 'color-mix(in srgb, var(--series-1) 85%, var(--surface))',
-    hint: t('Sa branche n’est pas mergée depuis sa dernière PR, et il a bougé dans les {days} derniers jours.', { days: STALLED_AFTER_DAYS }),
-  },
-  delivered: {
-    key: 'delivered',
-    label: t('Livré'),
-    color: 'color-mix(in srgb, var(--series-3) 85%, var(--surface))',
-    hint: t('Sa branche project/…/main est mergée dans une branche principale, et aucune PR du projet n’a été ouverte depuis.'),
-  },
-  stalled: {
-    key: 'stalled',
-    label: t('À l’arrêt'),
-    color: 'color-mix(in srgb, var(--series-2) 55%, var(--surface))',
-    hint: t('Pas livré, et plus rien depuis {days} jours : ni PR, ni review, ni commentaire, ni merge.', { days: STALLED_AFTER_DAYS }),
-  },
-}
-
-// The order of the statuses in the table: those that call for attention first.
-export const STATUS_ORDER = ['ongoing', 'stalled', 'delivered']
-
-// A project's day, from minutes since the epoch: « 3 mars 2026 ».
-/** @type {(minutes: number | null | undefined) => string} */
-export const formatDay = (minutes) => (isMissing(minutes) ? '–' : rangeShortFormat.format(dayDate(parisDay(minutes * MINUTE_MS))))
+import { formatDay, PROJECT_STATUSES } from '../../ui/projects.js'
 
 // The same day in short, for the table: « 03/03/26 ».
 const shortDayFormat = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' })
 /** @type {(minutes: number | null | undefined) => string} */
 export const formatShortDay = (minutes) => (isMissing(minutes) ? '–' : shortDayFormat.format(dayDate(parisDay(minutes * MINUTE_MS))))
 
-// A duration on the calendar, from days: in days under two weeks, in weeks under two months, else in months; the weeks
-// short in the table.
-/**
- * @param {number | null | undefined} days
- * @param {{ short?: boolean }} [options]
- */
-export function formatSpan(days, { short = false } = {}) {
-  if (isMissing(days)) {
-    return '–'
+// The other projects that took the name of a project, each from its start to its end; null when none did.
+/** @type {(row: { namesakes: { start: number, end: number }[] }) => string | null} */
+export function namesakesText({ namesakes }) {
+  if (namesakes.length === 0) {
+    return null
   }
-  if (days < 1) {
-    return t('moins d’un jour')
-  }
-  if (days < 14) {
-    return plural(Math.round(days), 'jour')
-  }
-  if (days < 9 * 7) {
-    return short ? t('{count} sem.', { count: formatNumber(Math.round(days / 7)) }) : plural(Math.round(days / 7), 'semaine')
-  }
+  const spans = namesakes.map(({ start, end }) => t('du {start} au {end}', { start: formatDay(start), end: formatDay(end) })).join(' ; ')
 
-  return plural(Math.round(days / MONTH_DAYS), 'mois', 'mois')
-}
-
-// The status of a project as a tag: a dot of its color, and its word.
-export function statusTag(status) {
-  const { label, color, hint } = PROJECT_STATUSES[status]
-  const dot = el('span', { className: 'project-status-dot' })
-  dot.style.background = color
-
-  return el('span', { className: `project-status is-${status}`, title: hint }, dot, document.createTextNode(label))
+  return namesakes.length === 1 ? t('Un autre projet a porté ce nom, {spans}.', { spans }) : t('D’autres projets ont porté ce nom, {spans}.', { spans })
 }
 
 // Lines added over lines deleted, in the colors of a diff, as in the tables.
@@ -89,7 +37,7 @@ export const linesNodes = ({ added, deleted }) => [
 export const lastMergeOf = (row) => row.merges.at(-1)?.at ?? null
 
 // Every figure of a project: those about its life count whatever the period, the others over the period, for the squad
-// picked.
+// and the repositories picked.
 export const PROJECT_FIGURES = {
   status: {
     key: 'status',

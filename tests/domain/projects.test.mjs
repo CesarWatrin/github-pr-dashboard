@@ -4,7 +4,8 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { projectLife, projectRows, projectSummary, recordsByProject, spanInRange } from '../../site/domain/projects.js'
+import { MIN_PROJECT_CODE, projectLife, projectRows, projectsOf, projectSummary, REUSED_AFTER_DAYS, spanInRange } from '../../site/domain/projects.js'
+import { projectSeries } from '../../site/domain/projects/series.js'
 import { DAY_MS, parisMidnight } from '../../site/domain/time.js'
 import { at, record } from './records.mjs'
 
@@ -101,13 +102,89 @@ const OUTSIDE = [
 
 const ALL = [...KITE, ...OTTER, ...FALCON, ...OUTSIDE]
 
-describe('recordsByProject', () => {
+// A name taken up again: red-heron delivered in January 2025 in one repository, then a project of the same name started
+// in June 2025 in another, nothing of the first left open and nothing done on it meanwhile.
+const HERON_MERGE = record({
+  repo: 'web',
+  number: 31,
+  author: 'alice',
+  kind: 'integration',
+  project: 'red-heron',
+  projectMerge: true,
+  createdAt: at('2025-01-08T09:00:00Z'),
+  mergedAt: at('2025-01-10T09:00:00Z'),
+})
+const HERON_CODE = [
+  record({ repo: 'web', number: 30, author: 'alice', project: 'red-heron', createdAt: at('2025-01-06T09:00:00Z'), mergedAt: at('2025-01-07T09:00:00Z') }),
+  record({ repo: 'web', number: 32, author: 'bob', project: 'red-heron', createdAt: at('2025-01-07T09:00:00Z'), mergedAt: at('2025-01-08T08:00:00Z') }),
+]
+const HERON = [...HERON_CODE, HERON_MERGE]
+const HERON_AGAIN = [
+  record({ repo: 'api', number: 40, author: 'dan', project: 'red-heron', createdAt: at('2025-06-02T09:00:00Z'), mergedAt: at('2025-06-03T09:00:00Z') }),
+  record({ repo: 'api', number: 41, author: 'erin', project: 'red-heron', createdAt: at('2025-06-09T09:00:00Z') }),
+]
+
+describe('projectsOf', () => {
   test('groups the pull requests of people by project, whatever the repository', () => {
-    const projects = recordsByProject(ALL)
-    assert.deepEqual([...projects.keys()], ['paper-kite', 'quiet-otter', 'blue-falcon'])
-    assert.deepEqual(new Set(projects.get('paper-kite').map((pr) => pr.repo)), new Set(['web', 'api']))
+    const projects = projectsOf(ALL)
+    assert.deepEqual(projects.map((project) => project.key), ['paper-kite', 'quiet-otter', 'blue-falcon'])
+    const kite = projects[0]
+    assert.deepEqual([kite.name, kite.run, kite.runs], ['paper-kite', 1, 1])
+    assert.deepEqual(new Set(kite.records.map((pr) => pr.repo)), new Set(['web', 'api']))
     // The bot's pull request stays out.
-    assert.equal(projects.get('paper-kite').length, KITE.length)
+    assert.equal(kite.records.length, KITE.length)
+  })
+
+  test('a name taken up again once its project was over is another project', () => {
+    const projects = projectsOf([...HERON_AGAIN, ...HERON])
+    assert.deepEqual(
+      projects.map(({ key, name, run, runs }) => [key, name, run, runs]),
+      [
+        ['red-heron', 'red-heron', 1, 2],
+        ['red-heron#2', 'red-heron', 2, 2],
+      ],
+    )
+    assert.deepEqual(projects[0].records, HERON)
+    assert.deepEqual(projects[1].records, HERON_AGAIN)
+  })
+
+  test('a pause with a pull request of it still open is the same project', () => {
+    // The merge of its branch, opened in January, merged once the work went on in June.
+    const waiting = { ...HERON_MERGE, mergedAt: at('2025-06-20T09:00:00Z') }
+    const [project, ...others] = projectsOf([...HERON_CODE, waiting, ...HERON_AGAIN])
+    assert.equal(others.length, 0)
+    assert.equal(project.records.length, 5)
+  })
+
+  test('a pull request closed without a merge left it open until it was closed', () => {
+    const merge = { ...HERON_MERGE, mergedAt: null, closed: true }
+    // Closed in June, after the work went on.
+    assert.equal(projectsOf([...HERON_CODE, { ...merge, closedAt: at('2025-06-05T09:00:00Z') }, ...HERON_AGAIN]).length, 1)
+    // Closed in January.
+    assert.equal(projectsOf([...HERON_CODE, { ...merge, closedAt: at('2025-01-10T09:00:00Z') }, ...HERON_AGAIN]).length, 2)
+    // Without its closing time, published before the sync gave it: as of its last event, its opening.
+    assert.equal(projectsOf([...HERON_CODE, merge, ...HERON_AGAIN]).length, 2)
+  })
+
+  test('a shorter pause, or an activity during it, is the same project', () => {
+    // Opened 72 days after the last merge, within REUSED_AFTER_DAYS.
+    assert.ok(REUSED_AFTER_DAYS > 72)
+    assert.equal(projectsOf([...HERON, { ...HERON_AGAIN[0], createdAt: at('2025-03-23T09:00:00Z') }]).length, 1)
+    // A comment in March on the merge of January: the project moved then, 77 days before June.
+    const commented = { ...HERON_MERGE, interventions: [['bob', at('2025-03-17T09:00:00Z'), 'COMMENTED', 1]] }
+    assert.equal(projectsOf([...HERON_CODE, commented, ...HERON_AGAIN]).length, 1)
+  })
+
+  test('a project with fewer than MIN_PROJECT_CODE code pull requests is none, its name taken up again or not', () => {
+    assert.equal(MIN_PROJECT_CODE, 2)
+    // A project branch made by mistake: one pull request, and the merge of the branch, closed.
+    const mistake = [HERON_CODE[0], { ...HERON_MERGE, mergedAt: null, closed: true, closedAt: at('2025-01-09T09:00:00Z') }]
+    assert.deepEqual(projectsOf(mistake), [])
+    // Taken up again in June: the project of June is the only one of its name.
+    assert.deepEqual(
+      projectsOf([...mistake, ...HERON_AGAIN]).map(({ key, run, runs, records }) => [key, run, runs, records.length]),
+      [['red-heron', 1, 1, 2]],
+    )
   })
 })
 
@@ -246,14 +323,34 @@ describe('projectRows', () => {
     // Every repository of the project, even one the squad did not touch over the range.
     assert.deepEqual(kite.repos, [['api', 1], ['web', 0]])
   })
+
+  test('the projects of a name taken up again, each with its own life and the others’ start and end', () => {
+    /** @type {TimeRange} */
+    const year = { start: parisMidnight('2025-01-01'), end: parisMidnight('2026-01-01'), bucket: 'month' }
+    const [first, second] = projectRows([...HERON, ...HERON_AGAIN], year, { now: NOW })
+    assert.deepEqual([first.key, first.status, first.start, first.end], ['red-heron', 'delivered', at('2025-01-06T09:00:00Z'), at('2025-01-10T09:00:00Z')])
+    assert.deepEqual([second.key, second.start, second.merges, second.repos], ['red-heron#2', at('2025-06-02T09:00:00Z'), [], [['api', 2]]])
+    assert.deepEqual(first.namesakes, [{ start: second.start, end: second.end, status: second.status }])
+    assert.deepEqual(second.namesakes, [{ start: first.start, end: first.end, status: 'delivered' }])
+    // A squad that only took part in the second sees it alone, still told apart from the first.
+    const squad = projectRows(HERON_AGAIN.filter((pr) => pr.author === 'dan'), year, { all: [...HERON, ...HERON_AGAIN], now: NOW })
+    assert.deepEqual(
+      squad.map((row) => [row.key, row.code, row.start]),
+      [['red-heron#2', 1, at('2025-06-02T09:00:00Z')]],
+    )
+  })
 })
 
 describe('projectSummary', () => {
-  test('ongoing now, delivered within the range, and the medians of the delivered ones', () => {
+  test('living and started within the range, ongoing now, delivered within the range, their code, and the medians of the delivered ones', () => {
     const rows = projectRows(ALL, SPRING, { now: NOW })
+    // paper-kite and quiet-otter, both started within the range; blue-falcon was over before it.
     assert.deepEqual(projectSummary(rows, SPRING), {
+      active: 2,
+      started: 2,
       ongoing: 1,
       delivered: 1,
+      code: 5,
       medianDays: (Date.parse('2026-05-05T09:00:00Z') - Date.parse('2026-03-02T09:00:00Z')) / DAY_MS,
       medianIntegrationHours: 10,
     })
@@ -265,3 +362,22 @@ describe('projectSummary', () => {
     assert.deepEqual([summary.delivered, summary.medianDays], [0, null])
   })
 })
+
+describe('projectSeries', () => {
+  test('month by month, the projects living, started and delivered', () => {
+    /** @type {TimeRange} */
+    const range = { start: parisMidnight('2026-03-01'), end: parisMidnight('2026-06-01'), bucket: 'month' }
+    // paper-kite lives from March to its delivery in May; quiet-otter starts in May.
+    assert.deepEqual(projectSeries(projectRows(ALL, range, { now: NOW }), range), [
+      { key: '2026-03', partial: false, active: 1, started: 1, delivered: 0 },
+      { key: '2026-04', partial: false, active: 1, started: 0, delivered: 0 },
+      { key: '2026-05', partial: false, active: 2, started: 1, delivered: 1 },
+    ])
+  })
+
+  test('week by week, a bucket the range does not cover whole is partial', () => {
+    const points = projectSeries(projectRows(ALL, SPRING, { now: NOW }), { ...SPRING, start: parisMidnight('2026-03-04') })
+    assert.deepEqual([points[0].key, points[0].partial, points[0].active, points.at(-1).partial], ['2026-03-02', true, 1, false])
+  })
+})
+

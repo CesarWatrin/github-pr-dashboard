@@ -1,0 +1,98 @@
+/* What every page shows of a project (ui/projects.js): its status as a tag, its name as a link to its dialog. */
+
+/* Where a project stands: a dot of the color of its bar, and its word, in the ink of the text. */
+.project-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.project-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* A project named on any page: its name, after the dot of its status, opens its dialog. */
+.project-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-link > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-link:hover > span:last-child {
+  text-decoration: underline;
+}
+
+/* The projects of the period on the overview: the name, then under it where it stands and what it carries. */
+.project-feed-item {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.project-feed-item .project-link {
+  max-width: 100%;
+}
+
+/* The projects of a person or a squad on their card, under their tags, above the button that stretches across it: a
+   single line, how many kept whole, the name of the busiest cut short when it does not fit. */
+.project-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.project-line > span {
+  flex: none;
+}
+
+.project-line .project-link {
+  position: relative;
+  z-index: 1;
+  flex: 0 1 auto;
+  color: var(--text-primary);
+}
+
+/* The projects of a person, a squad or a repository in their dialog: across its width, in as many columns as fit. */
+.project-dialog-list {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 24px;
+}
+
+.project-dialog-list .project-link {
+  min-width: 0;
+}

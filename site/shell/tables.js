@@ -4,7 +4,7 @@ import { t } from '../lib/i18n.js'
 import { BADGES_LEGEND } from '../model/badges.js'
 import { authorRows, reviewerRows } from '../model/contributors.js'
 import { displayName, isCurrent, SENIORITY_LEGEND } from '../model/people.js'
-import { currentProjects } from '../model/projects.js'
+import { projectRepoCounts, shownProjects } from '../model/projects.js'
 import { withCategory } from '../model/repositories.js'
 import { currentCi, currentPeriod } from '../model/selection.js'
 import { currentNetwork } from '../model/team.js'
@@ -12,8 +12,8 @@ import { AUTHOR_COLUMNS } from '../pages/authors.js'
 import { COLLABORATION_COLUMNS, renderCollaboration } from '../pages/collaboration.js'
 import { CYCLE_COLUMNS, cycleRows, renderCycleCharts, renderCycleTiles } from '../pages/cycle.js'
 import { DEPENDENCY_COLUMNS, DEPLOYMENT_COLUMNS, WORKFLOW_COLUMNS } from '../pages/devops.js'
-import { REPO_COLUMNS, repoRows } from '../pages/overview.js'
-import { PROJECT_COLUMNS } from '../pages/projects/projects.js'
+import { REPO_COLUMNS, repoRows } from '../pages/overview/overview.js'
+import { PROJECT_COLUMNS, projectSearchTexts, renderProjects } from '../pages/projects/projects.js'
 import { renderRepositories } from '../pages/repositories.js'
 import { REVIEWER_COLUMNS } from '../pages/reviewers.js'
 import { renderTeam } from '../pages/team.js'
@@ -116,9 +116,14 @@ export function registerTables() {
     },
     projects: {
       columns: PROJECT_COLUMNS,
-      rows: () => currentProjects().rows,
-      rowKey: (row) => row.name,
-      searchTexts: (row) => [row.name, ...row.repos.map(([repo]) => repo)],
+      rows: () => shownProjects().rows,
+      rowKey: (row) => row.key,
+      searchTexts: projectSearchTexts,
+      // The filter of the whole page: the repositories of the projects of the period, whatever those picked.
+      repos: () => projectRepoCounts().keys(),
+      repoCounts: projectRepoCounts,
+      repoCountsLabel: t('PR de code des projets ouvertes sur la période'),
+      onFilter: () => renderProjects(),
     },
   })
   Object.assign(REPO_FILTERS, {
