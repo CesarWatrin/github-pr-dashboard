@@ -527,4 +527,11 @@ export const BLOCKS = {
   'Étape {stage}': 'Stage {stage}',
   'une étape du projet': 'a stage of the project',
   'l’étape {stage}': 'stage {stage}',
+  'AC': 'Improvements',
+  'Le reste': 'The rest',
+  'Maintenir {run} · construire {build}, le reste à part': 'Maintain {run} · build {build}, the rest aside',
+  'Où va son effort': 'Where their effort goes',
+  'Où va l’effort': 'Where the effort goes',
+  'Les PR de code de la période entre TMA, projets, AC et le reste : ce qui maintient, ce qui construit':
+    'The code PRs of the period between maintenance, projects, improvements and the rest: what maintains, what builds',
 }

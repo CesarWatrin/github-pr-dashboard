@@ -17,10 +17,10 @@ paths:
   (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
-  team, squads, awards, repositories, projects, acs, tma, devops, method). The period selector and the search apply to every page but the
+  team, squads, awards, repositories, projects, acs, effort, tma, devops, method). The period selector and the search apply to every page but the
   method, report, awards and « Mes PR » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
-  analysis, trends, squads and AC pages the period only (`search: false`). The Méthode page has no link among the pages: a
+  analysis, trends, squads, AC and effort pages the period only (`search: false`). The Méthode page has no link among the pages: a
   button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
   screens, only the periods of the filters stack (`.filters .segmented`), the other segmented pickers keep their row.
 - **The address** follows the filters and the card open, so that a place of the page can be shared: after the hash of
@@ -76,7 +76,9 @@ paths:
 - **Charts**: `columnChart()` over time buckets (series side by side, partial buckets lighter, tooltip on hover, an
   optional `format` for durations), `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows ×
   columns, `color-mix` on `--series-1`; on cells too narrow for its tilted column labels side by side, one in two or
-  three keeps its label, the last one always: `TILTED_LABEL_SPACING`), `shareChart()` for bars cut into shares that fill the width, `lineChart()`
+  three keeps its label, the last one always: `TILTED_LABEL_SPACING`), `shareChart()` for bars cut into shares that fill the width, `stackedChart()` for columns over time buckets cut
+  into the shares of their series (100 %, the first series from the axis, the share written inside a part tall and wide
+  enough), `lineChart()`
   for lines over months (trends page: broken where a month has no value, the unfinished month lighter, a crosshair on
   hover), `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
@@ -335,6 +337,20 @@ paths:
   (`domain/analysis/ac-rules.js`, AC that drag to their merge or grow too big, their cards in
   `pages/analysis/ac-findings.js`), a tag on the timeline of a pull request, and the 🛠️ Artisan badge (`acs` of the monthly figures). Without any AC in the stats (`anyAc()`), the page
   says how one is found.
+- **Effort page** (`pages/effort.js`, « Où va l’effort », « Effort » in the sidebar, `renderEffort()` and
+  `renderEffortCharts()`, among `COMPARED_ROUTES`): each code pull request of a person opened over the period counts
+  once, in one of the kinds of `EFFORT_KINDS` of `site/domain/effort.js`, in this order (`effortKind()`): a project
+  (one the projects page counts: `projectKeyOf()`), else the TMA (`hotfix`), else an AC (`ac`), else the rest.
+  Maintaining is the TMA, building the projects and the AC: `effortSummary()` gives the count, the lines added by those
+  merged and the share of each kind, and `runShare` / `buildShare`, their shares of build + run, the rest aside.
+  `model/effort.js` works them out once per stats, range and squad: `currentEffort()` against `comparedEffort()` (the
+  tiles, the TMA and maintaining better down), `effortChart()` (`effortSeries()`, drawn by `stackedChart()`, the data
+  table under it), `squadEfforts()` (each squad whatever squad is picked, the organization last, `shareChart()`),
+  `peopleEfforts()` (the `EFFORT_TOP_PEOPLE` people still in the team with the most code pull requests, for the squad
+  picked), `personEffort()` and `squadEffort()`. `EFFORT_SERIES` of `ui/effort.js` shows the kinds, the TMA first so
+  that its share reads from the axis, in `--series-2` (TMA), `--series-1` (projects), `--series-3` (AC) and
+  `--text-muted` (the rest); `effortBar()` draws « Où va son effort » in the dialogs of people and squads: a bar cut
+  into the shares, its words under it, no tooltip.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.

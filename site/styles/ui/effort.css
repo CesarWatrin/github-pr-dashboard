@@ -1,0 +1,52 @@
+/* Where the effort of a person or a squad goes, in their dialog (ui/effort.js): a bar cut into the share of each kind of
+   work, in the colors of the series, and its words under it, in ink. */
+.effort-line {
+  display: grid;
+  gap: 8px;
+}
+
+.effort-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+.effort-bar span {
+  min-width: 3px;
+  flex-basis: 0;
+}
+
+.effort-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  list-style: none;
+}
+
+.effort-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.effort-legend strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.effort-count,
+.effort-reading {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.effort-reading {
+  margin: 0;
+}

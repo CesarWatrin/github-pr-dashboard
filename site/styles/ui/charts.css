@@ -225,6 +225,11 @@
   pointer-events: none;
 }
 
+/* A partial bucket's colors fade into the surface: its shares take the ink of the theme. */
+.bar-group.is-partial .stage-label {
+  fill: var(--text-primary);
+}
+
 .card-note {
   margin: 12px 0 0;
   color: var(--text-muted);

@@ -38,6 +38,7 @@ import { setupPersonDialog } from './ui/dialogs/person-dialog.js'
 import { setupPullRequestDialog } from './ui/dialogs/pull-request-dialog.js'
 import { setupRepositoryDialog } from './ui/dialogs/repository-dialog.js'
 import { $ } from './ui/dom.js'
+import { EFFORT_SERIES } from './ui/effort.js'
 import { repoFilterNames, setupRepoFilter } from './ui/repo-filter.js'
 import { renderStackLegends } from './ui/tables/table.js'
 import { translatePage } from './ui/translate.js'
@@ -83,6 +84,9 @@ renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)
 renderLegend($('[data-projects-chart-legend]'), PROJECT_SERIES)
 renderLegend($('[data-acs-chart-legend]'), AC_SERIES)
 renderLegend($('[data-acs-overview-chart-legend]'), AC_OVERVIEW_SERIES)
+for (const name of ['chart', 'squads', 'people']) {
+  renderLegend($(`[data-effort-${name}-legend]`), EFFORT_SERIES)
+}
 renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
 renderLegend($('[data-squads-stages-legend]'), CYCLE_STAGES)
