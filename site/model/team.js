@@ -1,4 +1,4 @@
-// Each person's figures over the period (team page, person dialog), and who reviews whom.
+// Each person's figures over the period (team page, person dialog), who reviews whom, and what their hotfixes add up to.
 
 import { median } from '../domain/math.js'
 import { reviewNetwork } from '../domain/team.js'
@@ -175,3 +175,19 @@ export function personDetails(row) {
       : [],
   }
 }
+
+// What a person's hotfixes (TMA) add up to over the period, from the TMA of computePeriod(): how many, the share of their
+// code pull requests they are, and their median time to merge; none and a share of zero without any hotfix.
+/** @type {WeakMap<PeriodStats, Map<string, PeriodStats['tma']['people'][number]>>} */
+const tmaByPeriod = new WeakMap()
+/** @param {string} login */
+export function tmaOf(login) {
+  const period = currentPeriod()
+  if (!tmaByPeriod.has(period)) {
+    tmaByPeriod.set(period, new Map(period.tma.people.map((person) => [person.login, person])))
+  }
+  const person = /** @type {Map<string, PeriodStats['tma']['people'][number]>} */ (tmaByPeriod.get(period)).get(login)
+
+  return { hotfixes: person?.hotfixes ?? 0, share: person?.share ?? 0, medianTimeToMergeHours: person?.medianTimeToMergeHours ?? null }
+}
+

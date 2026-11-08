@@ -16,7 +16,7 @@ import { personProjects } from '../../model/projects.js'
 import { topTechnologies } from '../../model/repositories.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
-import { personDetails, teamRows } from '../../model/team.js'
+import { personDetails, teamRows, tmaOf } from '../../model/team.js'
 import { badgeRow } from '../badges.js'
 import { el } from '../dom.js'
 import { avatarUrl, githubPill, githubUrl, OPEN_PERSON } from '../links.js'
@@ -120,6 +120,18 @@ const PERSON_ACS = [
   },
 ]
 
+// The hotfixes of the person over the period (TMA), read from what they add up to (tmaOf()).
+const PERSON_TMA = [
+  { label: t('Hotfix'), value: (tma) => tma.hotfixes, hint: t('PR de code ouvertes sur la période depuis une branche qui commence par hotfix.') },
+  { label: t('Part de hotfix'), value: (tma) => tma.share, format: formatShare, hint: t('Part de ses PR de code ouvertes sur la période qui sont des hotfix.') },
+  {
+    label: t('Hotfix mergés en'),
+    value: (tma) => tma.medianTimeToMergeHours,
+    format: formatDuration,
+    hint: t('Médiane, de la création au merge de ses hotfix, en heures ouvrées.'),
+  },
+]
+
 const PERSON_CIRCULATION = [
   { label: t('Relecteurs distincts'), value: ({ network }) => network?.reviewers, hint: TEAM_STATS[5].hint },
   DEPENDENCY_STAT,
@@ -136,6 +148,7 @@ export function openPersonDialog(row, opener) {
   const reviewers = peers(({ row: other }) => other.reviewed > 0)
   const projects = personProjects(row.login)
   const acs = personAcs(row.login)
+  const tma = tmaOf(row.login)
 
   showCardDialog(
     [
@@ -178,6 +191,7 @@ export function openPersonDialog(row, opener) {
       ...(acs.started || acs.delivered
         ? [dialogSection(t('Ses améliorations continues'), statList(PERSON_ACS, acs, writers.map(({ row: other }) => personAcs(other.login))))]
         : []),
+      ...(tma.hotfixes ? [dialogSection(t('Sa TMA'), statList(PERSON_TMA, tma, writers.map(({ row: other }) => tmaOf(other.login))))] : []),
       dialogSection(
         t('Avec qui, et où'),
         statList(PERSON_CIRCULATION, details, writers),

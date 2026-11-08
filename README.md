@@ -98,7 +98,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   carte ou une barre chacune, elles sont comptées : démarrées, livrées, en prod, en cours, abandonnées, part des PR de
   code, délais jusqu'au merge et jusqu'en prod, taille, personnes, comparés à la période d'avant ; démarrées et livrées
   par période ; livrées par dépôt, par personne, par squad et par taille. On les retrouve sur la vue d'ensemble (tuiles
-  et graphique par période), les cartes des personnes, des squads et des dépôts (avec leurs hotfix), leurs fiches, le bilan du mois, les tendances, l'analyse (AC qui traînent ou trop
+  et graphique par période), les cartes des personnes, des squads et des dépôts (avec leurs hotfix), leurs fiches (avec
+  une section « Sa TMA » : hotfix, part, délai de merge, face à la médiane des pairs), le bilan du mois, les tendances, l'analyse (AC qui traînent ou trop
   grosses), la frise d'une PR et le badge 🛠️ Artisan.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,

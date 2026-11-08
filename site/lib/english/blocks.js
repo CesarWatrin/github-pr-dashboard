@@ -511,4 +511,8 @@ export const BLOCKS = {
   'AC qui traînent avant leur merge': 'Improvements that drag before their merge',
   'AC trop grosses': 'Improvements too big',
   'Améliorations continues livrées et hotfix ouverts sur la période': 'Continuous improvements delivered and hotfixes opened over the period',
+  'Part de ses PR de code ouvertes sur la période qui sont des hotfix.': 'Share of their code PRs opened over the period that are hotfixes.',
+  'Hotfix mergés en': 'Hotfixes merged in',
+  'Médiane, de la création au merge de ses hotfix, en heures ouvrées.': 'Median, from the creation to the merge of their hotfixes, in working hours.',
+  'Sa TMA': 'Their maintenance',
 }

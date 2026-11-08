@@ -73,6 +73,14 @@ export const SQUAD_FIGURES = {
   },
   commentsPerPr: { key: 'commentsPerPr', label: t('Comm. / PR'), format: formatDecimal, hint: t('Commentaires et reviews « commentaire », par PR relue.') },
   hotfixShare: { key: 'hotfixShare', label: t('Hotfix'), format: formatShare, better: 'down', hint: t('Part des PR de code ouvertes depuis une branche hotfix.') },
+  hotfixes: { key: 'hotfixes', label: t('Hotfix ouverts'), hint: t('PR de code des membres ouvertes sur la période depuis une branche qui commence par hotfix.') },
+  hotfixMergeHours: {
+    key: 'hotfixMergeHours',
+    label: t('Hotfix mergés en'),
+    format: formatDuration,
+    better: 'down',
+    hint: t('Médiane, de la création au merge des hotfix de la squad, en heures ouvrées.'),
+  },
   reworkRate: {
     key: 'reworkRate',
     label: t('Reprise'),
@@ -130,7 +138,7 @@ const byRepoTotal = (rows, field) =>
 
 // One squad over the period, or the whole organization ('*', without members): its figures (SQUAD_FIGURES), its members
 // by pull requests merged, who reads its code, its repositories, the projects its members wrote code for, and what their
-// AC add up to.
+// AC and their hotfixes add up to.
 function squadRow(name, members, range, organization) {
   const records = members ? squadRecords({ name, members }) : state.stats.pullRequests
   const period = name === '*' ? organization : squadPeriod(name, records, range)
@@ -176,6 +184,7 @@ function squadRow(name, members, range, organization) {
     acs,
     acShare: acs && code ? acs.code / code : null,
     hotfixes: period.tma.opened,
+    hotfixMergeHours: period.tma.medianTimeToMergeHours,
     writers: (members ?? []).map((login) => [login, writers.get(login) ?? 0]).sort((a, b) => b[1] - a[1]),
     readers,
     repos: [...repos].filter(([, code]) => code > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),

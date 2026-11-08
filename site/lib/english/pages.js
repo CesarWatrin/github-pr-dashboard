@@ -525,4 +525,8 @@ export const PAGES = {
   'Aucun statut': 'No status',
   'Statuts': 'Statuses',
   'Projets de la période, selon leur statut à la dernière synchro': 'Projects of the period, by their status at the last sync',
+  'PR de code des membres ouvertes sur la période depuis une branche qui commence par hotfix.': 'Code PRs of the members opened over the period from a branch starting with hotfix.',
+  'Hotfix mergés en': 'Hotfixes merged in',
+  'Médiane, de la création au merge des hotfix de la squad, en heures ouvrées.': 'Median, from the creation to the merge of the hotfixes of the squad, in working hours.',
+  'Sa TMA': 'Their maintenance',
 }
