@@ -1,11 +1,10 @@
 // Each repository's figures over the period: its pull requests, its CI, who writes and reviews it.
 
-import { deliveredBy } from '../domain/acs.js'
 import { computeCi } from '../domain/ci.js'
 import { median } from '../domain/math.js'
 import { busFactor } from '../domain/team.js'
 import { roundedMedian } from '../lib/math.js'
-import { currentAcs } from './acs.js'
+import { repositoryAcs } from './acs.js'
 import { inSelection } from './contributors.js'
 import { inTeam } from './people.js'
 import { repoInfo } from './repositories.js'
@@ -100,7 +99,7 @@ export function repositoryRows({ all = false } = {}) {
   }
   const reviewed = new Map(period.repositories.map((stats) => [stats.repo, stats]))
   const hotfixes = new Map(period.tma.repositories.map((stats) => [stats.repo, stats.hotfixes]))
-  const acs = new Map(deliveredBy(currentAcs(), periodRange(), (ac) => ac.repos))
+  const acs = repositoryAcs()
   /** @param {[login: string, count: number][]} people */
   const busiest = (people) => people.toSorted((a, b) => b[1] - a[1])
 
@@ -124,7 +123,9 @@ export function repositoryRows({ all = false } = {}) {
         deleted: totals.deleted,
         unreviewedRate: totals.merged ? totals.unreviewed / totals.merged : null,
         hotfixes: hotfixes.get(totals.repo) ?? 0,
-        acs: acs.get(totals.repo) ?? 0,
+        acs: acs.get(totals.repo)?.delivered ?? 0,
+        acTimeToMergeHours: acs.get(totals.repo)?.medianTimeToMergeHours ?? null,
+        acShare: totals.code ? (acs.get(totals.repo)?.code ?? 0) / totals.code : null,
         reviewers: totals.readers.length,
         reviewed: review?.prs ?? 0,
         medianTimeToFirstReviewHours: median(totals.timesToFirstReview),

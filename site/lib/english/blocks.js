@@ -515,4 +515,7 @@ export const BLOCKS = {
   'Hotfix mergés en': 'Hotfixes merged in',
   'Médiane, de la création au merge de ses hotfix, en heures ouvrées.': 'Median, from the creation to the merge of their hotfixes, in working hours.',
   'Sa TMA': 'Their maintenance',
+  'Améliorations continues livrées sur la période, celles des PR du dépôt.': 'Continuous improvements delivered over the period, those of the PRs of the repository.',
+  'Part des PR de code du dépôt ouvertes pour des améliorations continues.': 'Share of the code PRs of the repository opened for continuous improvements.',
+  'Part AC': 'Improvement share',
 }

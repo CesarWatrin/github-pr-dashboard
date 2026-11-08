@@ -68,6 +68,14 @@ export const REPOSITORY_FIGURES = {
   ciRuns: { key: 'ciRuns', label: t('Exécutions CI'), hint: t('Exécutions GitHub Actions sur des PR ou des push qui ont abouti à un verdict.') },
   ciFailureRate: { key: 'ciFailureRate', label: t('CI en échec'), format: formatShare, hint: t('Part de ces exécutions en échec.') },
   ciRerunRate: { key: 'ciRerunRate', label: t('CI relancée'), format: formatShare, hint: t('Part de ces exécutions relancées au moins une fois.') },
+  acs: { key: 'acs', label: t('AC livrées'), hint: t('Améliorations continues livrées sur la période, celles des PR du dépôt.') },
+  acTimeToMergeHours: {
+    key: 'acTimeToMergeHours',
+    label: t('AC mergées en'),
+    format: formatDuration,
+    hint: t('Médiane, de la première PR d’une AC à sa livraison dans develop, en heures ouvrées.'),
+  },
+  acShare: { key: 'acShare', label: t('Part AC'), format: formatShare, hint: t('Part des PR de code du dépôt ouvertes pour des améliorations continues.') },
 }
 export const repositoryFigures = (...keys) => keys.map((key) => REPOSITORY_FIGURES[key])
 
@@ -81,6 +89,7 @@ const REPOSITORY_REVIEWED = repositoryFigures(
   'silentApprovalRate',
 )
 const REPOSITORY_DELIVERED = repositoryFigures('deployments', 'medianLeadTimeHours', 'reworkRate', 'ciRuns', 'ciFailureRate', 'ciRerunRate')
+const REPOSITORY_ACS = repositoryFigures('acs', 'acTimeToMergeHours', 'acShare')
 // Explained in the legend under the cards, with the figures.
 export const BUS_FACTOR_LEGEND = {
   label: t('Bus factor'),
@@ -151,6 +160,7 @@ export function openRepoDialog(row, opener) {
       dialogSection(t('Le code'), statList(REPOSITORY_WRITTEN, row, peers.filter((other) => other.code > 0))),
       dialogSection(t('La revue'), statList(REPOSITORY_REVIEWED, row, peers.filter((other) => other.reviewed > 0))),
       dialogSection(t('La mise en prod'), statList(REPOSITORY_DELIVERED, row, peers.filter((other) => other.deployments > 0 || other.ciRuns > 0))),
+      ...(row.acs ? [dialogSection(t('Ses améliorations continues'), statList(REPOSITORY_ACS, row, peers.filter((other) => other.acs > 0)))] : []),
       dialogSection(
         t('Qui l’écrit, qui le relit'),
         el(

@@ -1,6 +1,7 @@
 // The AC of the stats (acsOf() of domain/acs.js), worked out once per list of records (the stats, or a squad's), and what
 // the pages read of them over the period, for the squad picked: what they add up to (and over the period compared), bucket
-// by bucket, those delivered by repository, person, squad and size; and those of a person and of a squad.
+// by bucket, those delivered by repository, person, squad and size; and those of a person, of a squad and of each
+// repository.
 
 import { acSeries, acSizes, acsOf, acSummary, deliveredBy } from '../domain/acs.js'
 import { isCurrent } from './people.js'
@@ -67,6 +68,32 @@ export const personAcs = (login) =>
     currentAcs().filter((ac) => ac.authors.includes(login)),
     periodRange(),
   )
+
+// What the AC of each repository add up to over the period, for the squad picked: those of its own pull requests, an AC
+// in several repositories counting in each; worked out once per list of records and range.
+/** @type {WeakMap<PullRequestRecord[], { key: string, byRepo: Map<string, import('../domain/acs.js').AcSummary> }>} */
+const byRepository = new WeakMap()
+/** @returns {Map<string, import('../domain/acs.js').AcSummary>} */
+export function repositoryAcs() {
+  const records = scopedRecords()
+  const range = periodRange()
+  const key = `${range.start}:${range.end}`
+  const cached = byRepository.get(records)
+  if (cached?.key === key) {
+    return cached.byRepo
+  }
+  /** @type {Map<string, PullRequestRecord[]>} */
+  const perRepo = new Map()
+  for (const pr of records) {
+    if (pr.ac) {
+      perRepo.set(pr.repo, [...(perRepo.get(pr.repo) ?? []), pr])
+    }
+  }
+  const byRepo = new Map([...perRepo].map(([repo, own]) => [repo, acSummary(acsOf(own), range)]))
+  byRepository.set(records, { key, byRepo })
+
+  return byRepo
+}
 
 // What the AC of a squad add up to over the period, whatever squad is picked: those of its members' pull requests.
 /** @type {(squad: Squad) => import('../domain/acs.js').AcSummary} */

@@ -302,7 +302,8 @@ paths:
   repository and person, `AC_TOP` of each, by squad and by size), `personAcs()`, `squadAcs()`. Elsewhere: a group of
   tiles and the AC by bucket on the overview, a line of the AC delivered and the hotfixes opened over the period on the
   cards of people, squads and repositories (`workLine()` of `ui/work-line.js`), with a « Sa TMA » section in the dialogs
-  of people (`tmaOf()` of `model/team.js`) and squads, a section
+  of people (`tmaOf()` of `model/team.js`) and squads, a section of the AC in the dialog of a repository
+  (`repositoryAcs()`), a section
   of their dialogs, a group of the monthly report (`monthStats().acs`), two trends, two rules of the analysis
   (`domain/analysis/ac-rules.js`, AC that drag to their merge or grow too big, their cards in
   `pages/analysis/ac-findings.js`), a tag on the timeline of a pull request, and the 🛠️ Artisan badge (`acs` of the monthly figures). Without any AC in the stats (`anyAc()`), the page
