@@ -304,7 +304,8 @@ paths:
     (`monthStats().projects`, `projectSummary()` with `withCodeShare()`) and « Projets du mois », started and delivered;
     two trends; two rules of the analysis (`domain/analysis/project-rules.js`, its cards in
     `pages/analysis/project-findings.js`); and the 🚀 Fusée badge, from the `projects` of the monthly figures.
-- **AC page** (`pages/acs.js`, « Améliorations continues », `renderAcs()` and `renderAcCharts()`): the AC of the
+- **AC page** (`pages/acs.js`, « Améliorations continues », « AC » in the sidebar so that it fits, `renderAcs()` and
+  `renderAcCharts()`): the AC of the
   records (`ac`, see `sync.md`), grouped by name whatever the repository by `acsOf()` of `site/domain/acs.js`, a name
   taken up again more than `AC_GAP_DAYS` after its last pull request making another (`acLife()`: start, status open,
   delivered or abandoned, delivery into develop, production, delays in working hours, lines, people). Far too many for a
