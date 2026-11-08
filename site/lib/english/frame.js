@@ -257,9 +257,6 @@ export const FRAME = {
   'Un projet se développe sur une branche <code>project/&lt;nom&gt;/main</code> : ses branches en partent, leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucun projet des données synchronisées n’a encore deux PR de code.':
     'A project is developed on a branch <code>project/&lt;name&gt;/main</code>: its branches start from it, their PRs come back to it, then it is merged into a long-lived branch. No project of the synced data has two code PRs yet.',
   'Les projets de la période': 'The projects of the period',
-  'Ordre des projets': 'Order of the projects',
-  'Par début': 'By start',
-  'Par statut': 'By status',
   'Calendrier': 'Timeline',
   'Chaque barre va de la première PR du projet à sa livraison, ou à sa dernière activité s’il n’est pas livré, dans la couleur de son statut à la dernière synchro. Un point marque chaque merge de sa branche dans une branche principale. Une barre en cours s’estompe à droite, une barre à l’arrêt finit net, une barre coupée par la période s’estompe à ce bord. Un clic ouvre sa fiche.':
     'Each bar runs from the first PR of the project to its delivery, or to its last activity if it is not delivered, in the color of its status as of the last sync. A dot marks each merge of its branch into a long-lived branch. An ongoing bar fades out on the right, a stalled one ends flat, a bar cut by the period fades at that edge. A click opens its card.',

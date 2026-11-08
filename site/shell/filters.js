@@ -119,9 +119,9 @@ export function renderPeriodSelector() {
 
 // The filters draw every page again with render() (shell/render.js), given by app.js: render() draws the filters too.
 export function setupFilters({ render }) {
-  // An open repository list, date picker or sync menu closes when clicking anywhere else.
+  // An open repository or status list, date picker or sync menu closes when clicking anywhere else.
   document.addEventListener('click', (event) => {
-    for (const filter of $$('[data-repo-filter][open], [data-date-range][open], [data-sync-menu][open]', HTMLDetailsElement)) {
+    for (const filter of $$('[data-repo-filter][open], [data-status-filter][open], [data-date-range][open], [data-sync-menu][open]', HTMLDetailsElement)) {
       if (!filter.contains(/** @type {Node} */ (event.target))) {
         filter.open = false
       }

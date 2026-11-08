@@ -31,6 +31,13 @@
   z-index: 1;
 }
 
+/* A status of the status filter: the dot of its color, then its word. */
+.status-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* A repository of a project, then the GitHub mark of the branch of the project there, which leads to it on GitHub. */
 .project-repo {
   display: inline-flex;

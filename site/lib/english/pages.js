@@ -468,8 +468,6 @@ export const PAGES = {
   'Aucun projet à montrer': 'No project to show',
   'Calendrier des projets, {period}': 'Timeline of the projects, {period}',
   'Merge dans une branche principale': 'Merge into a long-lived branch',
-  '{period} : les projets dont la vie croise la période, en cours, puis à l’arrêt, puis livrés':
-    '{period}: the projects whose life crosses the period, ongoing, then stalled, then delivered',
   '{period} : les projets dont la vie croise la période, du premier commencé au dernier':
     '{period}: the projects whose life crosses the period, from the first started to the last',
   'Aucun projet ne correspond à cette recherche': 'No project matches this search',
@@ -495,4 +493,8 @@ export const PAGES = {
   'Part projets': 'Project share',
   'Part des PR de code de la squad ouvertes sur des projets.': 'Share of the code PRs of the squad opened on projects.',
   'La branche project/{name}/main de chaque dépôt sur GitHub': 'The project/{name}/main branch of each repository on GitHub',
+  'Tous les statuts': 'All statuses',
+  'Aucun statut': 'No status',
+  'Statuts': 'Statuses',
+  'Projets de la période, selon leur statut à la dernière synchro': 'Projects of the period, by their status at the last sync',
 }

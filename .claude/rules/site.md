@@ -260,8 +260,11 @@ paths:
   repositories of the projects of the period whatever those picked (`projectRepoCounts()`, through the `repos` of its
   entry) and applies to the whole page. The search finds a project by its name, its repositories and its authors
   (`projectSearchTexts()`), and its field says so on this page (`searchLabel` of the route); it applies to the timeline,
-  the cards and the table. « Par début / Par statut » (`state.projectOrder`) orders the timeline and the cards as they
-  started, or by `STATUS_ORDER`. Without any project in the stats (`anyProject()`), the page says how one is found.
+  the cards and the table. The status filter (`[data-status-filter]`, the look of the repository filter, beside it in
+  the toolbar of the first card: a checkbox per status of `STATUS_ORDER`, with its count of projects of the period)
+  keeps the whole page to the statuses picked (`state.projectStatuses`, null for all of them; `shownProjects()` of
+  `model/projects.js`, its tiles worked out again over them), the timeline and the cards as the projects started.
+  Without any project in the stats (`anyProject()`), the page says how one is found.
   - The timeline (`ganttChart()` of `ui/charts/gantt-chart.js`, drawn from `renderCharts()` as the page resizes): in
     HTML, in percents of its track, the name and status pill of each project in a left column, a rounded bar in the
     color of its status (`PROJECT_STATUSES`, a little lighter than the series, the stalled ones lighter still; never

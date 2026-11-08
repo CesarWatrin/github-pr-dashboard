@@ -64,6 +64,20 @@ export function currentProjects() {
   return periodProjects('shown', state.repos.projects)
 }
 
+// The projects of the period the projects page shows: those of currentProjects() whose status is among those picked (all
+// of them while none is picked), and what they add up to.
+/** @returns {{ rows: ProjectPeriod[], summary: ProjectSummary }} */
+export function shownProjects() {
+  const projects = currentProjects()
+  const statuses = state.projectStatuses
+  if (!statuses) {
+    return projects
+  }
+  const rows = projects.rows.filter((row) => statuses.has(row.status))
+
+  return { rows, summary: projectSummary(rows, periodRange()) }
+}
+
 // The repositories of the projects of the period, whatever the repositories picked, each with the code pull requests of
 // these projects opened over the period: what the repository filter of the page lists.
 /** @returns {Map<string, number>} */
