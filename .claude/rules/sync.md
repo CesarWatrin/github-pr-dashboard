@@ -8,7 +8,7 @@ paths:
 
 Each part has its module in `scripts/sync/` (`structure.md`): the fetching below lives in `pull-requests.mjs`,
 `runs.mjs`, `people.mjs`, `repositories.mjs` and `backfill.mjs`, on top of `github.mjs` and `queries.mjs`; the
-classification and the records in `records.mjs`, the project of each pull request in `projects.mjs`; the monthly history in `history.mjs`; what is written in
+classification and the records in `records.mjs`, the project of each pull request in `projects.mjs`, its AC (a branch `feature/<name>` or `feat/<name>` into `develop`, or stacked on one) in `acs.mjs`; the monthly history in `history.mjs`; what is written in
 `publish.mjs`; the configuration in `config.mjs`; one sync end to end in `run.mjs`.
 
 ## Fetching

@@ -7,11 +7,11 @@ import { MINUTE_MS, parisDay } from './time.js'
 
 // The figures of each person's month, those of monthlyActivity().
 /** @type {(keyof MonthlyFigures)[]} */
-export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted', 'opened', 'projects']
+export const MONTHLY_FIGURES = ['code', 'hotfixes', 'reviewed', 'comments', 'added', 'deleted', 'opened', 'projects', 'acs']
 
 // What each person did per Paris month ('YYYY-MM'), whatever the range, for the badges of the team page: code pull
-// requests opened, hotfixes among them and those of a project (projectsOf(): one with a few code pull requests, a branch
-// made by mistake aside), pull requests of others reviewed (once a month however many reviews),
+// requests opened, hotfixes among them, those of a project (projectsOf(): one with a few code pull requests, a branch
+// made by mistake aside) and those of an AC (ac of the records), pull requests of others reviewed (once a month however many reviews),
 // comments left, and the lines added and deleted by their code pull requests merged that month. The month of the merge
 // rather than of the opening: the sync keeps a month for good a week after its end, and a pull request merged later
 // would miss it. Like the stats of a range, only code pull requests written by people count, but for the pull
@@ -51,6 +51,9 @@ export function monthlyActivity(records) {
     }
     if (onProjects.has(pr)) {
       opened.projects++
+    }
+    if (pr.ac) {
+      opened.acs++
     }
     if (pr.mergedAt !== null) {
       const merged = entry(pr.author, monthOf(pr.mergedAt))

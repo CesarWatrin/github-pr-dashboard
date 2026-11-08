@@ -63,7 +63,7 @@
 }
 
 /* The projects of a person or a squad on their card, under their tags, above the button that stretches across it: a
-   single line, how many kept whole, the name of the busiest cut short when it does not fit. */
+   single line, how many kept whole, the name of the busiest cut short when it does not fit, the AC delivered last. */
 .project-line {
   display: flex;
   align-items: center;
@@ -95,4 +95,8 @@
 
 .project-dialog-list .project-link {
   min-width: 0;
+}
+
+.project-line-acs {
+  margin-left: auto;
 }

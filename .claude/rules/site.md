@@ -17,10 +17,10 @@ paths:
   (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
-  team, squads, awards, repositories, projects, tma, devops, method). The period selector and the search apply to every page but the
+  team, squads, awards, repositories, projects, acs, tma, devops, method). The period selector and the search apply to every page but the
   method, report, awards and « Mes PR » ones (`filters: false`): the report has a month picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
-  analysis, trends and squads pages the period only (`search: false`). The Méthode page has no link among the pages: a
+  analysis, trends, squads and AC pages the period only (`search: false`). The Méthode page has no link among the pages: a
   button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
   screens, only the periods of the filters stack (`.filters .segmented`), the other segmented pickers keep their row.
 - `currentPeriod()` and `currentCi()` compute the stats of `periodRange()` once per data and range. Presets live in
@@ -289,6 +289,18 @@ paths:
     (`monthStats().projects`, `projectSummary()` with `withCodeShare()`) and « Projets du mois », started and delivered;
     two trends; two rules of the analysis (`domain/analysis/project-rules.js`, its cards in
     `pages/analysis/project-findings.js`); and the 🚀 Fusée badge, from the `projects` of the monthly figures.
+- **AC page** (`pages/acs.js`, « Améliorations continues », `renderAcs()` and `renderAcCharts()`): the AC of the
+  records (`ac`, see `sync.md`), grouped by name whatever the repository by `acsOf()` of `site/domain/acs.js`, a name
+  taken up again more than `AC_GAP_DAYS` after its last pull request making another (`acLife()`: start, status open,
+  delivered or abandoned, delivery into develop, production, delays in working hours, lines, people). Far too many for a
+  card or a bar each: figures only. `model/acs.js` works them out once per list of records (`acsFor()`: the stats, or a
+  squad's) and gives what the pages read: `acTotals()` (`acSummary()` with `withCodeShare()`, against
+  `comparedAcTotals()`: the page is among `COMPARED_ROUTES`), `acChart()` (`acSeries()`), `acBreakdown()` (delivered by
+  repository and person, `AC_TOP` of each, by squad and by size), `personAcs()`, `squadAcs()`. Elsewhere: a group of
+  tiles on the overview, the AC delivered at the end of the project line of the cards of people and squads, a section
+  of their dialogs, a group of the monthly report (`monthStats().acs`), two trends, a tag on the timeline of a pull
+  request, and the 🛠️ Artisan badge (`acs` of the monthly figures). Without any AC in the stats (`anyAc()`), the page
+  says how one is found.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.

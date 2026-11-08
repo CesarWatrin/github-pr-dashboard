@@ -49,6 +49,7 @@ export const BADGES = [
     format: formatLines,
   },
   { key: 'projects', icon: '🚀', name: t('Fusée'), what: t('le plus de PR de code sur des projets'), units: ['PR de projet', 'PR de projet'] },
+  { key: 'acs', icon: '🛠️', name: t('Artisan'), what: t('le plus de PR d’amélioration continue'), units: ['PR d’AC', 'PR d’AC'] },
 ]
 /** @type {Record<Tier, string>} */
 export const BADGE_TIERS = { bronze: t('Bronze'), silver: t('Argent'), gold: t('Or') }

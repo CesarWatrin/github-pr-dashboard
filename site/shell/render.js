@@ -4,6 +4,7 @@ import { CUSTOM_PERIOD, DEFAULT_PERIOD, PERIODS } from '../model/periods.js'
 import { clampRange, periodAvailable } from '../model/selection.js'
 import { squadKey } from '../model/squads.js'
 import { state } from '../model/state.js'
+import { renderAcCharts, renderAcs } from '../pages/acs.js'
 import { renderAnalysis } from '../pages/analysis/analysis.js'
 import { renderSizeCharts } from '../pages/authors.js'
 import { renderAwards } from '../pages/awards.js'
@@ -53,6 +54,7 @@ export function renderCharts() {
   renderTrends()
   renderSquadCharts()
   renderProjectTimeline()
+  renderAcCharts()
   if (state.person) {
     renderMiniCharts()
   }
@@ -92,6 +94,7 @@ export function render(animate) {
   renderAnalysis()
   renderRepositories()
   renderProjects(tileMode)
+  renderAcs(tileMode)
   renderSquads()
   renderFeed(animate)
   renderUnblock(tileMode)

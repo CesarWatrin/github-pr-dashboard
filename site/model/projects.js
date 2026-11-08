@@ -86,9 +86,11 @@ export const projectsOfPeriod = () => periodProjects('all', null).rows
 /** @type {(period: PeriodStats) => number} */
 const codeOf = (period) => period.authors.reduce((total, person) => total + Object.values(person.repos).reduce((sum, stats) => sum + stats.code, 0), 0)
 
-// What the projects of a range add up to, with the share of the code pull requests of the range they carry (codeShare).
+// What the projects (or the AC) of a range add up to, with the share of the code pull requests of the range they carry
+// (codeShare).
 /**
- * @param {ProjectSummary} summary
+ * @template {{ code: number }} Summary
+ * @param {Summary} summary
  * @param {PeriodStats} period
  */
 export const withCodeShare = (summary, period) => {

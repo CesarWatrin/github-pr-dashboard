@@ -4,6 +4,7 @@ import { dateFormat } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { SHOWN_BADGES } from '../model/badges.js'
 import { activities, displayName, isFormer } from '../model/people.js'
+import { personAcs } from '../model/acs.js'
 import { personProjects } from '../model/projects.js'
 import { matchesQuery } from '../model/selection.js'
 import { inSquad } from '../model/squads.js'
@@ -45,7 +46,7 @@ function personCard(row, index) {
     stackLine(row.stack),
     ...squadTags(row.login),
     ...badges,
-    ...projectLine(personProjects(row.login)),
+    ...projectLine(personProjects(row.login), personAcs(row.login).delivered),
     statList(TEAM_STATS, row),
   )
   card.setAttribute('aria-label', name)

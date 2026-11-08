@@ -7,12 +7,13 @@ import { t } from '../../lib/i18n.js'
 import { projectKeyOf, projectOf } from '../../model/projects.js'
 import { state } from '../../model/state.js'
 import { $, el, svg } from '../dom.js'
-import { githubPill, OPEN_PULL_REQUEST, personLink, pullRequestPath } from '../links.js'
+import { githubPill, githubUrl, OPEN_PULL_REQUEST, personLink, pullRequestPath } from '../links.js'
 import { projectLink } from '../projects.js'
 import { kindTag } from '../stances.js'
 
 // Timeline of a pull request: its steps, the working time it waited before each, what it still waits for, and who
-// intervened (pullRequestTimeline() of site/domain/timeline.js), as of the last sync; and the project it belongs to.
+// intervened (pullRequestTimeline() of site/domain/timeline.js), as of the last sync; and the project or the AC it
+// belongs to.
 
 const TIMELINE_STEPS = {
   opened: { label: t('Ouverte'), by: t('par') },
@@ -147,6 +148,19 @@ export function openPullRequestDialog(pr, opener) {
     el('span', { className: `feed-tag pr-status is-${pullRequestStatus(pr)}`, textContent: PULL_REQUEST_STATUS[pullRequestStatus(pr)] }),
     ...kindTag(pr),
     ...(pr.hotfix ? [el('span', { className: 'feed-tag', textContent: t('hotfix') })] : []),
+    // The AC of the pull request, as a link to its branch on GitHub.
+    ...(pr.ac
+      ? [
+          el('a', {
+            className: 'feed-tag pr-dialog-ac',
+            href: githubUrl(`${state.stats.org}/${encodeURIComponent(pr.repo)}/tree/${pr.ac.split('/').map(encodeURIComponent).join('/')}`),
+            target: '_blank',
+            rel: 'noopener',
+            textContent: t('amélioration continue'),
+            title: t('La branche {branch} sur GitHub', { branch: pr.ac }),
+          }),
+        ]
+      : []),
   ]
   const figures = TIMELINE_FIGURES.filter(({ key }) => durations[key] !== null).map(({ key, label }) =>
     el('div', {}, el('dt', { textContent: label }), el('dd', { textContent: formatDuration(durations[key]) })),

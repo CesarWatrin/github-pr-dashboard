@@ -11,6 +11,7 @@
 
 import { CYCLE_STAGES } from './model/cycle.js'
 import { state } from './model/state.js'
+import { AC_SERIES } from './pages/acs.js'
 import { setupReplay } from './pages/cartography/replay.js'
 import { DEPLOYMENT_SERIES } from './pages/devops.js'
 import { setupMe } from './pages/me.js'
@@ -77,6 +78,7 @@ renderRoute()
 renderPeriodSelector()
 renderLegend($('[data-chart-legend]'), ACTIVITY_SERIES)
 renderLegend($('[data-projects-chart-legend]'), PROJECT_SERIES)
+renderLegend($('[data-acs-chart-legend]'), AC_SERIES)
 renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
 renderLegend($('[data-squads-stages-legend]'), CYCLE_STAGES)

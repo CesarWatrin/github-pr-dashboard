@@ -18,6 +18,7 @@ const SQUAD_WRITTEN = squadFigures('code', 'merged', 'lines', 'unreviewedRate', 
 const SQUAD_REVIEWED = squadFigures('reviews', 'comments', 'commentsPerPr', 'insideReviewRate', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours')
 const SQUAD_DELIVERED = squadFigures('medianLeadTimeHours', 'reworkRate', 'open')
 const SQUAD_PROJECTS = squadFigures('projects', 'projectShare')
+const SQUAD_ACS = squadFigures('acsDelivered', 'acTimeToMerge', 'acShare')
 
 // The readers and repositories listed on a squad's dialog.
 const SQUAD_TOP = 5
@@ -44,7 +45,7 @@ export function squadCard(row, index, rows) {
     open,
     ...squadLead(row, 'squad-lead'),
     avatarStack(row.members, { size: 28, lead: row.lead }),
-    ...projectLine(row.projects),
+    ...projectLine(row.projects, row.acs?.delivered ?? 0),
     statList(SQUAD_CARD_STATS, row),
   )
   card.setAttribute('aria-label', row.name)
@@ -54,7 +55,7 @@ export function squadCard(row, index, rows) {
 }
 
 // The dialog of a squad, like those of a person or a repository: its figures, each set against the median of the
-// squads, its projects, then who it is, who reads its code and where it writes.
+// squads, its projects and its AC, then who it is, who reads its code and where it writes.
 export function openSquadDialog(row, rows, opener) {
   const peers = rows.filter((other) => other.code > 0)
 
@@ -88,6 +89,7 @@ export function openSquadDialog(row, rows, opener) {
         statList(SQUAD_PROJECTS, row, peers),
         projectList(t('Ses projets, PR de code de la squad'), row.projects),
       ),
+      dialogSection(t('Ses améliorations continues'), statList(SQUAD_ACS, row, peers)),
       dialogSection(
         t('Qui, et où'),
         el(
