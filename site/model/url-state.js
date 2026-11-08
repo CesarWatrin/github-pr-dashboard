@@ -1,6 +1,6 @@
 // What the address of the page holds besides its page, so that a link leads someone to the same place: the filters
-// (period or picked days, comparison, squad, search, repositories picked, statuses of the projects, month of the report)
-// and the card or the timeline of a pull request open. No DOM: shell/url-state.js reads and writes the address.
+// (period or picked days, comparison, squad, search, repositories picked, statuses of the projects, month of the report,
+// person picked for the reviews over time) and the card or the timeline of a pull request open. No DOM: shell/url-state.js reads and writes the address.
 
 import { COMPARISONS, CUSTOM_PERIOD, NO_COMPARISON, PERIODS } from './periods.js'
 import { state } from './state.js'
@@ -44,6 +44,9 @@ export function urlQueryOf(route) {
   if (route === 'report' && state.reportMonth) {
     params.set('month', state.reportMonth)
   }
+  if (route === 'reviewers' && state.person) {
+    params.set('person', state.person)
+  }
   if (state.openCard) {
     params.set('card', `${state.openCard.kind}:${state.openCard.key}`)
   }
@@ -56,7 +59,7 @@ export function urlQueryOf(route) {
 
 // Sets the state of the page from the query of an address, a shared link leading to the same place whatever the viewer
 // had picked: what it does not say goes back to the defaults (no comparison, no squad, no search, every repository and
-// status, the current month), what it says wrong is left aside (a period of none, days the wrong way round). Returns the
+// status, the current month, the busiest reviewer), what it says wrong is left aside (a period of none, days the wrong way round). Returns the
 // card and the timeline of a pull request to open once the stats are there.
 /**
  * @param {string} query
@@ -84,6 +87,7 @@ export function applyUrlQuery(query) {
   state.projectStatuses = statuses === null ? null : new Set(statuses.split(',').filter((status) => PROJECT_STATUSES.includes(status)))
   const month = params.get('month')
   state.reportMonth = month && MONTH.test(month) ? month : null
+  state.person = params.get('person') || null
   const [kind, ...key] = (params.get('card') ?? '').split(':')
   const pullRequest = params.get('pr')
 

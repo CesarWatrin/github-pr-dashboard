@@ -67,7 +67,9 @@ rules, next to the layer it covers:
   `tests/model/stats.mjs`).
 - `tests/sync/`: the rules of the sync, each file importing `./environment.mjs` first (a made-up configuration).
 - `tests/browser/pages.test.mjs`: the page in Chrome on made-up stats (`tests/fixtures/stats.mjs`): every page shows
-  without error and fills every container its script draws into, the dialogs open, the filters apply. Skipped without
+  without error and fills every container its script draws into, the dialogs open, the filters apply, and any filter
+  changed from any page leaves every page as its address loaded again shows it (a new page or filter is covered
+  without a word in the test). Skipped without
   Chrome (`CHROME_PATH`), never in CI. A container that stays empty on purpose goes into `EMPTY_ON_PURPOSE`, with why.
 - `tests/architecture.test.mjs`: layers, cycles, the module block and the styles of `index.html`, file headers.
 

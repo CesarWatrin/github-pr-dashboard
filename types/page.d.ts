@@ -46,6 +46,7 @@ interface State {
   networkCache: { period: PeriodStats; selection: Set<string> | null; network: ReviewNetwork } | null
   analysisCache: { stats: Stats; key: string; analysis: Analysis } | null
   query: string
+  // The person picked for the reviews over time (the address holds it), null for the busiest reviewer of the period.
   person: string | null
   technologyMeasure: string
   repos: Record<string, Set<string> | null>

@@ -77,32 +77,44 @@ function personPoints(login) {
   })
 }
 
+// The people of the picker: those still in the team who reviewed over the period, the busiest first.
+const pickerReviewers = () =>
+  Object.entries(currentPeriod().reviewerSeries)
+    .filter(([login]) => isCurrent(login))
+    .map(([login, points]) => ({ login, prs: points.reduce((total, [prs]) => total + prs, 0) }))
+    .sort((a, b) => b.prs - a.prs)
+
+// The person whose reviews the charts show: the one picked (state.person, which the address holds), while among the
+// reviewers of the period, else the busiest of them. Never stored: a new period shows its own busiest, as loading its
+// address does.
+/** @type {(reviewers?: { login: string }[]) => string | null} */
+const shownPerson = (reviewers = pickerReviewers()) =>
+  reviewers.some((row) => row.login === state.person) ? state.person : (reviewers[0]?.login ?? null)
+
 export function renderMiniCharts() {
+  const person = shownPerson()
+  if (!person) {
+    return
+  }
   const { bucket } = currentPeriod()
-  const points = personPoints(state.person)
+  const points = personPoints(person)
   for (const mini of MINI_CHARTS) {
     columnChart($(`[data-mini="${mini.key}"]`), {
       points,
       bucket,
       decimals: mini.decimals,
       series: [{ label: mini.series, color: 'var(--series-1)', value: mini.value }],
-      ariaLabel: `${mini.title} ${BUCKET_TITLES[bucket]}, ${displayName(state.person)}`,
+      ariaLabel: `${mini.title} ${BUCKET_TITLES[bucket]}, ${displayName(person)}`,
       extraRows: mini.extraRows,
     })
   }
 }
 
 export function renderPersonPicker() {
-  const reviewers = Object.entries(currentPeriod().reviewerSeries)
-    .filter(([login]) => isCurrent(login))
-    .map(([login, points]) => ({ login, prs: points.reduce((total, [prs]) => total + prs, 0) }))
-    .sort((a, b) => b.prs - a.prs)
-  if (!reviewers.some((row) => row.login === state.person)) {
-    state.person = reviewers[0]?.login ?? null
-  }
+  const reviewers = pickerReviewers()
   const picker = $('[data-person]', HTMLSelectElement)
   picker.replaceChildren(...reviewers.map((row) => new Option(displayName(row.login), row.login)))
-  picker.value = state.person ?? ''
+  picker.value = shownPerson(reviewers) ?? ''
 }
 
 // Listens to the person picker of the reviews over time.

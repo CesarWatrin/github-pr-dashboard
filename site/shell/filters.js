@@ -9,14 +9,12 @@ import { COMPARISONS, CUSTOM_PERIOD, NO_COMPARISON, NO_COMPARISON_LABEL } from '
 import { comparedRange, dateBounds, periodAvailable, periodRange } from '../model/selection.js'
 import { squadsOf } from '../model/squads.js'
 import { state, storePeriod, storeSquad } from '../model/state.js'
+import { renderCartography } from '../pages/cartography/cartography.js'
 import { renderCollaboration } from '../pages/collaboration.js'
-import { renderCycleTiles } from '../pages/cycle.js'
-import { renderDevopsTiles } from '../pages/devops.js'
-import { renderFeed, renderTotals } from '../pages/overview/overview.js'
+import { renderFeed } from '../pages/overview/overview.js'
 import { renderProjects } from '../pages/projects/projects.js'
 import { renderRepositories } from '../pages/repositories.js'
 import { renderTeam } from '../pages/team.js'
-import { renderTmaTiles } from '../pages/tma.js'
 import { renderUnapproved, renderUnblock } from '../pages/unblock.js'
 import { $, $$ } from '../ui/dom.js'
 import { playEntrance } from '../ui/motion.js'
@@ -185,24 +183,24 @@ export function setupFilters({ render }) {
     }
   })
 
-  // A comparison only changes the tiles of the period.
+  // A comparison changes the tiles of every page compared (COMPARED_ROUTES): drawn again whole, like a period, so that
+  // no page is left behind.
   $('[data-compare]').addEventListener('change', (event) => {
     state.compare = /** @type {HTMLSelectElement} */ (event.target).value
     storePeriod()
     if (state.stats) {
-      renderComparePicker()
-      renderTotals('enter')
-      renderCycleTiles('enter')
-      renderTmaTiles('enter')
-      renderDevopsTiles('enter')
+      render(false)
     }
   })
 
+  // The search, at each key: only what it finds in is drawn again, every page that reads it (a whole render() would
+  // lag behind the typing). The browser test « any filter changed… » fails on a page left behind.
   $('[data-search]').addEventListener('input', (event) => {
     state.query = /** @type {HTMLInputElement} */ (event.target).value.trim().toLowerCase()
     if (state.stats) {
       renderTables(false)
       renderCollaboration()
+      renderCartography()
       renderTeam()
       renderRepositories()
       renderProjects('update')

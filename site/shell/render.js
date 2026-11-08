@@ -57,9 +57,7 @@ export function renderCharts() {
   renderSquadCharts()
   renderProjectTimeline()
   renderAcCharts()
-  if (state.person) {
-    renderMiniCharts()
-  }
+  renderMiniCharts()
 }
 
 export function render(animate) {
