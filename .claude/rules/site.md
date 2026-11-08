@@ -261,7 +261,10 @@ paths:
   span meets the period, the earliest started first: their life over every record, whatever the period and the squad
   (`projectLife()`: start, merges of the project branch, last activity, status at the last sync, delivered when merged
   with no pull request of the project opened since, else abandoned when every merge of its branch was closed without a
-  merge and nothing of it is still open, else ongoing, or stalled after `STALLED_AFTER_DAYS` without activity; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
+  merge and nothing of it is still open, else ongoing, or stalled after `STALLED_AFTER_DAYS` without activity; for a
+  project in stages (`stage` of the records), each stage has that life (`stages`, the main branch of the project
+  merged on its own being one more), and the project is delivered once each stage is delivered or abandoned, no pull
+  request opened after the last delivery; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
   last merge of the branch), and their figures over the period from the records of the squad and the repositories
   picked (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers,
   lines, median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range,
@@ -287,8 +290,10 @@ paths:
     from `mergeRequestsOf()` of `domain/projects.js`: the one still open, else merged, else closed; without any, the pull
     requests of the project in that repository), green once merged, red when closed, grey otherwise; in the dialog, a
     GitHub pill per repository, in the same colors. `PROJECT_CARD_STATS`. It opens `openProjectDialog()`, the card dialog with its tilt: its life, its figures over the
-    median of the projects of the period, its authors with their pull requests and lines, its reviewers, its
-    repositories, and the merges of its branch, each with its pull request.
+    median of the projects of the period, its stages for a project in stages (« Ses étapes »: each its status, dates,
+    code pull requests and the pill of its merge in each repository, the history of its main branches; the card counts
+    them), its authors with their pull requests and lines, its reviewers, its repositories, and the merges of its
+    branch, each with its pull request.
   - The table (`TABLES.projects`, `PROJECT_COLUMNS`): fourteen columns, tighter than the other tables (short dates, the
     repositories under the name, the share of the team under the people) so that it fits at 1080 px; the status sorts
     by `STATUS_ORDER` (ongoing, stalled, delivered), never by its word.

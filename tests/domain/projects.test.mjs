@@ -419,3 +419,63 @@ describe('an abandoned project', () => {
   })
 })
 
+
+describe('a project in stages', () => {
+  const code = (fields) => record({ repo: 'web', author: 'alice', project: 'lone-heron', createdAt: at('2026-03-02T09:00:00Z'), mergedAt: at('2026-03-03T09:00:00Z'), ...fields })
+  const merge = (fields) => record({ repo: 'web', author: 'alice', kind: 'integration', project: 'lone-heron', projectMerge: true, ...fields })
+  // Stage 1 delivered on 10 March, stage 2 on 20 April; a pull request of no stage along the way.
+  const STAGES = [
+    code({ number: 1, stage: '1' }),
+    code({ number: 2, stage: '1', createdAt: at('2026-03-04T09:00:00Z') }),
+    merge({ number: 3, stage: '1', createdAt: at('2026-03-09T09:00:00Z'), mergedAt: at('2026-03-10T09:00:00Z') }),
+    code({ number: 4, stage: '2', createdAt: at('2026-03-16T09:00:00Z'), mergedAt: at('2026-03-17T09:00:00Z') }),
+    code({ number: 5, createdAt: at('2026-03-18T09:00:00Z'), mergedAt: null, closed: true }),
+    merge({ number: 6, stage: '2', createdAt: at('2026-04-17T09:00:00Z'), mergedAt: at('2026-04-20T09:00:00Z') }),
+  ]
+
+  test('each stage with its life, its code and its merges; work of no stage is no stage', () => {
+    const { stages } = projectLife(STAGES, NOW)
+    assert.deepEqual(
+      stages.map(({ stage, status, code: own, start, deliveredAt, mergeRequests }) => ({ stage, status, code: own, start, deliveredAt, mergeRequests })),
+      [
+        { stage: '1', status: 'delivered', code: 2, start: at('2026-03-02T09:00:00Z'), deliveredAt: at('2026-03-10T09:00:00Z'), mergeRequests: { web: { number: 3, state: 'merged' } } },
+        { stage: '2', status: 'delivered', code: 1, start: at('2026-03-16T09:00:00Z'), deliveredAt: at('2026-04-20T09:00:00Z'), mergeRequests: { web: { number: 6, state: 'merged' } } },
+      ],
+    )
+  })
+
+  test('delivered once every stage is, at the last delivery', () => {
+    const life = projectLife(STAGES, NOW)
+    assert.deepEqual([life.status, life.deliveredAt, life.end], ['delivered', at('2026-04-20T09:00:00Z'), at('2026-04-20T09:00:00Z')])
+  })
+
+  test('not while a stage goes on, even with a merge of another stage after its last pull request', () => {
+    const late = merge({ number: 7, stage: '1', createdAt: at('2026-06-01T09:00:00Z'), mergedAt: at('2026-06-02T09:00:00Z') })
+    const going = code({ number: 8, stage: '3', createdAt: at('2026-05-25T09:00:00Z'), mergedAt: null })
+    const life = projectLife([...STAGES, going, late], NOW)
+    assert.equal(life.stages.find((stage) => stage.stage === '3')?.status, 'ongoing')
+    assert.deepEqual([life.status, life.deliveredAt], ['ongoing', null])
+  })
+
+  test('a stage abandoned does not keep the others from delivering the project; all of them abandoned give it up', () => {
+    const dropped = [code({ number: 9, stage: '3', createdAt: at('2026-03-20T09:00:00Z') }), merge({ number: 10, stage: '3', createdAt: at('2026-03-23T09:00:00Z'), closed: true })]
+    assert.equal(projectLife([...STAGES, ...dropped], NOW).status, 'delivered')
+    assert.equal(projectLife(dropped, NOW).status, 'abandoned')
+  })
+
+  test('the main branch of the project, merged on its own, is a stage too', () => {
+    const own = merge({ number: 11, createdAt: at('2026-03-19T09:00:00Z'), mergedAt: at('2026-03-19T15:00:00Z') })
+    assert.ok(projectLife([...STAGES, own], NOW).stages.some(({ stage }) => stage === null))
+  })
+
+  test('the main branch and the stages named by a word first, by their start, then the numbered ones by their number', () => {
+    const stage = (name, day) => code({ number: 20 + day, stage: name, createdAt: at(`2026-04-${String(day).padStart(2, '0')}T09:00:00Z`) })
+    const own = merge({ number: 40, createdAt: at('2026-04-20T09:00:00Z'), mergedAt: at('2026-04-21T09:00:00Z') })
+    const order = projectLife([stage('2.1', 1), stage('1.10', 2), stage('pilot', 3), stage('1.2', 4), stage('3', 5), own], NOW).stages.map(({ stage: name }) => name)
+    assert.deepEqual(order, ['pilot', null, '1.2', '1.10', '2.1', '3'])
+  })
+
+  test('a project without any stage has none', () => {
+    assert.deepEqual(projectLife(KITE, NOW).stages, [])
+  })
+})

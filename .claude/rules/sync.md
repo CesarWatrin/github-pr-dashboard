@@ -60,8 +60,15 @@ classification and the records in `records.mjs`, the project of each pull reques
   that belongs to one (stacked pull requests, however deep; a cycle gives none); else the project its own branch is named
   under. A long-lived branch (`LONG_LIVED_BRANCHES`: develop, main, master, staging) never belongs to a project, even
   brought into one; `project/<name>` alone or `projects/…` are not project branches. A project of the same name in two
-  repositories is one project: the page groups by name. `isProjectMerge()`: `project/<name>/main` into a long-lived
-  branch. The snapshot already kept the head and base of every pull request: no `SNAPSHOT_VERSION` bump, the next sync
+  repositories is one project: the page groups by name. `isProjectMerge()`: `project/<name>/main`, or a variant of
+  it (`main-1.1`, `main-pilot`, `PROJECT_MAIN`), into a long-lived branch.
+- **Stage** (`projectStageOf()`): a large project may go in stages, each on a branch of its own. `projectNames()` reads
+  a name ending in numbers (`<name>-2-1`, `<name>-2.1`, `<name>-step-3`, never four digits: a year) as that stage of
+  `<name>` when a project branch carries `<name>` too or at least two names are stages of it; a variant of the main
+  branch that comes back into a long-lived branch is a stage of its own, numbered or named by its suffix (`main-1.1`:
+  1.1, `main-pilot`: pilot; a merge or a temporary branch aside). Any other branch is of the stage its newest pull
+  request lands in (stacked branches and bridges such as `main-3.1-merge-2.4` included), else of the stage its name
+  tells. The snapshot already kept the head and base of every pull request: no `SNAPSHOT_VERSION` bump, the next sync
   publishes the projects of the whole window.
 - **Bots**: GitHub Apps (actor type other than `User`), `ghost`, and the logins of `BOT_USERS`. Bot pull requests are
   only kept when they deploy or are Dependabot updates; bot reviews and comments never count.
@@ -113,7 +120,8 @@ classification and the records in `records.mjs`, the project of each pull reques
   `SNAPSHOT_VERSION` bump), `readPublishedHistory()` reads it back from the stats last published, the local file or
   the deployed page, with the same password. Changing `DASHBOARD_PASSWORD` while the cache is lost loses it.
 - `project` on the code pull requests of people that belong to a project, and on the merges of a project branch into
-  a long-lived branch, which `projectMerge` flags: the name of the project only, never its branches. `closedAt` on those
+  a long-lived branch, which `projectMerge` flags: the name of the project only, never its branches; `stage` for a
+  project in stages (`2.1`, `3`, `pilot`), what tells the stage only. `closedAt` on those
   closed without a merge: until then the project was not over (a name taken up again after it is another project, see
   `site/domain/projects.js`). The snapshot already kept it: no `SNAPSHOT_VERSION` bump.
 - Never publish bodies, branch names or anything not needed by a stat or a view: what is published must stay minimal,

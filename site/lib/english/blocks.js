@@ -522,5 +522,9 @@ export const BLOCKS = {
   'La PR qui merge {branch} dans {repo}, encore ouverte': 'The PR that merges {branch} in {repo}, still open',
   'La PR qui merge {branch} dans {repo}, fermée sans merge': 'The PR that merges {branch} in {repo}, closed without a merge',
   'Abandonné': 'Abandoned',
-  'Toutes les PR qui mergent sa branche project/…/main ont été fermées sans merge, et plus aucune PR du projet n’est ouverte.': 'Every PR merging its project/…/main branch was closed without a merge, and no PR of the project is open anymore.',
+  'Toutes les PR qui mergent sa branche project/…/main, ou celles de chacune de ses étapes, ont été fermées sans merge, et plus aucune PR du projet n’est ouverte.': 'Every PR merging its project/…/main branch, or those of each of its stages, was closed without a merge, and no PR of the project is open anymore.',
+  'Branche main': 'Main branch',
+  'Étape {stage}': 'Stage {stage}',
+  'une étape du projet': 'a stage of the project',
+  'l’étape {stage}': 'stage {stage}',
 }

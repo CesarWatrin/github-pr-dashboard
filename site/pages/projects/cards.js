@@ -1,5 +1,5 @@
-// The card of a project and its dialog: its life, who took part, its figures, each in the dialog over the median of the
-// projects of the period.
+// The card of a project and its dialog: its life, its stages, who took part, its figures, each in the dialog over the
+// median of the projects of the period.
 
 import { formatLines, formatNumber, formatSpan, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
@@ -13,7 +13,7 @@ import { githubPill, OPEN_PROJECT, personLink, pullRequestLink, repoLink } from 
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
 import { repoFilterLabel, repoOptions } from '../../ui/repo-filter.js'
-import { formatDay, PROJECT_STATUSES, projectLabel, projectMergeLink, projectMergeOf, statusTag } from '../../ui/projects.js'
+import { formatDay, mergedBranch, PROJECT_STATUSES, projectLabel, projectMergeLink, projectMergeOf, stageLabel, statusTag } from '../../ui/projects.js'
 import { namesakesText, projectFigures } from './figures.js'
 
 const PROJECT_CARD_STATS = projectFigures('code', 'merged', 'lines', 'reviewers', 'medianTimeToMergeHours', 'perWeek')
@@ -23,17 +23,21 @@ const PROJECT_PEOPLE = projectFigures('people', 'teamShare', 'reviewers')
 // The avatars a card shows, the last one a « +N » beyond.
 const CARD_AVATARS = 8
 
-// From its start to its end, and how long: « Du 3 mars 2026 au 5 mai 2026 · 9 semaines ».
+// From its start to its end, and how long: « Du 3 mars 2026 au 5 mai 2026 · 9 semaines ». The same for a stage.
 const datesText = (row) => `${t('Du {start} au {end}', { start: formatDay(row.start), end: formatDay(row.end) })} · ${formatSpan(row.days)}`
+
+// On its card, how many stages too, for a project in several: « … · 9 semaines · 3 étapes ».
+const cardDatesText = (row) => (row.stages.length > 1 ? `${datesText(row)} · ${plural(row.stages.length, 'étape')}` : datesText(row))
 
 // The repositories of a project, each opening its own dialog, with the pull request that merges the branch of the
 // project there, on GitHub, in the color of its state.
 const repoLinks = (row) =>
   el('p', { className: 'project-repos' }, ...row.repos.map(([repo]) => el('span', { className: 'project-repo' }, repoLink(repo), projectMergeLink(row, repo))))
 
-// The same in the dialog: a GitHub pill per repository, in the color of the state of its merge.
-function mergePill(row, repo) {
-  const { path, state, title } = projectMergeOf(row, repo)
+// The same in the dialog: a GitHub pill per repository, in the color of the state of its merge; that of a stage, with
+// what it merges (mergedBranch()).
+function mergePill(row, repo, branch = mergedBranch(row)) {
+  const { path, state, title } = projectMergeOf(row, repo, branch)
   const pill = githubPill(path, repo)
   pill.classList.add(`is-${state}`)
   pill.title = title
@@ -56,7 +60,7 @@ export function projectCard(row, index, rows) {
     'article',
     { className: 'repo-card project-card' },
     open,
-    el('p', { className: 'project-dates', textContent: datesText(row) }),
+    el('p', { className: 'project-dates', textContent: cardDatesText(row) }),
     avatarStack(row.authors.map((author) => author.login), { max: CARD_AVATARS }),
     repoLinks(row),
     statList(PROJECT_CARD_STATS, row),
@@ -76,6 +80,29 @@ function detailList(title, items, empty = '–') {
   return el('div', {}, el('p', { className: 'person-dialog-list-title', textContent: title }), list)
 }
 
+// The stages of a project, the earliest started first, each with its status, its dates, its code pull requests and, per
+// repository, the pull request that merges its branch, in the color of its state: the history of its main branches.
+const stageList = (row) =>
+  el(
+    'ul',
+    { className: 'project-stage-list' },
+    ...row.stages.map((stage) =>
+      el(
+        'li',
+        { className: 'project-stage' },
+        el('div', { className: 'project-stage-head' }, el('strong', { className: 'project-stage-name', textContent: stageLabel(stage.stage) }), statusTag(stage.status)),
+        el('p', { className: 'project-stage-dates', textContent: `${datesText(stage)} · ${plural(stage.code, 'PR de code', 'PR de code')}` }),
+        el(
+          'p',
+          { className: 'project-branches project-stage-merges' },
+          ...Object.keys(stage.mergeRequests)
+            .sort()
+            .map((repo) => mergePill({ name: row.name, mergeRequests: stage.mergeRequests }, repo, mergedBranch(row, stage.stage))),
+        ),
+      ),
+    ),
+  )
+
 // When the branch of the project was merged into a long-lived branch, the latest first, each with its pull request.
 const mergeList = (row) =>
   detailList(
@@ -85,7 +112,7 @@ const mergeList = (row) =>
   )
 
 // The dialog of a project, like those of a person, a repository or a squad: its life, and the other projects of its
-// name, then its figures, each set against the median of the projects of the period, then who wrote and reviewed it,
+// name, its stages for a project in stages, then its figures, each set against the median of the projects of the period, then who wrote and reviewed it,
 // where, and when its branch was merged. Opened from another page (projectLink()), it counts every repository; for a
 // project the period misses, the whole data (whole).
 export function openProjectDialog(row, rows, opener, { fromPage = true, whole = false } = {}) {
@@ -126,6 +153,7 @@ export function openProjectDialog(row, rows, opener, { fromPage = true, whole = 
         }),
       }),
       dialogSection(t('Sa vie'), statList(PROJECT_LIFE, row)),
+      ...(row.stages.length > 0 ? [dialogSection(t('Ses étapes'), stageList(row))] : []),
       dialogSection(t('Son code, sur la période'), statList(PROJECT_CODE, row, peers)),
       dialogSection(t('Ses personnes'), statList(PROJECT_PEOPLE, row, peers)),
       dialogSection(

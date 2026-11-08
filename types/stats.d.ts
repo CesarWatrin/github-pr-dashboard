@@ -43,6 +43,8 @@ interface PullRequestRecord {
   codeOwners?: (string | null)[] | null
   requestedReviewers?: string[]
   project?: string
+  // The stage of its project, when it goes in stages: 2.1, 3, pilot…
+  stage?: string
   projectMerge?: boolean
   // When a pull request of a project was closed without being merged.
   closedAt?: number

@@ -16,8 +16,9 @@ const MONTH_FINAL_AFTER_MS = 7 * DAY_MS
 // How the months of the history are counted, kept with it: bumped when a fix changes it, so that the next sync works out
 // again, once, every whole month of the history still in the window. A history without any was counted the first way.
 // 2: the project branches that merge another branch into theirs are no longer code. 3: nor those named after the
-// branch they bring in rather than after a merge (develop-into-main, sync-develop…).
-export const MONTHLY_REVISION = 3
+// branch they bring in rather than after a merge (develop-into-main, sync-develop…). 4: the stages of a project make one
+// project, so that a stage of a single code pull request counts with the others.
+export const MONTHLY_REVISION = 4
 
 /** @type {(month: string) => string} */
 const nextMonth = (month) => {

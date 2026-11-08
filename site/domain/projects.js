@@ -1,7 +1,8 @@
 // The projects of the records: the code pull requests the sync tied to a project (project), and the merges of its
-// branch, project/<name>/main, into a long-lived branch (projectMerge), grouped by name whatever the repository, a name
-// taken up again long after its project was over making another project. What each project is over the whole data, its
-// life (start, merges, last activity, status), and its figures over a range, those of computePeriod() over its pull
+// branch, project/<name>/main or that of one of its stages, into a long-lived branch (projectMerge), grouped by name
+// whatever the repository, a name taken up again long after its project was over making another project. What each
+// project is over the whole data, its life (start, merges, last activity, status, its stages when it goes in stages:
+// stage of the records), and its figures over a range, those of computePeriod() over its pull
 // requests. The projects bucket by bucket in projects/series.js.
 
 import { getOrCreate, median } from './math.js'
@@ -122,7 +123,7 @@ export function mergeRequestsOf(records) {
 }
 
 /**
- * A project over the whole data, from all its records, times in minutes since the epoch. start: its first pull request
+ * A project, or a stage of it, over the whole data, from all its records, times in minutes since the epoch. start: its first pull request
  * opened. merges: the pull requests that merged its branch into a long-lived branch, and when, oldest first; mergeOpen:
  * such a merge still waits; mergeRequests: per repository, the pull request of such a merge that tells the most
  * (mergeRequestsOf()). lastActivity: its latest pull request opened or merged, review or comment. deliveredAt: its last merge, when
@@ -133,7 +134,7 @@ export function mergeRequestsOf(records) {
  * @param {PullRequestRecord[]} records
  * @param {number} now
  */
-export function projectLife(records, now) {
+function lifeOf(records, now) {
   let start = Infinity
   let lastActivity = -Infinity
   for (const pr of records) {
@@ -173,6 +174,79 @@ export function projectLife(records, now) {
     days: (end - start) / DAY_MINUTES,
     integrationHours: lastMerge !== null && lastFeatureMerge !== null ? workHoursBetween(lastFeatureMerge, lastMerge) : null,
   }
+}
+
+// The numbered stages come after the main branch and the stages named by a word.
+/** @type {(stage: { stage: string | null }) => number} */
+const stageRank = ({ stage }) => (stage !== null && /^\d/.test(stage) ? 1 : 0)
+
+// Two numbered stages, number by number: 1.2 before 1.10.
+/** @type {(a: string | null, b: string | null) => number} */
+function compareNumbers(a, b) {
+  const [left, right] = [String(a).split('.').map(Number), String(b).split('.').map(Number)]
+  for (let index = 0; index < Math.max(left.length, right.length); index++) {
+    const difference = (left[index] ?? -1) - (right[index] ?? -1)
+    if (difference !== 0) {
+      return difference
+    }
+  }
+
+  return 0
+}
+
+// The stages of a project that goes in stages (stage of the records, such as 1, 2.1 or pilot), each with its life (lifeOf())
+// and its code pull requests; none for a project without any. The pull requests of no stage make one more when their
+// branch came back into a long-lived branch on its own (merges of it), the main branch of the project; else they were
+// only work done along the stages. In their order: the main branch and the stages named by a word first, the earliest
+// started first, then the numbered ones by their number (1.2 before 1.10, 2 after 1.3).
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {number} now
+ */
+function stagesOf(records, now) {
+  if (!records.some((pr) => pr.stage)) {
+    return []
+  }
+  /** @type {Map<string | null, PullRequestRecord[]>} */
+  const byStage = new Map()
+  for (const pr of records) {
+    getOrCreate(byStage, pr.stage ?? null, () => []).push(pr)
+  }
+
+  return [...byStage]
+    .filter(([stage, own]) => stage !== null || own.some((pr) => pr.projectMerge))
+    .map(([stage, own]) => ({ stage, code: own.filter((pr) => pr.kind === 'code').length, ...lifeOf(own, now) }))
+    .sort((a, b) => stageRank(a) - stageRank(b) || (stageRank(a) === 0 ? a.start - b.start : compareNumbers(a.stage, b.stage)))
+}
+
+// A project over the whole data (lifeOf()), and its stages (stagesOf()). A project that goes in stages is delivered once
+// every stage is, or was abandoned, one at least delivered, and no pull request of the project was opened after the last
+// delivery; abandoned when every stage was; else ongoing, or stalled after STALLED_AFTER_DAYS without activity.
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {number} now
+ */
+export function projectLife(records, now) {
+  const life = lifeOf(records, now)
+  const stages = stagesOf(records, now)
+  if (stages.length === 0) {
+    return { ...life, stages }
+  }
+  const done = stages.every((stage) => stage.status === 'delivered' || stage.status === 'abandoned')
+  const lastDelivery = Math.max(...stages.map((stage) => stage.deliveredAt ?? -Infinity))
+  const deliveredAt = done && lastDelivery > -Infinity && records.every((pr) => pr.createdAt <= lastDelivery) ? lastDelivery : null
+  /** @type {ProjectStatus} */
+  const status =
+    deliveredAt !== null
+      ? 'delivered'
+      : stages.every((stage) => stage.status === 'abandoned')
+        ? 'abandoned'
+        : now - life.lastActivity * MINUTE_MS > STALLED_AFTER_DAYS * DAY_MS
+          ? 'stalled'
+          : 'ongoing'
+  const end = deliveredAt ?? life.lastActivity
+
+  return { ...life, deliveredAt, status, end, days: (end - life.start) / DAY_MINUTES, stages }
 }
 
 /** @typedef {ReturnType<typeof projectLife>} ProjectLife */
