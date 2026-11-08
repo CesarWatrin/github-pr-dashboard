@@ -11,6 +11,7 @@ import { personLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
 import { projectLine, projectList } from '../../ui/projects.js'
+import { workLine } from '../../ui/work-line.js'
 import { squadFigures } from './figures.js'
 
 const SQUAD_CARD_STATS = squadFigures('code', 'merged', 'reviews', 'medianTimeToFirstReviewHours', 'medianTimeToMergeHours', 'open')
@@ -45,7 +46,8 @@ export function squadCard(row, index, rows) {
     open,
     ...squadLead(row, 'squad-lead'),
     avatarStack(row.members, { size: 28, lead: row.lead }),
-    ...projectLine(row.projects, row.acs?.delivered ?? 0),
+    ...projectLine(row.projects),
+    ...workLine({ acs: row.acs?.delivered ?? 0, hotfixes: row.hotfixes }),
     statList(SQUAD_CARD_STATS, row),
   )
   card.setAttribute('aria-label', row.name)

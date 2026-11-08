@@ -64,10 +64,11 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   les mois que touche la période choisie (36 mois : tout l'historique), avec leur médiane sur 3 mois ; pour chacun, le
   dernier mois complet de la période comparé au même mois un an plus tôt et à la médiane des 12 mois complets jusqu'à
   lui, même avant la période.
-- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Douze règles fixes croisent les chiffres :
+- **Analyse** : ce qui ressort de la période et des pistes pour progresser. Quatorze règles fixes croisent les chiffres :
   taille des PR et délai de merge, PR géantes mergées sans review plus souvent que les autres, étape qui retient les
   PR avant leur merge, dépôts suspendus à un relecteur ou mergés sans review, workflows qui échouent souvent ou qui
-  sont lents, PR fermées sans merge, projets à l'arrêt, projets qui attendent leur livraison une fois leur code fini,
+  sont lents, PR fermées sans merge, projets à l'arrêt, projets qui attendent leur livraison une fois leur code fini, AC
+  qui traînent avant leur merge ou trop grosses,
   et ce qui se dégrade ou s'améliore d'une moitié de la période à l'autre. Chaque
   constat, prioritaire ou à surveiller, donne ses chiffres, une piste et la page qui le détaille ; une règle ne parle
   qu'au-delà de son seuil, sur assez de PR ou d'exécutions, et les autres sont listées sous « Rien à signaler ». Les
@@ -96,9 +97,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   dont la PR y revient (une PR de projet, ou une branche qui va ailleurs, n'en est pas une). Trop nombreuses pour une
   carte ou une barre chacune, elles sont comptées : démarrées, livrées, en prod, en cours, abandonnées, part des PR de
   code, délais jusqu'au merge et jusqu'en prod, taille, personnes, comparés à la période d'avant ; démarrées et livrées
-  par période ; livrées par dépôt, par personne, par squad et par taille. On les retrouve sur la vue d'ensemble, les
-  cartes et fiches des personnes et des squads, le bilan du mois, les tendances, la frise d'une PR et le badge 🛠️
-  Artisan.
+  par période ; livrées par dépôt, par personne, par squad et par taille. On les retrouve sur la vue d'ensemble (tuiles
+  et graphique par période), les cartes des personnes, des squads et des dépôts (avec leurs hotfix), leurs fiches, le bilan du mois, les tendances, l'analyse (AC qui traînent ou trop
+  grosses), la frise d'une PR et le badge 🛠️ Artisan.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par

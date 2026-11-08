@@ -43,3 +43,9 @@ export const MIN_PROJECTS = 3
 export const STALLED_PROJECTS_HIGH_SHARE = 0.5
 export const MIN_DELIVERED_PROJECTS = 2
 export const SLOW_INTEGRATION_HOURS = 5 * WORK_DAY_HOURS
+// The AC delivered within the range, and those of a repository to name it: an AC is meant small and quick, so they drag
+// from two working days in median to their merge, and are too big from a quarter of them at BIG_PR_LINES or more.
+export const MIN_ACS = 10
+export const MIN_REPOSITORY_ACS = 5
+export const SLOW_AC_HOURS = 2 * WORK_DAY_HOURS
+export const BIG_AC_SHARE = 0.25

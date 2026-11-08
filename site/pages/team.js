@@ -18,6 +18,7 @@ import { avatarUrl, personLink } from '../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../ui/motion.js'
 import { seniorityText, squadTags, stackLine } from '../ui/people.js'
 import { projectLine } from '../ui/projects.js'
+import { workLine } from '../ui/work-line.js'
 
 const nameLines = (name, login) => [
   el('strong', { textContent: name, title: name }),
@@ -46,7 +47,8 @@ function personCard(row, index) {
     stackLine(row.stack),
     ...squadTags(row.login),
     ...badges,
-    ...projectLine(personProjects(row.login), personAcs(row.login).delivered),
+    ...projectLine(personProjects(row.login)),
+    ...workLine({ acs: personAcs(row.login).delivered, hotfixes: row.hotfixes }),
     statList(TEAM_STATS, row),
   )
   card.setAttribute('aria-label', name)

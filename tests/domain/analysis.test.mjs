@@ -287,3 +287,27 @@ describe('projects', () => {
   })
 })
 
+describe('AC', () => {
+  // AC delivered in web: four of 800 lines, six of 50.
+  const ac = (index, fields) => record({ ac: `feature/ac-${index}`, lines: index < 4 ? 800 : 50, ...fields })
+  // 8 + 9 + 7 working hours after 10:00 on Monday the 2nd.
+  const WEDNESDAY = at('2026-03-04T15:00:00Z')
+
+  test('those delivered drag to their merge, and too many of them are big', () => {
+    const result = analyze(Array.from({ length: 10 }, (_, index) => ac(index, { mergedAt: WEDNESDAY })), [], MARCH)
+    const slow = findingOf(result, 'slowAcs')
+    assert.deepEqual([slow.level, slow.count, slow.medianHours], ['watch', 10, 24])
+    assert.deepEqual(slow.repositories, [{ repo: 'web', acs: 10, value: 24 }])
+    const big = findingOf(result, 'bigAcs')
+    assert.deepEqual([big.level, big.count, big.big, big.share, big.medianLines], ['watch', 10, 4, 0.4, 50])
+  })
+
+  test('nothing when they merge within the day and stay small, too little under ten delivered', () => {
+    const quick = Array.from({ length: 10 }, (_, index) => ac(index, { mergedAt: MONDAY + 2 * HOUR, lines: 50 }))
+    const result = analyze(quick, [], MARCH)
+    assert.deepEqual(['slowAcs', 'bigAcs'].map((key) => result.clear.includes(key)), [true, true])
+    const few = analyze(quick.slice(0, 9), [], MARCH)
+    assert.deepEqual(['slowAcs', 'bigAcs'].map((key) => few.few.includes(key)), [true, true])
+  })
+})
+

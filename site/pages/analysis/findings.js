@@ -33,6 +33,7 @@ import {
   strong,
   workflowName,
 } from './evidence.js'
+import { AC_FINDINGS, AC_RULE_LABELS } from './ac-findings.js'
 import { PROJECT_FINDINGS, PROJECT_RULE_LABELS } from './project-findings.js'
 
 const FINDING_LEVELS = { high: t('Prioritaire'), watch: t('À surveiller'), good: t('En progrès') }
@@ -237,6 +238,7 @@ const FINDINGS = {
     route: 'authors',
   },
   ...PROJECT_FINDINGS,
+  ...AC_FINDINGS,
   progress: {
     area: t('Tendance'),
     title: () => t('Ce qui s’améliore'),
@@ -259,6 +261,7 @@ export const RULE_LABELS = {
   slowWorkflows: t('Workflows lents'),
   abandoned: t('PR fermées sans merge'),
   ...PROJECT_RULE_LABELS,
+  ...AC_RULE_LABELS,
   progress: t('Ce qui s’améliore'),
 }
 

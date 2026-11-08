@@ -1,6 +1,6 @@
 // What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, its branch
 // on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it
-// shows, and the projects of a person or a squad, on their card (with the AC they delivered) and in their dialog.
+// shows, and the projects of a person or a squad, on their card and in their dialog.
 
 import { isMissing } from '../domain/math.js'
 import { STALLED_AFTER_DAYS } from '../domain/projects.js'
@@ -96,24 +96,14 @@ export function projectLink(row) {
  */
 
 // The projects of a person or a squad on their card, on a single line of their own: how many, then the busiest one, its
-// name cut short when it does not fit, every one of them named on hover; then the AC they delivered over the period. None
-// without either.
-/**
- * @param {ProjectShare[]} shares
- * @param {number} [acs]
- */
-export function projectLine(shares, acs = 0) {
-  if (shares.length === 0 && acs === 0) {
+// name cut short when it does not fit, every one of them named on hover; none without any.
+/** @param {ProjectShare[]} shares */
+export function projectLine(shares) {
+  if (shares.length === 0) {
     return []
   }
-  const line = el('p', { className: 'project-line' })
-  if (shares.length) {
-    line.append(el('span', { textContent: plural(shares.length, 'projet') }), projectLink(shares[0].row))
-    line.title = shares.map(({ row }) => projectLabel(row)).join(', ')
-  }
-  if (acs) {
-    line.append(el('span', { className: 'project-line-acs', textContent: plural(acs, 'AC livrée', 'AC livrées') }))
-  }
+  const line = el('p', { className: 'project-line' }, el('span', { textContent: plural(shares.length, 'projet') }), projectLink(shares[0].row))
+  line.title = shares.map(({ row }) => projectLabel(row)).join(', ')
 
   return [line]
 }

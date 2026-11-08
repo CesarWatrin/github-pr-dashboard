@@ -175,6 +175,7 @@ function squadRow(name, members, range, organization) {
     projectShare: members && code ? projects.reduce((total, share) => total + share.code, 0) / code : null,
     acs,
     acShare: acs && code ? acs.code / code : null,
+    hotfixes: period.tma.opened,
     writers: (members ?? []).map((login) => [login, writers.get(login) ?? 0]).sort((a, b) => b[1] - a[1]),
     readers,
     repos: [...repos].filter(([, code]) => code > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),

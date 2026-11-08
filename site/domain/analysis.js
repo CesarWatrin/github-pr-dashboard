@@ -3,6 +3,8 @@
 // speaks over enough pull requests or runs: otherwise it says it has too little to go on, and when nothing stands out
 // it says so too. Pure, like the rest of domain/.
 
+import { acsOf } from './acs.js'
+import { bigAcsRule, slowAcsRule } from './analysis/ac-rules.js'
 import { failingWorkflowsRule, slowWorkflowsRule } from './analysis/ci-rules.js'
 import { driftRule, halves, progressRule } from './analysis/drift-rules.js'
 import { integrationRule, stalledProjectsRule } from './analysis/project-rules.js'
@@ -33,6 +35,8 @@ export const RULES = [
   { key: 'abandoned', check: abandonedRule },
   { key: 'stalledProjects', check: stalledProjectsRule },
   { key: 'integration', check: integrationRule },
+  { key: 'slowAcs', check: slowAcsRule },
+  { key: 'bigAcs', check: bigAcsRule },
   { key: 'progress', check: progressRule },
 ]
 /** @type {Level[]} */
@@ -60,6 +64,9 @@ export function analyze(records, workflows, { start, end, isCurrent = () => true
   // The projects, worked out once for the rules that read them.
   /** @type {{ rows: ProjectRow[], delivered: ProjectRow[] } | undefined} */
   let projects
+  // The AC delivered within the range, likewise.
+  /** @type {{ delivered: import('./acs.js').Ac[] } | undefined} */
+  let acs
   /** @type {Context} */
   const context = {
     code,
@@ -68,6 +75,13 @@ export function analyze(records, workflows, { start, end, isCurrent = () => true
     ci: computeCi(workflows, { start, end, bucket: 'month' }),
     isCurrent,
     halves: () => (split === undefined ? (split = halves({ records, start, end })) : split),
+    acs: () => {
+      if (!acs) {
+        acs = { delivered: acsOf(records).filter((ac) => ac.deliveredAt !== null && ac.deliveredAt >= startAt && ac.deliveredAt < endAt) }
+      }
+
+      return acs
+    },
     projects: () => {
       if (!projects) {
         const rows = projectRows(records, { start, end, bucket: 'month' }, { all, now })

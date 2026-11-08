@@ -12,6 +12,7 @@ import { $, el } from '../ui/dom.js'
 import { personLink, repoLink } from '../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../ui/motion.js'
 import { repoTypeTag, technologyLogos } from '../ui/tables/cells.js'
+import { workLine } from '../ui/work-line.js'
 
 const REPOSITORY_STATS = repositoryFigures(
   'code',
@@ -80,6 +81,7 @@ function repositoryCard(row, index) {
       el('div', { className: 'repo-card-people-head' }, el('span', { textContent: t('Qui l’écrit') }), ...busFactorTag(row.busFactor)),
       people,
     ),
+    ...workLine({ acs: row.acs, hotfixes: row.hotfixes }),
     statList(REPOSITORY_STATS, row),
   )
   card.setAttribute('aria-label', row.repo)

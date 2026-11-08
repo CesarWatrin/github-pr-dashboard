@@ -12,12 +12,13 @@ import { TOP_ROWS } from './thresholds.js'
 // A project whose life meets the range, with its figures over it (domain/projects.js).
 /** @typedef {import('../projects.js').ProjectRow} ProjectRow */
 // What every rule reads: the code pull requests opened in the range and those merged, their cycles, the CI, who is still
-// in the team, both halves of the range, and the projects whose life meets it and those of them delivered within it,
-// both worked out on demand.
+// in the team, both halves of the range, the projects whose life meets it and those of them delivered within it, and the
+// AC delivered within it, worked out on demand.
 /**
  * @typedef {{ code: PullRequestRecord[], merged: MergedRecord[], cycles: Cycle[], ci: Ci,
  *   isCurrent: (login: string) => boolean, halves: () => Halves | null,
- *   projects: () => { rows: ProjectRow[], delivered: ProjectRow[] } }} Context
+ *   projects: () => { rows: ProjectRow[], delivered: ProjectRow[] },
+ *   acs: () => { delivered: import('../acs.js').Ac[] } }} Context
  */
 /** @typedef {'high' | 'watch' | 'good'} Level */
 // The two halves of the range, for the rules that set one against the other (analysis/drift-rules.js).

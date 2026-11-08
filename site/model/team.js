@@ -68,14 +68,16 @@ export function teamRows({ withFormer = false } = {}) {
     }
   }
   const reviewersOf = new Map(reviewNetwork(withoutFormer(period), state.repos.team).authors.map((author) => [author.login, author.reviewers]))
-  // The stack is the person's own, over every repository: the selection only narrows the figures.
+  // The stack is the person's own, over every repository: the selection only narrows the figures. So do the hotfixes.
   const stackFor = stacksOf(period)
+  const hotfixesOf = new Map(period.tma.people.map((person) => [person.login, person.hotfixes]))
 
   return [...rows.values()]
     .map((totals) => ({
       login: totals.login,
       code: totals.code,
       merged: totals.code ? totals.merged : null,
+      hotfixes: hotfixesOf.get(totals.login) ?? 0,
       medianTimeToMergeHours: median(totals.timesToMerge),
       reviewed: totals.reviewed,
       commentsPerPr: totals.reviewed ? totals.comments / totals.reviewed : null,
