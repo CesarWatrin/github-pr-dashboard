@@ -93,10 +93,10 @@ export function acsOf(records) {
 /** @type {(range: Pick<TimeRange, 'start' | 'end'>) => (at: number | null) => boolean} */
 const within = (range) => (at) => at !== null && at * MINUTE_MS >= range.start && at * MINUTE_MS < range.end
 
-// What the AC add up to over a range: how many started within it, were delivered (merged into develop) and reached
-// production within it, how many are open at the last sync, how many of those started within it were abandoned; over
-// those delivered, the median working hours from their start to their merge and their median lines; over those that
-// reached production, the median working hours to it; the people who opened the pull requests of those started or
+// What the AC add up to over a range: how many started within it, were delivered (merged into develop) within it, and
+// of those how many reached production since, how many are open at the last sync, how many of those started within it
+// were abandoned; over those delivered, the median working hours from their start to their merge and their median lines;
+// over those of them in production, the median working hours to it; the people who opened the pull requests of those started or
 // delivered; and the pull requests of AC opened within the range (code), for their share of the code pull requests.
 /**
  * @param {Ac[]} acs
@@ -106,7 +106,7 @@ export function acSummary(acs, range) {
   const inRange = within(range)
   const started = acs.filter((ac) => inRange(ac.start))
   const delivered = acs.filter((ac) => inRange(ac.deliveredAt))
-  const deployed = acs.filter((ac) => inRange(ac.deployedAt))
+  const deployed = delivered.filter((ac) => ac.deployedAt !== null)
 
   return {
     started: started.length,

@@ -501,7 +501,7 @@ export const PAGES = {
   'PR de code en AC': 'Code PRs on improvements',
   'Améliorations continues': 'Continuous improvements',
   'Les AC menées sur une branche feature/… ou feat/… partie de develop : combien, à quel rythme, par qui': 'The improvements carried on a feature/… or feat/… branch cut from develop: how many, at what pace, by whom',
-  'AC en prod': 'Improvements in production',
+  'Livrées et en prod': 'Delivered and in production',
   'AC en cours': 'Improvements under way',
   'Délai médian jusqu’au merge': 'Median time to merge',
   'Abandonnées': 'Abandoned',

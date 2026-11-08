@@ -19,7 +19,8 @@ import { renderTiles } from '../ui/tiles.js'
 const AC_TILES = [
   { key: 'started', label: t('AC démarrées') },
   { key: 'delivered', label: t('AC livrées') },
-  { key: 'deployed', label: t('AC en prod') },
+  // Among those delivered, those in production at the last sync.
+  { key: 'deployed', label: t('Livrées et en prod') },
   { key: 'codeShare', label: t('PR de code en AC'), format: formatShare },
   // Open at the last sync, whatever the period: not compared.
   { key: 'open', label: t('AC en cours'), compare: false },
