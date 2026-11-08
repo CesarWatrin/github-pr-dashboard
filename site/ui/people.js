@@ -1,12 +1,31 @@
-// What the card and the dialog of a person share: stack, seniority, squads.
+// What the card and the dialog of a person share: stack, seniority, squads; and the avatars of a group of people, on the
+// cards of squads and projects.
 
 import { dateFormat } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { activities, seniority } from '../model/people.js'
+import { activities, displayName, isCurrent, seniority } from '../model/people.js'
 import { stackType, topTechnologies } from '../model/repositories.js'
 import { squadsOf } from '../model/squads.js'
 import { el } from './dom.js'
 import { technologyIcon } from './icons.js'
+import { avatarUrl } from './links.js'
+
+// The avatars of the people of a group still in the team, overlapping, as on a team photo, in the order given. The head
+// of a squad comes first, ringed. Beyond max, a « +N » stands for the others, named on hover with the rest.
+export function avatarStack(logins, { size = 28, lead = null, max = Infinity } = {}) {
+  const current = logins.filter(isCurrent).sort((a, b) => Number(b === lead) - Number(a === lead))
+  const shown = current.length > max ? current.slice(0, max - 1) : current
+  const others = current.length - shown.length
+
+  return el(
+    'span',
+    { className: 'squad-avatars', title: current.map(displayName).join(', ') },
+    ...shown.map((login) =>
+      el('img', { className: login === lead ? 'is-lead' : '', src: avatarUrl(login, size * 2), alt: '', loading: 'lazy', width: size, height: size }),
+    ),
+    ...(others > 0 ? [el('span', { className: 'avatar-more', textContent: `+${others}`, style: `--avatar-size: ${size}px` })] : []),
+  )
+}
 
 // The stack badge of a person and the logos of their main technologies.
 export function stackLine(stack) {

@@ -11,8 +11,9 @@ import { reducedMotion } from '../motion.js'
 // How far the open card leans towards the pointer, at its edges.
 const PERSON_TILT_DEG = 4
 
-// Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint.
-// Given the sources of peers, each figure also shows their median.
+// Figures as a list of terms: each definition has a label, a value read from the source, an optional format and hint,
+// or the nodes its content shows (content), such as lines added over lines deleted. Given the sources of peers, each
+// figure also shows their median.
 export function statList(definitions, source, peers = null) {
   return el(
     'dl',
@@ -25,7 +26,7 @@ export function statList(definitions, source, peers = null) {
         'div',
         {},
         el('dt', { textContent: stat.label, title: stat.hint ?? '' }),
-        el('dd', { textContent: format(read(source)) }),
+        stat.content ? el('dd', {}, ...stat.content(source)) : el('dd', { textContent: format(read(source)) }),
         ...(peers ? [peerMedian(peers.map(read).filter((value) => !isMissing(value)), format)] : []),
       )
     }),

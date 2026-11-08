@@ -1,0 +1,171 @@
+/* Projects page: what they add up to and their timeline, then a card per project, like those of the repositories and
+   the squads, then the table that compares them. */
+.projects-content {
+  display: grid;
+  gap: 16px;
+}
+
+/* Where a project stands: a dot of the color of its bar, and its word, in the ink of the text. */
+.project-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.project-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.project-card-head .project-status,
+.person-dialog-title .project-status {
+  flex: none;
+  margin-left: auto;
+}
+
+.project-dates {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Its repositories, each opening its own dialog, over the button that stretches across the card. */
+.project-repos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.project-card .repo-link {
+  position: relative;
+  z-index: 1;
+}
+
+/* The people beyond those an avatar stack shows: « +3 », as round as an avatar. */
+.avatar-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--avatar-size, 28px);
+  height: var(--avatar-size, 28px);
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lines added over lines deleted, in the colors of a diff, one above the other as in the tables. */
+.project-lines-added,
+.project-lines-deleted {
+  display: block;
+  color: var(--diff-added);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.project-lines-deleted {
+  color: var(--diff-deleted);
+}
+
+/* The name of a project in the table opens its dialog; its status follows. */
+.project-name-cell {
+  white-space: nowrap;
+}
+
+.project-name-cell .project-status {
+  margin-left: 8px;
+}
+
+/* The timeline: a bar per project, tinted with the color of its status, filled where its weeks were busy. */
+.gantt {
+  margin-top: 8px;
+}
+
+.gantt svg {
+  display: block;
+  overflow: visible;
+}
+
+.gantt-label {
+  fill: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gantt-tag {
+  fill: var(--text-secondary);
+  font-size: 11px;
+}
+
+.gantt-bar {
+  fill: var(--bar-color);
+  fill-opacity: 0.18;
+  stroke: var(--bar-color);
+  stroke-width: 1.25;
+  transition: fill-opacity 0.15s;
+}
+
+.gantt-week {
+  fill: var(--bar-color);
+  opacity: 0.75;
+}
+
+.gantt-cut {
+  fill: none;
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gantt-marker {
+  fill: var(--surface);
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+}
+
+.gantt-hit {
+  cursor: pointer;
+  outline: none;
+}
+
+.gantt-row.is-active .gantt-bar {
+  fill-opacity: 0.32;
+}
+
+.gantt-row.is-active .gantt-hit,
+.gantt-hit:focus-visible {
+  fill: var(--highlight);
+}
+
+/* The marks of the legend: a merge, a bar cut by the period, the busy weeks. */
+.project-legend-marker,
+.project-legend-cut {
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.project-legend-weeks {
+  width: 16px;
+  height: 10px;
+  border: 1px solid var(--text-secondary);
+  border-radius: 2px;
+  background: linear-gradient(to top, var(--text-secondary) 55%, transparent 55%);
+}

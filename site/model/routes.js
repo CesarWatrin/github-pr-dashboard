@@ -29,6 +29,7 @@ export const ROUTES = {
   analysis: { hash: '#/analyse', title: t('Analyse'), subtitle: t('Ce qui ressort de la période, et des pistes pour progresser'), search: false },
   awards: { hash: '#/palmares', title: t('Palmarès'), subtitle: t('Les badges de l’équipe, mois après mois, depuis la première synchro'), filters: false },
   repositories: { hash: '#/depots', title: t('Dépôts'), subtitle: t('Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit') },
+  projects: { hash: '#/projets', title: t('Projets'), subtitle: t('Les projets menés sur une branche project/…, quand ils ont commencé, avancé et été livrés') },
   tma: { hash: '#/tma', title: t('TMA'), subtitle: t('Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait') },
   devops: { hash: '#/devops', title: t('DevOps'), subtitle: t('Mises en production, intégration continue et mises à jour de dépendances') },
   method: { hash: '#/methode', title: t('Méthode'), subtitle: t('Les règles communes : chaque colonne est expliquée sous son tableau'), filters: false },

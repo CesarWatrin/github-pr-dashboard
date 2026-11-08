@@ -93,6 +93,95 @@ function later(random, after, hours) {
   return time
 }
 
+// Made-up projects, as the sync tells them from their branches (project/<name>/main, the feature branches that target
+// it, the pull requests stacked on those): one in two repositories, merged into develop twice and delivered; one
+// delivered lately; one under way, a pull request still open and a draft; one left aside. A generator of their own, so
+// that the rest of the stats stays the same.
+const PROJECTS = [
+  { name: 'blue-falcon', repos: ['web-shop', 'core-api'], people: ['ada-l', 'cleo-m', 'ben-k', 'eli-p'], from: 430, to: 262, every: 6, merges: [300, 255] },
+  { name: 'red-heron', repos: ['billing'], people: ['gus-t', 'ben-k'], from: 80, to: 24, every: 7, merges: [20] },
+  { name: 'paper-kite', repos: ['mobile-app'], people: ['dev-o', 'hana-v', 'eli-p'], from: 75, to: 4, every: 4, merges: [] },
+  { name: 'quiet-otter', repos: ['back-office'], people: ['fay-r', 'cleo-m'], from: 210, to: 120, every: 8, merges: [] },
+]
+
+function addProjects({ now, add, ago, seed }) {
+  const random = generator(seed + 101)
+  for (const project of PROJECTS) {
+    let index = 0
+    for (let day = project.from; day > project.to; day -= project.every) {
+      const author = project.people[index % project.people.length]
+      const repo = project.repos[index % project.repos.length]
+      const reviewer = project.people[(index + 1) % project.people.length]
+      index++
+      const time = now - day * DAY_MS
+      const merged = later(random, time, random.int(4, 30))
+      const lines = random.pick([30, 80, 150, 400, 900])
+      add({
+        repo,
+        author,
+        kind: 'code',
+        project: project.name,
+        createdAt: toMinutes(time),
+        mergedAt: toMinutes(merged),
+        lines,
+        deleted: Math.round(lines * random.next() * 0.5),
+        mergedBy: author,
+        interventions: [
+          [reviewer, toMinutes(later(random, time, 2)), random.chance(0.25) ? 'CHANGES_REQUESTED' : 'COMMENTED', random.int(1, 5)],
+          [reviewer, toMinutes(merged - 3_600_000), 'APPROVED', 0],
+        ],
+        // Merged into the project branch: in production once that branch is, if it is.
+        deployedAt: project.merges.length ? ago(project.merges.at(-1) - 2) : null,
+        ...(now - merged < 30 * DAY_MS && { title: `Step ${index} of ${project.name}`, checks: 'SUCCESS' }),
+      })
+    }
+    // The project branch merged into develop, in each of its repositories in turn.
+    project.merges.forEach((day, merge) => {
+      const author = project.people[0]
+      add({
+        repo: project.repos[merge % project.repos.length],
+        author,
+        kind: 'integration',
+        project: project.name,
+        projectMerge: true,
+        createdAt: ago(day + 1),
+        mergedAt: ago(day),
+        lines: 2400,
+        mergedBy: author,
+        interventions: [[project.people[1], ago(day + 0.5), 'APPROVED', 0]],
+        ...(day < 30 && { title: `Merge ${project.name} into develop`, checks: 'SUCCESS' }),
+      })
+    })
+  }
+  // Under way: a pull request of the project still open, asking for a review, and a draft.
+  add({
+    repo: 'mobile-app',
+    author: 'hana-v',
+    kind: 'code',
+    project: 'paper-kite',
+    createdAt: ago(2),
+    mergedAt: null,
+    lines: 220,
+    interventions: [],
+    requestedReviewers: ['dev-o'],
+    title: 'Last step of paper-kite',
+    checks: 'PENDING',
+  })
+  add({
+    repo: 'mobile-app',
+    author: 'kim-new',
+    kind: 'code',
+    project: 'paper-kite',
+    createdAt: ago(1),
+    mergedAt: null,
+    lines: 60,
+    interventions: [],
+    draft: true,
+    title: 'Draft for paper-kite',
+    checks: null,
+  })
+}
+
 export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7 } = {}) {
   const random = generator(seed)
   const windowStart = now - WINDOW_DAYS * DAY_MS
@@ -256,6 +345,7 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
     title: 'Quick fix',
     checks: 'SUCCESS',
   })
+  addProjects({ now, add, ago, seed })
   pullRequests.sort((a, b) => a.createdAt - b.createdAt)
 
   // CI runs per workflow and Paris day, since the snapshot kept them.

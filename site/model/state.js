@@ -50,9 +50,11 @@ export const state = {
     deployments: { key: 'deployments', direction: -1 },
     workflows: { key: 'runs', direction: -1 },
     dependencies: { key: 'opened', direction: -1 },
+    // As on their timeline: the earliest started first.
+    projects: { key: 'start', direction: 1 },
   },
   previousRows: Object.fromEntries(
-    ['authors', 'reviewers', 'cycle', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies'].map((name) => [
+    ['authors', 'reviewers', 'cycle', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies', 'projects'].map((name) => [
       name,
       new Map(),
     ]),
@@ -85,6 +87,8 @@ export const state = {
   squadPeriodsCache: null,
   squadSort: { key: 'merged', reversed: false },
   squadPerMember: false,
+  // The projects of the period for the squad picked, worked out once per stats, range and squad.
+  projectsCache: null,
   // Who the « Mes PR » page is for, null until picked.
   me: readStoredMe(),
   notify: readStoredNotify(),

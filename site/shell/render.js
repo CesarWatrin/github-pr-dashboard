@@ -20,6 +20,7 @@ import {
   renderToday,
   renderTotals,
 } from '../pages/overview.js'
+import { renderProjects, renderProjectTimeline } from '../pages/projects/projects.js'
 import { renderReport } from '../pages/report.js'
 import { renderRepositories } from '../pages/repositories.js'
 import { renderMiniCharts, renderPersonPicker } from '../pages/reviewers.js'
@@ -49,6 +50,7 @@ export function renderCharts() {
   renderCartography()
   renderTrends()
   renderSquadCharts()
+  renderProjectTimeline()
   if (state.person) {
     renderMiniCharts()
   }
@@ -86,6 +88,7 @@ export function render(animate) {
   renderReport()
   renderAnalysis()
   renderRepositories()
+  renderProjects(tileMode)
   renderSquads()
   renderFeed(animate)
   renderUnblock(tileMode)

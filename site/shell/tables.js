@@ -4,6 +4,7 @@ import { t } from '../lib/i18n.js'
 import { BADGES_LEGEND } from '../model/badges.js'
 import { authorRows, reviewerRows } from '../model/contributors.js'
 import { displayName, isCurrent, SENIORITY_LEGEND } from '../model/people.js'
+import { currentProjects } from '../model/projects.js'
 import { withCategory } from '../model/repositories.js'
 import { currentCi, currentPeriod } from '../model/selection.js'
 import { currentNetwork } from '../model/team.js'
@@ -12,6 +13,7 @@ import { COLLABORATION_COLUMNS, renderCollaboration } from '../pages/collaborati
 import { CYCLE_COLUMNS, cycleRows, renderCycleCharts, renderCycleTiles } from '../pages/cycle.js'
 import { DEPENDENCY_COLUMNS, DEPLOYMENT_COLUMNS, WORKFLOW_COLUMNS } from '../pages/devops.js'
 import { REPO_COLUMNS, repoRows } from '../pages/overview.js'
+import { PROJECT_COLUMNS } from '../pages/projects/projects.js'
 import { renderRepositories } from '../pages/repositories.js'
 import { REVIEWER_COLUMNS } from '../pages/reviewers.js'
 import { renderTeam } from '../pages/team.js'
@@ -111,6 +113,12 @@ export function registerTables() {
       rows: () => withCategory(currentPeriod().dependencies.repositories),
       rowKey: (row) => row.repo,
       searchTexts: (row) => [row.repo],
+    },
+    projects: {
+      columns: PROJECT_COLUMNS,
+      rows: () => currentProjects().rows,
+      rowKey: (row) => row.name,
+      searchTexts: (row) => [row.name, ...row.repos.map(([repo]) => repo)],
     },
   })
   Object.assign(REPO_FILTERS, {
