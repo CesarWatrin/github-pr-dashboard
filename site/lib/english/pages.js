@@ -430,6 +430,7 @@ export const PAGES = {
     'Working hours between the last code PR merged and the last merge of its branch into a long-lived branch.',
   'Rythme': 'Pace',
   '{value} / sem.': '{value} / wk',
+  '{count} sem.': '{count} wk',
   'PR de code ouvertes par semaine, sur la partie de la période où le projet avance.':
     'Code PRs opened per week, over the part of the period the project moves in.',
   'Dépôts où le projet a des PR.': 'Repositories where the project has PRs.',
@@ -449,14 +450,11 @@ export const PAGES = {
   'Durée médiane jusqu’à la livraison': 'Median time to delivery',
   'Intégration médiane': 'Median integration',
   'Projet': 'Project',
-  'Le nom de sa branche project/…/main : un projet du même nom dans plusieurs dépôts n’en fait qu’un.':
-    'The name of its project/…/main branch: a project of the same name in several repositories is one.',
+  'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un.':
+    'The name of its project/…/main branch, and its repositories under it: a project of the same name in several repositories is one.',
   'Personnes qui ont ouvert ces PR, parties comprises, et la part de l’équipe (ou de la squad choisie) encore là qu’elles sont.':
     'People who opened these PRs, those who left included, and the share of the team (or of the squad picked) still here they are.',
-  '{count} · {share}': '{count} · {share}',
   'PR de code sur la période': 'code PRs over the period',
-  'Le dépôt où le projet a le plus de PR de code sur la période ; les autres au survol.':
-    'The repository where the project has the most code PRs over the period; the others on hover.',
   'Commencé avant la période, il continue après : sa barre est coupée aux deux bords.':
     'Started before the period, it goes on after it: its bar is cut at both edges.',
   'Commencé avant la période : sa barre est coupée à gauche.': 'Started before the period: its bar is cut on the left.',

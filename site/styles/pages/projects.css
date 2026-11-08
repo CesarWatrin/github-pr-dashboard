@@ -83,9 +83,49 @@
   color: var(--diff-deleted);
 }
 
-/* The name of a project in the table opens its dialog. */
-.project-name-cell {
-  white-space: nowrap;
+/* The name of a project in the table opens its dialog; its repositories go under it, cut with an ellipsis. */
+.project-name-cell .project-pick {
+  display: block;
+}
+
+.project-name-repos {
+  display: block;
+  max-width: 96px;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+/* Fourteen columns: tighter than the other tables, their heads wrapping, so that it fits from a 1080 px wide window. */
+[data-projects] thead th button {
+  min-width: 0;
+  padding: 8px 4px;
+}
+
+[data-projects] td {
+  padding: 8px 5px;
+}
+
+[data-projects] .project-status {
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+.project-date {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* The people of a project, and under it the share of the team they are. */
+.project-people span {
+  display: block;
+  line-height: 1.25;
+}
+
+.project-share {
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 /* On the timeline, the status follows the name of the project, in the column of the names. */

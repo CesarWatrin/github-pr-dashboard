@@ -6,7 +6,7 @@ import { STALLED_AFTER_DAYS } from '../../domain/projects.js'
 import { MINUTE_MS, parisDay } from '../../domain/time.js'
 import { dayDate } from '../../lib/dates.js'
 import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare, plural, rangeShortFormat } from '../../lib/format.js'
-import { t } from '../../lib/i18n.js'
+import { LOCALE, t } from '../../lib/i18n.js'
 import { el } from '../../ui/dom.js'
 
 // A month of the calendar, in days, for a duration.
@@ -42,9 +42,18 @@ export const STATUS_ORDER = ['ongoing', 'stalled', 'delivered']
 /** @type {(minutes: number | null | undefined) => string} */
 export const formatDay = (minutes) => (isMissing(minutes) ? '–' : rangeShortFormat.format(dayDate(parisDay(minutes * MINUTE_MS))))
 
-// A duration on the calendar, from days: in days under two weeks, in weeks under two months, else in months.
-/** @param {number | null | undefined} days */
-export function formatSpan(days) {
+// The same day in short, for the table: « 03/03/26 ».
+const shortDayFormat = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' })
+/** @type {(minutes: number | null | undefined) => string} */
+export const formatShortDay = (minutes) => (isMissing(minutes) ? '–' : shortDayFormat.format(dayDate(parisDay(minutes * MINUTE_MS))))
+
+// A duration on the calendar, from days: in days under two weeks, in weeks under two months, else in months; the weeks
+// short in the table.
+/**
+ * @param {number | null | undefined} days
+ * @param {{ short?: boolean }} [options]
+ */
+export function formatSpan(days, { short = false } = {}) {
   if (isMissing(days)) {
     return '–'
   }
@@ -55,7 +64,7 @@ export function formatSpan(days) {
     return plural(Math.round(days), 'jour')
   }
   if (days < 9 * 7) {
-    return plural(Math.round(days / 7), 'semaine')
+    return short ? t('{count} sem.', { count: formatNumber(Math.round(days / 7)) }) : plural(Math.round(days / 7), 'semaine')
   }
 
   return plural(Math.round(days / MONTH_DAYS), 'mois', 'mois')
