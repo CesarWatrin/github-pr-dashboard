@@ -31,6 +31,36 @@
   z-index: 1;
 }
 
+/* A repository of a project, then the GitHub mark of the branch of the project there, which leads to it on GitHub. */
+.project-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-branch-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+
+.project-branch-link:hover {
+  color: var(--text-primary);
+}
+
+.project-branch-link svg {
+  fill: currentColor;
+}
+
+/* The branch of the project in each of its repositories, in its dialog: a GitHub pill per repository. */
+.project-branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
 /* The people beyond those an avatar stack shows: « +3 », as round as an avatar. */
 .avatar-more {
   display: inline-flex;

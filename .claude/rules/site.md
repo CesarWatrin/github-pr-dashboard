@@ -270,7 +270,8 @@ paths:
     narrows. A row shows its dates and figures in the tooltip, a click opens the project.
   - A card per project (`projectCard()`, the repository card's style): status, dates and duration, the avatars of its
     authors (`avatarStack()` of `ui/people.js`, shared with the squads, « +N » beyond `CARD_AVATARS`), its repositories,
-    `PROJECT_CARD_STATS`. It opens `openProjectDialog()`, the card dialog with its tilt: its life, its figures over the
+    each followed by the GitHub mark of its branch there (`projectBranchLink()`; in the dialog, a GitHub pill per
+    repository), `PROJECT_CARD_STATS`. It opens `openProjectDialog()`, the card dialog with its tilt: its life, its figures over the
     median of the projects of the period, its authors with their pull requests and lines, its reviewers, its
     repositories, and the merges of its branch, each with its pull request.
   - The table (`TABLES.projects`, `PROJECT_COLUMNS`): fourteen columns, tighter than the other tables (short dates, the

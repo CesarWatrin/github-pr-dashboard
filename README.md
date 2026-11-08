@@ -84,7 +84,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   leur délai d'intégration médian (de la dernière PR mergée dans la branche du projet au merge de celle-ci) ; puis un
   calendrier, une barre par projet de sa première PR à sa livraison ou à sa dernière activité, dans la couleur de son
   statut (en cours, livré, à l'arrêt après 30 jours sans activité), un point à chaque merge de sa branche ; une carte
-  par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts) qui ouvre sa fiche ; et
+  par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts, chacun avec un lien
+  vers la branche `project/<nom>/main` sur GitHub) qui ouvre sa fiche ; et
   un tableau pour les comparer, trié au clic. Le calendrier et les cartes se rangent par début ou par statut. La vie
   d'un projet vaut quels que soient la période, la squad et les dépôts choisis ; ses chiffres les suivent. La recherche
   trouve un projet par son nom, ses dépôts ou ses auteurs. Ailleurs, les cartes et fiches des personnes et des squads

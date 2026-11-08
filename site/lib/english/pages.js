@@ -494,4 +494,5 @@ export const PAGES = {
   'Projets sur lesquels les membres ont ouvert des PR de code sur la période.': 'Projects the members opened code PRs on over the period.',
   'Part projets': 'Project share',
   'Part des PR de code de la squad ouvertes sur des projets.': 'Share of the code PRs of the squad opened on projects.',
+  'La branche project/{name}/main de chaque dépôt sur GitHub': 'The project/{name}/main branch of each repository on GitHub',
 }

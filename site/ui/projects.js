@@ -1,5 +1,5 @@
-// What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, its name as
-// a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it shows, and the projects of
+// What every page shows of a project: its statuses and their colors, its name, its day, its status as a tag, its branch
+// on GitHub, its name as a link that opens its dialog (pages/projects/cards.js listens to OPEN_PROJECT), wherever it shows, and the projects of
 // a person or a squad, on their card and in their dialog.
 
 import { isMissing } from '../domain/math.js'
@@ -8,8 +8,10 @@ import { MINUTE_MS, parisDay } from '../domain/time.js'
 import { dayDate } from '../lib/dates.js'
 import { monthLongFormat, plural, rangeShortFormat } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { el } from './dom.js'
-import { askToOpen, OPEN_PROJECT } from './links.js'
+import { state } from '../model/state.js'
+import { el, svg } from './dom.js'
+import { ICONS_URL } from './icons.js'
+import { askToOpen, githubUrl, OPEN_PROJECT } from './links.js'
 
 // Where a project stands at the last sync: a color for the timeline and its legend, a little lighter than the series, a
 // stalled one lighter still; always with its word.
@@ -54,6 +56,25 @@ export function statusTag(status) {
   dot.style.background = color
 
   return el('span', { className: `project-status is-${status}`, title: hint }, dot, document.createTextNode(label))
+}
+
+// Where the branch of a project, project/<name>/main, lives on GitHub in one of its repositories.
+/** @type {(repo: string, name: string) => string} */
+export const projectBranchPath = (repo, name) => `${state.stats.org}/${encodeURIComponent(repo)}/tree/project/${encodeURIComponent(name)}/main`
+
+// The branch of a project in one of its repositories, as the GitHub mark: a link to it on GitHub, named on hover.
+/**
+ * @param {string} repo
+ * @param {string} name
+ */
+export function projectBranchLink(repo, name) {
+  const label = t('La branche project/{name}/main de {repo} sur GitHub', { name, repo })
+  const mark = svg('svg', { viewBox: '0 0 24 24', width: 14, height: 14, 'aria-hidden': 'true' })
+  mark.append(svg('use', { href: `${ICONS_URL}#github` }))
+  const link = el('a', { className: 'project-branch-link', href: githubUrl(projectBranchPath(repo, name)), target: '_blank', rel: 'noopener', title: label }, mark)
+  link.setAttribute('aria-label', label)
+
+  return link
 }
 
 // A project named anywhere but on its own page: a click opens its dialog, the dot of its status before its name.

@@ -479,4 +479,5 @@ export const BLOCKS = {
   'Ses projets': 'Their projects',
   'Projets, PR de code sur la période': 'Projects, code PRs over the period',
   'Projets, PR de code dans ce dépôt sur la période': 'Projects, code PRs in this repository over the period',
+  'La branche project/{name}/main de {repo} sur GitHub': 'The project/{name}/main branch of {repo} on GitHub',
 }

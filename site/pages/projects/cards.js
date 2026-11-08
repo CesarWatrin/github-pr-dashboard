@@ -9,11 +9,11 @@ import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { dialogSection, showCardDialog, statList, topList } from '../../ui/dialogs/card-dialog.js'
 import { el } from '../../ui/dom.js'
-import { OPEN_PROJECT, personLink, pullRequestLink, repoLink } from '../../ui/links.js'
+import { githubPill, OPEN_PROJECT, personLink, pullRequestLink, repoLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
 import { repoFilterLabel, repoOptions } from '../../ui/repo-filter.js'
-import { formatDay, PROJECT_STATUSES, projectLabel, statusTag } from '../../ui/projects.js'
+import { formatDay, PROJECT_STATUSES, projectBranchPath, projectBranchLink, projectLabel, statusTag } from '../../ui/projects.js'
 import { namesakesText, projectFigures } from './figures.js'
 
 const PROJECT_CARD_STATS = projectFigures('code', 'merged', 'lines', 'reviewers', 'medianTimeToMergeHours', 'perWeek')
@@ -26,8 +26,9 @@ const CARD_AVATARS = 8
 // From its start to its end, and how long: « Du 3 mars 2026 au 5 mai 2026 · 9 semaines ».
 const datesText = (row) => `${t('Du {start} au {end}', { start: formatDay(row.start), end: formatDay(row.end) })} · ${formatSpan(row.days)}`
 
-// The repositories of a project, each opening its own dialog.
-const repoLinks = (row) => el('p', { className: 'project-repos' }, ...row.repos.map(([repo]) => repoLink(repo)))
+// The repositories of a project, each opening its own dialog, with the branch of the project there on GitHub.
+const repoLinks = (row) =>
+  el('p', { className: 'project-repos' }, ...row.repos.map(([repo]) => el('span', { className: 'project-repo' }, repoLink(repo), projectBranchLink(repo, row.name))))
 
 export function projectCard(row, index, rows) {
   const label = projectLabel(row)
@@ -99,6 +100,12 @@ export function openProjectDialog(row, rows, opener, { fromPage = true, whole = 
           el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: label, title: label }), statusTag(row.status)),
           el('p', { className: 'person-dialog-meta', textContent: `${datesText(row)} · ${PROJECT_STATUSES[row.status].hint}` }),
           ...(namesakes ? [el('p', { className: 'person-dialog-meta project-namesakes', textContent: namesakes })] : []),
+          // The branch of the project in each of its repositories, on GitHub.
+          el(
+            'p',
+            { className: 'project-branches', title: t('La branche project/{name}/main de chaque dépôt sur GitHub', { name: row.name }) },
+            ...row.repos.map(([repo]) => githubPill(projectBranchPath(repo, row.name), repo)),
+          ),
           avatarStack(row.authors.map((author) => author.login), { size: 36 }),
         ),
       ),
