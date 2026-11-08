@@ -6,6 +6,7 @@ import { squadKey } from '../model/squads.js'
 import { state } from '../model/state.js'
 import { renderAnalysis } from '../pages/analysis/analysis.js'
 import { renderSquads } from '../pages/squads/squads.js'
+import { renderWrapped } from '../pages/wrapped/wrapped.js'
 import { $, $$ } from '../ui/dom.js'
 import { playEntrance } from '../ui/motion.js'
 import { renderTitle } from '../ui/title.js'
@@ -48,6 +49,8 @@ export function renderRoute() {
   if (state.stats) {
     renderSquads()
   }
+  // The year in review, full screen: drawn when it shows, gone when leaving it.
+  renderWrapped()
   playEntrance()
 }
 

@@ -328,6 +328,47 @@ for (const language of ['fr', 'en']) {
       await page.waitFor(`document.querySelector('[data-search]').value === '' && !location.hash.includes('q=')`)
     })
 
+    test('the year in review: a person picked plays their story, slide after slide, and the team its own', async () => {
+      await page.evaluate(`location.hash = '#/retro?period=365d'`)
+      await page.waitFor(`!document.querySelector('[data-route="wrapped"]').hidden && document.querySelector('[data-wrapped] .wrapped-person')`)
+      // Full screen over the dashboard, which no longer scrolls.
+      assert.equal(await page.evaluate(`getComputedStyle(document.querySelector('[data-wrapped]')).position`), 'fixed')
+      assert.equal(await page.evaluate(`document.documentElement.classList.contains('is-wrapped')`), true)
+      await noteFrench('year in review picker', '[data-wrapped]')
+      // Every slide of a story, to the last one, which sums the year up.
+      const playThrough = async (where) => {
+        await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-story')`)
+        const slides = await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-segment').length`)
+        assert.ok(slides >= 4, `${where}: ${slides} slides`)
+        for (let index = 0; index < slides; index++) {
+          assert.equal(await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-segment.is-current').length`), 1)
+          await noteFrench(`${where}, slide ${index + 1}`, '[data-wrapped] .wrapped-stage')
+          if (index < slides - 1) {
+            await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-tap.is-next').click()`)
+          }
+        }
+        assert.ok(await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-story').classList.contains('is-final')`))
+        assert.equal(await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-summary div').length`), 6)
+      }
+      await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-person').click()`)
+      await page.waitFor(`location.hash.includes('for=')`)
+      await playThrough('year in review of a person')
+      // The left arrow goes back a slide.
+      await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-story').classList.contains('is-final')`), false)
+      // Someone else: back to the picker, then the team.
+      await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
+      await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-team')`)
+      await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-team').click()`)
+      await page.waitFor(`location.hash.includes('team=1')`)
+      await playThrough('year in review of the team')
+      await page.evaluate(`[...document.querySelectorAll('[data-wrapped] .wrapped-action')][1].click()`)
+      await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-picker') && !location.hash.includes('team=')`)
+      // Escape on the picker: out, to the dashboard.
+      await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
+      await page.waitFor(`document.querySelector('[data-route="wrapped"]').hidden && !document.documentElement.classList.contains('is-wrapped')`)
+    })
+
     // A filter changed draws again whatever it changes: every page then shows what loading its address again shows,
     // with the same filters. A filter that draws again only some pages leaves the others behind until a reload, which
     // no other test sees: a page is drawn by render() and only shown when going to it. Every filter, every page, the

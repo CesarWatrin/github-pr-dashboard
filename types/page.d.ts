@@ -89,6 +89,10 @@ interface State {
   projectStatuses: Set<string> | null
   openCard: { kind: 'person' | 'repo' | 'project' | 'squad'; key: string } | null
   openPullRequest: string | null
+  // The year in review shown (model/wrapped.js): a person's, or the team's, and the year asked for.
+  wrappedFor: string | null
+  wrappedTeam: boolean
+  wrappedYear: number | null
   me: string | null
   notify: boolean
   // The pull requests of the lists of « Mes PR » the person picked there has to act on, as of the last sync.

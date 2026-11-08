@@ -163,6 +163,13 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Palmarès** : les champions de chaque badge pour le dernier mois complet et, provisoirement, pour le mois en cours ;
   le tableau d'honneur, qui détient quel badge et à quel niveau ; les champions de chaque mois depuis la première
   synchro. Les personnes parties comptent dans la course, et n'apparaissent sous leur nom que dans ce dernier tableau.
+- **Rétrospective** : l'année d'une personne ou de toute l'équipe, en plein écran, diapositive après diapositive comme une
+  story : PR ouvertes et mergées, lignes, mois et jour les plus chargés, projets, AC, hotfix, reviews données et reçues,
+  duo de review, plus grosse PR, dépôt principal, badges de l'année ; pour l'équipe, les mêmes chiffres pour tout le
+  monde et les mises en production, sans classement. On choisit son nom GitHub ; l'adresse dit la personne et l'année
+  (`#/retro?for=<identifiant>`, `team=1` pour l'équipe, `year=` pour une autre année), et le lien s'ouvre avec le mot de
+  passe du tableau de bord : il se partage. Années proposées : celles que les données couvrent depuis le 1er janvier,
+  et l'année en cours.
 - **Noms des personnes**, sur toutes les pages : un clic sur un nom (tableaux, activité récente, À débloquer,
   binômes, fiche) ouvre la fiche de la personne, qui mène à son profil GitHub.
 - **Anciens collaborateurs**, sur toutes les pages : une personne sans aucune PR, review, commentaire ni merge depuis

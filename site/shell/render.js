@@ -32,6 +32,7 @@ import { renderTeam } from '../pages/team.js'
 import { renderTmaCharts, renderTmaTiles } from '../pages/tma.js'
 import { renderTrends } from '../pages/trends.js'
 import { renderUnapproved, renderUnblock } from '../pages/unblock.js'
+import { renderWrapped } from '../pages/wrapped/wrapped.js'
 import { $, $$ } from '../ui/dom.js'
 import { renderRepoFilter, repoFilterNames } from '../ui/repo-filter.js'
 import { renderTables } from '../ui/tables/table.js'
@@ -97,6 +98,7 @@ export function render(animate) {
   renderProjects(tileMode)
   renderAcs(tileMode)
   renderSquads()
+  renderWrapped()
   renderFeed(animate)
   renderUnblock(tileMode)
   renderMe(tileMode)

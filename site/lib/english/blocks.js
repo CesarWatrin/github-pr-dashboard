@@ -527,4 +527,7 @@ export const BLOCKS = {
   'Étape {stage}': 'Stage {stage}',
   'une étape du projet': 'a stage of the project',
   'l’étape {stage}': 'stage {stage}',
+  // The year in review (pages/wrapped/).
+  'Rétrospective': 'Year in review',
+  'L’année en revue d’une personne ou de toute l’équipe, à revoir et à partager': 'The year in review of a person or of the whole team, to replay and share',
 }

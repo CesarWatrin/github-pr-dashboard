@@ -1,0 +1,608 @@
+/* The year in review (pages/wrapped/): full screen over the dashboard, dark whatever the theme, like a story on a
+   social network. The picker of the people, then the story: a bar per slide, a slide per figure on a gradient of the
+   series colors, its tone changing from slide to slide. */
+
+.is-wrapped,
+.is-wrapped body {
+  overflow: hidden;
+}
+
+.wrapped {
+  --wrapped-ink: #fff;
+  --wrapped-muted: rgba(255, 255, 255, 0.74);
+  --wrapped-faint: rgba(255, 255, 255, 0.16);
+  --wrapped-base: #0e1118;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  background:
+    radial-gradient(60% 50% at 15% 10%, color-mix(in srgb, var(--series-1) 35%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 85% 90%, color-mix(in srgb, var(--series-3) 28%, transparent), transparent 70%),
+    var(--wrapped-base);
+  color: var(--wrapped-ink);
+}
+
+.wrapped :focus-visible {
+  outline: 2px solid var(--wrapped-ink);
+  outline-offset: 3px;
+}
+
+.wrapped-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--wrapped-ink);
+  cursor: pointer;
+}
+
+.wrapped-icon-button::before {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.wrapped-icon-button.is-close::before {
+  content: '✕';
+}
+
+.wrapped-icon-button.is-pause::before {
+  content: '❚❚';
+  font-size: 12px;
+  letter-spacing: -1px;
+}
+
+.is-paused .wrapped-icon-button.is-pause::before {
+  content: '▶';
+  font-size: 14px;
+}
+
+.wrapped-eyebrow {
+  margin: 0;
+  color: var(--wrapped-muted);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* The picker: who are you? */
+.wrapped-picker {
+  display: grid;
+  gap: 16px;
+  width: min(760px, 100%);
+  padding: 24px 16px 48px;
+  align-self: start;
+}
+
+.wrapped-picker-head {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wrapped-picker-title {
+  margin: 0;
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.wrapped-picker-sub {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--wrapped-muted);
+  font-size: 17px;
+}
+
+.wrapped-picker-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.wrapped-search,
+.wrapped-year {
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--wrapped-ink);
+  font: inherit;
+}
+
+.wrapped-search {
+  flex: 1 1 260px;
+}
+
+.wrapped-search::placeholder {
+  color: var(--wrapped-muted);
+}
+
+.wrapped-year option {
+  color: initial;
+}
+
+.wrapped-team {
+  display: grid;
+  gap: 2px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--series-1) 80%, #000), color-mix(in srgb, var(--series-3) 70%, #000));
+  color: var(--wrapped-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wrapped-team strong {
+  font-size: 18px;
+}
+
+.wrapped-team span {
+  color: var(--wrapped-muted);
+  font-size: 14px;
+}
+
+.wrapped-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrapped-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--wrapped-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wrapped-person:hover,
+.wrapped-team:hover {
+  filter: brightness(1.15);
+}
+
+.wrapped-person img,
+.wrapped-whose img {
+  border-radius: 50%;
+  background: var(--wrapped-faint);
+}
+
+.wrapped-person-name {
+  display: grid;
+  min-width: 0;
+}
+
+.wrapped-person-name strong,
+.wrapped-person-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-person-name span {
+  color: var(--wrapped-muted);
+  font-size: 13px;
+}
+
+.wrapped-none {
+  margin: 0;
+  color: var(--wrapped-muted);
+}
+
+/* The story: as tall as a phone, the whole screen on one. */
+.wrapped-story {
+  --tone-a: var(--series-1);
+  --tone-b: var(--series-3);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  width: min(460px, 100vw);
+  height: min(860px, 100dvh);
+  padding: 14px 18px 28px;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(90% 60% at 10% 0%, color-mix(in srgb, var(--tone-a) 75%, transparent), transparent 70%),
+    radial-gradient(90% 60% at 100% 100%, color-mix(in srgb, var(--tone-b) 65%, transparent), transparent 70%),
+    #11141c;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  transition: background 500ms ease;
+}
+
+.wrapped-story[data-tone='1'] {
+  --tone-a: var(--series-2);
+  --tone-b: var(--series-1);
+}
+
+.wrapped-story[data-tone='2'] {
+  --tone-a: var(--series-3);
+  --tone-b: var(--series-2);
+}
+
+.wrapped-story[data-tone='3'] {
+  --tone-a: var(--diff-deleted);
+  --tone-b: var(--series-2);
+}
+
+.wrapped-story[data-tone='4'] {
+  --tone-a: var(--series-1);
+  --tone-b: var(--diff-added);
+}
+
+.wrapped-story[data-tone='5'] {
+  --tone-a: var(--series-2);
+  --tone-b: var(--series-3);
+}
+
+.wrapped-story[data-tone='6'] {
+  --tone-a: var(--series-3);
+  --tone-b: var(--series-1);
+}
+
+@media (max-width: 520px) {
+  .wrapped-story {
+    border-radius: 0;
+  }
+}
+
+.wrapped-progress {
+  display: flex;
+  gap: 4px;
+}
+
+.wrapped-segment {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.wrapped-segment-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--wrapped-ink);
+}
+
+.wrapped-segment.is-done .wrapped-segment-fill,
+.wrapped-segment.is-current .wrapped-segment-fill {
+  width: 100%;
+}
+
+.wrapped-segment.is-current .wrapped-segment-fill {
+  animation: wrapped-fill var(--slide-ms) linear;
+}
+
+.wrapped-story.is-paused .wrapped-segment.is-current .wrapped-segment-fill {
+  animation-play-state: paused;
+}
+
+@keyframes wrapped-fill {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+.wrapped-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wrapped-whose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.wrapped-whose span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-stage {
+  display: grid;
+  align-items: center;
+  min-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Taps: the left third for the slide before, the rest for the next, under the head. */
+.wrapped-tap {
+  position: absolute;
+  top: 72px;
+  bottom: 0;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.wrapped-tap.is-previous {
+  left: 0;
+  width: 33%;
+}
+
+.wrapped-tap.is-next {
+  right: 0;
+  width: 67%;
+}
+
+.wrapped-slide {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.wrapped-slide > * {
+  animation: wrapped-rise 600ms var(--ease-out) both;
+}
+
+.wrapped-slide > :nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.wrapped-slide > :nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.wrapped-slide > :nth-child(4) {
+  animation-delay: 320ms;
+}
+
+.wrapped-slide > :nth-child(n + 5) {
+  animation-delay: 420ms;
+}
+
+@keyframes wrapped-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+.wrapped-figure {
+  margin: 0;
+  font-size: clamp(64px, 20vw, 112px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.wrapped-unit {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.wrapped-title {
+  margin: 0;
+  font-size: clamp(36px, 11vw, 56px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+/* The last slide: a thank-you, a long name may wrap. */
+.wrapped-story.is-final .wrapped-title {
+  font-size: clamp(30px, 9vw, 42px);
+}
+
+.wrapped-detail {
+  margin: 0;
+  color: var(--wrapped-muted);
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.wrapped-visual {
+  margin-top: 12px;
+}
+
+.wrapped-face {
+  border: 3px solid var(--wrapped-ink);
+  border-radius: 50%;
+  background: var(--wrapped-faint);
+}
+
+/* The months, the busiest one lit. */
+.wrapped-bars {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: end;
+  gap: 6px;
+  height: 150px;
+  padding-bottom: 20px;
+}
+
+.wrapped-bar {
+  position: relative;
+  height: var(--height);
+  border-radius: 6px 6px 2px 2px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.wrapped-bar.is-busiest {
+  background: var(--wrapped-ink);
+}
+
+.wrapped-bar-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 4px;
+  color: var(--wrapped-muted);
+  font-size: 11px;
+  transform: translateX(-50%);
+}
+
+.wrapped-list,
+.wrapped-badges {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrapped-list li,
+.wrapped-badges li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.wrapped-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-list-detail,
+.wrapped-badges li span:last-child {
+  color: var(--wrapped-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.wrapped-badges li {
+  align-items: center;
+}
+
+.wrapped-badges strong {
+  flex: 1;
+}
+
+.wrapped-badge-icon {
+  font-size: 26px;
+}
+
+.wrapped-duo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.wrapped-duo-person {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+.wrapped-duo-person strong {
+  font-size: 20px;
+}
+
+.wrapped-duo-person span {
+  color: var(--wrapped-muted);
+}
+
+/* What can be clicked on a slide comes over the taps. */
+.wrapped-link,
+.wrapped-actions {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.wrapped-link {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--wrapped-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.wrapped-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+
+.wrapped-summary div {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.wrapped-summary dt {
+  color: var(--wrapped-muted);
+  font-size: 12px;
+}
+
+.wrapped-summary dd {
+  margin: 4px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.wrapped-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wrapped-action {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wrapped-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wrapped-action.is-primary {
+  border-color: var(--wrapped-ink);
+  background: var(--wrapped-ink);
+  color: #11141c;
+}

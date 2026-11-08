@@ -13,6 +13,7 @@ import { CYCLE_STAGES } from './model/cycle.js'
 import { state } from './model/state.js'
 import { AC_SERIES } from './pages/acs.js'
 import { setupReplay } from './pages/cartography/replay.js'
+import { setupWrapped } from './pages/wrapped/wrapped.js'
 import { DEPLOYMENT_SERIES } from './pages/devops.js'
 import { setupMe } from './pages/me.js'
 import { ACTIVITY_SERIES, setupOverview } from './pages/overview/overview.js'
@@ -65,6 +66,7 @@ setupReviewers()
 setupReport()
 setupMe()
 setupReplay()
+setupWrapped()
 setupOverview()
 setupCardDialog()
 setupPersonDialog()
