@@ -1240,17 +1240,26 @@
 
           <!-- Projets -->
           <div class="route" data-route="projects" hidden>
+            <div class="team-toolbar" data-projects-toolbar>
+              <details class="repo-filter" data-repo-filter="projects"></details>
+            </div>
             <section class="card" aria-labelledby="projects-empty-title" data-projects-empty hidden>
               <h2 id="projects-empty-title">Aucun projet</h2>
               <p class="card-sub">
                 Un projet se développe sur une branche <code>project/&lt;nom&gt;/main</code> : ses branches en partent,
-                leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucune PR de code des données
-                synchronisées n’appartient à un projet.
+                leurs PR y reviennent, puis elle est mergée dans une branche principale. Aucun projet des données
+                synchronisées n’a encore deux PR de code.
               </p>
             </section>
             <div class="projects-content" data-projects-content>
               <section class="card" aria-labelledby="projects-title">
-                <h2 id="projects-title">Les projets de la période</h2>
+                <div class="card-toolbar">
+                  <h2 id="projects-title">Les projets de la période</h2>
+                  <div class="segmented" role="radiogroup" aria-label="Ordre des projets">
+                    <button type="button" role="radio" data-project-order="start">Par début</button>
+                    <button type="button" role="radio" data-project-order="status">Par statut</button>
+                  </div>
+                </div>
                 <p class="card-sub" data-projects-sub></p>
                 <div class="tiles" data-project-tiles></div>
                 <h3 class="tile-group">Calendrier</h3>
@@ -1267,8 +1276,8 @@
               <section class="card" aria-labelledby="projects-table-title">
                 <h2 id="projects-table-title">Comparer les projets</h2>
                 <p class="card-sub">
-                  Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période et la
-                  squad choisies. Un clic sur une colonne trie les projets.
+                  Les dates, la durée et le statut valent pour tout le projet ; les autres chiffres, pour la période, la
+                  squad et les dépôts choisis. Un clic sur une colonne trie les projets.
                 </p>
                 <div class="table-wrap" data-projects></div>
                 <dl class="table-legend" data-table-legend="projects"></dl>
@@ -1399,20 +1408,24 @@
                   profondeur), ou, à défaut, quand sa propre branche est nommée <code>project/&lt;nom&gt;/…</code>. Une
                   branche principale n’appartient jamais à un projet ; <code>project/&lt;nom&gt;</code> seul ou
                   <code>projects/…</code> ne comptent pas. Un projet du même nom dans plusieurs dépôts est un seul projet,
-                  détaillé par dépôt. Seules les PR de code des personnes et les merges de la branche du projet dans une
-                  branche principale y comptent.
+                  détaillé par dépôt. Un nom repris une fois son projet fini, toutes ses PR mergées ou fermées et rien
+                  de fait dessus depuis 90 jours, fait un autre projet : chacun a ses dates, ses chiffres et sa fiche, et
+                  son nom porte alors le mois où il a commencé. Seules les PR de code des personnes et les merges de la
+                  branche du projet dans une branche principale y comptent, et il en faut au moins deux de code : une
+                  branche de projet créée par erreur, une PR seule ou du code poussé sans PR ne font pas un projet.
                 </dd>
                 <dt>Chiffres d’un projet</dt>
                 <dd>
-                  Sa vie vaut pour tout le projet, quelles que soient la période et la squad, dans les données
-                  synchronisées : son début, sa première PR ouverte ; ses merges, ceux de sa branche dans une branche
+                  Sa vie vaut pour tout le projet, quels que soient la période, la squad et les dépôts choisis, dans les
+                  données synchronisées : son début, sa première PR ouverte ; ses merges, ceux de sa branche dans une branche
                   principale ; sa dernière activité, sa dernière PR ouverte ou mergée, review ou commentaire. Il est
                   <strong>livré</strong> quand sa branche a été mergée et qu’aucune PR du projet n’a été ouverte depuis le
                   dernier merge (une PR ouverte après le remet au travail) ; sinon <strong>en cours</strong> s’il a bougé
                   dans les 30 derniers jours, <strong>à l’arrêt</strong> au-delà, à la dernière synchro. Sa durée, au
                   calendrier, va de son début à sa livraison, ou à sa dernière activité. Le délai d’intégration compte
                   les heures ouvrées de la dernière PR de code mergée avant le dernier merge de sa branche jusqu’à ce
-                  merge. Les autres chiffres suivent la période et la squad : ses PR de code ouvertes et mergées, ses
+                  merge. Les autres chiffres suivent la période, la squad et les dépôts choisis : ses PR de code ouvertes
+                  et mergées, ses
                   PR ouvertes à la dernière synchro hors brouillons, les personnes qui les ont ouvertes et la part de
                   l’équipe (ou de la squad) qu’elles sont, ses relecteurs, ses lignes ajoutées et supprimées, le délai
                   médian de merge, et son rythme : les PR de code ouvertes par semaine sur la partie de la période où

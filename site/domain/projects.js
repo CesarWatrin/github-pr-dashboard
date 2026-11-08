@@ -1,7 +1,8 @@
 // The projects of the records: the code pull requests the sync tied to a project (project), and the merges of its
-// branch, project/<name>/main, into a long-lived branch (projectMerge), grouped by name whatever the repository. What
-// each project is over the whole data, its life (start, merges, last activity, status), and its figures over a range,
-// those of computePeriod() over its pull requests.
+// branch, project/<name>/main, into a long-lived branch (projectMerge), grouped by name whatever the repository, a name
+// taken up again long after its project was over making another project. What each project is over the whole data, its
+// life (start, merges, last activity, status), and its figures over a range, those of computePeriod() over its pull
+// requests.
 
 import { getOrCreate, median } from './math.js'
 import { openPullRequests } from './open-pull-requests.js'
@@ -10,27 +11,87 @@ import { DAY_MS, MINUTE_MS, workHoursBetween } from './time.js'
 
 // A project without any activity for this long, its branch not merged since its last pull request, has stalled.
 export const STALLED_AFTER_DAYS = 30
+// A project with nothing of it still open and nothing done on it for this long is over: a pull request opened under its
+// name afterwards starts another project, the name taken up again (a branch project/<name>/main made anew, say).
+export const REUSED_AFTER_DAYS = 90
+// The code pull requests a project carries over its life, whoever opened them, to count as one: a project branch made by
+// mistake and dropped, a single pull request, or code pushed without any pull request tell nothing of a project.
+export const MIN_PROJECT_CODE = 2
 const WEEK_MINUTES = 7 * 24 * 60
 const DAY_MINUTES = DAY_MS / MINUTE_MS
 
 /** @typedef {'ongoing' | 'delivered' | 'stalled'} ProjectStatus */
 
-// The records of each project, by name, those of people only: a project of the same name in several repositories is
-// one project.
+/**
+ * A project and its records. key: its name, followed from the second project of that name on by its rank
+ * (paper-kite, paper-kite#2); run: that rank, from 1; runs: how many projects took that name.
+ * @typedef {{ key: string, name: string, run: number, runs: number, records: PullRequestRecord[] }} ProjectRecords
+ */
+
+// What was done on a pull request: opened, merged, closed, reviewed or commented.
+/** @type {(pr: PullRequestRecord) => number[]} */
+const eventsOf = (pr) => [pr.createdAt, pr.mergedAt ?? pr.closedAt ?? pr.createdAt, ...pr.interventions.map(([, at]) => at)]
+
+// When a pull request stopped being open: merged, or closed (as of its last event for a record without its closing
+// time, published before the sync gave it); never while it is open.
+/** @type {(pr: PullRequestRecord) => number} */
+const doneAt = (pr) => pr.mergedAt ?? (pr.closed ? (pr.closedAt ?? Math.max(...eventsOf(pr))) : Infinity)
+
+// Whether a project is over at a time (minutes): none of its pull requests still open, and nothing done on it over the
+// REUSED_AFTER_DAYS before.
 /**
  * @param {PullRequestRecord[]} records
- * @returns {Map<string, PullRequestRecord[]>}
+ * @param {number} at
  */
-export function recordsByProject(records) {
-  /** @type {Map<string, PullRequestRecord[]>} */
-  const projects = new Map()
+function isOver(records, at) {
+  let last = -Infinity
   for (const pr of records) {
-    if (pr.project && !pr.bot) {
-      getOrCreate(projects, pr.project, () => []).push(pr)
+    if (doneAt(pr) > at) {
+      return false
+    }
+    for (const event of eventsOf(pr)) {
+      if (event <= at) {
+        last = Math.max(last, event)
+      }
     }
   }
 
-  return projects
+  return at - last > REUSED_AFTER_DAYS * DAY_MINUTES
+}
+
+// The projects of the records, those of people only, in the order their names first come. A project of the same name in
+// several repositories is one project, but a name can be taken up again: its pull requests come in the order they were
+// opened, and one opened once the project is over (isOver()) starts another project of that name. Only the projects
+// with MIN_PROJECT_CODE code pull requests or more count, ranked among those of their name.
+/**
+ * @param {PullRequestRecord[]} records
+ * @returns {ProjectRecords[]}
+ */
+export function projectsOf(records) {
+  /** @type {Map<string, PullRequestRecord[]>} */
+  const byName = new Map()
+  for (const pr of records) {
+    if (pr.project && !pr.bot) {
+      getOrCreate(byName, pr.project, () => []).push(pr)
+    }
+  }
+
+  return [...byName].flatMap(([name, own]) => {
+    /** @type {PullRequestRecord[][]} */
+    const runs = []
+    for (const pr of own.toSorted((a, b) => a.createdAt - b.createdAt)) {
+      const run = runs.at(-1)
+      if (run && !isOver(run, pr.createdAt)) {
+        run.push(pr)
+      } else {
+        runs.push([pr])
+      }
+    }
+
+    const kept = runs.filter((run) => run.filter((pr) => pr.kind === 'code').length >= MIN_PROJECT_CODE)
+
+    return kept.map((run, index) => ({ key: index === 0 ? name : `${name}#${index + 1}`, name, run: index + 1, runs: kept.length, records: run }))
+  })
 }
 
 /**
@@ -105,26 +166,39 @@ export function spanInRange({ start, end }, range) {
  * pull requests, those merged and their lines, and reviewers, with the pull requests they reviewed and their comments,
  * the busiest first; added and deleted lines; the median time to merge; perWeek: the code pull requests opened a week
  * while the project was under way within the range; repos: every repository of the project, by its code pull requests
- * over the range.
+ * over the range. The projects are those of projectsOf() over all the records, so that a squad sees the same projects
+ * as everyone, each with its key, its rank among the projects of its name (run, runs), and the start and end of the
+ * others of that name (namesakes).
  * @param {PullRequestRecord[]} records
  * @param {TimeRange} range
  * @param {{ all?: PullRequestRecord[], now?: number }} [options]
  */
 export function projectRows(records, range, { all = records, now = range.end } = {}) {
-  const counted = recordsByProject(records)
-  const whole = all === records ? counted : recordsByProject(all)
+  const projects = projectsOf(all)
+  const lives = new Map(projects.map((project) => [project, projectLife(project.records, now)]))
+  /** @type {(pr: PullRequestRecord) => string} */
+  const recordKey = (pr) => `${pr.repo}#${pr.number}`
+  const counted = new Set(records.map(recordKey))
 
-  return [...counted]
-    .flatMap(([name, own]) => {
-      const project = whole.get(name) ?? own
-      const life = projectLife(project, now)
+  return projects
+    .flatMap((project) => {
+      const { key, name, run, runs } = project
+      const own = all === records ? project.records : project.records.filter((pr) => counted.has(recordKey(pr)))
+      const life = /** @type {ProjectLife} */ (lives.get(project))
       const span = spanInRange(life, range)
-      if (!span) {
+      if (own.length === 0 || !span) {
         return []
       }
+      const namesakes = projects
+        .filter((other) => other.name === name && other !== project)
+        .map((other) => {
+          const { start, end, status } = /** @type {ProjectLife} */ (lives.get(other))
+
+          return { start, end, status }
+        })
       const period = computePeriod(own, range)
       /** @type {Map<string, number>} */
-      const repos = new Map(project.map((pr) => [pr.repo, 0]))
+      const repos = new Map(project.records.map((pr) => [pr.repo, 0]))
       const authors = period.authors
         .map(({ login, repos: perRepository }) => {
           const tallies = Object.entries(perRepository)
@@ -154,7 +228,11 @@ export function projectRows(records, range, { all = records, now = range.end } =
 
       return [
         {
+          key,
           name,
+          run,
+          runs,
+          namesakes,
           ...life,
           span,
           code,
@@ -170,7 +248,7 @@ export function projectRows(records, range, { all = records, now = range.end } =
         },
       ]
     })
-    .sort((a, b) => a.start - b.start || a.name.localeCompare(b.name))
+    .sort((a, b) => a.start - b.start || a.name.localeCompare(b.name) || a.run - b.run)
 }
 
 /** @typedef {ReturnType<typeof projectRows>[number]} ProjectRow */

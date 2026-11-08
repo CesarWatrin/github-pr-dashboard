@@ -181,6 +181,52 @@ for (const language of ['fr', 'en']) {
       assert.ok(await page.evaluate(`document.querySelectorAll('[data-project-timeline] .gantt-marker').length > 0`))
     })
 
+    test('a name taken up again makes two projects, and the projects sort by status, filter by repository and search', async () => {
+      await show('projects')
+      const cards = `[...document.querySelectorAll('[data-project-cards] .repo-card-name')].map((name) => name.textContent)`
+      // Each project of the name carries the month it started, and its dialog names the other one.
+      const falcons = (await page.evaluate(cards)).filter((name) => name.startsWith('blue-falcon'))
+      assert.equal(falcons.length, 2)
+      assert.ok(falcons.every((name) => /^blue-falcon \(.+\)$/.test(name)), falcons.join(', '))
+      await page.evaluate(`[...document.querySelectorAll('[data-project-cards] .project-card-head')].find((head) => head.textContent.startsWith('blue-falcon')).click()`)
+      assert.ok(await page.evaluate(`document.querySelector('[data-person-dialog] .project-namesakes').textContent.length > 0`))
+      await noteFrench('project dialog of a name taken up again', '[data-person-dialog]')
+      await page.evaluate(`document.querySelector('[data-person-dialog]').close()`)
+
+      // By status: under way, stalled, then delivered, on the cards as on the timeline.
+      const order = ['ongoing', 'stalled', 'delivered']
+      const statuses = (selector) => page.evaluate(`[...document.querySelectorAll('${selector} .project-status')].map((tag) => tag.className.split('is-')[1])`)
+      await page.evaluate(`document.querySelector('[data-project-order="status"]').click()`)
+      for (const selector of ['[data-project-cards]', '[data-project-timeline]']) {
+        const shown = await statuses(selector)
+        assert.deepEqual(shown, shown.toSorted((a, b) => order.indexOf(a) - order.indexOf(b)), selector)
+      }
+      assert.equal(await page.evaluate(`document.querySelector('[data-project-order="status"]').getAttribute('aria-checked')`), 'true')
+      await page.evaluate(`document.querySelector('[data-project-order="start"]').click()`)
+
+      // The repositories picked: the projects with pull requests there only.
+      await page.evaluate(`document.querySelector('[data-repo-filter="projects"] [data-preset="none"]').click()`)
+      await page.evaluate(`document.querySelector('[data-repo-filter="projects"] input[data-repo="billing"]').click()`)
+      assert.deepEqual(await page.evaluate(cards), ['red-heron'])
+      await page.evaluate(`document.querySelector('[data-repo-filter="projects"] [data-preset="all"]').click()`)
+
+      // The search finds a project by its name, and says so.
+      assert.equal(await page.evaluate(`document.querySelector('[data-search]').placeholder`), read('Filtrer un projet, une personne ou un dépôt'))
+      await page.evaluate(`(() => {
+        const search = document.querySelector('[data-search]')
+        search.value = 'kite'
+        search.dispatchEvent(new Event('input'))
+      })()`)
+      assert.deepEqual(await page.evaluate(cards), ['paper-kite'])
+      await page.evaluate(`(() => {
+        const search = document.querySelector('[data-search]')
+        search.value = ''
+        search.dispatchEvent(new Event('input'))
+      })()`)
+      await show('authors')
+      assert.equal(await page.evaluate(`document.querySelector('[data-search]').placeholder`), read('Filtrer une personne ou un dépôt'))
+    })
+
     test('a period, the search and a squad apply to the pages', async () => {
       await show('devops')
       await page.evaluate(`document.querySelector('[data-period="730d"]').click()`)

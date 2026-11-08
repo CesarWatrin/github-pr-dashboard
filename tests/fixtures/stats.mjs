@@ -95,13 +95,15 @@ function later(random, after, hours) {
 
 // Made-up projects, as the sync tells them from their branches (project/<name>/main, the feature branches that target
 // it, the pull requests stacked on those): one in two repositories, merged into develop twice and delivered; one
-// delivered lately; one under way, a pull request still open and a draft; one left aside. A generator of their own, so
-// that the rest of the stats stays the same.
+// delivered lately; one under way, a pull request still open and a draft; one left aside; the name of the first taken up
+// again months after it was delivered, another project. A generator of their own, so that the rest of the stats stays
+// the same.
 const PROJECTS = [
   { name: 'blue-falcon', repos: ['web-shop', 'core-api'], people: ['ada-l', 'cleo-m', 'ben-k', 'eli-p'], from: 430, to: 262, every: 6, merges: [300, 255] },
   { name: 'red-heron', repos: ['billing'], people: ['gus-t', 'ben-k'], from: 80, to: 24, every: 7, merges: [20] },
   { name: 'paper-kite', repos: ['mobile-app'], people: ['dev-o', 'hana-v', 'eli-p'], from: 75, to: 4, every: 4, merges: [] },
   { name: 'quiet-otter', repos: ['back-office'], people: ['fay-r', 'cleo-m'], from: 210, to: 120, every: 8, merges: [] },
+  { name: 'blue-falcon', repos: ['web-shop'], people: ['gus-t', 'hana-v'], from: 60, to: 30, every: 9, merges: [] },
 ]
 
 function addProjects({ now, add, ago, seed }) {

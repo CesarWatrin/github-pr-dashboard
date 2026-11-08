@@ -239,17 +239,26 @@ paths:
     the same type (or of all of them under `MIN_PEERS`), and who writes and reviews it. `repositoryRows({ all: true })`
     gives a row to every repository with anything over the period, whatever the filter.
 - **Projects page** (`renderProjects()`, `pages/projects/`): the projects of the records (`project` and `projectMerge`,
-  see `sync.md`), grouped by name whatever the repository. `projectRows()` of `site/domain/projects.js` gives those whose
+  see `sync.md`), grouped by name whatever the repository (`projectsOf()` of `site/domain/projects.js`). A name taken up
+  again once its project was over (`isOver()`: none of its pull requests still open, merged or closed, `closedAt` of the
+  records, and nothing done on it for `REUSED_AFTER_DAYS`) makes another project, with a key of its own (`name#2`); a
+  project needs `MIN_PROJECT_CODE` code pull requests over its life, else it is none (a branch made by mistake). Several
+  projects of a name show it with the month each started (`projectLabel()`), and the dialog of each gives the start and
+  end of the others (`namesakes`, `namesakesText()`). `projectRows()` gives those whose
   span meets the period, the earliest started first: their life over every record, whatever the period and the squad
   (`projectLife()`: start, merges of the project branch, last activity, status at the last sync, delivered when merged
   with no pull request of the project opened since, else ongoing, or stalled after `STALLED_AFTER_DAYS` without
   activity; duration on the calendar; integration delay in working hours, from the last code pull request merged to the
-  last merge of the branch), and their figures over the period from the records of the squad picked
-  (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers, lines,
-  median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range and squad,
-  with the share of the team (or of the squad) their authors are; `projectSummary()` gives the tiles (`PROJECT_TILES`).
-  The search applies to the timeline, the cards and the table. Without any project in the stats (`anyProject()`), the
-  page says how one is found.
+  last merge of the branch), and their figures over the period from the records of the squad and the repositories
+  picked (`computePeriod()` over the project's pull requests: code pull requests, merged, open, authors and reviewers,
+  lines, median time to merge, pace). `currentProjects()` of `model/projects.js` works them out once per stats, range,
+  squad and repositories, with the share of the team (or of the squad) their authors are; `projectSummary()` gives the
+  tiles (`PROJECT_TILES`). The page's repository filter (`REPO_FILTERS.projects`, the filter of its table) lists the
+  repositories of the projects of the period whatever those picked (`projectRepoCounts()`, through the `repos` of its
+  entry) and applies to the whole page. The search finds a project by its name, its repositories and its authors
+  (`projectSearchTexts()`), and its field says so on this page (`searchLabel` of the route); it applies to the timeline,
+  the cards and the table. « Par début / Par statut » (`state.projectOrder`) orders the timeline and the cards as they
+  started, or by `STATUS_ORDER`. Without any project in the stats (`anyProject()`), the page says how one is found.
   - The timeline (`ganttChart()` of `ui/charts/gantt-chart.js`, drawn from `renderCharts()` as the page resizes): in
     HTML, in percents of its track, the name and status pill of each project in a left column, a rounded bar in the
     color of its status (`PROJECT_STATUSES`, a little lighter than the series, the stalled ones lighter still; never

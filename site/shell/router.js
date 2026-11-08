@@ -1,5 +1,6 @@
 // One page per hash, and the sidebar that opens as a drawer over the page below 1280 px.
 
+import { t } from '../lib/i18n.js'
 import { COMPARED_ROUTES, currentRoute, ROUTES } from '../model/routes.js'
 import { squadKey } from '../model/squads.js'
 import { state } from '../model/state.js'
@@ -28,7 +29,12 @@ export function renderRoute() {
   // A page about what stands now has the search, not the period.
   $('[data-periods]').hidden = ROUTES[route].period === false
   $('[data-date-range]').hidden = ROUTES[route].period === false
-  $('[data-search]').hidden = ROUTES[route].search === false
+  const search = $('[data-search]', HTMLInputElement)
+  search.hidden = ROUTES[route].search === false
+  // What the search finds: people and repositories, and on some pages what they show, such as the projects.
+  const searchLabel = ROUTES[route].searchLabel ?? t('Filtrer une personne ou un dépôt')
+  search.placeholder = searchLabel
+  search.setAttribute('aria-label', searchLabel)
   $('[data-compare-field]').hidden = !COMPARED_ROUTES.has(route)
   renderTitle()
   // A squad scopes the pages with filters only: going to or from one without them draws everything again.

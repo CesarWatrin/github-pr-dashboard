@@ -5,12 +5,14 @@ import { formatLines, formatNumber, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { isCurrent } from '../../model/people.js'
 import { periodTitle } from '../../model/selection.js'
+import { state } from '../../model/state.js'
 import { dialogSection, showCardDialog, statList, topList } from '../../ui/dialogs/card-dialog.js'
 import { el } from '../../ui/dom.js'
 import { personLink, pullRequestLink, repoLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
-import { formatDay, formatSpan, PROJECT_STATUSES, projectFigures, statusTag } from './figures.js'
+import { repoFilterLabel, repoOptions } from '../../ui/repo-filter.js'
+import { formatDay, formatSpan, namesakesText, PROJECT_STATUSES, projectFigures, projectLabel, statusTag } from './figures.js'
 
 const PROJECT_CARD_STATS = projectFigures('code', 'merged', 'lines', 'reviewers', 'medianTimeToMergeHours', 'perWeek')
 const PROJECT_LIFE = projectFigures('start', 'lastMerge', 'lastActivity', 'days', 'integrationHours')
@@ -26,11 +28,12 @@ const datesText = (row) => `${t('Du {start} au {end}', { start: formatDay(row.st
 const repoLinks = (row) => el('p', { className: 'project-repos' }, ...row.repos.map(([repo]) => repoLink(repo)))
 
 export function projectCard(row, index, rows) {
+  const label = projectLabel(row)
   // The whole card opens the project's dialog: the button of its head stretches over it.
   const open = el(
     'button',
     { type: 'button', className: 'repo-card-head project-card-head' },
-    el('strong', { className: 'repo-card-name', textContent: row.name, title: row.name }),
+    el('strong', { className: 'repo-card-name', textContent: label, title: label }),
     statusTag(row.status),
   )
   open.setAttribute('aria-haspopup', 'dialog')
@@ -44,7 +47,7 @@ export function projectCard(row, index, rows) {
     repoLinks(row),
     statList(PROJECT_CARD_STATS, row),
   )
-  card.setAttribute('aria-label', row.name)
+  card.setAttribute('aria-label', label)
   card.style.setProperty('--delay', `${Math.round((Math.min(index, STAGGERED_ROWS) / STAGGERED_ROWS) * STAGGER_SPREAD_MS)}ms`)
 
   return card
@@ -67,12 +70,16 @@ const mergeList = (row) =>
     row.mergeOpen ? t('Une PR de merge est ouverte') : t('Pas encore mergée'),
   )
 
-// The dialog of a project, like those of a person, a repository or a squad: its life, then its figures, each set against
-// the median of the projects of the period, then who wrote and reviewed it, where, and when its branch was merged.
+// The dialog of a project, like those of a person, a repository or a squad: its life, and the other projects of its
+// name, then its figures, each set against the median of the projects of the period, then who wrote and reviewed it,
+// where, and when its branch was merged.
 export function openProjectDialog(row, rows, opener) {
   const peers = rows.filter((other) => other.code > 0)
   const writers = row.authors.filter((author) => isCurrent(author.login))
   const readers = row.reviewers.filter((reviewer) => isCurrent(reviewer.login))
+  const label = projectLabel(row)
+  const namesakes = namesakesText(row)
+  const scope = state.repos.projects ? `${periodTitle()} · ${repoFilterLabel('projects', repoOptions('projects'))}` : periodTitle()
 
   showCardDialog(
     [
@@ -82,15 +89,16 @@ export function openProjectDialog(row, rows, opener) {
         el(
           'div',
           { className: 'person-dialog-identity' },
-          el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: row.name, title: row.name }), statusTag(row.status)),
+          el('div', { className: 'person-dialog-title' }, el('h2', { id: 'person-dialog-name', textContent: label, title: label }), statusTag(row.status)),
           el('p', { className: 'person-dialog-meta', textContent: `${datesText(row)} · ${PROJECT_STATUSES[row.status].hint}` }),
+          ...(namesakes ? [el('p', { className: 'person-dialog-meta project-namesakes', textContent: namesakes })] : []),
           avatarStack(row.authors.map((author) => author.login), { size: 36 }),
         ),
       ),
       el('p', {
         className: 'person-dialog-scope',
         textContent: t('{scope} · sous chaque chiffre, la médiane (méd.) des {count} {people}', {
-          scope: periodTitle(),
+          scope,
           count: formatNumber(peers.length),
           people: t('projets'),
         }),

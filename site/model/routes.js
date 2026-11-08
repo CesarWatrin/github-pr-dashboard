@@ -8,8 +8,9 @@ export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops'])
 // Pages of the dashboard, one per hash: links can be shared and the browser history works. The period and the search
 // apply to every page but the method; the analysis page has the period only.
 /**
- * A page: its hash, its title, and the filters it leaves out (false).
- * @typedef {{ hash: string, title: string, subtitle: string, filters?: boolean, period?: boolean, search?: boolean }} Route
+ * A page: its hash, its title, the filters it leaves out (false), and what its search finds when not people or
+ * repositories (searchLabel).
+ * @typedef {{ hash: string, title: string, subtitle: string, filters?: boolean, period?: boolean, search?: boolean, searchLabel?: string }} Route
  */
 
 /** @type {Record<string, Route>} */
@@ -29,7 +30,12 @@ export const ROUTES = {
   analysis: { hash: '#/analyse', title: t('Analyse'), subtitle: t('Ce qui ressort de la période, et des pistes pour progresser'), search: false },
   awards: { hash: '#/palmares', title: t('Palmarès'), subtitle: t('Les badges de l’équipe, mois après mois, depuis la première synchro'), filters: false },
   repositories: { hash: '#/depots', title: t('Dépôts'), subtitle: t('Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit') },
-  projects: { hash: '#/projets', title: t('Projets'), subtitle: t('Les projets menés sur une branche project/…, quand ils ont commencé, avancé et été livrés') },
+  projects: {
+    hash: '#/projets',
+    title: t('Projets'),
+    subtitle: t('Les projets menés sur une branche project/…, quand ils ont commencé, avancé et été livrés'),
+    searchLabel: t('Filtrer un projet, une personne ou un dépôt'),
+  },
   tma: { hash: '#/tma', title: t('TMA'), subtitle: t('Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait') },
   devops: { hash: '#/devops', title: t('DevOps'), subtitle: t('Mises en production, intégration continue et mises à jour de dépendances') },
   method: { hash: '#/methode', title: t('Méthode'), subtitle: t('Les règles communes : chaque colonne est expliquée sous son tableau'), filters: false },

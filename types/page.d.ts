@@ -64,13 +64,20 @@ interface State {
   squadRecordsCache: { stats: Stats; records: Map<string, PullRequestRecord[]> } | null
   squadPeriodsCache: { stats: Stats | null; periods: Map<string, PeriodStats> } | null
   squadSort: { key: string; reversed: boolean }
-  projectsCache: {
-    stats: Stats
-    key: string
-    rows: import('../site/model/projects.js').ProjectPeriod[]
-    summary: ReturnType<typeof import('../site/domain/projects.js').projectSummary>
-  } | null
+  // The projects of the period for the repositories picked (shown), and for all of them (all), which the filter lists.
+  projectsCache: Partial<
+    Record<
+      'shown' | 'all',
+      {
+        stats: Stats
+        key: string
+        rows: import('../site/model/projects.js').ProjectPeriod[]
+        summary: ReturnType<typeof import('../site/domain/projects.js').projectSummary>
+      }
+    >
+  > | null
   squadPerMember: boolean
+  projectOrder: 'start' | 'status'
   me: string | null
   notify: boolean
   // The pull requests of the lists of « Mes PR » the person picked there has to act on, as of the last sync.

@@ -13,14 +13,15 @@ import { renderTable, TABLES } from './tables/table.js'
 export const REPO_FILTERS = {}
 export const repoFilterNames = () => Object.keys(REPO_FILTERS)
 
-// Repositories with activity in the table over the period, busiest first.
+// Repositories with activity in the table over the period, busiest first: those of its people (source, else the table's
+// name, in the stats of the period), or those a filter lists itself (repos), such as the repositories of the projects.
 /**
  * @param {string} name
  * @returns {[repo: string, count: number][]}
  */
 export function repoOptions(name) {
   const counts = REPO_FILTERS[name].repoCounts()
-  const repos = new Set(currentPeriod()[REPO_FILTERS[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
+  const repos = new Set(REPO_FILTERS[name].repos?.() ?? currentPeriod()[REPO_FILTERS[name].source ?? name].flatMap((person) => Object.keys(person.repos)))
 
   return [...repos]
     .map((repo) => /** @type {[string, number]} */ ([repo, counts.get(repo) ?? 0]))

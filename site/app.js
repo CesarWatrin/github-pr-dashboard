@@ -15,6 +15,7 @@ import { setupReplay } from './pages/cartography/replay.js'
 import { DEPLOYMENT_SERIES } from './pages/devops.js'
 import { setupMe } from './pages/me.js'
 import { ACTIVITY_SERIES, setupOverview } from './pages/overview.js'
+import { setupProjects } from './pages/projects/projects.js'
 import { setupReport } from './pages/report.js'
 import { setupReviewers } from './pages/reviewers.js'
 import { SQUAD_TYPES } from './pages/squads/charts.js'
@@ -54,6 +55,7 @@ setupLanguage()
 setupSync()
 setupSession()
 setupSquads()
+setupProjects()
 setupReviewers()
 setupReport()
 setupMe()

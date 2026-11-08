@@ -449,8 +449,11 @@ export const PAGES = {
   'Durée médiane jusqu’à la livraison': 'Median time to delivery',
   'Intégration médiane': 'Median integration',
   'Projet': 'Project',
-  'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un.':
-    'The name of its project/…/main branch, and its repositories under it: a project of the same name in several repositories is one.',
+  'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un. Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.':
+    'The name of its project/…/main branch, and its repositories under it: a project of the same name in several repositories is one. A name taken up again long after its project was over makes another one, named with the month it started.',
+  '{name} ({month})': '{name} ({month})',
+  'Un autre projet a porté ce nom, {spans}.': 'Another project went by this name, {spans}.',
+  'D’autres projets ont porté ce nom, {spans}.': 'Other projects went by this name, {spans}.',
   'Personnes qui ont ouvert ces PR, parties comprises, et la part de l’équipe (ou de la squad choisie) encore là qu’elles sont.':
     'People who opened these PRs, those who left included, and the share of the team (or of the squad picked) still here they are.',
   'PR de code sur la période': 'code PRs over the period',
@@ -467,6 +470,8 @@ export const PAGES = {
   'Aucun projet à montrer': 'No project to show',
   'Calendrier des projets, {period}': 'Timeline of the projects, {period}',
   'Merge dans une branche principale': 'Merge into a long-lived branch',
+  '{period} : les projets dont la vie croise la période, en cours, puis à l’arrêt, puis livrés':
+    '{period}: the projects whose life crosses the period, ongoing, then stalled, then delivered',
   '{period} : les projets dont la vie croise la période, du premier commencé au dernier':
     '{period}: the projects whose life crosses the period, from the first started to the last',
   'Aucun projet ne correspond à cette recherche': 'No project matches this search',

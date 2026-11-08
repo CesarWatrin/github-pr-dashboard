@@ -73,13 +73,16 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Relecteurs** : le tableau par relecteur, avec les mêmes filtres et la même stack ; l'évolution par relecteur.
 - **Projets** : les projets menés sur une branche `project/<nom>/main`, d'où partent leurs branches et vers laquelle
   vont leurs PR (empilées ou non), puis mergée dans une branche principale. Un projet du même nom dans plusieurs dépôts
-  n'en fait qu'un, détaillé par dépôt. En tête, les projets en cours, ceux livrés sur la période, leur durée médiane et
+  n'en fait qu'un, détaillé par dépôt ; un nom repris une fois son projet fini (toutes ses PR mergées ou fermées, rien
+  depuis 90 jours) en fait un autre, nommé avec son mois de début ; une branche de projet qui ne porte qu'une PR de code
+  (une erreur, un essai) n'en est pas un. En tête, les projets en cours, ceux livrés sur la période, leur durée médiane et
   leur délai d'intégration médian (de la dernière PR mergée dans la branche du projet au merge de celle-ci) ; puis un
   calendrier, une barre par projet de sa première PR à sa livraison ou à sa dernière activité, dans la couleur de son
   statut (en cours, livré, à l'arrêt après 30 jours sans activité), un point à chaque merge de sa branche ; une carte
   par projet (dates, durée, qui y a participé, PR de code, lignes, relecteurs, rythme, dépôts) qui ouvre sa fiche ; et
-  un tableau pour les comparer, trié au clic. La vie d'un projet vaut quelles que soient la période et la squad, ses
-  chiffres les suivent, comme la recherche.
+  un tableau pour les comparer, trié au clic. Le calendrier et les cartes se rangent par début ou par statut. La vie
+  d'un projet vaut quels que soient la période, la squad et les dépôts choisis ; ses chiffres les suivent. La recherche
+  trouve un projet par son nom, ses dépôts ou ses auteurs.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
@@ -274,7 +277,8 @@ DASHBOARD_PASSWORD --env github-pages`), puis lancer le workflow. Les pages ouve
   merges, taux, délais et lignes portent sur les PR de code.
 - Le projet d'une PR de code se déduit des branches que le snapshot garde déjà (`scripts/sync/projects.mjs`) : elle
   vise `project/<nom>/main` ou une branche nommée `project/<nom>/…`, ou la branche d'une autre PR du projet dans le
-  même dépôt, sinon sa propre branche est nommée ainsi. Seul le nom du projet est publié, jamais les branches.
+  même dépôt, sinon sa propre branche est nommée ainsi. Seul le nom du projet est publié, jamais les branches, avec,
+  pour une PR de projet fermée sans merge, le moment où elle l'a été.
 
 ## En local
 

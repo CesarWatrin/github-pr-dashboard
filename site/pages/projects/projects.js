@@ -1,20 +1,21 @@
 // Projets: what the projects of the period add up to, their timeline, a card per project, and the table that compares
-// them. Every part follows the period, the squad and the search; without any project in the data, the page says how one
-// is found.
+// them. Every part follows the period, the squad, the repositories picked and the search; without any project in the
+// data, the page says how one is found.
 
 import { parisDay } from '../../domain/time.js'
 import { capitalize, formatDecimal, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { displayName } from '../../model/people.js'
 import { anyProject, currentProjects } from '../../model/projects.js'
 import { matchesQuery, periodRange, periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { ganttChart } from '../../ui/charts/gantt-chart.js'
 import { renderLegend } from '../../ui/charts/legend.js'
-import { $, el } from '../../ui/dom.js'
+import { $, $$, el } from '../../ui/dom.js'
 import { LINES_COLUMN } from '../../ui/tables/cells.js'
 import { renderTiles } from '../../ui/tiles.js'
 import { openProjectDialog, projectCard } from './cards.js'
-import { formatDay, formatShortDay, formatSpan, lastMergeOf, PROJECT_FIGURES, PROJECT_STATUSES, STATUS_ORDER, statusTag } from './figures.js'
+import { formatDay, formatShortDay, formatSpan, lastMergeOf, PROJECT_FIGURES, PROJECT_STATUSES, projectLabel, STATUS_ORDER, statusTag } from './figures.js'
 
 const PROJECT_TILES = [
   { key: 'ongoing', label: t('Projets en cours') },
@@ -23,12 +24,26 @@ const PROJECT_TILES = [
   { key: 'medianIntegrationHours', label: t('Intégration médiane'), format: formatDuration },
 ]
 
-// The projects the search finds, by their name or their repositories.
-const foundRows = () => currentProjects().rows.filter((row) => matchesQuery(row.name, ...row.repos.map(([repo]) => repo)))
+// What the search finds a project by: its name, its repositories, and the people who wrote it.
+/** @type {(row: import('../../model/projects.js').ProjectPeriod) => string[]} */
+export const projectSearchTexts = (row) => [
+  projectLabel(row),
+  ...row.repos.map(([repo]) => repo),
+  ...row.authors.flatMap((author) => [author.login, displayName(author.login)]),
+]
+
+// The projects the search finds, in the order picked: as they started, or by status (STATUS_ORDER: under way, stalled,
+// then delivered), each status as they started.
+function foundRows() {
+  const rows = currentProjects().rows.filter((row) => matchesQuery(...projectSearchTexts(row)))
+
+  return state.projectOrder === 'status' ? rows.toSorted((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)) : rows
+}
 
 // The name of a project in the table opens its dialog, as its card does; its repositories follow, under it.
 function nameCell(row) {
-  const pick = el('button', { type: 'button', className: 'squad-pick project-pick', textContent: row.name, title: row.name })
+  const label = projectLabel(row)
+  const pick = el('button', { type: 'button', className: 'squad-pick project-pick', textContent: label, title: label })
   pick.setAttribute('aria-haspopup', 'dialog')
   pick.addEventListener('click', () => openProjectDialog(row, currentProjects().rows, pick))
   const repos = row.repos.map(([repo]) => repo).join(', ')
@@ -51,9 +66,11 @@ export const PROJECT_COLUMNS = [
     key: 'name',
     label: t('Projet'),
     kind: 'text',
-    value: (row) => row.name,
+    value: projectLabel,
     cell: nameCell,
-    hint: t('Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un.'),
+    hint: t(
+      'Le nom de sa branche project/…/main, et ses dépôts dessous : un projet du même nom dans plusieurs dépôts n’en fait qu’un. Un nom repris longtemps après la fin de son projet en fait un autre, nommé avec son mois de début.',
+    ),
   },
   {
     key: 'status',
@@ -96,6 +113,7 @@ export const PROJECT_COLUMNS = [
 // it and out where it goes on, flat where it stopped; its merges; its dates and figures on hover.
 function timelineRow(row, rows) {
   const status = PROJECT_STATUSES[row.status]
+  const label = projectLabel(row)
   const lastMerge = lastMergeOf(row)
   const cut = row.span.cutStart
     ? row.span.cutEnd
@@ -107,8 +125,8 @@ function timelineRow(row, rows) {
   const dates = t('du {start} au {end}', { start: formatDay(row.start), end: formatDay(row.end) })
 
   return {
-    key: row.name,
-    head: [el('span', { className: 'gantt-name', textContent: row.name, title: row.name }), statusTag(row.status)],
+    key: row.key,
+    head: [el('span', { className: 'gantt-name', textContent: label, title: label }), statusTag(row.status)],
     from: row.span.from,
     to: row.span.to,
     fadeStart: row.span.cutStart,
@@ -116,9 +134,9 @@ function timelineRow(row, rows) {
     flatEnd: row.status === 'stalled' && !row.span.cutEnd,
     color: status.color,
     markers: row.merges,
-    ariaLabel: [`${row.name}, ${status.label}, ${dates}.`, ...(cut ? [cut] : [])].join(' '),
+    ariaLabel: [`${label}, ${status.label}, ${dates}.`, ...(cut ? [cut] : [])].join(' '),
     tooltip: {
-      title: row.name,
+      title: label,
       rows: [
         { color: status.color, value: status.label, label: t('à la dernière synchro') },
         { value: formatDay(row.start), label: t('début') },
@@ -164,6 +182,7 @@ function renderTimelineLegend() {
   legend.append(el('span', {}, el('span', { className: 'swatch gantt-legend-merge' }), document.createTextNode(t('Merge dans une branche principale'))))
 }
 
+// The page, drawn again by render() and as its repositories picked change.
 export function renderProjects(mode = 'enter') {
   const any = anyProject()
   $('[data-projects-empty]').hidden = any
@@ -172,9 +191,14 @@ export function renderProjects(mode = 'enter') {
     return
   }
   const { summary } = currentProjects()
-  $('[data-projects-sub]').textContent = t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', {
-    period: capitalize(periodTitle()),
-  })
+  const order =
+    state.projectOrder === 'status'
+      ? t('{period} : les projets dont la vie croise la période, en cours, puis à l’arrêt, puis livrés', { period: capitalize(periodTitle()) })
+      : t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', { period: capitalize(periodTitle()) })
+  $('[data-projects-sub]').textContent = order
+  for (const button of $$('[data-project-order]')) {
+    button.setAttribute('aria-checked', String(button.dataset.projectOrder === state.projectOrder))
+  }
   renderTiles($('[data-project-tiles]'), PROJECT_TILES, summary, mode)
   renderTimelineLegend()
   const rows = foundRows()
@@ -189,3 +213,12 @@ export function renderProjects(mode = 'enter') {
   renderProjectTimeline()
 }
 
+// Listens to « Par début / Par statut » of the timeline and the cards.
+export function setupProjects() {
+  for (const button of $$('[data-project-order]')) {
+    button.addEventListener('click', () => {
+      state.projectOrder = /** @type {'start' | 'status'} */ (button.dataset.projectOrder)
+      renderProjects()
+    })
+  }
+}

@@ -5,7 +5,7 @@ import { isMissing } from '../../domain/math.js'
 import { STALLED_AFTER_DAYS } from '../../domain/projects.js'
 import { MINUTE_MS, parisDay } from '../../domain/time.js'
 import { dayDate } from '../../lib/dates.js'
-import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare, plural, rangeShortFormat } from '../../lib/format.js'
+import { formatDecimal, formatDuration, formatLines, formatNumber, formatShare, monthLongFormat, plural, rangeShortFormat } from '../../lib/format.js'
 import { LOCALE, t } from '../../lib/i18n.js'
 import { el } from '../../ui/dom.js'
 
@@ -46,6 +46,23 @@ export const formatDay = (minutes) => (isMissing(minutes) ? '–' : rangeShortFo
 const shortDayFormat = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' })
 /** @type {(minutes: number | null | undefined) => string} */
 export const formatShortDay = (minutes) => (isMissing(minutes) ? '–' : shortDayFormat.format(dayDate(parisDay(minutes * MINUTE_MS))))
+
+// The name of a project. A name that several projects took (the name taken up again long after its project was over)
+// comes with the month the project started: « paper-kite (mars 2024) ».
+/** @type {(row: { name: string, runs: number, start: number }) => string} */
+export const projectLabel = (row) =>
+  row.runs > 1 ? t('{name} ({month})', { name: row.name, month: monthLongFormat.format(dayDate(parisDay(row.start * MINUTE_MS))) }) : row.name
+
+// The other projects that took the name of a project, each from its start to its end; null when none did.
+/** @type {(row: { namesakes: { start: number, end: number }[] }) => string | null} */
+export function namesakesText({ namesakes }) {
+  if (namesakes.length === 0) {
+    return null
+  }
+  const spans = namesakes.map(({ start, end }) => t('du {start} au {end}', { start: formatDay(start), end: formatDay(end) })).join(' ; ')
+
+  return namesakes.length === 1 ? t('Un autre projet a porté ce nom, {spans}.', { spans }) : t('D’autres projets ont porté ce nom, {spans}.', { spans })
+}
 
 // A duration on the calendar, from days: in days under two weeks, in weeks under two months, else in months; the weeks
 // short in the table.
@@ -89,7 +106,7 @@ export const linesNodes = ({ added, deleted }) => [
 export const lastMergeOf = (row) => row.merges.at(-1)?.at ?? null
 
 // Every figure of a project: those about its life count whatever the period, the others over the period, for the squad
-// picked.
+// and the repositories picked.
 export const PROJECT_FIGURES = {
   status: {
     key: 'status',

@@ -450,4 +450,5 @@ export const BLOCKS = {
   'Projets': 'Projects',
   'Les projets menés sur une branche project/…, quand ils ont commencé, avancé et été livrés':
     'The projects carried on a project/… branch: when they started, moved on and were delivered',
+  'Filtrer un projet, une personne ou un dépôt': 'Filter a project, a person or a repository',
 }

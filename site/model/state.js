@@ -38,7 +38,7 @@ export const state = {
   // What the technologies chart weighs: a key of TECHNOLOGY_MEASURES.
   technologyMeasure: 'prs',
   // Repositories selected for each table, null for all of them.
-  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null, repositories: null },
+  repos: { authors: null, reviewers: null, cycle: null, collaboration: null, team: null, repositories: null, projects: null },
   sort: {
     authors: { key: 'code', direction: -1 },
     reviewers: { key: 'prs', direction: -1 },
@@ -87,6 +87,8 @@ export const state = {
   squadPeriodsCache: null,
   squadSort: { key: 'merged', reversed: false },
   squadPerMember: false,
+  // The order of the projects on their timeline and cards: as they started, or by status.
+  projectOrder: 'start',
   // The projects of the period for the squad picked, worked out once per stats, range and squad.
   projectsCache: null,
   // Who the « Mes PR » page is for, null until picked.
