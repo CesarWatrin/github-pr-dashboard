@@ -280,4 +280,14 @@ export const FRAME = {
   'Par squad': 'By squad',
   'AC livrées sur la période, celles des PR de ses membres': 'Improvements delivered over the period, those of the PRs of its members',
   'Par taille': 'By size',
+  'Effort': 'Effort',
+  'Où va l’effort': 'Where the effort goes',
+  'Maintenir ou construire': 'Maintain or build',
+  'Chaque PR de code ouverte sur la période compte une fois : pour un projet d’abord, sinon pour la TMA (une branche <code>hotfix</code>), sinon pour une AC, sinon dans le reste. Maintenir, c’est la TMA ; construire, les projets et les AC : leurs parts se comptent entre elles, le reste à part. Le reste, ce sont les PR de code qui ne sont ni d’un projet, ni de la TMA, ni d’une AC : par exemple des corrections (<code>fix/…</code>), des refactorings (<code>refactor/…</code>) ou de la maintenance technique (<code>chore/…</code>, <code>ci/…</code>) envoyées dans <code>develop</code> sans branche <code>feature/…</code>, ou une branche <code>feature/…</code> qui ne part pas de <code>develop</code>.':
+    'Each code PR opened over the period counts once: for a project first, else for maintenance (a <code>hotfix</code> branch), else for an improvement, else in the rest. Maintain is the maintenance; build, the projects and the improvements: their shares count between them, the rest aside. The rest is the code PRs that belong to no project, no maintenance and no improvement: for instance fixes (<code>fix/…</code>), refactorings (<code>refactor/…</code>) or technical upkeep (<code>chore/…</code>, <code>ci/…</code>) sent into <code>develop</code> without a <code>feature/…</code> branch, or a <code>feature/…</code> branch that does not start from <code>develop</code>.',
+  'L’effort': 'Effort',
+  'Part de chaque type de travail dans les PR de code ouvertes, période par période : la TMA part de l’axe, pour suivre sa part d’un coup d’œil':
+    'Share of each kind of work in the code PRs opened, period by period: maintenance starts from the axis, to follow its share at a glance',
+  'Les PR de code des membres de chaque squad, puis celles de toute l’organisation':
+    'The code PRs of the members of each squad, then those of the whole organization',
 }

@@ -18,8 +18,8 @@ une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1
 la fenêtre. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
 les PR ouvertes par ses membres, et ce qui s'y passe (qui les relit, leurs délais, leurs mises en prod). La CI reste
 celle de toute l'organisation, une exécution ne se rattachant à aucune squad, et le compteur du jour, qui ne se
-découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, la TMA et
-DevOps, un choix « Comparer à » met chaque chiffre de la période face à la période d'avant ou à la même période l'an
+découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, les AC,
+l'effort, la TMA et DevOps, un choix « Comparer à » met chaque chiffre de la période face à la période d'avant ou à la même période l'an
 dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
@@ -109,6 +109,13 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   et graphique par période), les cartes des personnes, des squads et des dépôts (avec leurs hotfix), leurs fiches (avec
   une section « Sa TMA » : hotfix, part, délai de merge, face à la médiane des pairs), le bilan du mois, les tendances, l'analyse (AC qui traînent ou trop
   grosses), la frise d'une PR et le badge 🛠️ Artisan.
+- **Où va l'effort** : les PR de code de la période, pour la squad choisie, entre quatre types de travail, chacune comptée
+  une fois, dans cet ordre : un projet (comme sur la page Projets), sinon la TMA (une branche `hotfix`), sinon une AC,
+  sinon le reste. La part de chacun, et la lecture « maintenir ou construire » : la TMA face aux projets et aux AC, le
+  reste à part, comparées à la période d'avant pour voir si la maintenance gagne du terrain ; leur part période par
+  période (en colonnes à 100 %, la TMA partant de l'axe), par squad (toute l'organisation en dernier) et pour les
+  personnes de l'équipe qui ouvrent le plus de PR de code. Le survol donne aussi les lignes ajoutées par les PR mergées
+  de chaque type. Les fiches des personnes et des squads disent où va leur effort, en une barre.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
@@ -203,7 +210,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
 
 Chaque page a son adresse (`#/a-debloquer`, `#/mes-pr`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
-`#/equipe`, `#/palmares`, `#/depots`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.

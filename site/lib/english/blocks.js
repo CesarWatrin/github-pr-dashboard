@@ -530,4 +530,11 @@ export const BLOCKS = {
   // The year in review (pages/wrapped/).
   'Rétrospective': 'Year in review',
   'L’année en revue d’une personne ou de toute l’équipe, à revoir et à partager': 'The year in review of a person or of the whole team, to replay and share',
+  'AC': 'Improvements',
+  'Le reste': 'The rest',
+  'Maintenir {run} · construire {build}, le reste à part': 'Maintain {run} · build {build}, the rest aside',
+  'Où va son effort': 'Where their effort goes',
+  'Où va l’effort': 'Where the effort goes',
+  'Les PR de code de la période entre TMA, projets, AC et le reste : ce qui maintient, ce qui construit':
+    'The code PRs of the period between maintenance, projects, improvements and the rest: what maintains, what builds',
 }

@@ -11,6 +11,7 @@ import {
 import { t } from '../../lib/i18n.js'
 import { SHOWN_BADGES } from '../../model/badges.js'
 import { personAcs } from '../../model/acs.js'
+import { personEffort } from '../../model/effort.js'
 import { displayName, isFormer } from '../../model/people.js'
 import { personProjects } from '../../model/projects.js'
 import { topTechnologies } from '../../model/repositories.js'
@@ -19,6 +20,7 @@ import { state } from '../../model/state.js'
 import { personDetails, teamRows, tmaOf } from '../../model/team.js'
 import { badgeRow } from '../badges.js'
 import { el } from '../dom.js'
+import { effortBar } from '../effort.js'
 import { avatarUrl, githubPill, githubUrl, OPEN_PERSON } from '../links.js'
 import { formerText, seniorityText, squadTags, stackLine } from '../people.js'
 import { projectList } from '../projects.js'
@@ -150,6 +152,7 @@ export function openPersonDialog(row, opener) {
   const projects = personProjects(row.login)
   const acs = personAcs(row.login)
   const tma = tmaOf(row.login)
+  const effort = personEffort(row.login)
 
   showCardDialog(
     [
@@ -188,6 +191,7 @@ export function openPersonDialog(row, opener) {
       }),
       dialogSection(t('Ce que la personne écrit'), statList(PERSON_WRITTEN, details, writers)),
       dialogSection(t('Ce que la personne relit'), statList(PERSON_REVIEWED, details, reviewers)),
+      ...(effort?.code ? [dialogSection(t('Où va son effort'), effortBar(effort))] : []),
       ...(projects.length ? [dialogSection(t('Ses projets'), projectList(t('Projets, PR de code sur la période'), projects))] : []),
       ...(acs.started || acs.delivered
         ? [dialogSection(t('Ses améliorations continues'), statList(PERSON_ACS, acs, writers.map(({ row: other }) => personAcs(other.login))))]

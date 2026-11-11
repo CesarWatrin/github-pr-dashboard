@@ -2,11 +2,13 @@
 
 import { formatNumber, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { squadEffort } from '../../model/effort.js'
 import { isCurrent } from '../../model/people.js'
 import { periodTitle } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { dialogSection, showCardDialog, statList, topList } from '../../ui/dialogs/card-dialog.js'
 import { el } from '../../ui/dom.js'
+import { effortBar } from '../../ui/effort.js'
 import { personLink } from '../../ui/links.js'
 import { STAGGER_SPREAD_MS, STAGGERED_ROWS } from '../../ui/motion.js'
 import { avatarStack } from '../../ui/people.js'
@@ -58,10 +60,11 @@ export function squadCard(row, index, rows) {
 }
 
 // The dialog of a squad, like those of a person or a repository: its figures, each set against the median of the
-// squads, its projects, its AC and its TMA, then who it is, who reads its code and where it writes.
+// squads, where its effort goes, its projects, its AC and its TMA, then who it is, who reads its code and where it writes.
 export function openSquadDialog(row, rows, opener) {
   state.openCard = { kind: 'squad', key: row.name }
   const peers = rows.filter((other) => other.code > 0)
+  const effort = squadEffort({ name: row.name, members: row.members })
 
   showCardDialog(
     [
@@ -88,6 +91,7 @@ export function openSquadDialog(row, rows, opener) {
       dialogSection(t('Ce que la squad écrit'), statList(SQUAD_WRITTEN, row, peers)),
       dialogSection(t('La revue'), statList(SQUAD_REVIEWED, row, peers.filter((other) => other.reviews > 0))),
       dialogSection(t('La mise en prod'), statList(SQUAD_DELIVERED, row, peers)),
+      ...(effort.code ? [dialogSection(t('Où va son effort'), effortBar(effort))] : []),
       dialogSection(
         t('Ses projets'),
         statList(SQUAD_PROJECTS, row, peers),

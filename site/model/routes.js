@@ -3,7 +3,7 @@
 import { t } from '../lib/i18n.js'
 
 // The pages whose tiles are about the period: the comparison is only offered there.
-export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops', 'acs'])
+export const COMPARED_ROUTES = new Set(['overview', 'cycle', 'tma', 'devops', 'acs', 'effort'])
 
 // Pages of the dashboard, one per hash: links can be shared and the browser history works. The period and the search
 // apply to every page but the method; the analysis page has the period only.
@@ -46,6 +46,12 @@ export const ROUTES = {
     hash: '#/ac',
     title: t('Améliorations continues'),
     subtitle: t('Les AC menées sur une branche feature/… ou feat/… partie de develop : combien, à quel rythme, par qui'),
+    search: false,
+  },
+  effort: {
+    hash: '#/effort',
+    title: t('Où va l’effort'),
+    subtitle: t('Les PR de code de la période entre TMA, projets, AC et le reste : ce qui maintient, ce qui construit'),
     search: false,
   },
   tma: { hash: '#/tma', title: t('TMA'), subtitle: t('Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait') },

@@ -12,6 +12,7 @@ import { renderCartography } from '../pages/cartography/cartography.js'
 import { renderCollaboration } from '../pages/collaboration.js'
 import { renderCycleCharts, renderCycleTiles } from '../pages/cycle.js'
 import { renderDevopsCharts, renderDevopsTiles } from '../pages/devops.js'
+import { renderEffort, renderEffortCharts } from '../pages/effort.js'
 import { renderMe } from '../pages/me.js'
 import {
   renderActivityChart,
@@ -58,6 +59,7 @@ export function renderCharts() {
   renderSquadCharts()
   renderProjectTimeline()
   renderAcCharts()
+  renderEffortCharts()
   renderMiniCharts()
 }
 
@@ -97,6 +99,7 @@ export function render(animate) {
   renderRepositories()
   renderProjects(tileMode)
   renderAcs(tileMode)
+  renderEffort(tileMode)
   renderSquads()
   renderWrapped()
   renderFeed(animate)
