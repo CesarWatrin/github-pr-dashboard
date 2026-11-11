@@ -13,7 +13,6 @@ import { CYCLE_STAGES } from './model/cycle.js'
 import { state } from './model/state.js'
 import { AC_SERIES } from './pages/acs.js'
 import { setupReplay } from './pages/cartography/replay.js'
-import { setupWrapped } from './pages/wrapped/wrapped.js'
 import { DEPLOYMENT_SERIES } from './pages/devops.js'
 import { setupMe } from './pages/me.js'
 import { ACTIVITY_SERIES, setupOverview } from './pages/overview/overview.js'
@@ -28,6 +27,7 @@ import { renderPeriodSelector, setupFilters } from './shell/filters.js'
 import { renderLanguageToggle, setupLanguage } from './shell/language.js'
 import { render, setupResize } from './shell/render.js'
 import { renderRoute, setupNavigation } from './shell/router.js'
+import { setupRetroLink } from './shell/retro-link.js'
 import { refresh, setupSession, showDashboard, showLock } from './shell/session.js'
 import { refreshClock, setupSync } from './shell/sync.js'
 import { registerTables, renderTableLegends } from './shell/tables.js'
@@ -61,13 +61,13 @@ setupTheme()
 setupLanguage()
 setupSync()
 setupSession()
+setupRetroLink()
 setupSquads()
 setupProjects()
 setupReviewers()
 setupReport()
 setupMe()
 setupReplay()
-setupWrapped()
 setupOverview()
 setupCardDialog()
 setupPersonDialog()

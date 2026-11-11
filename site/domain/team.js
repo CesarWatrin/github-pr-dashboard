@@ -1,6 +1,11 @@
-// The people of the records: who reviews whom, when each one first and last shows, the bus factor of a repository.
+// The people of the records: who reviews whom, when each one first and last shows, who has left the team, the bus factor
+// of a repository.
 
 import { getOrCreate, round } from './math.js'
+import { DAY_MS, MINUTE_MS } from './time.js'
+
+// A person without any pull request, review, comment or merge for this long has left the team.
+export const FORMER_AFTER_DAYS = 30
 
 // What a review network reads of the stats of a period (computePeriod()): each author's pull requests per repository,
 // and each reviewer's per author and repository.
@@ -115,4 +120,17 @@ export function activityBounds(records) {
   }
 
   return bounds
+}
+
+// Whether a person has left the team at a time (milliseconds): nothing of theirs in the records (activityBounds()) for
+// FORMER_AFTER_DAYS. Someone the records do not know has not.
+/**
+ * @param {Map<string, { first: number, last: number }>} bounds
+ * @param {string} login
+ * @param {number} now
+ */
+export function hasLeft(bounds, login, now) {
+  const activity = bounds.get(login)
+
+  return activity !== undefined && now - activity.last * MINUTE_MS > FORMER_AFTER_DAYS * DAY_MS
 }

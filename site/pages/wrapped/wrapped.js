@@ -1,180 +1,115 @@
-// The year in review (« Rétrospective »), full screen over the dashboard: a picker of the people of the year still in
-// the team (and the whole team), then their story, slide after slide (slides.js), like a story on a social network: a
-// bar per slide, a tap on the right or the right arrow for the next one, on the left or the left arrow for the one
-// before, Space to pause, Escape back to the picker. It plays on by itself, the next slide coming when the bar of the
-// slide is full (the end of its animation): under reduced motion, without animation, it waits for a tap. The address
-// says whose year and which (`for` or `team`, `year`): a link leads anyone with the password straight to it.
+// The year in review (« Rétrospective », retro.html), a page apart from the dashboard that leads nowhere else: a picker of
+// the people of the year still in the team (and the whole team), then their story, slide after slide (slides.js), like a
+// story on a social network: a bar per slide, a tap on the right or the right arrow for the next one, on the left or the
+// left arrow for the one before, Space to pause, Escape back to the picker. It plays on by itself, the next slide coming
+// when the bar of the slide is full (the end of its animation): under reduced motion, without animation, it waits for a
+// tap. The address says whose story shows (`for` or `team`, model/retro-address.js), never the key of the link. The
+// picker lives in picker.js; the screen without a key, in locked.js.
 
 import { formatNumber } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { displayName } from '../../model/people.js'
-import { currentRoute } from '../../model/routes.js'
-import { state } from '../../model/state.js'
-import { wrappedPeople, wrappedPerson, wrappedTeam, wrappedYear, wrappedYears } from '../../model/wrapped.js'
+import { retroAddress } from '../../model/retro-address.js'
 import { $, el } from '../../ui/dom.js'
-import { avatarUrl } from '../../ui/links.js'
+import { renderPicker } from './picker.js'
 import { personSlides, teamSlides } from './slides.js'
+import { avatar } from './visuals.js'
 
 /** @typedef {import('./slides.js').Slide} Slide */
+/** @typedef {import('../../model/retro-address.js').RetroWho} RetroWho */
 
 // How long a slide shows before the next one, unless paused: the time the bar of the slide takes to fill.
 export const SLIDE_MS = 7000
 
+// The icons of the buttons, drawn like those of the dashboard: 16 × 16, a stroke.
+const ICONS = {
+  pause: 'M5.5 3.5v9M10.5 3.5v9',
+  play: 'M5 3.2v9.6L12.5 8Z',
+  people: 'M6 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 13.5c.4-2.4 2.1-3.8 4.5-3.8s4.1 1.4 4.5 3.8M10.5 2.7a2.4 2.4 0 0 1 0 4.6M12 9.9c1.3.5 2.2 1.7 2.5 3.6',
+}
+
+/** @type {{ retro: Retro, who: RetroWho } | null} */
+let shown = null
 /** @type {{ slides: Slide[], index: number, paused: boolean, root: HTMLElement } | null} */
 let story = null
-// What the page shows: the picker of a year, or whose story of which year; '' for nothing.
-let shownKey = ''
 
-// Back to the dashboard: the next visit opens on the picker.
-function close() {
-  state.wrappedFor = null
-  state.wrappedTeam = false
-  location.hash = '#/'
+/** @type {(login: string) => string} */
+const nameOf = (login) => shown?.retro.names[login] ?? login
+
+const container = () => $('[data-wrapped]')
+
+/** @type {(name: keyof typeof ICONS) => SVGSVGElement} */
+function icon(name) {
+  const image = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  image.setAttribute('viewBox', '0 0 16 16')
+  image.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', ICONS[name])
+  image.append(path)
+
+  return image
 }
 
-// Back to the picker.
-function toPicker() {
-  state.wrappedFor = null
-  state.wrappedTeam = false
-  renderWrapped()
-}
-
-/** @type {(label: string, onClick: () => void, className?: string) => HTMLButtonElement} */
-function iconButton(label, onClick, className = '') {
-  const button = /** @type {HTMLButtonElement} */ (el('button', { type: 'button', className: `wrapped-icon-button ${className}`, title: label }))
+/** @type {(label: string, name: keyof typeof ICONS, onClick: () => void, className: string) => HTMLButtonElement} */
+function iconButton(label, name, onClick, className) {
+  const button = /** @type {HTMLButtonElement} */ (el('button', { type: 'button', className: `wrapped-icon-button ${className}`, title: label }, icon(name)))
   button.setAttribute('aria-label', label)
   button.addEventListener('click', onClick)
 
   return button
 }
 
-const closeButton = () => iconButton(t('Fermer la rétrospective'), close, 'is-close')
-
-// Drawn by render() and when the page shows: the picker, or the story picked. A story keeps playing whatever new stats
-// come in meanwhile; it starts again only for another person or year.
-export function renderWrapped() {
-  const container = $('[data-wrapped]')
-  const shown = state.stats !== null && currentRoute() === 'wrapped'
-  document.documentElement.classList.toggle('is-wrapped', shown)
+// The story of someone, the team's, or the picker (null); the address follows, without the key.
+/** @param {RetroWho} who */
+function open(who) {
   if (!shown) {
-    story = null
-    shownKey = ''
-    container.replaceChildren()
-
     return
   }
-  const year = wrappedYear()
-  const who = state.wrappedFor ? `person:${state.wrappedFor}` : state.wrappedTeam ? 'team' : null
-  const key = who ? `story:${who}:${year}` : `picker:${year}:${state.stats.generatedAt}`
-  if (key === shownKey) {
-    return
-  }
-  shownKey = key
-  if (!who) {
-    story = null
-    renderPicker(container, year)
-
-    return
-  }
-  const slides = state.wrappedFor ? personSlides(wrappedPerson(state.wrappedFor, year)) : teamSlides(wrappedTeam(year))
-  renderStory(container, slides, year)
+  shown.who = who
+  history.replaceState(null, '', `${location.pathname}${location.search}${retroAddress(who)}`)
+  draw()
 }
 
-// The people of the year, by name, each opening their story; the team first; a field to find oneself, and the years of
-// the data when there are several.
 /**
- * @param {HTMLElement} container
- * @param {number} year
+ * The year in review opened, on the story asked by the address, or on the picker when it names nobody of the year.
+ * @param {Retro} retro
+ * @param {RetroWho} who
  */
-function renderPicker(container, year) {
-  const people = wrappedPeople(year)
-  const label = t('Ton nom ou ton identifiant GitHub')
-  const search = /** @type {HTMLInputElement} */ (el('input', { type: 'search', className: 'wrapped-search', placeholder: label, autocomplete: 'off', spellcheck: false }))
-  search.setAttribute('aria-label', label)
-  const list = el(
-    'ul',
-    { className: 'wrapped-people' },
-    ...people.map((login) => {
-      const button = el(
-        'button',
-        { type: 'button', className: 'wrapped-person' },
-        el('img', { src: avatarUrl(login, 80), alt: '', width: 40, height: 40, loading: 'lazy' }),
-        el(
-          'span',
-          { className: 'wrapped-person-name' },
-          el('strong', { textContent: displayName(login) }),
-          // The login under the name, unless it is the name.
-          ...(displayName(login) === login ? [] : [el('span', { textContent: `@${login}` })]),
-        ),
-      )
-      button.addEventListener('click', () => {
-        state.wrappedFor = login
-        state.wrappedTeam = false
-        renderWrapped()
-      })
-      const item = el('li', {}, button)
-      item.dataset.search = `${displayName(login)} ${login}`.toLowerCase()
-
-      return item
-    }),
-  )
-  const none = el('p', { className: 'wrapped-none', textContent: t('Personne de ce nom cette année.'), hidden: true })
-  search.addEventListener('input', () => {
-    const query = search.value.trim().toLowerCase()
-    let shown = 0
-    for (const item of /** @type {HTMLElement[]} */ ([...list.children])) {
-      item.hidden = query !== '' && !String(item.dataset.search).includes(query)
-      shown += item.hidden ? 0 : 1
-    }
-    none.hidden = shown > 0
-  })
-  const team = el('button', { type: 'button', className: 'wrapped-team' }, el('strong', { textContent: t('Toute l’équipe') }), el('span', { textContent: t('L’année de tout le monde, ensemble') }))
-  team.addEventListener('click', () => {
-    state.wrappedFor = null
-    state.wrappedTeam = true
-    renderWrapped()
-  })
-  const years = wrappedYears()
-  /** @type {HTMLElement[]} */
-  const yearPicker = []
-  if (years.length > 1) {
-    const select = /** @type {HTMLSelectElement} */ (el('select', { className: 'wrapped-year' }, ...years.map((option) => new Option(String(option), String(option)))))
-    select.setAttribute('aria-label', t('Année'))
-    select.value = String(year)
-    select.addEventListener('change', () => {
-      state.wrappedYear = Number(select.value) === years[0] ? null : Number(select.value)
-      renderWrapped()
-    })
-    yearPicker.push(select)
-  }
-  container.replaceChildren(
-    el(
-      'div',
-      { className: 'wrapped-picker' },
-      el('div', { className: 'wrapped-picker-head' }, closeButton()),
-      el('p', { className: 'wrapped-eyebrow', textContent: t('Rétrospective') }),
-      el('h2', { className: 'wrapped-picker-title', textContent: t('Ton année {year}', { year }) }),
-      el('p', { className: 'wrapped-picker-sub', textContent: t('Choisis ton nom GitHub : ton année en PR, en reviews et en projets, à revoir et à partager.') }),
-      el('div', { className: 'wrapped-picker-controls' }, search, ...yearPicker),
-      team,
-      list,
-      none,
-    ),
-  )
+export function showRetro(retro, who) {
+  const known = who === 'team' || (who !== null && retro.people.some((person) => person.login === who.login))
+  shown = { retro, who: known ? who : null }
+  open(shown.who)
 }
 
-// The story of a year: the bars of its slides, whose it is, pause and close, the slide, and the two halves to tap.
+function draw() {
+  if (!shown) {
+    return
+  }
+  const { retro, who } = shown
+  const person = who && who !== 'team' ? retro.people.find((other) => other.login === who.login) : undefined
+  if (who === null || (who !== 'team' && !person)) {
+    story = null
+    renderPicker(container(), retro, nameOf, open)
+
+    return
+  }
+  const context = { year: retro.year, org: retro.org, nameOf }
+  renderStory(person ? personSlides(person, context) : teamSlides(retro.team, context), person ? person.login : null, retro.year)
+}
+
 /**
- * @param {HTMLElement} container
+ * The story of a year: the bars of its slides, whose it is, pause and back to the picker, the slide, and the two parts to
+ * tap.
  * @param {Slide[]} slides
+ * @param {string | null} login null for the team
  * @param {number} year
  */
-function renderStory(container, slides, year) {
+function renderStory(slides, login, year) {
   const progress = el('div', { className: 'wrapped-progress' }, ...slides.map(() => el('span', { className: 'wrapped-segment' }, el('span', { className: 'wrapped-segment-fill' }))))
-  const whose = state.wrappedFor
-    ? el('span', { className: 'wrapped-whose' }, el('img', { src: avatarUrl(state.wrappedFor, 56), alt: '', width: 28, height: 28 }), el('span', { textContent: `${displayName(state.wrappedFor)} · ${year}` }))
+  const whose = login
+    ? el('span', { className: 'wrapped-whose' }, avatar(login, 28), el('span', { textContent: `${nameOf(login)} · ${year}` }))
     : el('span', { className: 'wrapped-whose' }, el('span', { textContent: `${t('L’équipe')} · ${year}` }))
-  const pause = iconButton(t('Mettre en pause'), togglePause, 'is-pause')
+  const pause = iconButton(t('Mettre en pause'), 'pause', () => togglePause(), 'is-pause')
+  const back = iconButton(t('Choisir quelqu’un d’autre'), 'people', () => open(null), 'is-back')
   const previous = el('button', { type: 'button', className: 'wrapped-tap is-previous' })
   previous.setAttribute('aria-label', t('Diapositive précédente'))
   previous.addEventListener('click', () => go(-1))
@@ -184,28 +119,22 @@ function renderStory(container, slides, year) {
   // Read out as each slide comes.
   const stage = el('div', { className: 'wrapped-stage' })
   stage.setAttribute('aria-live', 'polite')
-  const root = el(
-    'div',
-    { className: 'wrapped-story' },
-    progress,
-    el('div', { className: 'wrapped-head' }, whose, pause, closeButton()),
-    stage,
-    previous,
-    next,
-  )
+  const root = el('div', { className: 'wrapped-story' }, progress, el('div', { className: 'wrapped-head' }, whose, pause, back), stage, previous, next)
   root.style.setProperty('--slide-ms', `${SLIDE_MS}ms`)
-  container.replaceChildren(root)
+  container().replaceChildren(root)
   story = { slides, index: 0, paused: false, root }
   show(0)
 }
 
-// A figure that counts up to its value, at once under reduced motion.
+// A figure that counts up to its value, at once under reduced motion. Its size follows its length, so that the longest
+// still fits the slide (--chars).
 /**
  * @param {HTMLElement} node
  * @param {number} value
  */
 function countUp(node, value) {
   node.textContent = formatNumber(value)
+  node.style.setProperty('--chars', String(node.textContent.length))
   if (value <= 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     return
   }
@@ -263,12 +192,12 @@ function show(index) {
   }
 }
 
-// What the last slide offers: see it again, someone else, the link of this story.
+// What the last slide offers: see it again, someone else, the link of this story (without the key).
 function finalActions() {
   const again = el('button', { type: 'button', className: 'wrapped-action is-primary', textContent: t('Revoir') })
   again.addEventListener('click', () => show(0))
   const other = el('button', { type: 'button', className: 'wrapped-action', textContent: t('Quelqu’un d’autre') })
-  other.addEventListener('click', toPicker)
+  other.addEventListener('click', () => open(null))
   const copy = el('button', { type: 'button', className: 'wrapped-action', textContent: t('Copier le lien') })
   copy.addEventListener('click', async () => {
     try {
@@ -305,26 +234,23 @@ function togglePause(paused = !story?.paused) {
   const label = paused ? t('Reprendre') : t('Mettre en pause')
   button?.setAttribute('aria-label', label)
   button?.setAttribute('title', label)
+  button?.replaceChildren(icon(paused ? 'play' : 'pause'))
 }
 
-// The keys of the story, and a pause when the tab hides.
+// The keys of the story, a pause when the tab hides, and the story an address pasted in the tab asks for.
 export function setupWrapped() {
   document.addEventListener('keydown', (event) => {
-    if (currentRoute() !== 'wrapped' || event.defaultPrevented || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
+    if (!story?.root.isConnected || event.defaultPrevented || event.target instanceof HTMLInputElement) {
       return
     }
     if (event.key === 'Escape') {
       event.preventDefault()
-      if (story) {
-        toPicker()
-      } else {
-        close()
-      }
-    } else if (story && event.key === 'ArrowRight') {
+      open(null)
+    } else if (event.key === 'ArrowRight') {
       go(1)
-    } else if (story && event.key === 'ArrowLeft') {
+    } else if (event.key === 'ArrowLeft') {
       go(-1)
-    } else if (story && event.key === ' ') {
+    } else if (event.key === ' ') {
       event.preventDefault()
       togglePause()
     }

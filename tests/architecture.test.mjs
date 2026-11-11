@@ -1,11 +1,11 @@
-// Tests of the structure of the code: the layers of the page and of the sync, without import cycles, and the page
-// loading every module and style it has, at the version of the deploy.
+// Tests of the structure of the code: the layers of the page and of the sync, without import cycles, and the pages (the
+// dashboard, the year in review apart) loading every module and style they have, at the version of the deploy.
 import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, test } from 'node:test'
 
-import { currentBlock, ENTRY, importsOf, moduleBlock, pageModules, SITE } from '../scripts/module-map.mjs'
+import { currentBlock, ENTRY, importsOf, moduleBlock, pageModules, PAGES, SITE } from '../scripts/module-map.mjs'
 
 const ROOT = join(import.meta.dirname, '..')
 const SCRIPTS = join(ROOT, 'scripts')
@@ -68,8 +68,9 @@ function cyclesOf(graph) {
   return cycles
 }
 
-// The layers of the page, lowest first: a module imports from its own layer or the ones below only.
-const SITE_LAYERS = ['domain', 'lib', 'model', 'services', 'ui', 'pages', 'shell', ENTRY]
+// The layers of the page, lowest first: a module imports from its own layer or the ones below only. The entries of the
+// pages come last: the dashboard's (app.js), and the year in review's (retro.js).
+const SITE_LAYERS = ['domain', 'lib', 'model', 'services', 'ui', 'pages', 'shell', ...PAGES.map(({ entry }) => entry)]
 const layerOf = (path) => SITE_LAYERS.findIndex((layer) => path === layer || path.startsWith(`${layer}/`))
 // A page is a module of pages/, or a folder of them.
 const pageOf = (path) => (path.startsWith('pages/') ? path.split('/').slice(0, 2).join('/').replace(/\.js$/, '') : null)
@@ -109,17 +110,32 @@ describe('the page', () => {
     assert.deepEqual(outside, [])
   })
 
-  test('the page loads every module, at the version of the deploy (npm run modules)', () => {
-    const { eager, lazy } = pageModules()
-    assert.deepEqual(siteModules.filter((path) => !eager.includes(path) && !lazy.includes(path)), [], 'a module the page never imports')
-    assert.equal(currentBlock(readFileSync(join(SITE, 'index.html'), 'utf8')), moduleBlock(), 'index.html is out of date: npm run modules')
+  test('the pages load every module, at the version of the deploy (npm run modules)', () => {
+    const loaded = new Set(PAGES.flatMap(({ entry }) => Object.values(pageModules(entry)).flat()))
+    assert.deepEqual(siteModules.filter((path) => !loaded.has(path)), [], 'a module no page imports')
+    for (const { html, entry } of PAGES) {
+      assert.equal(currentBlock(readFileSync(join(SITE, html), 'utf8')), moduleBlock(entry), `${html} is out of date: npm run modules`)
+    }
   })
 
-  test('the page loads every style once, at the version of the deploy, touch.css last', () => {
-    const html = readFileSync(join(SITE, 'index.html'), 'utf8')
-    const linked = [...html.matchAll(/<link rel="stylesheet" href="([^"?]+)\?v=__BUILD__" \/>/g)].map((match) => match[1])
-    assert.deepEqual(linked.toSorted(), filesOf(SITE, '.css').toSorted())
-    assert.equal(linked.at(-1), 'styles/touch.css')
+  test('the year in review loads nothing of the dashboard: neither its frame, nor its state, nor its stats', () => {
+    const { eager, lazy } = pageModules('retro.js')
+    const dashboard = [...eager, ...lazy].filter(
+      (path) => path === ENTRY || path.startsWith('shell/') || ['model/state.js', 'services/stats-source.js'].includes(path) || (path.startsWith('pages/') && !path.startsWith('pages/wrapped/')),
+    )
+    assert.deepEqual(dashboard, [])
+  })
+
+  test('each page loads its styles once, at the version of the deploy, touch.css last; every style is loaded', () => {
+    const linkedBy = PAGES.map(({ html }) =>
+      [...readFileSync(join(SITE, html), 'utf8').matchAll(/<link rel="stylesheet" href="([^"?]+)\?v=__BUILD__" \/>/g)].map((match) => match[1]),
+    )
+    for (const linked of linkedBy) {
+      assert.equal(new Set(linked).size, linked.length)
+      assert.equal(linked.at(-1), 'styles/touch.css')
+      assert.deepEqual(linked.filter((path) => !existsSync(join(SITE, path))), [])
+    }
+    assert.deepEqual([...new Set(linkedBy.flat())].toSorted(), filesOf(SITE, '.css').toSorted())
   })
 })
 

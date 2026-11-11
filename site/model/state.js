@@ -92,10 +92,6 @@ export const state = {
   // The card open in the dialog of the cards, and the pull request whose timeline is open: the address names them.
   openCard: null,
   openPullRequest: null,
-  // The year in review: whose (a login), or the team's, and the year asked for (null for the current one).
-  wrappedFor: null,
-  wrappedTeam: false,
-  wrappedYear: null,
   // The projects of the period for the squad picked, worked out once per stats, range and squad.
   projectsCache: null,
   // Who the « Mes PR » page is for, null until picked.

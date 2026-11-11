@@ -1,9 +1,14 @@
 // The year in review of a person or of the whole team (« Rétrospective »), from the records of a Paris calendar year:
 // what they opened and merged, month by month and day of the week, where, the biggest pull request, who reviewed whom,
-// the hotfixes, the deployments. Their projects, AC and badges come from domain/projects.js, domain/acs.js and the
-// monthly history (model/wrapped.js). Pure, no DOM. Times in minutes since the epoch, ranges in milliseconds.
+// the hotfixes, the deployments, and its fun facts (wrapped/fun-facts.js). The sync works it out for the year in review
+// it publishes apart (scripts/sync/retro.mjs), with the projects and AC of domain/projects.js and domain/acs.js. Pure,
+// no DOM. Times in minutes since the epoch, ranges in milliseconds.
 
 import { MINUTE_MS, parisDay, parisMidnight } from './time.js'
+import { funFacts, longestStreak } from './wrapped/fun-facts.js'
+
+// The year the year in review tells, and no other.
+export const RETRO_YEAR = 2026
 
 // The Paris calendar year, up to now while it goes on: null for a year still to come.
 /**
@@ -15,20 +20,6 @@ export function yearRange(year, now) {
   const start = parisMidnight(`${year}-01-01`)
 
   return start > now ? null : { start, end: Math.min(parisMidnight(`${year + 1}-01-01`), now) }
-}
-
-// The years of the data, the latest first: those it covers from their first day, and the year of now whatever it covers
-// (a year the data starts in the middle of would tell only part of it).
-/**
- * @param {number} windowStart milliseconds
- * @param {number} now milliseconds
- * @returns {number[]}
- */
-export function dataYears(windowStart, now) {
-  const last = Number(parisDay(now).slice(0, 4))
-  const first = Math.min(last, Number(parisDay(windowStart).slice(0, 4)) + (parisDay(windowStart).endsWith('-01-01') ? 0 : 1))
-
-  return Array.from({ length: last - first + 1 }, (_, index) => last - index)
 }
 
 // The months of a year, 'YYYY-MM'.
@@ -69,7 +60,7 @@ const ranked = (counts) => [...counts].sort((a, b) => b[1] - a[1] || a[0].locale
 
 // What a list of code pull requests of a year adds up to: how many, merged, lines added and deleted by those merged, the
 // hotfixes, month by month (the months begun within the range: a year going on stops at its current month) and per day
-// of the week, the busiest month and day, per repository, and the biggest merged.
+// of the week, the busiest month and day, per repository, the biggest merged, and its fun facts.
 /**
  * @param {PullRequestRecord[]} code
  * @param {number} year
@@ -104,6 +95,7 @@ function codeYear(code, year, range) {
     repos: ranked(perRepo),
     /** @type {BiggestPullRequest | null} */
     biggest: biggest && { repo: biggest.repo, number: biggest.number, lines: biggest.lines, title: biggest.title ?? null },
+    facts: funFacts(code),
   }
 }
 
@@ -119,7 +111,7 @@ const codeWithin = (records, { start, end }) =>
 
 // A person's year: their code pull requests (codeYear()); the pull requests of others they reviewed or commented on
 // within the year, their comments, and whose they reviewed the most; who reviewed theirs the most; the days they opened
-// one on.
+// one on, and the longest run of working days in a row they did.
 /**
  * @param {PullRequestRecord[]} records
  * @param {string} login
@@ -153,12 +145,14 @@ export function personYear(records, login, year, range) {
   }
   /** @type {(counts: Map<string, number>) => Pair[]} */
   const pairs = (counts) => ranked(counts).map(([who, prs]) => ({ login: who, prs }))
+  const days = new Set(own.map((pr) => dayOf(pr.createdAt)))
 
   return {
     login,
     year,
     ...codeYear(own, year, range),
-    days: new Set(own.map((pr) => dayOf(pr.createdAt))).size,
+    days: days.size,
+    streak: longestStreak(days),
     reviewed,
     comments,
     reviewedBy: pairs(reviewedBy),
@@ -248,22 +242,4 @@ export function activePeople(records, range) {
   }
 
   return people
-}
-
-// The badges a person won over the months of a year, from the leaders of each badge month by month (monthlyLeaders() of
-// domain/months.js): for each, the months they were the top of the team.
-/**
- * @param {Map<string, { month: string, people: string[] }[]>} leaders per badge key
- * @param {string} login
- * @param {number} year
- * @returns {{ key: string, months: string[] }[]}
- */
-export function yearBadges(leaders, login, year) {
-  return [...leaders]
-    .map(([key, months]) => ({
-      key,
-      months: months.filter(({ month, people }) => month.startsWith(`${year}-`) && people.includes(login)).map(({ month }) => month),
-    }))
-    .filter(({ months }) => months.length > 0)
-    .sort((a, b) => b.months.length - a.months.length)
 }

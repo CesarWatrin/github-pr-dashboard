@@ -1,6 +1,6 @@
 // The people of the stats: their names, who is still in the team, since when they are around.
 
-import { activityBounds } from '../domain/team.js'
+import { activityBounds, hasLeft } from '../domain/team.js'
 import { DAY_MS } from '../domain/time.js'
 import { dateFormat } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -8,8 +8,6 @@ import { loadedStats, state } from './state.js'
 
 // A person first seen this close to the start of the synced data was already there before it: more than all of it.
 const SENIORITY_START_DAYS = 14
-// A person without any pull request, review, comment or merge for this long has left the team.
-const FORMER_AFTER_DAYS = 30
 const MONTH_MS = (365.25 / 12) * DAY_MS
 
 // Explained in the legend under the cards, with the figures.
@@ -39,9 +37,7 @@ export function activities() {
 // them any more, only the former people of the team page. Their pull requests still count in the totals.
 /** @param {string} login */
 export function isFormer(login) {
-  const activity = activities().get(login)
-
-  return activity !== undefined && Date.parse(loadedStats().generatedAt) - activity.last * 60_000 > FORMER_AFTER_DAYS * DAY_MS
+  return hasLeft(activities(), login, Date.parse(loadedStats().generatedAt))
 }
 
 /** @type {(login: string) => boolean} */

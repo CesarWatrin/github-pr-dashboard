@@ -9,7 +9,7 @@ import { useStats } from './stats.mjs'
 
 beforeEach(() => {
   useStats()
-  Object.assign(state, { repos: Object.fromEntries(Object.keys(state.repos).map((name) => [name, null])), projectStatuses: null, reportMonth: null, person: null, wrappedFor: null, wrappedTeam: false, wrappedYear: null, openCard: null, openPullRequest: null })
+  Object.assign(state, { repos: Object.fromEntries(Object.keys(state.repos).map((name) => [name, null])), projectStatuses: null, reportMonth: null, person: null, openCard: null, openPullRequest: null })
 })
 
 describe('the address of the page', () => {
@@ -59,20 +59,6 @@ describe('the address of the page', () => {
     state.person = null
     applyUrlQuery(query)
     assert.equal(state.person, 'zoe-r')
-  })
-
-  test('says whose year in review shows, or the team’s, and its year, on that page only, and leads back to them', () => {
-    Object.assign(state, { wrappedFor: 'zoe-r', wrappedYear: 2025 })
-    const query = urlQueryOf('wrapped')
-    assert.deepEqual([...new URLSearchParams(query)].filter(([name]) => ['for', 'team', 'year'].includes(name)), [['for', 'zoe-r'], ['year', '2025']])
-    assert.equal(new URLSearchParams(urlQueryOf('team')).has('for'), false)
-    Object.assign(state, { wrappedFor: null, wrappedYear: null })
-    applyUrlQuery(query)
-    assert.deepEqual([state.wrappedFor, state.wrappedTeam, state.wrappedYear], ['zoe-r', false, 2025])
-    applyUrlQuery('team=1&year=soon')
-    assert.deepEqual([state.wrappedFor, state.wrappedTeam, state.wrappedYear], [null, true, null])
-    applyUrlQuery('period=365d')
-    assert.deepEqual([state.wrappedFor, state.wrappedTeam], [null, false])
   })
 
   test('what it does not say goes back to the defaults, what it says wrong is left aside', () => {

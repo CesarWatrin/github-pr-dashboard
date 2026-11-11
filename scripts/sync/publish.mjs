@@ -62,6 +62,21 @@ export function encrypt(data) {
   }
 }
 
+// The year in review, gzipped then encrypted the same way, with its own key (RETRO_KEY): the dashboard password never
+// opens it, and its key never opens the stats.
+/**
+ * @param {Retro} retro
+ * @param {Buffer} key
+ * @returns {EncryptedRetro}
+ */
+export function encryptRetro(retro, key) {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(gzipSync(JSON.stringify(retro))), cipher.final(), cipher.getAuthTag()])
+
+  return { iv: iv.toString('base64'), data: encrypted.toString('base64') }
+}
+
 /**
  * @param {Pick<EncryptedStats, 'iv' | 'data'>} payload
  * @returns {Stats}

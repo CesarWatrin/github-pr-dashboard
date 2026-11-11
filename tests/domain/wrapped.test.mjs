@@ -1,11 +1,12 @@
 // Tests of the year in review (site/domain/wrapped.js): the year and its months, a person's year, the team's, the people
-// of a year, the badges of a year. Every person, repository and figure here is made up.
+// of a year, the fun facts of a year (wrapped/fun-facts.js). Every person, repository and figure here is made up.
 
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
 import { parisMidnight } from '../../site/domain/time.js'
-import { activePeople, dataYears, personYear, teamYear, yearBadges, yearMonths, yearRange } from '../../site/domain/wrapped.js'
+import { activePeople, personYear, RETRO_YEAR, teamYear, yearMonths, yearRange } from '../../site/domain/wrapped.js'
+import { funFacts, longestStreak, parisTimeOfDay } from '../../site/domain/wrapped/fun-facts.js'
 import { at, record } from './records.mjs'
 
 const NOW = Date.parse('2026-11-08T10:00:00Z')
@@ -62,10 +63,8 @@ describe('the year', () => {
     assert.equal(yearRange(2027, NOW), null)
   })
 
-  test('the years the data covers from their first day, the latest first, the current one whatever; the months of a year', () => {
-    assert.deepEqual(dataYears(Date.parse('2024-02-10T00:00:00Z'), NOW), [2026, 2025])
-    assert.deepEqual(dataYears(parisMidnight('2024-01-01'), NOW), [2026, 2025, 2024])
-    assert.deepEqual(dataYears(Date.parse('2026-03-10T00:00:00Z'), NOW), [2026])
+  test('the year in review tells 2026; the months of a year', () => {
+    assert.equal(RETRO_YEAR, 2026)
     assert.deepEqual(yearMonths(2026).slice(0, 2), ['2026-01', '2026-02'])
     assert.equal(yearMonths(2026).length, 12)
   })
@@ -86,6 +85,7 @@ describe('personYear', () => {
     assert.deepEqual(year.weekdays, [0, 2, 0, 0, 1, 0, 0])
     assert.equal(year.busiestWeekday, 1)
     assert.equal(year.days, 3)
+    assert.equal(year.streak, 1)
   })
 
   test('per repository, the most first, and the biggest pull request merged', () => {
@@ -130,16 +130,58 @@ describe('activePeople', () => {
   })
 })
 
-describe('yearBadges', () => {
-  test('the months of the year a person led each badge, the most first', () => {
-    const leaders = new Map([
-      ['reviewed', [{ month: '2025-12', people: ['ada'] }, { month: '2026-01', people: ['ada'] }, { month: '2026-02', people: ['ada', 'ben'] }]],
-      ['comments', [{ month: '2026-03', people: ['ada'] }]],
-      ['hotfixes', [{ month: '2026-03', people: ['ben'] }]],
-    ])
-    assert.deepEqual(yearBadges(leaders, 'ada', 2026), [
-      { key: 'reviewed', months: ['2026-01', '2026-02'] },
-      { key: 'comments', months: ['2026-03'] },
-    ])
+describe('funFacts', () => {
+  // Paris is UTC+1 in winter, UTC+2 in summer.
+  const code = [
+    // Merged in 5 minutes, 3 lines, opened at 8:30.
+    record({ repo: 'web', number: 1, author: 'ada', createdAt: at('2026-02-03T07:30:00Z'), mergedAt: at('2026-02-03T07:35:00Z'), lines: 3 }),
+    // Merged a Friday at 17:00 after 4 days, 200 lines, opened at 23:50 and discussed: 4 comments of others, 2 of Ada.
+    record({
+      repo: 'web',
+      number: 2,
+      author: 'ada',
+      createdAt: at('2026-06-01T21:50:00Z'),
+      mergedAt: at('2026-06-05T15:00:00Z'),
+      lines: 200,
+      interventions: [
+        ['ben', at('2026-06-02T08:00:00Z'), 'COMMENTED', 3],
+        ['ben', at('2026-06-02T09:00:00Z'), 'APPROVED', 1],
+        ['ada', at('2026-06-02T10:00:00Z'), 'COMMENTED', 2],
+      ],
+    }),
+    // Opened at 1:10 in the night, still open: the latest of the day, not the earliest.
+    record({ repo: 'api', number: 1, author: 'ada', createdAt: at('2026-09-09T23:10:00Z') }),
+    // Merged without a line changed: never the smallest.
+    record({ repo: 'api', number: 2, author: 'ada', createdAt: at('2026-10-06T08:00:00Z'), mergedAt: at('2026-10-06T09:00:00Z'), lines: 0 }),
+  ]
+
+  test('the time of day, Paris time, whatever the season', () => {
+    assert.equal(parisTimeOfDay(at('2026-02-03T07:30:00Z')), 8 * 60 + 30)
+    assert.equal(parisTimeOfDay(at('2026-06-01T21:50:00Z')), 23 * 60 + 50)
+  })
+
+  test('the smallest merged, lines changed, the quickest and the slowest to merge, the most discussed', () => {
+    const facts = funFacts(code)
+    assert.deepEqual([facts.smallest, facts.fastest, facts.slowest, facts.discussed], [3, 5, 4 * 24 * 60 - 6 * 60 - 50, 4])
+  })
+
+  test('the earliest and the latest opened in the day, which starts at 5', () => {
+    const facts = funFacts(code)
+    assert.deepEqual([facts.earliest, facts.latest], [8 * 60 + 30, 60 + 10])
+  })
+
+  test('the merges of a Friday evening', () => {
+    assert.equal(funFacts(code).fridays, 1)
+  })
+
+  test('nothing to tell without a pull request', () => {
+    assert.deepEqual(funFacts([]), { smallest: null, fastest: null, slowest: null, discussed: null, earliest: null, latest: null, fridays: 0 })
+  })
+
+  test('the longest run of working days in a row: a Monday follows a Friday, a weekend neither counts nor breaks it', () => {
+    assert.equal(longestStreak([]), 0)
+    // Thursday 5, Friday 6, Saturday 7, Monday 9, Tuesday 10 March; then Thursday 12 alone.
+    assert.equal(longestStreak(['2026-03-05', '2026-03-06', '2026-03-07', '2026-03-09', '2026-03-10', '2026-03-12']), 4)
+    assert.equal(longestStreak(['2026-03-12', '2026-03-03', '2026-03-12']), 1)
   })
 })

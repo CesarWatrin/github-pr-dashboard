@@ -1,13 +1,12 @@
 // The slides of the year in review: a person's (personSlides()) and the team's (teamSlides()), each a figure that counts
-// up, a few words and maybe a picture (the months, avatars, projects, badges). Slides without anything to say are left
-// out: a year without a project has no slide of projects. The story (wrapped.js) plays them.
+// up, a few words and maybe a picture (the months, avatars, projects, records). Slides without anything to say are left
+// out: a year without a project has no slide of projects. The story (wrapped.js) plays them, from what the sync
+// published (scripts/sync/retro.mjs).
 
-import { capitalize, formatLines, formatNumber, monthName, monthShortFormat, noun, plural } from '../../lib/format.js'
-import { LOCALE, t } from '../../lib/i18n.js'
-import { displayName } from '../../model/people.js'
+import { capitalize, formatLines, formatNumber, noun, plural } from '../../lib/format.js'
+import { t } from '../../lib/i18n.js'
 import { el } from '../../ui/dom.js'
-import { avatarUrl, githubUrl, pullRequestPath } from '../../ui/links.js'
-import { PROJECT_STATUSES } from '../../ui/projects.js'
+import { biggestLink, face, isLate, monthBars, monthOnly, moreRepos, projectList, recordCards, records, summary, timeOfDay, weekdayName } from './visuals.js'
 
 /**
  * A slide: its tone (the colors of its background), a line above, a figure that counts up and its unit, a title, a
@@ -15,68 +14,27 @@ import { PROJECT_STATUSES } from '../../ui/projects.js'
  * @typedef {{ tone: number, eyebrow: string, figure?: number, unit?: string, title?: string, detail?: string, visual?: HTMLElement, final?: boolean }} Slide
  */
 
-/** @typedef {ReturnType<typeof import('../../model/wrapped.js').wrappedPerson>} WrappedPerson */
-/** @typedef {ReturnType<typeof import('../../model/wrapped.js').wrappedTeam>} WrappedTeam */
-
-const weekdayFormat = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', timeZone: 'UTC' })
-// A day of the week, Monday 0: « mardi ».
-/** @type {(day: number) => string} */
-const weekdayName = (day) => weekdayFormat.format(new Date(Date.UTC(2024, 0, 1 + day)))
-// A month without its year: « mars ».
-/** @type {(month: string) => string} */
-const monthOnly = (month) => new Intl.DateTimeFormat(LOCALE, { month: 'long', timeZone: 'UTC' }).format(new Date(`${month}-15T12:00:00Z`))
-
-/** @type {(login: string, size: number) => HTMLElement} */
-const face = (login, size) => el('img', { className: 'wrapped-face', src: avatarUrl(login, size * 2), alt: '', width: size, height: size })
-
-// The months of the year as bars, the busiest one lit.
-/** @type {(months: { month: string, code: number }[], busiest: string | null) => HTMLElement} */
-function monthBars(months, busiest) {
-  const most = Math.max(1, ...months.map((month) => month.code))
-  const bars = el('div', { className: 'wrapped-bars' })
-  bars.setAttribute('role', 'img')
-  bars.setAttribute('aria-label', months.map((month) => `${monthName(month.month)} : ${formatNumber(month.code)}`).join(', '))
-  for (const month of months) {
-    const bar = el('span', { className: `wrapped-bar${month.month === busiest ? ' is-busiest' : ''}` }, el('span', { className: 'wrapped-bar-label', textContent: monthShortFormat.format(new Date(`${month.month}-15T12:00:00Z`)).charAt(0).toUpperCase() }))
-    bar.style.setProperty('--height', `${Math.max(4, Math.round((month.code / most) * 100))}%`)
-    bars.append(bar)
-  }
-
-  return bars
-}
-
-// A short list: each item a name and what it says.
-/** @type {(items: [string, string][]) => HTMLElement} */
-const shortList = (items) =>
-  el('ul', { className: 'wrapped-list' }, ...items.map(([name, detail]) => el('li', {}, el('span', { className: 'wrapped-list-name', textContent: name }), el('span', { className: 'wrapped-list-detail', textContent: detail }))))
-
-// Projects, their status in words.
-/** @type {(projects: { name: string, status: string, delivered: boolean }[]) => HTMLElement} */
-const projectList = (projects) =>
-  shortList(projects.slice(0, 5).map((project) => [project.name, project.delivered ? t('livré cette année') : PROJECT_STATUSES[project.status].label.toLowerCase()]))
-
-// The figures of the year side by side, on the last slide.
-/** @type {(figures: [string, number][]) => HTMLElement} */
-const summary = (figures) =>
-  el(
-    'dl',
-    { className: 'wrapped-summary' },
-    ...figures.map(([label, value]) => el('div', {}, el('dt', { textContent: label }), el('dd', { textContent: formatNumber(value) }))),
-  )
-
-// A person's year, slide by slide.
 /**
- * @param {WrappedPerson} year
+ * What a story reads besides its figures: the year it tells, the organization (for the links to GitHub), and the name of
+ * a login.
+ * @typedef {{ year: number, org: string, nameOf: (login: string) => string }} StoryContext
+ */
+
+/**
+ * A person's year, slide by slide.
+ * @param {RetroPerson} year
+ * @param {StoryContext} context
  * @returns {Slide[]}
  */
-export function personSlides(year) {
-  const name = displayName(year.login)
-  const delivered = year.projects.filter((project) => project.delivered).length
+export function personSlides(year, { year: retroYear, org, nameOf }) {
+  const name = nameOf(year.login)
+  const cards = recordCards(year.facts)
+  const { latest, earliest } = year.facts
   /** @type {(Slide | false)[]} */
   const slides = [
     {
       tone: 0,
-      eyebrow: t('Rétrospective {year}', { year: year.year }),
+      eyebrow: t('Rétrospective {year}', { year: retroYear }),
       title: name,
       detail: t('Ton année en PR, en reviews et en projets. C’est parti !'),
       visual: face(year.login, 120),
@@ -107,13 +65,20 @@ export function personSlides(year) {
         .join(' '),
       visual: monthBars(year.months, year.busiestMonth),
     },
-    year.projects.length > 0 && {
+    year.streak >= 3 && {
+      tone: 5,
+      eyebrow: t('Ta plus longue série'),
+      figure: year.streak,
+      unit: t('jours ouvrés d’affilée'),
+      detail: t('avec au moins une PR ouverte chaque jour. Rien ne t’arrête.'),
+    },
+    year.projects > 0 && {
       tone: 4,
       eyebrow: t('Tes projets'),
-      figure: year.projects.length,
-      unit: noun(year.projects.length, 'projet'),
-      detail: delivered ? t('dont {count} livrés cette année.', { count: formatNumber(delivered) }) : t('Pas encore livrés : la suite au prochain épisode.'),
-      visual: projectList(year.projects),
+      figure: year.projects,
+      unit: noun(year.projects, 'projet'),
+      detail: year.delivered ? t('dont {count} livrés cette année.', { count: formatNumber(year.delivered) }) : t('Pas encore livrés : la suite au prochain épisode.'),
+      visual: projectList(year.projectList),
     },
     (year.acs > 0 || year.hotfixes > 0) && {
       tone: 5,
@@ -132,18 +97,18 @@ export function personSlides(year) {
       unit: noun(year.reviewed, 'PR', 'PR'),
       detail: t('et laissé {count}.', { count: plural(year.comments, 'commentaire') }),
     },
-    (year.reviewedBy.length > 0 || year.reviewedMost.length > 0) && {
+    (year.reviewedBy !== null || year.reviewedMost !== null) && {
       tone: 1,
       eyebrow: t('Ton duo de review'),
       visual: el(
         'div',
         { className: 'wrapped-duo' },
-        ...[
-          year.reviewedBy[0] && [year.reviewedBy[0].login, t('a relu {count} de tes PR', { count: formatNumber(year.reviewedBy[0].prs) })],
-          year.reviewedMost[0] && [year.reviewedMost[0].login, t('tu as relu {count} de ses PR', { count: formatNumber(year.reviewedMost[0].prs) })],
-        ]
-          .filter(Boolean)
-          .map(([login, text]) => el('div', { className: 'wrapped-duo-person' }, face(login, 72), el('strong', { textContent: displayName(login) }), el('span', { textContent: text }))),
+        .../** @type {[string, string][]} */ (
+          [
+            year.reviewedBy && [year.reviewedBy.login, t('a relu {count} de tes PR', { count: formatNumber(year.reviewedBy.prs) })],
+            year.reviewedMost && [year.reviewedMost.login, t('tu as relu {count} de ses PR', { count: formatNumber(year.reviewedMost.prs) })],
+          ].filter(Boolean)
+        ).map(([login, text]) => el('div', { className: 'wrapped-duo-person' }, face(login, 72), el('strong', { textContent: nameOf(login) }), el('span', { textContent: text }))),
       ),
     },
     year.biggest !== null && {
@@ -152,43 +117,48 @@ export function personSlides(year) {
       figure: year.biggest.lines,
       unit: t('lignes'),
       detail: year.biggest.title ?? t('dans {repo}', { repo: year.biggest.repo }),
-      visual: el('a', {
-        className: 'wrapped-link',
-        href: githubUrl(pullRequestPath(year.biggest.repo, year.biggest.number)),
-        target: '_blank',
-        rel: 'noopener',
-        textContent: t('{repo} #{number} sur GitHub', { repo: year.biggest.repo, number: year.biggest.number }),
-      }),
+      visual: biggestLink(org, year.biggest),
+    },
+    cards.length > 0 && {
+      tone: 3,
+      eyebrow: t('Tes records'),
+      title: t('Les PR qui ont marqué ton année'),
+      visual: records(cards),
+    },
+    latest !== null && {
+      tone: 6,
+      eyebrow: isLate(latest) ? t('Couche-tard') : t('Ta PR la plus tardive'),
+      title: timeOfDay(latest),
+      detail: [
+        isLate(latest) ? t('Ta PR la plus tardive de l’année. La nuit porte conseil, paraît-il.') : t('Jamais de PR la nuit : tu sais t’arrêter.'),
+        earliest !== null && earliest !== latest ? t('La plus matinale : {time}.', { time: timeOfDay(earliest) }) : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+    },
+    year.facts.fridays > 0 && {
+      tone: 4,
+      eyebrow: t('Le frisson du vendredi'),
+      figure: year.facts.fridays,
+      unit: noun(year.facts.fridays, 'PR mergée un vendredi après 16 h', 'PR mergées un vendredi après 16 h'),
+      detail: t('Le week-end peut attendre.'),
     },
     year.repos.length > 0 && {
       tone: 3,
       eyebrow: t('Ton dépôt de cœur'),
       title: year.repos[0][0],
       detail: t('{count} de tes PR y sont allées.', { count: formatNumber(year.repos[0][1]) }),
-      visual: year.repos.length > 1 ? shortList(year.repos.slice(1, 4).map(([repo, count]) => [repo, plural(count, 'PR', 'PR')])) : undefined,
-    },
-    year.badges.length > 0 && {
-      tone: 4,
-      eyebrow: t('Tes badges de l’année'),
-      figure: year.badges.reduce((total, badge) => total + badge.months.length, 0),
-      unit: t('mois en tête de l’équipe'),
-      visual: el(
-        'ul',
-        { className: 'wrapped-badges' },
-        ...year.badges.map((badge) =>
-          el('li', {}, el('span', { className: 'wrapped-badge-icon', textContent: badge.icon }), el('strong', { textContent: badge.name }), el('span', { textContent: plural(badge.months.length, 'mois', 'mois') })),
-        ),
-      ),
+      visual: moreRepos(year.repos),
     },
     {
       tone: 0,
-      eyebrow: t('Rétrospective {year}', { year: year.year }),
+      eyebrow: t('Rétrospective {year}', { year: retroYear }),
       title: t('Merci pour cette année, {name} !', { name }),
       visual: summary([
         [t('PR de code'), year.code],
         [t('Mergées'), year.merged],
         [t('PR relues'), year.reviewed],
-        [t('Projets'), year.projects.length],
+        [t('Projets'), year.projects],
         [t('AC livrées'), year.acs],
         [t('Hotfix'), year.hotfixes],
       ]),
@@ -199,18 +169,19 @@ export function personSlides(year) {
   return /** @type {Slide[]} */ (slides.filter(Boolean))
 }
 
-// The team's year, slide by slide: what everyone did together, never who did the most.
 /**
- * @param {WrappedTeam} year
+ * The team's year, slide by slide: what everyone did together, never who did the most.
+ * @param {RetroTeam} year
+ * @param {StoryContext} context
  * @returns {Slide[]}
  */
-export function teamSlides(year) {
-  const delivered = year.projects.filter((project) => project.delivered)
+export function teamSlides(year, { year: retroYear }) {
+  const cards = recordCards(year.facts)
   /** @type {(Slide | false)[]} */
   const slides = [
     {
       tone: 0,
-      eyebrow: t('Rétrospective {year}', { year: year.year }),
+      eyebrow: t('Rétrospective {year}', { year: retroYear }),
       title: t('L’équipe'),
       detail: t('{people} personnes, une année de PR, de reviews et de projets.', { people: formatNumber(year.people) }),
     },
@@ -242,13 +213,13 @@ export function teamSlides(year) {
       detail: t('{count} PR ce mois-là.', { count: formatNumber(year.months.find((month) => month.month === year.busiestMonth)?.code ?? 0) }),
       visual: monthBars(year.months, year.busiestMonth),
     },
-    year.projects.length > 0 && {
+    year.projects > 0 && {
       tone: 4,
       eyebrow: t('Les projets livrés'),
-      figure: delivered.length,
-      unit: noun(delivered.length, 'projet'),
-      detail: t('sur {count} menés cette année, et {acs}.', { count: formatNumber(year.projects.length), acs: plural(year.acs, 'AC livrée', 'AC livrées') }),
-      visual: delivered.length ? projectList(delivered) : undefined,
+      figure: year.delivered,
+      unit: noun(year.delivered, 'projet'),
+      detail: t('sur {count} menés cette année, et {acs}.', { count: formatNumber(year.projects), acs: plural(year.acs, 'AC livrée', 'AC livrées') }),
+      visual: year.projectList.length ? projectList(year.projectList) : undefined,
     },
     year.reviewed > 0 && {
       tone: 6,
@@ -257,23 +228,42 @@ export function teamSlides(year) {
       unit: t('PR relues'),
       detail: t('{comments} et {reviewers} relecteurs.', { comments: plural(year.comments, 'commentaire'), reviewers: formatNumber(year.reviewers) }),
     },
+    cards.length > 0 && {
+      tone: 3,
+      eyebrow: t('Les records de l’équipe'),
+      title: t('Les PR qui ont marqué l’année'),
+      visual: records(cards),
+    },
+    year.facts.latest !== null && isLate(year.facts.latest) && {
+      tone: 6,
+      eyebrow: t('La PR la plus tardive'),
+      title: timeOfDay(year.facts.latest),
+      detail: t('Quelqu’un avait une idée à cette heure-là. On ne dira pas qui.'),
+    },
+    year.facts.fridays > 0 && {
+      tone: 4,
+      eyebrow: t('Le frisson du vendredi'),
+      figure: year.facts.fridays,
+      unit: noun(year.facts.fridays, 'PR mergée un vendredi après 16 h', 'PR mergées un vendredi après 16 h'),
+      detail: t('Le week-end peut attendre.'),
+    },
     year.repos.length > 0 && {
       tone: 2,
       eyebrow: t('Le dépôt le plus actif'),
       title: year.repos[0][0],
       detail: t('{count} PR de code.', { count: formatNumber(year.repos[0][1]) }),
-      visual: year.repos.length > 1 ? shortList(year.repos.slice(1, 4).map(([repo, count]) => [repo, plural(count, 'PR', 'PR')])) : undefined,
+      visual: moreRepos(year.repos),
     },
     {
       tone: 0,
-      eyebrow: t('Rétrospective {year}', { year: year.year }),
+      eyebrow: t('Rétrospective {year}', { year: retroYear }),
       title: t('Merci à toute l’équipe !'),
       visual: summary([
         [t('PR de code'), year.code],
         [t('Mergées'), year.merged],
         [t('PR relues'), year.reviewed],
         [t('Mises en prod'), year.deployments],
-        [t('Projets livrés'), delivered.length],
+        [t('Projets livrés'), year.delivered],
         [t('Hotfix'), year.hotfixes],
       ]),
       final: true,

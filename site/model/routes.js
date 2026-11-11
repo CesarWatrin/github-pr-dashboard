@@ -28,12 +28,6 @@ export const ROUTES = {
   report: { hash: '#/bilan', title: t('Bilan du mois'), subtitle: t('Un mois comparé au précédent et au reste de l’année'), filters: false },
   trends: { hash: '#/tendances', title: t('Tendances'), subtitle: t('Les indicateurs clés mois après mois, sur les mois de la période'), search: false },
   analysis: { hash: '#/analyse', title: t('Analyse'), subtitle: t('Ce qui ressort de la période, et des pistes pour progresser'), search: false },
-  wrapped: {
-    hash: '#/retro',
-    title: t('Rétrospective'),
-    subtitle: t('L’année en revue d’une personne ou de toute l’équipe, à revoir et à partager'),
-    filters: false,
-  },
   awards: { hash: '#/palmares', title: t('Palmarès'), subtitle: t('Les badges de l’équipe, mois après mois, depuis la première synchro'), filters: false },
   repositories: { hash: '#/depots', title: t('Dépôts'), subtitle: t('Chaque dépôt en un coup d’œil : son activité, sa santé, qui l’écrit') },
   projects: {
