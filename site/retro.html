@@ -28,6 +28,7 @@
     <!-- The styles, in the order of the cascade, touch.css last. -->
     <link rel="stylesheet" href="styles/base.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/wrapped.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/wrapped-motion.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/motion.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/touch.css?v=__BUILD__" />
     <!-- modules: written by scripts/module-map.mjs -->
@@ -81,6 +82,8 @@
     <script type="module" src="retro.js?v=__BUILD__"></script>
   </head>
   <body>
+    <!-- Halos of light drifting behind the page (styles/pages/wrapped-motion.css). -->
+    <div class="wrapped-halos" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     <main class="wrapped" data-wrapped aria-label="Rétrospective"></main>
   </body>
 </html>

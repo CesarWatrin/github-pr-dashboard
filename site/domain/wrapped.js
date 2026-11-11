@@ -163,15 +163,18 @@ export function personYear(records, login, year, range) {
 /** @typedef {ReturnType<typeof personYear>} PersonYear */
 
 // The team's year: every code pull request of people (codeYear()), the people who opened them, the pull requests
-// reviewed by someone else and the comments left, the deployments to production, and who opened the most.
+// reviewed by someone else and the comments left, the deployments to production. A squad's, given its members: the code
+// pull requests they opened, the pull requests they reviewed, anyone's, and no deployment (the whole team's, not theirs).
 /**
  * @param {PullRequestRecord[]} records
  * @param {number} year
  * @param {{ start: number, end: number }} range
+ * @param {Set<string> | null} [members] null for the whole team
  */
-export function teamYear(records, year, range) {
+export function teamYear(records, year, range, members = null) {
   const within = (/** @type {number} */ at) => at * MINUTE_MS >= range.start && at * MINUTE_MS < range.end
-  const code = codeWithin(records, range)
+  const among = (/** @type {string} */ login) => members === null || members.has(login)
+  const code = codeWithin(records, range).filter((pr) => among(pr.author))
   /** @type {Map<string, number>} */
   const perAuthor = new Map()
   for (const pr of code) {
@@ -185,7 +188,7 @@ export function teamYear(records, year, range) {
     if (pr.kind !== 'code' || pr.bot) {
       continue
     }
-    const others = pr.interventions.filter(([who, at]) => who !== pr.author && within(at))
+    const others = pr.interventions.filter(([who, at]) => who !== pr.author && within(at) && among(who))
     if (others.length > 0) {
       reviewed++
       comments += others.reduce((total, [, , , count]) => total + count, 0)
@@ -196,7 +199,7 @@ export function teamYear(records, year, range) {
   }
   /** @type {Map<string, number>} */
   const deploymentsPerDay = new Map()
-  for (const pr of records) {
+  for (const pr of members === null ? records : []) {
     if (pr.deployment && pr.mergedAt !== null && within(pr.mergedAt)) {
       const day = dayOf(pr.mergedAt)
       deploymentsPerDay.set(day, (deploymentsPerDay.get(day) ?? 0) + 1)

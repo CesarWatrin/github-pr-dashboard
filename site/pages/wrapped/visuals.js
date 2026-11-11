@@ -61,9 +61,11 @@ export function monthBars(months, busiest) {
   const bars = el('div', { className: 'wrapped-bars' })
   bars.setAttribute('role', 'img')
   bars.setAttribute('aria-label', months.map((month) => `${monthName(month.month)} : ${formatNumber(month.code)}`).join(', '))
-  for (const month of months) {
+  for (const [index, month] of months.entries()) {
     const bar = el('span', { className: `wrapped-bar${month.month === busiest ? ' is-busiest' : ''}` }, el('span', { className: 'wrapped-bar-label', textContent: monthShortFormat.format(new Date(`${month.month}-15T12:00:00Z`)).charAt(0).toUpperCase() }))
     bar.style.setProperty('--height', `${Math.max(4, Math.round((month.code / most) * 100))}%`)
+    // They grow one after the other.
+    bar.style.setProperty('--index', String(index))
     bars.append(bar)
   }
 

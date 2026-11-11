@@ -170,19 +170,21 @@ export function personSlides(year, { year: retroYear, org, nameOf }) {
 }
 
 /**
- * The team's year, slide by slide: what everyone did together, never who did the most.
+ * The team's year, or a squad's, slide by slide: what everyone did together, never who did the most. A squad has no
+ * deployment of its own: its last slide counts its AC instead.
  * @param {RetroTeam} year
  * @param {StoryContext} context
+ * @param {string | null} [squad] the name of the squad, null for the team
  * @returns {Slide[]}
  */
-export function teamSlides(year, { year: retroYear }) {
+export function teamSlides(year, { year: retroYear }, squad = null) {
   const cards = recordCards(year.facts)
   /** @type {(Slide | false)[]} */
   const slides = [
     {
       tone: 0,
       eyebrow: t('Rétrospective {year}', { year: retroYear }),
-      title: t('L’équipe'),
+      title: squad ?? t('L’équipe'),
       detail: t('{people} personnes, une année de PR, de reviews et de projets.', { people: formatNumber(year.people) }),
     },
     year.code > 0 && {
@@ -257,12 +259,12 @@ export function teamSlides(year, { year: retroYear }) {
     {
       tone: 0,
       eyebrow: t('Rétrospective {year}', { year: retroYear }),
-      title: t('Merci à toute l’équipe !'),
+      title: squad ? t('Merci pour cette année, {name} !', { name: squad }) : t('Merci à toute l’équipe !'),
       visual: summary([
         [t('PR de code'), year.code],
         [t('Mergées'), year.merged],
         [t('PR relues'), year.reviewed],
-        [t('Mises en prod'), year.deployments],
+        squad ? [t('AC livrées'), year.acs] : [t('Mises en prod'), year.deployments],
         [t('Projets livrés'), year.delivered],
         [t('Hotfix'), year.hotfixes],
       ]),

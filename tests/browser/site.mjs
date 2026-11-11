@@ -1,5 +1,6 @@
 // A copy of the page to test, in a temporary folder: the files of site/ linked, and stats of the test's own published
-// in data/, encrypted as the sync does (scripts/sync/publish.mjs) with a test password. Served on a free port.
+// in data/, encrypted as the sync does (scripts/sync/publish.mjs) with a test password, and the year in review the sync
+// works out from them (scripts/sync/retro.mjs), with a test key. Served on a free port.
 
 import { createCipheriv, createHash, pbkdf2Sync, randomBytes } from 'node:crypto'
 import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises'
@@ -8,8 +9,11 @@ import { join, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 import { serve } from '../../scripts/serve.mjs'
+import { retroOf } from '../../scripts/sync/retro.mjs'
 
 export const TEST_PASSWORD = 'test-password'
+// The key of the year in review, as its link carries it: 32 bytes in base64url, made up.
+export const TEST_RETRO_KEY = Buffer.alloc(32, 7).toString('base64url')
 // Far fewer than the sync's: the page reads them from the file, and unlocking stays quick.
 const TEST_ITERATIONS = 1000
 
@@ -32,7 +36,14 @@ export async function serveSite(stats, { source = join(import.meta.dirname, '..'
     }
   }
   await mkdir(join(root, 'data'))
-  await writeFile(join(root, 'data', 'stats.enc.json'), JSON.stringify(encryptStats(stats)))
+  await writeFile(join(root, 'data', 'stats.enc.json'), JSON.stringify(encryptStats({ ...stats, retroKey: TEST_RETRO_KEY })))
+  const retro = retroOf(stats)
+  if (retro) {
+    const iv = randomBytes(12)
+    const cipher = createCipheriv('aes-256-gcm', Buffer.from(TEST_RETRO_KEY, 'base64url'), iv)
+    const data = Buffer.concat([cipher.update(gzipSync(JSON.stringify(retro))), cipher.final(), cipher.getAuthTag()])
+    await writeFile(join(root, 'data', 'retro.enc.json'), JSON.stringify({ iv: iv.toString('base64'), data: data.toString('base64') }))
+  }
   await writeFile(join(root, 'data', 'version.json'), JSON.stringify({ build: null, generatedAt: stats.generatedAt }))
   const server = await serve(root, 0)
 

@@ -594,6 +594,8 @@ export const PAGES = {
   'Copie impossible': 'Could not copy',
   'Reprendre': 'Resume',
   'Choisir quelqu’un d’autre': 'Pick someone else',
+  'L’année de la squad': 'The squad’s year',
+  'Chef de squad : {name}': 'Squad lead: {name}',
   // The screen of the year in review without a key that opens it (pages/wrapped/locked.js).
   'Il te faut le lien de la Rétrospective': 'You need the link to the year in review',
   'Cette page s’ouvre avec le lien partagé à l’équipe. Demande-le, puis ouvre-le dans ce navigateur : il s’en souviendra 30 jours.':

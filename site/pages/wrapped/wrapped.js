@@ -19,6 +19,8 @@ import { avatar } from './visuals.js'
 
 // How long a slide shows before the next one, unless paused: the time the bar of the slide takes to fill.
 export const SLIDE_MS = 7000
+// The sparks rising through a story (wrapped-motion.css).
+const SPARKS = 18
 
 // The icons of the buttons, drawn like those of the dashboard: 16 × 16, a stroke.
 const ICONS = {
@@ -75,9 +77,31 @@ function open(who) {
  * @param {RetroWho} who
  */
 export function showRetro(retro, who) {
-  const known = who === 'team' || (who !== null && retro.people.some((person) => person.login === who.login))
-  shown = { retro, who: known ? who : null }
-  open(shown.who)
+  shown = { retro, who: null }
+  open(storyOf(retro, who) ? who : null)
+}
+
+// The figures of a story: a person's, a squad's or the team's; null for the picker, or someone the year does not know.
+/**
+ * @param {Retro} retro
+ * @param {RetroWho} who
+ * @returns {{ person: RetroPerson } | { group: RetroTeam, squad: string | null } | null}
+ */
+function storyOf(retro, who) {
+  if (who === null) {
+    return null
+  }
+  if (who === 'team') {
+    return { group: retro.team, squad: null }
+  }
+  if ('login' in who) {
+    const person = retro.people.find((other) => other.login === who.login)
+
+    return person ? { person } : null
+  }
+  const squad = retro.squads.find((other) => other.name === who.squad)
+
+  return squad ? { group: squad, squad: squad.name } : null
 }
 
 function draw() {
@@ -85,29 +109,34 @@ function draw() {
     return
   }
   const { retro, who } = shown
-  const person = who && who !== 'team' ? retro.people.find((other) => other.login === who.login) : undefined
-  if (who === null || (who !== 'team' && !person)) {
+  const found = storyOf(retro, who)
+  if (!found) {
     story = null
     renderPicker(container(), retro, nameOf, open)
 
     return
   }
   const context = { year: retro.year, org: retro.org, nameOf }
-  renderStory(person ? personSlides(person, context) : teamSlides(retro.team, context), person ? person.login : null, retro.year)
+  if ('person' in found) {
+    renderStory(personSlides(found.person, context), { login: found.person.login }, retro.year)
+  } else {
+    renderStory(teamSlides(found.group, context, found.squad), found.squad, retro.year)
+  }
 }
 
 /**
  * The story of a year: the bars of its slides, whose it is, pause and back to the picker, the slide, and the two parts to
  * tap.
  * @param {Slide[]} slides
- * @param {string | null} login null for the team
+ * @param {{ login: string } | string | null} whose a person, the name of a squad, or null for the team
  * @param {number} year
  */
-function renderStory(slides, login, year) {
+function renderStory(slides, whose, year) {
   const progress = el('div', { className: 'wrapped-progress' }, ...slides.map(() => el('span', { className: 'wrapped-segment' }, el('span', { className: 'wrapped-segment-fill' }))))
-  const whose = login
-    ? el('span', { className: 'wrapped-whose' }, avatar(login, 28), el('span', { textContent: `${nameOf(login)} · ${year}` }))
-    : el('span', { className: 'wrapped-whose' }, el('span', { textContent: `${t('L’équipe')} · ${year}` }))
+  const head =
+    whose !== null && typeof whose === 'object'
+      ? el('span', { className: 'wrapped-whose' }, avatar(whose.login, 28), el('span', { textContent: `${nameOf(whose.login)} · ${year}` }))
+      : el('span', { className: 'wrapped-whose' }, el('span', { textContent: `${whose ?? t('L’équipe')} · ${year}` }))
   const pause = iconButton(t('Mettre en pause'), 'pause', () => togglePause(), 'is-pause')
   const back = iconButton(t('Choisir quelqu’un d’autre'), 'people', () => open(null), 'is-back')
   const previous = el('button', { type: 'button', className: 'wrapped-tap is-previous' })
@@ -119,12 +148,45 @@ function renderStory(slides, login, year) {
   // Read out as each slide comes.
   const stage = el('div', { className: 'wrapped-stage' })
   stage.setAttribute('aria-live', 'polite')
-  const root = el('div', { className: 'wrapped-story' }, progress, el('div', { className: 'wrapped-head' }, whose, pause, back), stage, previous, next)
+  const root = el('div', { className: 'wrapped-story' }, sparks(), progress, el('div', { className: 'wrapped-head' }, head, pause, back), stage, previous, next)
   root.style.setProperty('--slide-ms', `${SLIDE_MS}ms`)
   container().replaceChildren(root)
   story = { slides, index: 0, paused: false, root }
   show(0)
 }
+
+/** @type {(min: number, max: number) => number} */
+const between = (min, max) => min + Math.random() * (max - min)
+
+// Pieces of a decoration, each placed and timed at random through custom properties.
+/**
+ * @param {string} className
+ * @param {number} count
+ * @param {() => Record<string, string>} place
+ */
+function scatter(className, count, place) {
+  const root = el('div', { className })
+  root.setAttribute('aria-hidden', 'true')
+  for (let index = 0; index < count; index++) {
+    const piece = el('i')
+    for (const [name, value] of Object.entries(place())) {
+      piece.style.setProperty(name, value)
+    }
+    root.append(piece)
+  }
+
+  return root
+}
+
+// The sparks rising through the story, behind what it says.
+const sparks = () =>
+  scatter('wrapped-sparks', SPARKS, () => ({
+    '--x': `${between(2, 98).toFixed(1)}%`,
+    '--size': `${between(2, 5).toFixed(1)}px`,
+    '--delay': `${between(-12, 0).toFixed(2)}s`,
+    '--duration': `${between(8, 15).toFixed(2)}s`,
+    '--drift': `${between(-40, 40).toFixed(0)}px`,
+  }))
 
 // A figure that counts up to its value, at once under reduced motion. Its size follows its length, so that the longest
 // still fits the slide (--chars).

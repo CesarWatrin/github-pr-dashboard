@@ -198,6 +198,12 @@ interface RetroTeam extends RetroYear {
   deployments: number
   deploymentDays: number
 }
+// A squad's year: the code pull requests its members opened, those they reviewed, never a deployment.
+interface RetroSquad extends RetroTeam {
+  name: string
+  // The head of the squad, when it has one.
+  lead?: string
+}
 interface Retro {
   org: string
   year: number
@@ -205,6 +211,8 @@ interface Retro {
   // The names of the people it names, when they differ from their login.
   names: Record<string, string>
   people: RetroPerson[]
+  // The squads with anything over the year, in the order of SQUADS.
+  squads: RetroSquad[]
   team: RetroTeam
 }
 // Encrypted with a key of its own, which the link carries: nothing to derive.

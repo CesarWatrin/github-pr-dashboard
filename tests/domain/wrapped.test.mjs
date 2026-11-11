@@ -122,6 +122,14 @@ describe('teamYear', () => {
   test('the deployments to production, and on how many days', () => {
     assert.deepEqual([year.deployments, year.deploymentDays], [2, 1])
   })
+
+  test('a squad: the code pull requests its members opened, those they reviewed, anyone’s, and no deployment', () => {
+    const squad = teamYear(RECORDS, 2026, RANGE, new Set(['ada', 'cy']))
+    assert.deepEqual([squad.code, squad.people], [4, 2])
+    // Ada reviewed three of Ben's and Cy's; Cy reviewed one of Ada's.
+    assert.deepEqual([squad.reviewed, squad.comments, squad.reviewers], [4, 4, 2])
+    assert.deepEqual([squad.deployments, squad.deploymentDays], [0, 0])
+  })
 })
 
 describe('activePeople', () => {

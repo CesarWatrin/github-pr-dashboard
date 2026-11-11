@@ -1,5 +1,6 @@
 // The year in review (« Rétrospective », site/retro.html), as the sync publishes it apart from the stats: only what its
-// slides show, worked out once from the stats, for the people of RETRO_YEAR still in the team and for the whole team.
+// slides show, worked out once from the stats, for the people of RETRO_YEAR still in the team, each squad (SQUADS) and the
+// whole team.
 // Never the records: the team that reads it does not see the dashboard. publish.mjs encrypts it with the key of
 // RETRO_KEY, which the link of the year in review carries.
 
@@ -15,14 +16,14 @@ export const SHOWN_REPOS = 4
 
 /** @typedef {{ start: number, end: number }} YearRange */
 
-// The projects worked on within the year, each delivered or not within it, by a person or by everyone: delivered first,
-// then the most code pull requests of the year.
+// The projects worked on within the year, each delivered or not within it, by some people (a person, a squad) or by
+// everyone: delivered first, then the most code pull requests of the year.
 /**
  * @param {ReturnType<typeof projectRows>} rows the projects whose life meets the year
  * @param {YearRange} range
- * @param {string | null} login
+ * @param {Set<string> | null} people null for everyone
  */
-function yearProjects(rows, range, login) {
+function yearProjects(rows, range, people) {
   const within = (/** @type {number | null} */ at) => at !== null && at * MINUTE_MS >= range.start && at * MINUTE_MS < range.end
 
   return rows
@@ -30,7 +31,7 @@ function yearProjects(rows, range, login) {
       name: row.name,
       status: row.status,
       delivered: row.status === 'delivered' && within(row.deliveredAt),
-      code: login ? (row.authors.find((author) => author.login === login)?.code ?? 0) : row.code,
+      code: people ? row.authors.filter((author) => people.has(author.login)).reduce((total, author) => total + author.code, 0) : row.code,
     }))
     .filter((project) => project.code > 0)
     .sort((a, b) => Number(b.delivered) - Number(a.delivered) || b.code - a.code || a.name.localeCompare(b.name))
@@ -69,10 +70,23 @@ export function retroOf(stats, year = RETRO_YEAR) {
   const people = [...activePeople(records, range)].filter((login) => !hasLeft(bounds, login, now)).sort((a, b) => nameOf(a).localeCompare(nameOf(b)))
   const rows = projectRows(records, { ...range, bucket: 'month' }, { now })
   const acs = acsOf(records)
-  /** @type {(login: string | null) => number} */
-  const yearAcs = (login) =>
-    acs.filter((ac) => ac.deliveredAt !== null && ac.deliveredAt * MINUTE_MS >= range.start && ac.deliveredAt * MINUTE_MS < range.end && (!login || ac.authors.includes(login)))
-      .length
+  // The AC delivered within the year, by some people or by everyone.
+  /** @type {(people: Set<string> | null) => number} */
+  const yearAcs = (people) =>
+    acs.filter(
+      (ac) =>
+        ac.deliveredAt !== null &&
+        ac.deliveredAt * MINUTE_MS >= range.start &&
+        ac.deliveredAt * MINUTE_MS < range.end &&
+        (!people || ac.authors.some((author) => people.has(author))),
+    ).length
+  // A team, or a squad given its members: its figures (teamYear()), its busiest repositories, projects and AC.
+  /** @type {(members: Set<string> | null) => RetroTeam} */
+  const groupYear = (members) => {
+    const { year: _year, weekdays: _weekdays, busiestWeekday: _weekday, biggest: _biggest, repos, ...figures } = teamYear(records, year, range, members)
+
+    return { ...figures, repos: repos.slice(0, SHOWN_REPOS), ...projectFigures(yearProjects(rows, range, members), true), acs: yearAcs(members) }
+  }
   /** @type {Set<string>} */
   const named = new Set()
 
@@ -89,11 +103,19 @@ export function retroOf(stats, year = RETRO_YEAR) {
       repos: repos.slice(0, SHOWN_REPOS),
       reviewedBy: reviewedBy[0] ?? null,
       reviewedMost: reviewedMost[0] ?? null,
-      ...projectFigures(yearProjects(rows, range, login), false),
-      acs: yearAcs(login),
+      ...projectFigures(yearProjects(rows, range, new Set([login])), false),
+      acs: yearAcs(new Set([login])),
     }
   })
-  const { year: _year, weekdays: _weekdays, busiestWeekday: _weekday, biggest: _biggest, repos, ...team } = teamYear(records, year, range)
+  // The squads with anyone of the year, in their order, and the head of each, whose face their card shows.
+  const squads = (stats.squads ?? [])
+    .map((squad) => ({ name: squad.name, ...(squad.lead && { lead: squad.lead }), ...groupYear(new Set(squad.members)) }))
+    .filter((squad) => squad.code > 0 || squad.reviewed > 0)
+  for (const squad of squads) {
+    if (squad.lead) {
+      named.add(squad.lead)
+    }
+  }
 
   return {
     org: stats.org,
@@ -101,6 +123,7 @@ export function retroOf(stats, year = RETRO_YEAR) {
     generatedAt: stats.generatedAt,
     names: Object.fromEntries([...named].filter((login) => nameOf(login) !== login).map((login) => [login, nameOf(login)])),
     people: persons,
-    team: { ...team, repos: repos.slice(0, SHOWN_REPOS), ...projectFigures(yearProjects(rows, range, null), true), acs: yearAcs(null) },
+    squads,
+    team: groupYear(null),
   }
 }
