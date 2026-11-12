@@ -5,7 +5,7 @@
 
 import { capitalize, formatLines, formatNumber, noun, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { biggestLink, duo, face, isLate, monthBars, monthOnly, moreRepos, projectList, recordCards, records, summary, timeOfDay, weekdayName } from './visuals.js'
+import { biggestLink, duo, face, groupPhoto, isLate, monthBars, monthOnly, moreRepos, projectList, recordCards, records, summary, timeOfDay, weekdayName } from './visuals.js'
 
 /**
  * A slide: its tone (the colors of its background), a line above, a figure that counts up and its unit, a title, a
@@ -162,14 +162,16 @@ export function personSlides(year, { year: retroYear, org, nameOf }) {
 }
 
 /**
- * The team's year, or a squad's, slide by slide: what everyone did together, never who did the most. A squad has no
- * deployment of its own: its last slide counts its AC instead.
+ * The team's year, or a squad's, slide by slide: what everyone did together, never who did the most. Its first slide
+ * shows everyone, the heads of squads in front. A squad has no deployment of its own: its last slide counts its AC
+ * instead.
  * @param {RetroTeam} year
  * @param {StoryContext} context
  * @param {string | null} [squad] the name of the squad, null for the team
+ * @param {{ people: string[], leads: string[] }} [crew] the logins of its people, and of the heads of its squads
  * @returns {Slide[]}
  */
-export function teamSlides(year, { year: retroYear }, squad = null) {
+export function teamSlides(year, { year: retroYear, nameOf }, squad = null, crew = { people: [], leads: [] }) {
   const cards = recordCards(year.facts)
   /** @type {(Slide | false)[]} */
   const slides = [
@@ -178,6 +180,7 @@ export function teamSlides(year, { year: retroYear }, squad = null) {
       eyebrow: t('Rétrospective {year}', { year: retroYear }),
       title: squad ?? t('L’équipe'),
       detail: t('{people} personnes, une année de PR, de reviews et de projets.', { people: formatNumber(year.people) }),
+      visual: groupPhoto(crew.people, crew.leads, nameOf),
     },
     year.code > 0 && {
       tone: 1,

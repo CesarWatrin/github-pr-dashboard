@@ -400,11 +400,20 @@ for (const language of ['fr', 'en']) {
       await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-squad') && location.hash === ''`)
       await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-squad').click()`)
       await page.waitFor(`location.hash.startsWith('#squad=')`)
+      // Its first slide shows its people, its head alone in front, larger than the others.
+      const photo = (selector) => page.evaluate(`[...document.querySelectorAll('[data-wrapped] .wrapped-photo ${selector}')].map((face) => face.width)`)
+      const [squadLead, squadBack] = [await photo('.is-front img'), await photo('.wrapped-photo-row:not(.is-front) img')]
+      assert.equal(squadLead.length, 1)
+      assert.ok(squadBack.length > 0 && squadBack.every((width) => width < squadLead[0]))
       await playThrough('year in review of a squad')
-      // Someone else: back to the picker, then the team.
+      // Someone else: back to the picker, then the team, its first slide showing everyone, the heads of squads in front.
       await page.evaluate(`[...document.querySelectorAll('[data-wrapped] .wrapped-action')][1].click()`)
+      const people = await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-person').length`)
+      const leads = await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-squad img').length`)
       await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-team').click()`)
       await page.waitFor(`location.hash === '#team'`)
+      assert.equal((await photo('.is-front img')).length, leads)
+      assert.equal((await photo('img')).length, people)
       await playThrough('year in review of the team')
       // A browser that only ever opened the year in review goes back to it from the address of the dashboard, never to
       // its lock screen; one that unlocked the dashboard once gets the lock screen, even locked since.

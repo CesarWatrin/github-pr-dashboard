@@ -248,6 +248,21 @@
   }
 }
 
+/* The group photo comes together face after face (--index, from visuals.js), the heads last; then they float. */
+.wrapped-photo-row img {
+  animation: wrapped-pop 500ms var(--ease-out) backwards;
+  animation-delay: calc(var(--index, 0) * 30ms + 400ms);
+}
+
+.wrapped-photo-row.is-front img {
+  animation:
+    wrapped-pop 600ms var(--ease-out) backwards,
+    wrapped-bob 5s ease-in-out infinite;
+  animation-delay:
+    calc(var(--index, 0) * 30ms + 400ms),
+    calc(var(--index, 0) * 30ms + 1000ms);
+}
+
 /* The months grow from the ground one after the other (--index, from visuals.js). */
 .wrapped-bar {
   transform-origin: bottom;

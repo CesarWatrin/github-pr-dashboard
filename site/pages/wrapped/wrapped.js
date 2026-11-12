@@ -84,18 +84,19 @@ export function showRetro(retro, who) {
 }
 
 // The figures of a story: a person's, a squad's or the team's, with the people its last slides thank (those of the year
-// among the members of a squad, everyone for the team); null for the picker, or someone the year does not know.
+// among the members of a squad, everyone for the team) and the heads of squads its first slide puts in front; null for
+// the picker, or someone the year does not know.
 /**
  * @param {Retro} retro
  * @param {RetroWho} who
- * @returns {{ person: RetroPerson } | { group: RetroTeam, squad: string | null, thanked: RetroPerson[] } | null}
+ * @returns {{ person: RetroPerson } | { group: RetroTeam, squad: string | null, thanked: RetroPerson[], leads: string[] } | null}
  */
 function storyOf(retro, who) {
   if (who === null) {
     return null
   }
   if (who === 'team') {
-    return { group: retro.team, squad: null, thanked: retro.people }
+    return { group: retro.team, squad: null, thanked: retro.people, leads: retro.squads.flatMap((squad) => (squad.lead ? [squad.lead] : [])) }
   }
   if ('login' in who) {
     const person = retro.people.find((other) => other.login === who.login)
@@ -106,7 +107,9 @@ function storyOf(retro, who) {
   // A year in review published before the squads had their members thanks nobody.
   const members = new Set(squad?.members ?? [])
 
-  return squad ? { group: squad, squad: squad.name, thanked: retro.people.filter((person) => members.has(person.login)) } : null
+  return squad
+    ? { group: squad, squad: squad.name, thanked: retro.people.filter((person) => members.has(person.login)), leads: squad.lead ? [squad.lead] : [] }
+    : null
 }
 
 function draw() {
@@ -126,7 +129,7 @@ function draw() {
     renderStory(personSlides(found.person, context), { login: found.person.login }, retro.year)
   } else {
     // The thanks to each person come before the last slide, all on one for a squad.
-    const slides = teamSlides(found.group, context, found.squad)
+    const slides = teamSlides(found.group, context, found.squad, { people: found.thanked.map((person) => person.login), leads: found.leads })
     slides.splice(-1, 0, ...thanksSlides(found.thanked, nameOf, found.squad !== null))
     renderStory(slides, found.squad, retro.year)
   }

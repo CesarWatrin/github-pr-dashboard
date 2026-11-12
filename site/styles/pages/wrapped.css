@@ -612,6 +612,45 @@
   background: var(--wrapped-faint);
 }
 
+/* The group photo of the first slide of a team or a squad (visuals.js): everyone in rows at the back, overlapping, each
+   face cut out of the story's background, the rows as long as one another (balanced, so that no short last row hides
+   behind the heads); the heads of squads in front, larger, ringed with the slide's light. --face: the size of the
+   faces of a row. */
+.wrapped-photo {
+  display: grid;
+  justify-items: center;
+}
+
+.wrapped-photo-row {
+  padding: 0 0 calc(var(--face) * 0.16) calc(var(--face) * 0.22);
+  line-height: 0;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.wrapped-photo-row img {
+  display: inline-block;
+  margin: 0 0 calc(var(--face) * -0.16) calc(var(--face) * -0.22);
+  border: 2px solid #11141c;
+  border-radius: 50%;
+  background: #262a33;
+  vertical-align: top;
+}
+
+/* Just touching the last row: with their ring and as they float, they cover no more than its chins. */
+.wrapped-photo-row.is-front {
+  position: relative;
+  padding: 0;
+}
+
+.wrapped-photo-row.is-front img {
+  margin: 0 -3px 8px;
+  border: 3px solid var(--wrapped-ink);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--tone-a) 35%, transparent),
+    0 0 36px color-mix(in srgb, var(--tone-a) 60%, transparent);
+}
+
 /* The months, the busiest one lit. */
 .wrapped-bars {
   display: grid;
