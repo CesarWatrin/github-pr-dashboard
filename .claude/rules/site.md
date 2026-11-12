@@ -359,7 +359,9 @@ paths:
   default, the one before in January). Then the story (`renderStory()`): the slides of `slides.js` (`personSlides()`,
   `teamSlides()`, from `wrappedPerson()` / `wrappedTeam()`: `personYear()` and `teamYear()` of `domain/wrapped.js`, with
   the projects of `projectRows()`, the AC of `acsFor()` and the badges of `badgeStandings()` over the months of the
-  year), a slide without anything to say left out; a bar per slide, the next slide when the bar of the current one ends
+  year), a slide without anything to say left out; the first slide of the team or a squad shows its people as a group
+  photo (`groupPhoto()` of `visuals.js`: the people thanked in balanced rows at the back, the heads of squads in front,
+  larger, ringed); a bar per slide, the next slide when the bar of the current one ends
   its animation (`SLIDE_MS`; none under reduced motion: taps only), taps on the left third and the rest, the arrow keys,
   Space to pause, Escape back to the picker then out; it pauses when the tab hides. The team's story never ranks people.
   The address says whose and which year (`state.wrappedFor`, `wrappedTeam`, `wrappedYear`): « Copier le lien » on the last

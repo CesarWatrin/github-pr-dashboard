@@ -54,6 +54,51 @@ export function avatar(login, size, className = '') {
 /** @type {(login: string, size: number) => HTMLElement} */
 export const face = (login, size) => avatar(login, size, 'wrapped-face')
 
+// The size of the faces at the back of a group photo, smaller the more people stand there so that they fit the slide:
+// past `from` people, `size` pixels. Heads stand in front, larger.
+const PHOTO_SIZES = [
+  { from: 36, size: 40 },
+  { from: 12, size: 48 },
+  { from: 0, size: 60 },
+]
+const LEAD_SCALE = 1.4
+
+// The people of a team or a squad on its first slide, as on a group photo: everyone in rows at the back, overlapping,
+// and the heads of squads in front, larger and ringed with the light of the slide.
+/** @type {(people: string[], leads: string[], nameOf: (login: string) => string) => HTMLElement | undefined} */
+export function groupPhoto(people, leads, nameOf) {
+  const front = [...new Set(leads)]
+  const back = people.filter((login) => !front.includes(login))
+  if (!front.length && !back.length) {
+    return undefined
+  }
+  const size = (PHOTO_SIZES.find(({ from }) => back.length > from) ?? PHOTO_SIZES[PHOTO_SIZES.length - 1]).size
+  const leadSize = Math.round(size * LEAD_SCALE)
+  /** @type {(logins: string[], rowSize: number, className: string, offset: number) => HTMLElement} */
+  const row = (logins, rowSize, className, offset) => {
+    const faces = el('div', { className })
+    faces.style.setProperty('--face', `${rowSize}px`)
+    for (const [index, login] of logins.entries()) {
+      const image = avatar(login, rowSize)
+      // They step in one after the other, the heads last.
+      image.style.setProperty('--index', String(offset + index))
+      faces.append(image)
+    }
+
+    return faces
+  }
+  const photo = el(
+    'div',
+    { className: 'wrapped-photo' },
+    ...(back.length ? [row(back, size, 'wrapped-photo-row', 0)] : []),
+    ...(front.length ? [row(front, leadSize, 'wrapped-photo-row is-front', back.length)] : []),
+  )
+  photo.setAttribute('role', 'img')
+  photo.setAttribute('aria-label', [...front, ...back].map(nameOf).join(', '))
+
+  return photo
+}
+
 // The review partners of a person: who reviewed the most of their pull requests, and whose they reviewed the most; a
 // single card when it is the same person both ways.
 /** @type {(year: RetroPerson, nameOf: (login: string) => string) => HTMLElement} */

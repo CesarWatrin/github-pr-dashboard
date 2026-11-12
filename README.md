@@ -175,7 +175,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   toute l'équipe, et son année se joue en plein écran, diapositive après diapositive comme une story : PR ouvertes et
   mergées, lignes, mois et jour les plus chargés, plus longue série, projets, AC, hotfix, reviews données et reçues, duo
   de review (une seule carte quand c'est la même personne dans les deux sens), plus grosse PR, records, dépôt de cœur.
-  Pour l'équipe ou une squad, les mêmes chiffres pour tout le monde, sans classement, puis « Merci à chacun » : une
+  Pour l'équipe ou une squad, la première diapositive montre tout le monde comme sur une photo de groupe : les têtes
+  de chacun en rangées, les chefs de squad devant, plus grands. Puis les mêmes chiffres pour tout le monde, sans
+  classement, et « Merci à chacun » : une
   anecdote positive sur chaque personne, ce qui ressort le plus de son année parmi celles qu'on remercie (PR mergées ou
   relues, projets ou AC livrés, hotfix, lignes supprimées, série, duo…), les anecdotes variant d'une personne à
   l'autre. La dernière diapositive propose « Revoir », « Accueil » (retour au choix) et « Partager » (le partage de
