@@ -68,6 +68,16 @@
   white-space: nowrap;
 }
 
+/* The title of a pull request, quiet, on a line of its own under its link (« Mes PR »): one line, whole on hover. */
+.feed-pr-title {
+  display: block;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .feed-time {
   display: block;
   color: var(--text-secondary);

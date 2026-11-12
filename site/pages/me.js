@@ -5,7 +5,7 @@ import { minutesIso } from '../lib/dates.js'
 import { formatNumber } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName, isCurrent, mePeople } from '../model/people.js'
-import { requiredApprovals } from '../model/pull-requests.js'
+import { pullRequestOf, requiredApprovals } from '../model/pull-requests.js'
 import { state, storeMe, storeNotify } from '../model/state.js'
 import { notificationsOn, notificationsSupported, notifyNewItems } from '../services/notifications.js'
 import { $, el } from '../ui/dom.js'
@@ -98,6 +98,14 @@ function waitedFor(pr) {
   ]
 }
 
+// The title of a pull request, quiet under its link, so that one tells them apart: whole on hover, nothing when the
+// stats do not carry it.
+function prTitle(pr) {
+  const title = pullRequestOf(pr.repo, pr.number)?.title
+
+  return title ? [el('span', { className: 'feed-pr-title', textContent: title, title })] : []
+}
+
 // Unlike the unblock page, about the code, the « Mes PR » page lists releases and integrations too: they wait for
 // their reviews and code owners all the same. A tag tells them apart.
 /** @type {PullRequestKind[]} */
@@ -116,6 +124,7 @@ const ME_ITEMS = {
         personLink(pr.author, { withAvatar: false }),
         ...kindTag(pr),
         el('span', { className: 'feed-tag', textContent: UNBLOCK_STANCES.find((stance) => stance.key === pr.stance).tag }),
+        ...prTitle(pr),
       ),
       minutesIso(pr.createdAt),
       `${t('ouverte')} `,
@@ -129,7 +138,7 @@ const ME_ITEMS = {
   drafts: (pr) =>
     listItem(
       pr.author,
-      el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), ...kindTag(pr)),
+      el('p', { className: 'feed-text' }, pullRequestLink(pr.repo, pr.number), ...kindTag(pr), ...prTitle(pr)),
       minutesIso(pr.createdAt),
       `${t('ouverte')} `,
     ),
@@ -146,6 +155,7 @@ function ownItem(pr, { tagged = false, forgotten = false } = {}) {
     ...kindTag(pr),
     ...(tagged ? [el('span', { className: 'feed-tag', textContent: stance.tag })] : []),
     ...(forgotten ? [] : waitedFor(pr)),
+    ...prTitle(pr),
   )
 
   return forgotten

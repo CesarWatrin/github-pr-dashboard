@@ -27,7 +27,8 @@ export function encryptStats(stats, password = TEST_PASSWORD) {
   return { iterations: TEST_ITERATIONS, salt: salt.toString('base64'), iv: iv.toString('base64'), data: data.toString('base64') }
 }
 
-// Serves `source` (site/ by default) with these stats; resolves with its address and a way to stop.
+// Serves `source` (site/ by default) with these stats; resolves with its address, the year in review it published and
+// a way to stop.
 export async function serveSite(stats, { source = join(import.meta.dirname, '..', '..', 'site') } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'dashboard-site-'))
   for (const entry of await readdir(source)) {
@@ -49,6 +50,7 @@ export async function serveSite(stats, { source = join(import.meta.dirname, '..'
 
   return {
     url: `http://127.0.0.1:${/** @type {import('node:net').AddressInfo} */ (server.address()).port}/`,
+    retro,
     async close() {
       // The browser keeps its connections open: closed with the server, or the server would wait for them.
       server.closeAllConnections()
