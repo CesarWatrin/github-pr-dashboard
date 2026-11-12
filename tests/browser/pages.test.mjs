@@ -143,9 +143,13 @@ for (const language of ['fr', 'en']) {
       assert.equal(await page.evaluate(`document.querySelector('[data-org]').textContent`), stats.org)
     })
 
-    test('the links of the sidebar never make it scroll sideways, even beside a scrollbar', async () => {
+    test('the links of the sidebar never make it scroll sideways nor cut a name, even beside a scrollbar', async () => {
       // The year in review the widest of them, with its copy button; a scrollbar as a mouse shows it takes some room.
-      const fits = `(() => { const nav = document.querySelector('.nav'); return nav.scrollWidth <= nav.clientWidth })()`
+      const fits = `(() => {
+        const nav = document.querySelector('.nav')
+        const label = document.querySelector('[data-retro-label]')
+        return nav.scrollWidth <= nav.clientWidth && label.textContent !== '' && label.scrollWidth <= label.clientWidth
+      })()`
       assert.equal(await page.evaluate(`!document.querySelector('[data-retro]').hidden`), true)
       assert.equal(await page.evaluate(fits), true)
       await page.evaluate(`document.querySelector('.nav').style.paddingRight = '16px'`)

@@ -98,8 +98,9 @@
 
 /* The year in review, last: it opens apart, in a tab of its own, which the small arrow at its end says; the button
    beside it copies its link, a check mark once done. */
-/* The widest link, with its copy button: it narrows with the sidebar (beside a scrollbar too), its name cut short
-   rather than the sidebar scrolling sideways. */
+/* The widest link, with its copy button: its short name (« Rétro 2026 ») fits beside a scrollbar too, with room to
+   spare. Should a font ever leave too little, it narrows with the sidebar, its name cut short, rather than the sidebar
+   scrolling sideways. */
 .nav-retro {
   display: flex;
   align-items: center;
@@ -136,7 +137,7 @@
 .nav-retro-copy {
   display: inline-grid;
   place-items: center;
-  width: 34px;
+  width: 30px;
   height: 34px;
   flex: none;
   padding: 0;
