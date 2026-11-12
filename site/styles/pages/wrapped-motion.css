@@ -114,7 +114,7 @@
 .wrapped-story::before,
 .wrapped-story::after {
   position: absolute;
-  z-index: -1;
+  z-index: -2;
   width: 150%;
   aspect-ratio: 1;
   border-radius: 50%;
@@ -161,7 +161,7 @@
 .wrapped-sparks {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   overflow: hidden;
   pointer-events: none;
 }
@@ -467,77 +467,55 @@
   animation-delay: 220ms;
 }
 
-/* A light under the mouse, which wrapped.js eases there (--glow-x, --glow-y): over the whole page, it lights up the colors
-   it passes over rather than covering them. A wide ring of grey in color-dodge brightens each color below by itself, the
-   glows of the slide blazing in their own tone while the dark stays dark and white text stays white; a small core in
-   screen adds the light itself, in the series colors, one melting into the next. Its box takes no room in the page
-   (display: contents), so that each light blends with the page under it and not only with the other. It catches no
-   click, comes in on the first move and fades out when the mouse leaves; none on a touch screen, nor when nothing
-   should move. */
-@property --glow-tone {
-  syntax: '<color>';
-  inherits: true;
-  initial-value: #e8892a;
-}
-
-.wrapped-glow {
-  display: contents;
-}
-
-.wrapped-glow span {
-  position: fixed;
+/* A light under the mouse, which wrapped.js eases there (--glow-x, --glow-y): it lights up the background it passes over,
+   never what the page says. White in overlay brightens each color below in its own hue, the glows warming up while the
+   dark stays dark; it fades out smoothly, from a soft middle to nothing, without an edge. One behind the page, over its
+   halos, which the cards of the picker let through; one in the story, over its glows and sparks (one step lower) and
+   under its slide. Both catch no click, come in on the first move and fade out when the mouse leaves; none on a touch
+   screen, nor when nothing should move. */
+.wrapped-glow,
+.wrapped-story-glow {
+  --glow-size: clamp(360px, 44vmax, 680px);
   top: 0;
   left: 0;
-  z-index: 1;
   width: var(--glow-size);
   aspect-ratio: 1;
   border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgba(255, 255, 255, 0.34),
+    rgba(255, 255, 255, 0.28) 16%,
+    rgba(255, 255, 255, 0.18) 34%,
+    rgba(255, 255, 255, 0.09) 54%,
+    rgba(255, 255, 255, 0.03) 74%,
+    transparent
+  );
+  mix-blend-mode: overlay;
   opacity: 0;
   pointer-events: none;
-  transform: translate3d(calc(var(--glow-x, 50vw) - var(--glow-size) / 2), calc(var(--glow-y, 50vh) - var(--glow-size) / 2), 0);
-  transition: opacity 600ms ease;
+  /* Far away until the mouse first moves over it. */
+  transform: translate3d(calc(var(--glow-x, -100vmax) - var(--glow-size) / 2), calc(var(--glow-y, -100vmax) - var(--glow-size) / 2), 0);
+  transition: opacity 900ms ease;
   will-change: transform;
 }
 
-.wrapped-glow span:nth-child(1) {
-  --glow-size: clamp(380px, 48vmax, 720px);
-  background: radial-gradient(circle closest-side, rgba(128, 128, 128, 0.72), rgba(128, 128, 128, 0.3) 45%, transparent);
-  mix-blend-mode: color-dodge;
+.wrapped-glow {
+  position: fixed;
 }
 
-.wrapped-glow span:nth-child(2) {
-  --glow-size: clamp(220px, 24vmax, 360px);
-  background: radial-gradient(
-    circle closest-side,
-    color-mix(in srgb, color-mix(in srgb, var(--glow-tone) 60%, #fff) 40%, transparent),
-    color-mix(in srgb, var(--glow-tone) 14%, transparent) 55%,
-    transparent
-  );
-  mix-blend-mode: screen;
-  animation: wrapped-glow-tone 18s linear infinite;
+.wrapped-story-glow {
+  position: absolute;
+  z-index: -1;
 }
 
-@keyframes wrapped-glow-tone {
-  0%,
-  100% {
-    --glow-tone: var(--series-2);
-  }
-
-  33% {
-    --glow-tone: var(--series-1);
-  }
-
-  66% {
-    --glow-tone: var(--series-3);
-  }
-}
-
-.wrapped-glow.is-on span {
+.is-glowing .wrapped-glow,
+.is-glowing .wrapped-story-glow {
   opacity: 1;
 }
 
 @media (hover: none), (pointer: coarse) {
-  .wrapped-glow {
+  .wrapped-glow,
+  .wrapped-story-glow {
     display: none;
   }
 }
@@ -546,7 +524,8 @@
 @media (prefers-reduced-motion: reduce) {
   .wrapped-sparks,
   .wrapped-story.is-final .wrapped-slide::before,
-  .wrapped-glow {
+  .wrapped-glow,
+  .wrapped-story-glow {
     display: none;
   }
 }

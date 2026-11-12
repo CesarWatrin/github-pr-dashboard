@@ -88,8 +88,9 @@
   <body>
     <!-- Halos of light drifting behind the page (styles/pages/wrapped-motion.css). -->
     <div class="wrapped-halos" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <!-- The light under the pointer, behind the page and over its halos (pages/wrapped/wrapped.js moves it,
+         wrapped-motion.css draws it): what the page says stays over it. -->
+    <div class="wrapped-glow" data-wrapped-glow aria-hidden="true"></div>
     <main class="wrapped" data-wrapped aria-label="Rétrospective"></main>
-    <!-- The light under the pointer, over the page (pages/wrapped/wrapped.js moves it, wrapped-motion.css draws it). -->
-    <div class="wrapped-glow" data-wrapped-glow aria-hidden="true"><span></span><span></span></div>
   </body>
 </html>

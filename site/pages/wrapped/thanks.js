@@ -1,6 +1,6 @@
 // The slides that thank each person of the team or of a squad (« Merci à chacun »), before the last slide of its story:
-// a card per person, their face, their name and the anecdote of their year (domain/wrapped/thanks.js), a few to a
-// slide, which stays long enough to read them all.
+// a card per person, their face, their name and the anecdote of their year (domain/wrapped/thanks.js), a few to a slide
+// for the team, all on one for a squad (closer together past a few), which stays long enough to read them all.
 
 import { thanksOf } from '../../domain/wrapped/thanks.js'
 import { elides, formatLines, plural } from '../../lib/format.js'
@@ -54,21 +54,23 @@ function anecdote({ kind, value, other }, nameOf) {
  * The slides of thanks of the people of a team or a squad, in their order.
  * @param {RetroPerson[]} people
  * @param {(login: string) => string} nameOf
+ * @param {boolean} [together] all on one slide (a squad)
  * @returns {Slide[]}
  */
-export function thanksSlides(people, nameOf) {
+export function thanksSlides(people, nameOf, together = false) {
   const thanks = thanksOf(people)
-  const pages = Math.ceil(thanks.length / THANKS_PER_SLIDE)
+  const perSlide = together ? Math.max(1, thanks.length) : THANKS_PER_SLIDE
+  const pages = Math.ceil(thanks.length / perSlide)
 
   return Array.from({ length: pages }, (_, page) => {
-    const shown = thanks.slice(page * THANKS_PER_SLIDE, (page + 1) * THANKS_PER_SLIDE)
+    const shown = thanks.slice(page * perSlide, (page + 1) * perSlide)
 
     return {
       tone: (page % 6) + 1,
       eyebrow: pages > 1 ? t('Merci à chacun · {page}/{pages}', { page: page + 1, pages }) : t('Merci à chacun'),
       visual: el(
         'ul',
-        { className: 'wrapped-thanks' },
+        { className: `wrapped-thanks${shown.length > THANKS_PER_SLIDE ? ' is-dense' : ''}` },
         ...shown.map((one) =>
           el('li', {}, face(one.login, 44), el('strong', { textContent: nameOf(one.login) }), el('span', { textContent: anecdote(one, nameOf) })),
         ),

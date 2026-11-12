@@ -125,9 +125,9 @@ function draw() {
   if ('person' in found) {
     renderStory(personSlides(found.person, context), { login: found.person.login }, retro.year)
   } else {
-    // The thanks to each person come before the last slide.
+    // The thanks to each person come before the last slide, all on one for a squad.
     const slides = teamSlides(found.group, context, found.squad)
-    slides.splice(-1, 0, ...thanksSlides(found.thanked, nameOf))
+    slides.splice(-1, 0, ...thanksSlides(found.thanked, nameOf, found.squad !== null))
     renderStory(slides, found.squad, retro.year)
   }
 }
@@ -156,7 +156,7 @@ function renderStory(slides, whose, year) {
   // Read out as each slide comes.
   const stage = el('div', { className: 'wrapped-stage' })
   stage.setAttribute('aria-live', 'polite')
-  const root = el('div', { className: 'wrapped-story' }, sparks(), progress, el('div', { className: 'wrapped-head' }, head, pause, back), stage, previous, next)
+  const root = el('div', { className: 'wrapped-story' }, sparks(), storyGlow(), progress, el('div', { className: 'wrapped-head' }, head, pause, back), stage, previous, next)
   root.style.setProperty('--slide-ms', `${SLIDE_MS}ms`)
   container().replaceChildren(root)
   story = { slides, index: 0, paused: false, root }
@@ -195,6 +195,14 @@ const sparks = () =>
     '--duration': `${between(8, 15).toFixed(2)}s`,
     '--drift': `${between(-40, 40).toFixed(0)}px`,
   }))
+
+// The light of the story under the mouse (followPointer()), over its glows and under its slide.
+function storyGlow() {
+  const glow = el('i', { className: 'wrapped-story-glow' })
+  glow.setAttribute('aria-hidden', 'true')
+
+  return glow
+}
 
 // A figure that counts up to its value, at once under reduced motion. Its size follows its length, so that the longest
 // still fits the slide (--chars); then shrinks some more (--fit) when the digits of the font are wider than the styles
@@ -328,11 +336,13 @@ function togglePause(paused = !story?.paused) {
   button?.replaceChildren(icon(paused ? 'play' : 'pause'))
 }
 
-// How far the light under the mouse goes towards it at each frame: it trails a little behind, smoothly.
-const GLOW_EASE = 0.16
+// How long the light under the mouse takes to cover most of the way to it (milliseconds): it trails a little behind,
+// smoothly, at any refresh rate of the screen.
+const GLOW_LAG_MS = 140
 
-// The light under the mouse (wrapped-motion.css): it comes in on the first move, eases towards the mouse frame after
-// frame, rests once there, and fades out when the mouse leaves the page. Only with a mouse, and only when things may move.
+// The light under the mouse (wrapped-motion.css), behind the page and in the story, where the mouse is over it: it comes
+// in on the first move, eases towards the mouse frame after frame, rests once there, and fades out when the mouse leaves
+// the page. Only with a mouse, and only when things may move.
 function followPointer() {
   const glow = document.querySelector('[data-wrapped-glow]')
   if (!(glow instanceof HTMLElement) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -342,20 +352,31 @@ function followPointer() {
   /** @type {{ x: number, y: number } | null} */
   let at = null
   let frame = 0
-  const step = () => {
+  let last = 0
+  /** @param {number} now */
+  const step = (now) => {
     if (!at) {
       frame = 0
 
       return
     }
-    at.x += (target.x - at.x) * GLOW_EASE
-    at.y += (target.y - at.y) * GLOW_EASE
-    const resting = Math.abs(target.x - at.x) < 0.5 && Math.abs(target.y - at.y) < 0.5
+    // The share of the way covered since the last frame, by the time gone: the same glide at 60 or 120 frames a second.
+    const ease = 1 - Math.exp(-Math.min(now - last, 100) / GLOW_LAG_MS)
+    last = now
+    at.x += (target.x - at.x) * ease
+    at.y += (target.y - at.y) * ease
+    const resting = Math.abs(target.x - at.x) < 0.3 && Math.abs(target.y - at.y) < 0.3
     if (resting) {
       at = { ...target }
     }
     glow.style.setProperty('--glow-x', `${at.x.toFixed(1)}px`)
     glow.style.setProperty('--glow-y', `${at.y.toFixed(1)}px`)
+    const shown = story?.root
+    if (shown?.isConnected) {
+      const box = shown.getBoundingClientRect()
+      shown.style.setProperty('--glow-x', `${(at.x - box.left).toFixed(1)}px`)
+      shown.style.setProperty('--glow-y', `${(at.y - box.top).toFixed(1)}px`)
+    }
     frame = resting ? 0 : requestAnimationFrame(step)
   }
   document.addEventListener('pointermove', (event) => {
@@ -366,12 +387,15 @@ function followPointer() {
     target.y = event.clientY
     // The first move: it lights up right there.
     at ??= { ...target }
-    glow.classList.add('is-on')
-    frame ||= requestAnimationFrame(step)
+    document.documentElement.classList.add('is-glowing')
+    if (!frame) {
+      last = performance.now()
+      frame = requestAnimationFrame(step)
+    }
   })
   // Back on the page, it lights up again where the mouse comes in.
   const fade = () => {
-    glow.classList.remove('is-on')
+    document.documentElement.classList.remove('is-glowing')
     at = null
   }
   document.documentElement.addEventListener('mouseleave', fade)
