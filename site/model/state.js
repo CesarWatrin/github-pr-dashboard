@@ -50,8 +50,8 @@ export const state = {
     deployments: { key: 'deployments', direction: -1 },
     workflows: { key: 'runs', direction: -1 },
     dependencies: { key: 'opened', direction: -1 },
-    // As on their timeline: the earliest started first.
-    projects: { key: 'start', direction: 1 },
+    // As on their cards and timeline: the latest started first, the most recent on top.
+    projects: { key: 'start', direction: -1 },
   },
   previousRows: Object.fromEntries(
     ['authors', 'reviewers', 'cycle', 'collaboration', 'tma', 'repos', 'deployments', 'workflows', 'dependencies', 'projects'].map((name) => [

@@ -193,6 +193,13 @@ for (const language of ['fr', 'en']) {
 
     test('the projects show every status, and their table sorts on it, the ongoing ones first', async () => {
       await show('projects')
+      // The latest started first, the most recent on top: the bars of the timeline start ever earlier, and the cards and
+      // the table list the projects in the same order.
+      const lefts = await page.evaluate(`[...document.querySelectorAll('[data-project-timeline] .gantt-bar')].map((bar) => parseFloat(bar.style.left))`)
+      assert.ok(lefts.length > 1)
+      assert.deepEqual(lefts, lefts.toSorted((a, b) => b - a))
+      const cardNames = await page.evaluate(`[...document.querySelectorAll('[data-project-cards] .repo-card-name')].map((name) => name.textContent)`)
+      assert.deepEqual(await page.evaluate(`[...document.querySelectorAll('[data-projects] tbody .project-pick')].map((pick) => pick.textContent)`), cardNames)
       const statuses = `[...document.querySelectorAll('[data-projects] tbody .project-status')].map((tag) => tag.className.split('is-')[1])`
       assert.deepEqual(new Set(await page.evaluate(statuses)), new Set(['ongoing', 'stalled', 'abandoned', 'delivered']))
       const sortOnStatus = `[...document.querySelectorAll('[data-projects] thead button')][1].click()`
