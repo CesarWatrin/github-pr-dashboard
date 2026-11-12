@@ -100,7 +100,10 @@ export function personSlides(year, { year: retroYear, org, nameOf }) {
     (year.reviewedBy !== null || year.reviewedMost !== null) && {
       tone: 1,
       eyebrow: t('Ton duo de review'),
-      detail: year.reviewedBy !== null && year.reviewedBy.login === year.reviewedMost?.login ? t('Dans les deux sens : un vrai binôme.') : undefined,
+      // The same person both ways: a pair, named.
+      ...(year.reviewedBy !== null && year.reviewedBy.login === year.reviewedMost?.login
+        ? { title: nameOf(year.reviewedBy.login), detail: t('Dans les deux sens : un vrai binôme.') }
+        : {}),
       visual: duo(year, nameOf),
     },
     year.biggest !== null && {

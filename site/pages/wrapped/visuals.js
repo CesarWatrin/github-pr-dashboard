@@ -1,7 +1,7 @@
 // What the slides of the year in review show besides their figures (slides.js): the months as bars, short lists, the
 // records of the year, the summary of the last slide, faces, and the words of times, days and statuses.
 
-import { formatNumber, monthName, monthShortFormat, plural } from '../../lib/format.js'
+import { formatNumber, monthName, monthShortFormat, noun, plural } from '../../lib/format.js'
 import { LOCALE, t } from '../../lib/i18n.js'
 import { el } from '../../ui/dom.js'
 import { avatarUrl, githubUrl } from '../../ui/github.js'
@@ -99,24 +99,28 @@ export function groupPhoto(people, leads, nameOf) {
   return photo
 }
 
-// The review partners of a person: who reviewed the most of their pull requests, and whose they reviewed the most; a
-// single card when it is the same person both ways.
+// The review partners of a person: who reviewed the most of their pull requests, and whose they reviewed the most, a
+// card each with their face, their name and how many, large. The same person both ways makes a pair, which the slide
+// names: the person's face and their partner's side by side, then a card for each way.
 /** @type {(year: RetroPerson, nameOf: (login: string) => string) => HTMLElement} */
-export function duo({ reviewedBy, reviewedMost }, nameOf) {
-  /** @type {Map<string, string[]>} */
-  const lines = new Map()
-  if (reviewedBy) {
-    lines.set(reviewedBy.login, [t('a relu {count} de tes PR', { count: formatNumber(reviewedBy.prs) })])
-  }
-  if (reviewedMost) {
-    lines.set(reviewedMost.login, [...(lines.get(reviewedMost.login) ?? []), t('tu as relu {count} de ses PR', { count: formatNumber(reviewedMost.prs) })])
+export function duo({ login, reviewedBy, reviewedMost }, nameOf) {
+  /** @type {(prs: number, words: string) => HTMLElement[]} */
+  const count = (prs, words) => [el('span', { className: 'wrapped-duo-figure', textContent: formatNumber(prs) }), el('span', { className: 'wrapped-duo-words', textContent: words })]
+  const ways = [
+    reviewedBy && { ...reviewedBy, words: noun(reviewedBy.prs, 'de tes PR relue', 'de tes PR relues') },
+    reviewedMost && { ...reviewedMost, words: noun(reviewedMost.prs, 'de ses PR relue par toi', 'de ses PR relues par toi') },
+  ].filter((way) => way !== null)
+  if (reviewedBy && reviewedBy.login === reviewedMost?.login) {
+    const faces = el('div', { className: 'wrapped-duo-faces' }, face(login, 88), face(reviewedBy.login, 88))
+
+    return el('div', { className: 'wrapped-duo is-pair' }, faces, ...ways.map((way) => el('div', { className: 'wrapped-duo-card' }, ...count(way.prs, way.words))))
   }
 
   return el(
     'div',
     { className: 'wrapped-duo' },
-    ...[...lines].map(([login, texts]) =>
-      el('div', { className: 'wrapped-duo-person' }, face(login, 72), el('strong', { textContent: nameOf(login) }), ...texts.map((text) => el('span', { textContent: text }))),
+    ...ways.map((way) =>
+      el('div', { className: 'wrapped-duo-card' }, face(way.login, 64), el('strong', { className: 'wrapped-duo-name', textContent: nameOf(way.login) }), ...count(way.prs, way.words)),
     ),
   )
 }

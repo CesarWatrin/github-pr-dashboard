@@ -248,6 +248,11 @@
   }
 }
 
+/* The two faces of a pair float out of step. */
+.wrapped-duo-faces .wrapped-face + .wrapped-face {
+  animation-delay: -2.5s;
+}
+
 /* The group photo comes together face after face (--index, from visuals.js), the heads last; then they float. */
 .wrapped-photo-row img {
   animation: wrapped-pop 500ms var(--ease-out) backwards;
@@ -284,7 +289,7 @@
 .wrapped-records li,
 .wrapped-list li,
 .wrapped-summary div,
-.wrapped-duo-person {
+.wrapped-duo-card {
   animation: wrapped-pop 600ms var(--ease-out) backwards;
   animation-delay: 420ms;
 }

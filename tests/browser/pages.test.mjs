@@ -396,6 +396,18 @@ for (const language of ['fr', 'en']) {
       // The left arrow goes back a slide; Escape, to the picker.
       await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))`)
       assert.equal(await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-story').classList.contains('is-final')`), false)
+      // A review duo that is the same person both ways: a pair, named, both faces over a card for each way.
+      const { retro } = site
+      const pair = retro?.people.find(({ reviewedBy, reviewedMost }) => reviewedBy && reviewedBy.login === reviewedMost?.login)
+      assert.ok(pair, 'a pair of reviewers in the made-up stats')
+      await page.evaluate(`location.hash = 'for=${pair.login}'`)
+      await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-story .wrapped-slide')`)
+      for (let slide = 0; slide < 20 && !(await page.evaluate(`Boolean(document.querySelector('[data-wrapped] .wrapped-duo'))`)); slide++) {
+        await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-tap.is-next').click()`)
+      }
+      assert.equal(await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-duo-faces img').length`), 2)
+      assert.equal(await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-duo-card').length`), 2)
+      assert.equal(await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-title').textContent`), retro.names[pair.reviewedBy.login] ?? pair.reviewedBy.login)
       await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
       await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-squad') && location.hash === ''`)
       await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-squad').click()`)
