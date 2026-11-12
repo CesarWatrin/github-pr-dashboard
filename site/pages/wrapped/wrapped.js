@@ -189,7 +189,8 @@ const sparks = () =>
   }))
 
 // A figure that counts up to its value, at once under reduced motion. Its size follows its length, so that the longest
-// still fits the slide (--chars).
+// still fits the slide (--chars); then shrinks some more (--fit) when the digits of the font are wider than the styles
+// count on (a fallback font, on Linux), measured on its value: never past its slide.
 /**
  * @param {HTMLElement} node
  * @param {number} value
@@ -197,6 +198,11 @@ const sparks = () =>
 function countUp(node, value) {
   node.textContent = formatNumber(value)
   node.style.setProperty('--chars', String(node.textContent.length))
+  // Sizes of the layout, which the animation of its entrance does not transform.
+  node.style.removeProperty('--fit')
+  if (node.clientWidth > 0 && node.scrollWidth > node.clientWidth) {
+    node.style.setProperty('--fit', String(Math.floor((node.clientWidth / node.scrollWidth) * 1000) / 1000))
+  }
   if (value <= 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     return
   }
@@ -254,14 +260,28 @@ function show(index) {
   }
 }
 
-// What the last slide offers: see it again, someone else, the link of this story (without the key).
+// What the last slide offers: see it again, back home (the picker), share the link of this story (without the key):
+// through the sharing of the device where there is one (a phone), else copied.
 function finalActions() {
   const again = el('button', { type: 'button', className: 'wrapped-action is-primary', textContent: t('Revoir') })
   again.addEventListener('click', () => show(0))
-  const other = el('button', { type: 'button', className: 'wrapped-action', textContent: t('Quelqu’un d’autre') })
+  const other = el('button', { type: 'button', className: 'wrapped-action', textContent: t('Accueil') })
   other.addEventListener('click', () => open(null))
-  const copy = el('button', { type: 'button', className: 'wrapped-action', textContent: t('Copier le lien') })
+  const copy = el('button', { type: 'button', className: 'wrapped-action', textContent: t('Partager') })
   copy.addEventListener('click', async () => {
+    const shared = { title: document.title, url: location.href }
+    if (navigator.canShare?.(shared)) {
+      try {
+        await navigator.share(shared)
+
+        return
+      } catch (error) {
+        // Closed without sharing: nothing to say. Refused otherwise: copied instead.
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+      }
+    }
     try {
       await navigator.clipboard.writeText(location.href)
       copy.textContent = t('Lien copié')

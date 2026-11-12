@@ -561,10 +561,11 @@
 }
 
 /* As large as the slide lets it: a digit of this font takes about 0.62 of its size, so a figure of --chars characters
-   fits the width of the slide whatever its length. */
+   fits the width of the slide whatever its length; a font with wider digits makes it smaller still (--fit, measured by
+   the page). */
 .wrapped-figure {
   margin: 0;
-  font-size: min(112px, calc(100cqi / (var(--chars, 3) * 0.62)));
+  font-size: calc(min(112px, calc(100cqi / (var(--chars, 3) * 0.62))) * var(--fit, 1));
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;

@@ -54,6 +54,28 @@ export function avatar(login, size, className = '') {
 /** @type {(login: string, size: number) => HTMLElement} */
 export const face = (login, size) => avatar(login, size, 'wrapped-face')
 
+// The review partners of a person: who reviewed the most of their pull requests, and whose they reviewed the most; a
+// single card when it is the same person both ways.
+/** @type {(year: RetroPerson, nameOf: (login: string) => string) => HTMLElement} */
+export function duo({ reviewedBy, reviewedMost }, nameOf) {
+  /** @type {Map<string, string[]>} */
+  const lines = new Map()
+  if (reviewedBy) {
+    lines.set(reviewedBy.login, [t('a relu {count} de tes PR', { count: formatNumber(reviewedBy.prs) })])
+  }
+  if (reviewedMost) {
+    lines.set(reviewedMost.login, [...(lines.get(reviewedMost.login) ?? []), t('tu as relu {count} de ses PR', { count: formatNumber(reviewedMost.prs) })])
+  }
+
+  return el(
+    'div',
+    { className: 'wrapped-duo' },
+    ...[...lines].map(([login, texts]) =>
+      el('div', { className: 'wrapped-duo-person' }, face(login, 72), el('strong', { textContent: nameOf(login) }), ...texts.map((text) => el('span', { textContent: text }))),
+    ),
+  )
+}
+
 // The months of the year as bars, the busiest one lit.
 /** @type {(months: { month: string, code: number }[], busiest: string | null) => HTMLElement} */
 export function monthBars(months, busiest) {

@@ -5,8 +5,7 @@
 
 import { capitalize, formatLines, formatNumber, noun, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
-import { el } from '../../ui/dom.js'
-import { biggestLink, face, isLate, monthBars, monthOnly, moreRepos, projectList, recordCards, records, summary, timeOfDay, weekdayName } from './visuals.js'
+import { biggestLink, duo, face, isLate, monthBars, monthOnly, moreRepos, projectList, recordCards, records, summary, timeOfDay, weekdayName } from './visuals.js'
 
 /**
  * A slide: its tone (the colors of its background), a line above, a figure that counts up and its unit, a title, a
@@ -100,16 +99,8 @@ export function personSlides(year, { year: retroYear, org, nameOf }) {
     (year.reviewedBy !== null || year.reviewedMost !== null) && {
       tone: 1,
       eyebrow: t('Ton duo de review'),
-      visual: el(
-        'div',
-        { className: 'wrapped-duo' },
-        .../** @type {[string, string][]} */ (
-          [
-            year.reviewedBy && [year.reviewedBy.login, t('a relu {count} de tes PR', { count: formatNumber(year.reviewedBy.prs) })],
-            year.reviewedMost && [year.reviewedMost.login, t('tu as relu {count} de ses PR', { count: formatNumber(year.reviewedMost.prs) })],
-          ].filter(Boolean)
-        ).map(([login, text]) => el('div', { className: 'wrapped-duo-person' }, face(login, 72), el('strong', { textContent: nameOf(login) }), el('span', { textContent: text }))),
-      ),
+      detail: year.reviewedBy !== null && year.reviewedBy.login === year.reviewedMost?.login ? t('Dans les deux sens : un vrai binôme.') : undefined,
+      visual: duo(year, nameOf),
     },
     year.biggest !== null && {
       tone: 2,

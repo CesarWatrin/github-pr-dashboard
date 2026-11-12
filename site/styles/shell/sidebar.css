@@ -175,6 +175,9 @@
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  /* The box of the number trimmed to its digits, from the top of a capital to the baseline, so that they sit in the
+     middle of the circle whatever the font; where browsers do not trim, a line box of the font, a little off. */
+  text-box: trim-both cap alphabetic;
 }
 
 .nav-link .nav-badge {
