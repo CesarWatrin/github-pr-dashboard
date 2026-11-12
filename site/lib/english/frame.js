@@ -293,5 +293,5 @@ export const FRAME = {
   // The link of the year in review, last of the sidebar, and the page apart it opens (retro.html).
   'Rétrospective': 'Year in review',
   'S’ouvre dans un nouvel onglet': 'Opens in a new tab',
-  'Copier le lien à partager à l’équipe': 'Copy the link to share with the team',
+  'Copier le lien public': 'Copy the public link',
 }

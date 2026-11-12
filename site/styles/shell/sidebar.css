@@ -34,6 +34,9 @@
 .brand .org {
   color: var(--text-secondary);
   font-size: 13px;
+  /* A whole number of pixels, so that the links below never fall between two (19.5 at 1.5): beside a sticky sidebar,
+     a half pixel shimmers as the page scrolls. */
+  line-height: 20px;
 }
 
 /* On a window too short for the whole sidebar, only the list of pages scrolls: the brand above and the actions below
@@ -95,15 +98,28 @@
 
 /* The year in review, last: it opens apart, in a tab of its own, which the small arrow at its end says; the button
    beside it copies its link, a check mark once done. */
+/* The widest link, with its copy button: it narrows with the sidebar (beside a scrollbar too), its name cut short
+   rather than the sidebar scrolling sideways. */
 .nav-retro {
   display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
 }
 
 .nav-retro .nav-link {
   flex: 1;
   min-width: 0;
+}
+
+.nav-link-retro svg {
+  flex: none;
+}
+
+.nav-link-retro .nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-link-retro svg:first-child {
@@ -165,18 +181,19 @@
 .nav-badge {
   display: inline-grid;
   place-items: center;
-  min-width: 18px;
-  height: 18px;
+  /* Odd, as the links are: centered in one, the circle sits on whole pixels. */
+  min-width: 19px;
+  height: 19px;
   padding: 0 5px;
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--notification);
   color: #fff;
   font-size: 11px;
   font-weight: 650;
-  font-variant-numeric: tabular-nums;
   line-height: 1;
   /* The box of the number trimmed to its digits, from the top of a capital to the baseline, so that they sit in the
-     middle of the circle whatever the font; where browsers do not trim, a line box of the font, a little off. */
+     middle of the circle whatever the font; where browsers do not trim, a line box of the font, a little off. Digits of
+     their own width: a tabular 1 is as wide as an 8, and leans to a side. */
   text-box: trim-both cap alphabetic;
 }
 
