@@ -2,6 +2,7 @@
 // carry (retroKey, from RETRO_KEY), and the button beside it copies that whole link, to give it to the team. Hidden
 // while the stats carry no key.
 
+import { RETRO_YEAR } from '../domain/wrapped.js'
 import { t } from '../lib/i18n.js'
 import { state } from '../model/state.js'
 import { $ } from '../ui/dom.js'
@@ -18,8 +19,10 @@ export function renderRetroLink() {
   $('[data-retro-link]', HTMLAnchorElement).href = key ? retroUrl() : 'retro.html'
 }
 
-// Copies the link, then says so on the button for a moment: a check mark, and its label.
+// Names the link after the year it tells (« Rétro 2026 »), then copies the link on a click and says so on the button
+// for a moment: a check mark, and its label.
 export function setupRetroLink() {
+  $('[data-retro-label]').textContent = t('Rétro {year}', { year: RETRO_YEAR })
   const button = $('[data-retro-copy]', HTMLButtonElement)
   const label = button.getAttribute('aria-label') ?? ''
   /** @type {ReturnType<typeof setTimeout> | undefined} */

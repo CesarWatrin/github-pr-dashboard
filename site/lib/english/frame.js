@@ -292,6 +292,7 @@ export const FRAME = {
     'The code PRs of the members of each squad, then those of the whole organization',
   // The link of the year in review, last of the sidebar, and the page apart it opens (retro.html).
   'Rétrospective': 'Year in review',
+  'Rétro {year}': 'Retro {year}',
   'S’ouvre dans un nouvel onglet': 'Opens in a new tab',
   'Copier le lien public': 'Copy the public link',
 }
