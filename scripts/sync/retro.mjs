@@ -107,9 +107,15 @@ export function retroOf(stats, year = RETRO_YEAR) {
       acs: yearAcs(new Set([login])),
     }
   })
-  // The squads with anyone of the year, in their order, and the head of each, whose face their card shows.
+  // The squads with anyone of the year, in their order, and the head of each, whose face their card shows; their
+  // members of the year, by name, whom the last slides of their story thank.
   const squads = (stats.squads ?? [])
-    .map((squad) => ({ name: squad.name, ...(squad.lead && { lead: squad.lead }), ...groupYear(new Set(squad.members)) }))
+    .map((squad) => ({
+      name: squad.name,
+      ...(squad.lead && { lead: squad.lead }),
+      members: people.filter((login) => squad.members.includes(login)),
+      ...groupYear(new Set(squad.members)),
+    }))
     .filter((squad) => squad.code > 0 || squad.reviewed > 0)
   for (const squad of squads) {
     if (squad.lead) {

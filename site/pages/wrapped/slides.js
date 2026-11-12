@@ -9,8 +9,9 @@ import { biggestLink, duo, face, isLate, monthBars, monthOnly, moreRepos, projec
 
 /**
  * A slide: its tone (the colors of its background), a line above, a figure that counts up and its unit, a title, a
- * detail, a picture; the last one sums the year up (final).
- * @typedef {{ tone: number, eyebrow: string, figure?: number, unit?: string, title?: string, detail?: string, visual?: HTMLElement, final?: boolean }} Slide
+ * detail, a picture, how long it shows when it says more than the others (milliseconds); the last one sums the year up
+ * (final).
+ * @typedef {{ tone: number, eyebrow: string, figure?: number, unit?: string, title?: string, detail?: string, visual?: HTMLElement, duration?: number, final?: boolean }} Slide
  */
 
 /**

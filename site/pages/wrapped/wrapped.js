@@ -1,10 +1,11 @@
-// The year in review (« Rétrospective », retro.html), a page apart from the dashboard that leads nowhere else: a picker of
-// the people of the year still in the team (and the whole team), then their story, slide after slide (slides.js), like a
-// story on a social network: a bar per slide, a tap on the right or the right arrow for the next one, on the left or the
-// left arrow for the one before, Space to pause, Escape back to the picker. It plays on by itself, the next slide coming
-// when the bar of the slide is full (the end of its animation): under reduced motion, without animation, it waits for a
-// tap. The address says whose story shows (`for` or `team`, model/retro-address.js), never the key of the link. The
-// picker lives in picker.js; the screen without a key, in locked.js.
+// The year in review (« Rétrospective », retro.html), a page apart from the dashboard that leads nowhere else: a picker
+// of the people of the year still in the team (and the whole team), then their story, slide after slide (slides.js,
+// then the thanks of thanks.js for a team), like a story on a social network: a bar per slide, a tap on the right or
+// the right arrow for the next one, on the left or the left arrow for the one before, Space to pause, Escape back to
+// the picker. It plays on by itself, the next slide coming when the bar of the slide is full (the end of its
+// animation): under reduced motion, without animation, it waits for a tap. The address says whose story shows (`for` or
+// `team`, model/retro-address.js), never the key of the link. The picker lives in picker.js; the screen without a key,
+// in locked.js.
 
 import { formatNumber } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
@@ -12,6 +13,7 @@ import { retroAddress } from '../../model/retro-address.js'
 import { $, el } from '../../ui/dom.js'
 import { renderPicker } from './picker.js'
 import { personSlides, teamSlides } from './slides.js'
+import { thanksSlides } from './thanks.js'
 import { avatar } from './visuals.js'
 
 /** @typedef {import('./slides.js').Slide} Slide */
@@ -81,18 +83,19 @@ export function showRetro(retro, who) {
   open(storyOf(retro, who) ? who : null)
 }
 
-// The figures of a story: a person's, a squad's or the team's; null for the picker, or someone the year does not know.
+// The figures of a story: a person's, a squad's or the team's, with the people its last slides thank (those of the year
+// among the members of a squad, everyone for the team); null for the picker, or someone the year does not know.
 /**
  * @param {Retro} retro
  * @param {RetroWho} who
- * @returns {{ person: RetroPerson } | { group: RetroTeam, squad: string | null } | null}
+ * @returns {{ person: RetroPerson } | { group: RetroTeam, squad: string | null, thanked: RetroPerson[] } | null}
  */
 function storyOf(retro, who) {
   if (who === null) {
     return null
   }
   if (who === 'team') {
-    return { group: retro.team, squad: null }
+    return { group: retro.team, squad: null, thanked: retro.people }
   }
   if ('login' in who) {
     const person = retro.people.find((other) => other.login === who.login)
@@ -100,8 +103,10 @@ function storyOf(retro, who) {
     return person ? { person } : null
   }
   const squad = retro.squads.find((other) => other.name === who.squad)
+  // A year in review published before the squads had their members thanks nobody.
+  const members = new Set(squad?.members ?? [])
 
-  return squad ? { group: squad, squad: squad.name } : null
+  return squad ? { group: squad, squad: squad.name, thanked: retro.people.filter((person) => members.has(person.login)) } : null
 }
 
 function draw() {
@@ -120,7 +125,10 @@ function draw() {
   if ('person' in found) {
     renderStory(personSlides(found.person, context), { login: found.person.login }, retro.year)
   } else {
-    renderStory(teamSlides(found.group, context, found.squad), found.squad, retro.year)
+    // The thanks to each person come before the last slide.
+    const slides = teamSlides(found.group, context, found.squad)
+    slides.splice(-1, 0, ...thanksSlides(found.thanked, nameOf))
+    renderStory(slides, found.squad, retro.year)
   }
 }
 
@@ -228,6 +236,7 @@ function show(index) {
   const slide = story.slides[index]
   const { root } = story
   root.dataset.tone = String(slide.tone)
+  root.style.setProperty('--slide-ms', `${slide.duration ?? SLIDE_MS}ms`)
   root.classList.toggle('is-final', Boolean(slide.final))
   for (const [at, segment] of [...root.querySelectorAll('.wrapped-segment')].entries()) {
     segment.classList.toggle('is-done', at < index)

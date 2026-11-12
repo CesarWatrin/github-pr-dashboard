@@ -203,6 +203,8 @@ interface RetroSquad extends RetroTeam {
   name: string
   // The head of the squad, when it has one.
   lead?: string
+  // Its members among the people of the year, by name: the thanks of its story.
+  members: string[]
 }
 interface Retro {
   org: string

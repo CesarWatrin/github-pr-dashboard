@@ -35,7 +35,7 @@ const STATS = /** @type {Stats} */ (/** @type {unknown} */ ({
   generatedAt: GENERATED_AT,
   people: { ada: 'Ada Lovelace', ben: 'ben' },
   squads: [
-    { name: 'Blue team', members: ['ada'], lead: 'ada' },
+    { name: 'Blue team', members: ['ada', 'cy'], lead: 'ada' },
     { name: 'Quiet team', members: ['dan'] },
   ],
   windowStart: '2024-11-08T00:00:00.000Z',
@@ -70,7 +70,9 @@ describe('retroOf', () => {
   })
 
   test('each squad with anything over the year, and the team with its deployments', () => {
-    assert.deepEqual(retro.squads.map((squad) => [squad.name, squad.lead, squad.code, squad.people, squad.deployments]), [['Blue team', 'ada', 2, 1, 0]])
+    assert.deepEqual(retro.squads.map((squad) => [squad.name, squad.lead, squad.code, squad.people, squad.deployments]), [['Blue team', 'ada', 3, 2, 0]])
+    // Its members of the year, whom its story thanks: Cy's pull request counts for the squad, but Cy left the team.
+    assert.deepEqual(retro.squads.map((squad) => squad.members), [['ada']])
     assert.deepEqual([retro.team.code, retro.team.people, retro.team.deployments, retro.team.delivered], [4, 3, 1, 1])
   })
 })

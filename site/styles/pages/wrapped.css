@@ -730,6 +730,44 @@
   color: var(--wrapped-muted);
 }
 
+/* The thanks to each person of a team (pages/wrapped/thanks.js): a card each, their face, their name, their anecdote. */
+.wrapped-thanks {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrapped-thanks li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.wrapped-thanks .wrapped-face {
+  grid-row: span 2;
+  border-width: 2px;
+}
+
+.wrapped-thanks strong {
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-thanks span {
+  color: var(--wrapped-muted);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
 /* What can be clicked on a slide comes over the taps. */
 .wrapped-link,
 .wrapped-actions {
