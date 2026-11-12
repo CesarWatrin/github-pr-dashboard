@@ -236,6 +236,11 @@ pour un visiteur comme pour un robot.
   jamais publié en clair.
 - La page demande le mot de passe et déchiffre les stats dans le navigateur. La clé reste 30 jours sur l'appareil,
   puis le mot de passe est redemandé. Le cadenas en haut à droite reverrouille tout de suite.
+- La Rétrospective est publiée à part (`site/data/retro.enc.json`), avec seulement ce que ses diapositives montrent,
+  chiffrée en AES-GCM avec sa propre clé, `RETRO_KEY` : 32 octets aléatoires en base64url, dans le `.env` et les secrets
+  de l'environnement `github-pages` (`node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`). Son lien
+  porte la clé après le `#`, que le navigateur n'envoie à aucun serveur ; le mot de passe du tableau de bord ne
+  l'ouvre pas, et cette clé n'ouvre pas les stats. Sans `RETRO_KEY`, pas de Rétrospective ni de lien vers elle.
 - Un navigateur qui a ouvert le lien de la Rétrospective sans avoir jamais déverrouillé le tableau de bord est
   renvoyé vers la Rétrospective depuis l'adresse du tableau de bord : l'équipe ne voit qu'elle, jamais l'écran du mot
   de passe. Celui-ci ne s'affiche qu'à un navigateur qui a déjà déverrouillé le tableau de bord une fois, même
@@ -408,6 +413,8 @@ Prérequis :
      une étoile devant le login du chef de squad (un au plus) ; sans lui, ni page Squads ni filtre de squad ;
    - `DISPATCH_TOKEN` (facultatif) : le token du bouton de synchro ;
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
+   - `RETRO_KEY` (facultatif) : la clé de la Rétrospective, 32 octets aléatoires en base64url, voir « Accès protégé » ;
+     sans elle, pas de Rétrospective.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types
@@ -416,5 +423,5 @@ protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
 `REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
-`SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire l'historique des
-badges, par défaut l'adresse GitHub Pages du dépôt en CI).
+`RETRO_KEY`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
+l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en CI).
