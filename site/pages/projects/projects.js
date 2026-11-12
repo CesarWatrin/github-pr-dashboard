@@ -34,8 +34,12 @@ export const projectSearchTexts = (row) => [
   ...row.authors.flatMap((author) => [author.login, displayName(author.login)]),
 ]
 
-// The projects of the statuses picked that the search finds, as they started.
-const foundRows = () => shownProjects().rows.filter((row) => matchesQuery(...projectSearchTexts(row)))
+// The projects of the statuses picked that the search finds, the latest started first: the most recent on top, on the
+// cards as on the timeline.
+const foundRows = () =>
+  shownProjects()
+    .rows.filter((row) => matchesQuery(...projectSearchTexts(row)))
+    .toSorted((a, b) => b.start - a.start)
 
 // The name of a project in the table opens its dialog, as its card does; its repositories follow, under it.
 function nameCell(row) {
@@ -189,7 +193,7 @@ export function renderProjects(mode = 'enter') {
     return
   }
   const { summary } = shownProjects()
-  $('[data-projects-sub]').textContent = t('{period} : les projets dont la vie croise la période, du premier commencé au dernier', { period: capitalize(periodTitle()) })
+  $('[data-projects-sub]').textContent = t('{period} : les projets dont la vie croise la période, du dernier commencé au premier', { period: capitalize(periodTitle()) })
   renderStatusFilter()
   renderTiles($('[data-project-tiles]'), PROJECT_TILES, summary, mode)
   renderTimelineLegend()

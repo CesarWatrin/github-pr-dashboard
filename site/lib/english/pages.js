@@ -471,8 +471,8 @@ export const PAGES = {
   'Aucun projet à montrer': 'No project to show',
   'Calendrier des projets, {period}': 'Timeline of the projects, {period}',
   'Merge dans une branche principale': 'Merge into a long-lived branch',
-  '{period} : les projets dont la vie croise la période, du premier commencé au dernier':
-    '{period}: the projects whose life crosses the period, from the first started to the last',
+  '{period} : les projets dont la vie croise la période, du dernier commencé au premier':
+    '{period}: the projects whose life crosses the period, from the last started to the first',
   'Aucun projet ne correspond à cette recherche': 'No project matches this search',
   'Aucun projet sur la période': 'No project over the period',
   'Projets actifs': 'Active projects',
