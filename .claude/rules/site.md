@@ -158,7 +158,7 @@ paths:
   theirs, each in one list only, named and defined as on the unblock page but without its delays: forgotten first
   (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked by code owners, and
   the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not say, where it stands
-  (the tags of `UNBLOCK_STANCES`); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out.
+  (the tags of `UNBLOCK_STANCES`), its title quiet under its link (`prTitle()`, from the record); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out.
   The page shows first the lists whose pull requests wait on the person (`urgent` in `ME_LISTS`: reviews asked, ready,
   changes requested, forgotten), then the others. No score, no ranking. Its lists, like those of the unblock
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a

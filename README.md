@@ -45,7 +45,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   seule liste et sans délai minimum : prêtes à merger, changements demandés, oubliées (sans review ni commentaire
   depuis plus d'un mois, ce qui l'emporte sur le reste), bloquées par un code owner, et les autres, chacune avec où
   elle en est et qui elle attend ; enfin ses brouillons. Les PR de release et d'intégration y figurent aussi,
-  étiquetées. D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
+  étiquetées. Chaque PR montre son titre en discret sous son lien. D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
   les pages : les reviews qu'on lui demande, et ses PR prêtes à merger, avec des changements demandés ou oubliées,
   « (5) Stats PR » ; un badge rouge le répète au bout de « Mes PR » dans la barre latérale, et sur le bouton du menu
   des écrans étroits, et une notification compte de même. Un badge gris, juste après « Mes PR », compte toutes ses PR

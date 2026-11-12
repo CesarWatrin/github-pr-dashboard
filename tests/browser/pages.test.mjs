@@ -320,6 +320,10 @@ for (const language of ['fr', 'en']) {
         [String(urgent), String(urgent)],
       )
       assert.equal(await page.evaluate(`document.querySelector('[data-own-badge]').textContent`), String(own))
+      // Each pull request with its title under its link, when the stats carry it, so that one tells them apart.
+      const titled = stats.pullRequests.filter((pr) => pr.title).map((pr) => pr.title)
+      const shown = await page.evaluate(`[...document.querySelectorAll('[data-me] .feed-pr-title')].map((title) => title.textContent)`)
+      assert.ok(shown.length > 0 && shown.every((title) => titled.includes(title)))
     })
 
     test('the film of the map page plays from the start, and pauses', async () => {
