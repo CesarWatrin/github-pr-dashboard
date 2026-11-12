@@ -233,6 +233,10 @@ pour un visiteur comme pour un robot.
   jamais publié en clair.
 - La page demande le mot de passe et déchiffre les stats dans le navigateur. La clé reste 30 jours sur l'appareil,
   puis le mot de passe est redemandé. Le cadenas en haut à droite reverrouille tout de suite.
+- Un navigateur qui a ouvert le lien de la Rétrospective sans avoir jamais déverrouillé le tableau de bord est
+  renvoyé vers la Rétrospective depuis l'adresse du tableau de bord : l'équipe ne voit qu'elle, jamais l'écran du mot
+  de passe. Celui-ci ne s'affiche qu'à un navigateur qui a déjà déverrouillé le tableau de bord une fois, même
+  reverrouillé depuis, ou qui n'a jamais ouvert la Rétrospective.
 - Une fois le mot de passe accepté, la page demande au navigateur de l'enregistrer sous le nom « Stats PR » (Chrome
   et Edge ; les autres navigateurs le proposent selon leurs propres règles). Le gestionnaire de mots de passe le
   remplit ensuite tout seul. Un Chrome géré par une organisation peut avoir l'enregistrement désactivé (règle

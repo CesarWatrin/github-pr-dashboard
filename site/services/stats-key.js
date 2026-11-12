@@ -1,6 +1,9 @@
 // The key of the stats: derived from the password with Web Crypto, kept 30 days in this browser (never the password).
 
 export const KEY_STORAGE_KEY = 'github-pr-dashboard:key'
+// That this browser unlocked the dashboard once: kept for good, even once locked, unlike the key. A browser without it
+// that opened the year in review goes back to it rather than to the lock screen (app.js).
+export const UNLOCKED_STORAGE_KEY = 'github-pr-dashboard:unlocked'
 
 const UNLOCK_DURATION_MS = 30 * 24 * 60 * 60_000
 
@@ -41,6 +44,7 @@ export async function storeKey(key) {
   try {
     const raw = toBase64(await crypto.subtle.exportKey('raw', key))
     localStorage.setItem(KEY_STORAGE_KEY, JSON.stringify({ key: raw, expiresAt }))
+    localStorage.setItem(UNLOCKED_STORAGE_KEY, '1')
   } catch {
     // Storage can be unavailable (private browsing): the page then stays unlocked until it is closed.
   }
@@ -61,4 +65,14 @@ export async function readStoredKey() {
   }
 
   return null
+}
+
+// Whether this browser ever unlocked the dashboard: the mark, or a key kept, even expired (a browser unlocked before the
+// mark existed has none).
+export function hasUnlockedBefore() {
+  try {
+    return localStorage.getItem(UNLOCKED_STORAGE_KEY) !== null || localStorage.getItem(KEY_STORAGE_KEY) !== null
+  } catch {
+    return false
+  }
 }

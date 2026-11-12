@@ -385,8 +385,22 @@ for (const language of ['fr', 'en']) {
       await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-team').click()`)
       await page.waitFor(`location.hash === '#team'`)
       await playThrough('year in review of the team')
+      // A browser that only ever opened the year in review goes back to it from the address of the dashboard, never to
+      // its lock screen; one that unlocked the dashboard once gets the lock screen, even locked since.
+      const kept = await page.evaluate(`JSON.stringify([localStorage.getItem('github-pr-dashboard:key'), localStorage.getItem('github-pr-dashboard:unlocked')])`)
+      await page.evaluate(`localStorage.removeItem('github-pr-dashboard:key'); localStorage.removeItem('github-pr-dashboard:unlocked')`)
+      await page.send('Page.navigate', { url: site.url })
+      await page.waitFor(`document.readyState === 'complete' && location.pathname.endsWith('/retro.html') && document.querySelector('[data-wrapped] .wrapped-person')`)
+      await page.evaluate(`localStorage.setItem('github-pr-dashboard:unlocked', '1')`)
+      await page.send('Page.navigate', { url: site.url })
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]') && !document.querySelector('[data-lock]').hidden`)
+      assert.equal(await page.evaluate('location.pathname.endsWith("/retro.html")'), false)
+      await page.evaluate(`(([key, unlocked]) => { localStorage.setItem('github-pr-dashboard:key', key); localStorage.setItem('github-pr-dashboard:unlocked', unlocked) })(${kept})`)
+      await page.send('Page.navigate', { url: link })
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-wrapped] .wrapped-person')`)
       // An address shared without the key opens the same story in a browser that kept it; without it, the screen that
       // says how to get the link.
+      await page.evaluate(`location.hash = 'team'`)
       await page.evaluate('location.reload()')
       await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-wrapped] .wrapped-story')`)
       await page.evaluate(`localStorage.removeItem('github-pr-dashboard:retro-key'); location.reload()`)
