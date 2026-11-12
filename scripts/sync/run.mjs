@@ -1,16 +1,19 @@
-// One sync, from the snapshot to the published stats.
+// One sync, from the snapshot to the published stats, and the year in review apart.
+
+import { rm } from 'node:fs/promises'
 
 import { DAY_MS, TIMEZONE } from '../../site/domain/time.js'
 import { backfill, BACKFILL_LOGS, RECENT_DAYS, snapshotCoverage, WINDOW_DAYS } from './backfill.mjs'
-import { ORG, REQUIRED_APPROVALS, SNAPSHOT_PATH, SQUADS, STATS_PATH, SYNC_TRIGGER, VERSION_PATH } from './config.mjs'
+import { ORG, REQUIRED_APPROVALS, RETRO_KEY, RETRO_PATH, SNAPSHOT_PATH, SQUADS, STATS_PATH, SYNC_TRIGGER, VERSION_PATH } from './config.mjs'
 import { publishedSyncTrigger } from './full-sync.mjs'
 import { HISTORY_LEAD_DAYS, mergeMonthlyHistory, MONTHLY_REVISION, readPublishedHistory } from './history.mjs'
 import { fetchFirstPullRequests, isBot, people, peopleOf, peopleToLookUp } from './people.mjs'
-import { computeEvents, computeToday, encrypt, readSnapshot, SNAPSHOT_VERSION, writeJson } from './publish.mjs'
+import { computeEvents, computeToday, encrypt, encryptRetro, readSnapshot, SNAPSHOT_VERSION, writeJson } from './publish.mjs'
 import { projectIndex } from './projects.mjs'
 import { fetchUpdatedSince, fetchWindow, keyOf, readOpenChecks, withOpenChecks } from './pull-requests.mjs'
 import { deliveryIndex, DETAILS_DAYS, minutes, toPeriodRecord } from './records.mjs'
 import { fetchRepositoryDetails, repositoryCategory, technologyShares } from './repositories.mjs'
+import { retroOf } from './retro.mjs'
 import { computeCi, fetchRuns, RUNS_OVERLAP_MS } from './runs.mjs'
 
 export const WATCH_INTERVAL_MS = 60_000
@@ -132,47 +135,55 @@ export async function sync({ full, fullSync = null, refused = false }) {
     monthlyRevision: MONTHLY_REVISION,
   })
   const version = { build: process.env.BUILD_ID || null, generatedAt: now.toISOString() }
-  await writeJson(
-    STATS_PATH,
-    encrypt({
-      org: ORG,
-      ...version,
-      timezone: TIMEZONE,
-      syncTrigger: publishedSyncTrigger(SYNC_TRIGGER, fullSync),
-      // A full sync asked without a valid proof, synced incrementally instead: the page that asked tells so.
-      ...(refused && { fullSyncRefused: true }),
-      requiredApprovals: REQUIRED_APPROVALS,
-      ...(SQUADS.length && { squads: SQUADS }),
-      people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
-      repos: Object.fromEntries(
-        repositories.map((repo) => [
-          repo,
-          {
-            category: repositoryCategory(repo, languages[repo]),
-            technologies: technologyShares(languages[repo], frameworks[repo]),
-          },
-        ]),
-      ),
-      today: computeToday(inWindow, now),
-      // The page computes the stats of the range it shows from these, since the start of the data.
-      windowStart: dataStartIso,
-      pullRequests: records,
-      // When each person opened their first pull request in the organization, in minutes: seniority goes back further
-      // than the data.
-      firstPullRequests: Object.fromEntries(
-        peopleOf(records)
-          .filter((login) => firstPullRequests[login])
-          .map((login) => [login, minutes(/** @type {string} */ (firstPullRequests[login]))]),
-      ),
-      // The badges are won over this history, since the first sync.
-      monthly: history,
-      monthlyRevision: MONTHLY_REVISION,
-      ci: computeCi(runsInWindow),
-      // The runs only go back to there: GitHub had forgotten the older ones when the snapshot started keeping them.
-      ciStart: ciStartIso,
-      events: computeEvents(inWindow, now),
-    }),
-  )
+  /** @type {Stats} */
+  const stats = {
+    org: ORG,
+    ...version,
+    timezone: TIMEZONE,
+    syncTrigger: publishedSyncTrigger(SYNC_TRIGGER, fullSync),
+    // A full sync asked without a valid proof, synced incrementally instead: the page that asked tells so.
+    ...(refused && { fullSyncRefused: true }),
+    // The link of the year in review, in the sidebar: whoever sees the dashboard may give it to the team.
+    ...(RETRO_KEY && { retroKey: RETRO_KEY.toString('base64url') }),
+    requiredApprovals: REQUIRED_APPROVALS,
+    ...(SQUADS.length && { squads: SQUADS }),
+    people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),
+    repos: Object.fromEntries(
+      repositories.map((repo) => [
+        repo,
+        {
+          category: repositoryCategory(repo, languages[repo]),
+          technologies: technologyShares(languages[repo], frameworks[repo]),
+        },
+      ]),
+    ),
+    today: computeToday(inWindow, now),
+    // The page computes the stats of the range it shows from these, since the start of the data.
+    windowStart: dataStartIso,
+    pullRequests: records,
+    // When each person opened their first pull request in the organization, in minutes: seniority goes back further
+    // than the data.
+    firstPullRequests: Object.fromEntries(
+      peopleOf(records)
+        .filter((login) => firstPullRequests[login])
+        .map((login) => [login, minutes(/** @type {string} */ (firstPullRequests[login]))]),
+    ),
+    // The badges are won over this history, since the first sync.
+    monthly: history,
+    monthlyRevision: MONTHLY_REVISION,
+    ci: computeCi(runsInWindow),
+    // The runs only go back to there: GitHub had forgotten the older ones when the snapshot started keeping them.
+    ciStart: ciStartIso,
+    events: computeEvents(inWindow, now),
+  }
+  await writeJson(STATS_PATH, encrypt(stats))
+  // The year in review, apart, with its own key; none without one, nor before its year starts.
+  const retro = RETRO_KEY && retroOf(stats)
+  if (RETRO_KEY && retro) {
+    await writeJson(RETRO_PATH, encryptRetro(retro, RETRO_KEY))
+  } else {
+    await rm(RETRO_PATH, { force: true })
+  }
   // Written last: the page polls this small file and only downloads the stats once it changes.
   await writeJson(VERSION_PATH, version)
 

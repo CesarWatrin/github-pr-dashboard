@@ -10,6 +10,7 @@ export const ORG = /** @type {string} */ (process.env.ORG)
 export const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH ?? '.cache/snapshot.json'
 export const STATS_PATH = process.env.STATS_PATH ?? 'site/data/stats.enc.json'
 export const VERSION_PATH = join(dirname(STATS_PATH), 'version.json')
+export const RETRO_PATH = join(dirname(STATS_PATH), 'retro.enc.json')
 
 // Repository types, from the languages GitHub detects in them. TypeScript and JavaScript go with Vue: front-end code
 // next to it, back-end services without it. Docs, infrastructure and tooling fall under "other".
@@ -96,6 +97,28 @@ export function parseSquads(value = '') {
 }
 
 export const SQUADS = parseSquads(process.env.SQUADS)
+
+// The key of the year in review (« Rétrospective »), published apart from the stats: 32 random bytes in base64url (43
+// characters), which its link carries after the # (never sent to any server). Without it, no year in review. It is not
+// a password: nothing derives it, a key too short is refused.
+/**
+ * @param {string} [value]
+ * @returns {Buffer | null}
+ */
+export function retroKey(value = '') {
+  const text = value.trim()
+  if (text === '') {
+    return null
+  }
+  const key = Buffer.from(text, 'base64url')
+  if (!/^[\w-]{43}$/.test(text) || key.length !== 32) {
+    throw new Error('RETRO_KEY should be 32 random bytes in base64url: node -e "console.log(crypto.randomBytes(32).toString(\'base64url\'))"')
+  }
+
+  return key
+}
+
+export const RETRO_KEY = retroKey(process.env.RETRO_KEY)
 
 // GitHub Apps are detected from their actor type: these are user accounts acting as bots. The organization's own
 // come from BOT_USERS (logins separated by commas), so that its account names stay out of this public code.

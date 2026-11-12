@@ -22,4 +22,5 @@ delete process.env.PUBLISHED_STATS_URL
 delete process.env.FULL_SYNC_PASSWORD
 delete process.env.FULL_SYNC_PROOF
 delete process.env.SQUADS
+delete process.env.RETRO_KEY
 after(() => rm(statsFolder, { recursive: true, force: true }))

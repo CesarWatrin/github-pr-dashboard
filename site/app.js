@@ -22,11 +22,13 @@ import { setupReport } from './pages/report.js'
 import { setupReviewers } from './pages/reviewers.js'
 import { SQUAD_TYPES } from './pages/squads/charts.js'
 import { setupSquads } from './pages/squads/squads.js'
-import { readStoredKey } from './services/stats-key.js'
+import { readRetroKey } from './services/retro-source.js'
+import { hasUnlockedBefore, readStoredKey } from './services/stats-key.js'
 import { renderPeriodSelector, setupFilters } from './shell/filters.js'
 import { renderLanguageToggle, setupLanguage } from './shell/language.js'
 import { render, setupResize } from './shell/render.js'
 import { renderRoute, setupNavigation } from './shell/router.js'
+import { setupRetroLink } from './shell/retro-link.js'
 import { refresh, setupSession, showDashboard, showLock } from './shell/session.js'
 import { refreshClock, setupSync } from './shell/sync.js'
 import { registerTables, renderTableLegends } from './shell/tables.js'
@@ -60,6 +62,7 @@ setupTheme()
 setupLanguage()
 setupSync()
 setupSession()
+setupRetroLink()
 setupSquads()
 setupProjects()
 setupReviewers()
@@ -103,6 +106,10 @@ if (stored) {
   state.keyExpiresAt = stored.expiresAt
   showDashboard()
   refresh()
+} else if (!hasUnlockedBefore() && readRetroKey() !== null) {
+  // A browser that only ever opened the year in review, never the dashboard: the team gets the year in review, never the
+  // lock screen. Only a browser that unlocked the dashboard once asks for its password.
+  location.replace('retro.html')
 } else {
   showLock()
 }

@@ -1,0 +1,878 @@
+/* The year in review (retro.html, pages/wrapped/): a page apart, dark whatever the theme, like a story on a social
+   network. The picker of the people, then the story: a bar per slide, a slide per figure on a gradient of the series
+   colors, its tone changing from slide to slide; without a key, the screen that says how to get the link. */
+
+.wrapped {
+  --wrapped-ink: #fff;
+  --wrapped-muted: rgba(255, 255, 255, 0.72);
+  --wrapped-faint: rgba(255, 255, 255, 0.14);
+  --wrapped-raised: rgba(255, 255, 255, 0.06);
+  --wrapped-base: #0e1118;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  /* The halos behind it (wrapped-motion.css) show through. */
+  background: transparent;
+  color: var(--wrapped-ink);
+}
+
+.wrapped :focus-visible {
+  outline: 2px solid var(--wrapped-ink);
+  outline-offset: 3px;
+}
+
+.wrapped-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--wrapped-ink);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.wrapped-icon-button:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.wrapped-icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The play triangle is filled, as everywhere. */
+.is-paused .wrapped-icon-button.is-pause svg {
+  fill: currentColor;
+}
+
+.wrapped-eyebrow {
+  margin: 0;
+  color: var(--wrapped-muted);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* The picker: who are you? */
+.wrapped-picker {
+  display: grid;
+  gap: 16px;
+  width: min(760px, 100%);
+  padding: 56px 16px 48px;
+  align-self: start;
+}
+
+.wrapped-picker-title,
+.wrapped-locked-title {
+  margin: 0;
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.wrapped-picker-sub,
+.wrapped-locked-text {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--wrapped-muted);
+  font-size: 17px;
+}
+
+/* The field to find oneself: a magnifier inside, on the left, and a ring of light on focus. */
+.wrapped-search {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 8px;
+  padding: 0 20px 0 48px;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 999px;
+  background: var(--wrapped-raised)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='rgba(255,255,255,0.72)' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='4.5'/%3E%3Cpath d='m10.5 10.5 3 3'/%3E%3C/svg%3E")
+    no-repeat 20px center / 18px;
+  color: var(--wrapped-ink);
+  font: inherit;
+  font-size: 16px;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.wrapped-search::placeholder {
+  color: var(--wrapped-muted);
+}
+
+.wrapped-search:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.wrapped .wrapped-search:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--series-1) 70%, #fff);
+  background-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--series-1) 30%, transparent);
+}
+
+.wrapped-search::-webkit-search-cancel-button {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.wrapped-team {
+  display: grid;
+  gap: 2px;
+  padding: 18px 22px;
+  border: 0;
+  border-radius: 18px;
+  /* A gradient of the series colors, flowing (wrapped-motion.css). */
+  background-color: color-mix(in srgb, var(--series-1) 80%, #000);
+  color: var(--wrapped-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out),
+    filter 220ms ease;
+}
+
+.wrapped-team strong {
+  font-size: 18px;
+}
+
+.wrapped-team span {
+  color: var(--wrapped-muted);
+  font-size: 14px;
+}
+
+/* The squads: a card each, in the tones of the team's card, lighter. */
+.wrapped-squads {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrapped-squad {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, var(--series-2) 45%, transparent);
+  border-radius: 16px;
+  background: linear-gradient(130deg, color-mix(in srgb, var(--series-2) 32%, transparent), color-mix(in srgb, var(--series-1) 18%, transparent));
+  color: var(--wrapped-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out),
+    border-color 220ms ease;
+}
+
+/* The face of the head of the squad, ringed in the squad's color. */
+.wrapped-squad img {
+  flex: none;
+  border-radius: 50%;
+  background: var(--wrapped-faint);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--series-2) 70%, transparent);
+}
+
+.wrapped-squad-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wrapped-squad-name strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Who heads it, whole: a long login goes on a second line rather than being cut. */
+.wrapped-squad-name span {
+  color: var(--wrapped-muted);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .wrapped-squad:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--series-2) 80%, transparent);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.38);
+  }
+}
+
+.wrapped-squad:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.wrapped-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A person: lifted on hover, a glow of the series colors behind, the avatar ringed. */
+.wrapped-person {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 14px;
+  background: var(--wrapped-raised);
+  color: var(--wrapped-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 220ms var(--ease-out),
+    border-color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms var(--ease-out);
+}
+
+.wrapped-person::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--series-1) 28%, transparent), color-mix(in srgb, var(--series-3) 20%, transparent));
+  content: '';
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.wrapped-person > * {
+  position: relative;
+}
+
+.wrapped-person img,
+.wrapped-whose img {
+  flex: none;
+  border-radius: 50%;
+  background: var(--wrapped-faint);
+}
+
+.wrapped-person img {
+  box-shadow: 0 0 0 2px transparent;
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 220ms ease;
+}
+
+@media (hover: hover) {
+  .wrapped-person:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.32);
+    box-shadow:
+      0 14px 30px rgba(0, 0, 0, 0.38),
+      0 0 24px color-mix(in srgb, var(--series-1) 22%, transparent);
+  }
+
+  .wrapped-person:hover::before {
+    opacity: 1;
+  }
+
+  .wrapped-person:hover img {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 2px var(--wrapped-ink);
+  }
+
+  .wrapped-team:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
+    filter: brightness(1.08) saturate(1.1);
+  }
+}
+
+.wrapped-person:active,
+.wrapped-team:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.wrapped-person-name {
+  display: grid;
+  min-width: 0;
+}
+
+.wrapped-person-name strong,
+.wrapped-person-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-person-name span {
+  color: var(--wrapped-muted);
+  font-size: 13px;
+}
+
+.wrapped-none {
+  margin: 0;
+  color: var(--wrapped-muted);
+}
+
+/* Without a key that opens it: how to get the link. */
+.wrapped-locked {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  width: min(620px, 100%);
+  padding: 48px 24px;
+}
+
+.wrapped-locked-mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border: 1px solid var(--wrapped-faint);
+  border-radius: 20px;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--series-2) 45%, transparent), color-mix(in srgb, var(--series-1) 35%, transparent));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  font-size: 30px;
+}
+
+.wrapped-locked .wrapped-action {
+  margin-top: 8px;
+}
+
+/* The story: as tall as a phone, the whole screen on one. */
+.wrapped-story {
+  --tone-a: var(--series-1);
+  --tone-b: var(--series-3);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  width: min(460px, 100vw);
+  height: min(860px, 100dvh);
+  padding: 14px 18px 28px;
+  overflow: hidden;
+  border-radius: 28px;
+  /* Its glows, in the tones of the slide, orbit inside it (wrapped-motion.css). */
+  background: #11141c;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+
+.wrapped-story[data-tone='1'] {
+  --tone-a: var(--series-2);
+  --tone-b: var(--series-1);
+}
+
+.wrapped-story[data-tone='2'] {
+  --tone-a: var(--series-3);
+  --tone-b: var(--series-2);
+}
+
+.wrapped-story[data-tone='3'] {
+  --tone-a: var(--diff-deleted);
+  --tone-b: var(--series-2);
+}
+
+.wrapped-story[data-tone='4'] {
+  --tone-a: var(--series-1);
+  --tone-b: var(--diff-added);
+}
+
+.wrapped-story[data-tone='5'] {
+  --tone-a: var(--series-2);
+  --tone-b: var(--series-3);
+}
+
+.wrapped-story[data-tone='6'] {
+  --tone-a: var(--series-3);
+  --tone-b: var(--series-1);
+}
+
+@media (max-width: 520px) {
+  .wrapped-story {
+    border-radius: 0;
+  }
+}
+
+.wrapped-progress {
+  display: flex;
+  gap: 4px;
+}
+
+.wrapped-segment {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.wrapped-segment-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--wrapped-ink);
+}
+
+.wrapped-segment.is-done .wrapped-segment-fill,
+.wrapped-segment.is-current .wrapped-segment-fill {
+  width: 100%;
+}
+
+.wrapped-segment.is-current .wrapped-segment-fill {
+  animation: wrapped-fill var(--slide-ms) linear;
+}
+
+.wrapped-story.is-paused .wrapped-segment.is-current .wrapped-segment-fill {
+  animation-play-state: paused;
+}
+
+@keyframes wrapped-fill {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+.wrapped-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wrapped-whose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.wrapped-whose span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* As wide as the card, its padding aside, so that what glows on a slide (the face of the first one) is only cut by the
+   edge of the card, never short of it. */
+.wrapped-stage {
+  display: grid;
+  align-items: center;
+  min-height: 0;
+  margin-inline: -18px;
+  padding-inline: 18px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Taps: the left third for the slide before, the rest for the next, under the head. */
+.wrapped-tap {
+  position: absolute;
+  top: 72px;
+  bottom: 0;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.wrapped-tap.is-previous {
+  left: 0;
+  width: 33%;
+}
+
+.wrapped-tap.is-next {
+  right: 0;
+  width: 67%;
+}
+
+/* A container, so that the figure takes the size its length lets it. */
+.wrapped-slide {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.wrapped-slide > * {
+  min-width: 0;
+  animation: wrapped-rise 600ms var(--ease-out) backwards;
+}
+
+.wrapped-slide > :nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.wrapped-slide > :nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.wrapped-slide > :nth-child(4) {
+  animation-delay: 320ms;
+}
+
+.wrapped-slide > :nth-child(n + 5) {
+  animation-delay: 420ms;
+}
+
+@keyframes wrapped-rise {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(18px);
+  }
+}
+
+/* As large as the slide lets it: a digit of this font takes about 0.62 of its size, so a figure of --chars characters
+   fits the width of the slide whatever its length; a font with wider digits makes it smaller still (--fit, measured by
+   the page). */
+.wrapped-figure {
+  margin: 0;
+  font-size: calc(min(112px, calc(100cqi / (var(--chars, 3) * 0.62))) * var(--fit, 1));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.wrapped-unit {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.wrapped-title {
+  margin: 0;
+  font-size: clamp(32px, 11cqi, 56px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+/* The last slide: a thank-you, a long name may wrap. */
+.wrapped-story.is-final .wrapped-title {
+  font-size: clamp(28px, 9cqi, 42px);
+}
+
+.wrapped-detail {
+  margin: 0;
+  color: var(--wrapped-muted);
+  font-size: 18px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.wrapped-visual {
+  margin-top: 12px;
+}
+
+.wrapped-face {
+  border: 3px solid var(--wrapped-ink);
+  border-radius: 50%;
+  background: var(--wrapped-faint);
+}
+
+/* The months, the busiest one lit. */
+.wrapped-bars {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: end;
+  gap: 6px;
+  height: 150px;
+  padding-bottom: 20px;
+}
+
+.wrapped-bar {
+  position: relative;
+  height: var(--height);
+  border-radius: 6px 6px 2px 2px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.wrapped-bar.is-busiest {
+  background: var(--wrapped-ink);
+}
+
+.wrapped-bar-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 4px;
+  color: var(--wrapped-muted);
+  font-size: 11px;
+  transform: translateX(-50%);
+}
+
+.wrapped-list,
+.wrapped-records {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrapped-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.wrapped-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-list-detail {
+  color: var(--wrapped-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* The records: two cards a row, an emoji, what it is, how much. */
+.wrapped-records {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wrapped-records li {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.wrapped-record-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.wrapped-record-name {
+  color: var(--wrapped-muted);
+  font-size: 13px;
+}
+
+.wrapped-records strong {
+  font-size: 18px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.wrapped-duo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.wrapped-duo-person {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wrapped-duo-person strong {
+  max-width: 100%;
+  font-size: 20px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.wrapped-duo-person span {
+  color: var(--wrapped-muted);
+}
+
+/* The thanks to each person of a team (pages/wrapped/thanks.js): a card each, their face, their name, their anecdote. */
+.wrapped-thanks {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrapped-thanks li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.wrapped-thanks .wrapped-face {
+  grid-row: span 2;
+  border-width: 2px;
+}
+
+.wrapped-thanks strong {
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-thanks span {
+  color: var(--wrapped-muted);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* More than a slide usually holds (a squad, all on one): closer together, smaller faces. */
+.wrapped-thanks.is-dense {
+  gap: 4px;
+}
+
+.wrapped-thanks.is-dense li {
+  padding: 5px 10px;
+  border-radius: 12px;
+}
+
+.wrapped-thanks.is-dense .wrapped-face {
+  width: 32px;
+  height: 32px;
+}
+
+.wrapped-thanks.is-dense strong {
+  font-size: 14px;
+}
+
+.wrapped-thanks.is-dense span {
+  font-size: 12px;
+}
+
+/* What can be clicked on a slide comes over the taps. */
+.wrapped-link,
+.wrapped-actions {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.wrapped-link {
+  display: inline-block;
+  max-width: 100%;
+  padding: 10px 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--wrapped-ink);
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrapped-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.wrapped-summary div {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.wrapped-summary dt {
+  color: var(--wrapped-muted);
+  font-size: 12px;
+}
+
+.wrapped-summary dd {
+  margin: 4px 0 0;
+  font-size: clamp(18px, 6cqi, 26px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wrapped-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wrapped-action {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wrapped-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.wrapped-action:hover {
+  border-color: var(--wrapped-ink);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wrapped-action.is-primary {
+  border-color: var(--wrapped-ink);
+  background: var(--wrapped-ink);
+  color: #11141c;
+}
+
+.wrapped-action.is-primary:hover {
+  background: rgba(255, 255, 255, 0.86);
+}

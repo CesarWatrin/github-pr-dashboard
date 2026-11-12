@@ -11,7 +11,7 @@ import { LANGUAGE_STORAGE_KEY } from '../../site/lib/i18n.js'
 import { ROUTES } from '../../site/model/routes.js'
 import { madeUpStats } from '../fixtures/stats.mjs'
 import { browserPath, launch } from './chrome.mjs'
-import { serveSite, TEST_PASSWORD } from './site.mjs'
+import { serveSite, TEST_PASSWORD, TEST_RETRO_KEY } from './site.mjs'
 
 const stats = madeUpStats()
 // The containers that stay empty on purpose: until the report is copied, the pairs that replace the review matrix on a
@@ -326,6 +326,89 @@ for (const language of ['fr', 'en']) {
       // Back to the defaults for the tests after.
       await page.evaluate(`location.hash = '#/?period=365d'`)
       await page.waitFor(`document.querySelector('[data-search]').value === '' && !location.hash.includes('q=')`)
+    })
+
+    test('the year in review: its link last in the sidebar, then its page apart, the story of a person, a squad and the team', async () => {
+      // Last of the sidebar, with the key of its link, and the button that copies it.
+      assert.equal(await page.evaluate(`document.querySelector('.nav').lastElementChild.matches('[data-retro]:not([hidden])')`), true)
+      const link = await page.evaluate(`document.querySelector('[data-retro-link]').href`)
+      assert.ok(link.endsWith(`retro.html#k=${TEST_RETRO_KEY}`))
+      // The page apart, here in the same tab: the key leaves the address at once, and nothing of the dashboard loads.
+      await page.send('Page.navigate', { url: link })
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-wrapped] .wrapped-person')`)
+      assert.equal(await page.evaluate('location.hash'), '')
+      assert.equal(await page.evaluate(`document.querySelector('[data-page], [data-sidebar]')`), null)
+      if (language === 'en') {
+        await page.waitFor(`document.documentElement.classList.contains('is-translated')`)
+      }
+      await noteFrench('year in review picker', '[data-wrapped]')
+      // Every slide of a story, to the last one, which sums the year up.
+      const playThrough = async (where) => {
+        await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-story')`)
+        const slides = await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-segment').length`)
+        assert.ok(slides >= 4, `${where}: ${slides} slides`)
+        for (let index = 0; index < slides; index++) {
+          assert.equal(await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-segment.is-current').length`), 1)
+          // A figure never runs past its slide.
+          assert.equal(
+            await page.evaluate(`(() => {
+              const figure = document.querySelector('.wrapped-figure')
+              if (!figure) return true
+              const range = document.createRange()
+              range.selectNodeContents(figure)
+              return range.getBoundingClientRect().right <= document.querySelector('.wrapped-slide').getBoundingClientRect().right + 1
+            })()`),
+            true,
+            `${where}, slide ${index + 1}`,
+          )
+          await noteFrench(`${where}, slide ${index + 1}`, '[data-wrapped] .wrapped-stage')
+          if (index < slides - 1) {
+            await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-tap.is-next').click()`)
+          }
+        }
+        assert.ok(await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-story').classList.contains('is-final')`))
+        assert.equal(await page.evaluate(`document.querySelectorAll('[data-wrapped] .wrapped-summary div').length`), 6)
+      }
+      await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-person').click()`)
+      await page.waitFor(`location.hash.startsWith('#for=')`)
+      await playThrough('year in review of a person')
+      // The left arrow goes back a slide; Escape, to the picker.
+      await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-story').classList.contains('is-final')`), false)
+      await page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
+      await page.waitFor(`document.querySelector('[data-wrapped] .wrapped-squad') && location.hash === ''`)
+      await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-squad').click()`)
+      await page.waitFor(`location.hash.startsWith('#squad=')`)
+      await playThrough('year in review of a squad')
+      // Someone else: back to the picker, then the team.
+      await page.evaluate(`[...document.querySelectorAll('[data-wrapped] .wrapped-action')][1].click()`)
+      await page.evaluate(`document.querySelector('[data-wrapped] .wrapped-team').click()`)
+      await page.waitFor(`location.hash === '#team'`)
+      await playThrough('year in review of the team')
+      // A browser that only ever opened the year in review goes back to it from the address of the dashboard, never to
+      // its lock screen; one that unlocked the dashboard once gets the lock screen, even locked since.
+      const kept = await page.evaluate(`JSON.stringify([localStorage.getItem('github-pr-dashboard:key'), localStorage.getItem('github-pr-dashboard:unlocked')])`)
+      await page.evaluate(`localStorage.removeItem('github-pr-dashboard:key'); localStorage.removeItem('github-pr-dashboard:unlocked')`)
+      await page.send('Page.navigate', { url: site.url })
+      await page.waitFor(`document.readyState === 'complete' && location.pathname.endsWith('/retro.html') && document.querySelector('[data-wrapped] .wrapped-person')`)
+      await page.evaluate(`localStorage.setItem('github-pr-dashboard:unlocked', '1')`)
+      await page.send('Page.navigate', { url: site.url })
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]') && !document.querySelector('[data-lock]').hidden`)
+      assert.equal(await page.evaluate('location.pathname.endsWith("/retro.html")'), false)
+      await page.evaluate(`(([key, unlocked]) => { localStorage.setItem('github-pr-dashboard:key', key); localStorage.setItem('github-pr-dashboard:unlocked', unlocked) })(${kept})`)
+      await page.send('Page.navigate', { url: link })
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-wrapped] .wrapped-person')`)
+      // An address shared without the key opens the same story in a browser that kept it; without it, the screen that
+      // says how to get the link.
+      await page.evaluate(`location.hash = 'team'`)
+      await page.evaluate('location.reload()')
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-wrapped] .wrapped-story')`)
+      await page.evaluate(`localStorage.removeItem('github-pr-dashboard:retro-key'); location.reload()`)
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-wrapped] .wrapped-locked')`)
+      await noteFrench('year in review without its key', '[data-wrapped]')
+      // Back to the dashboard, still unlocked, for the tests after.
+      await page.send('Page.navigate', { url: site.url })
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`)
     })
 
     // A filter changed draws again whatever it changes: every page then shows what loading its address again shows,

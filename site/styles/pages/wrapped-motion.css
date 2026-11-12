@@ -1,0 +1,531 @@
+/* The motion of the year in review (retro.html), apart from its layout (wrapped.css): halos of light drifting behind the
+   page, glows that follow the tone of each slide and morph from one to the next, sparks rising through the story,
+   figures that pop in and catch the light, bars that grow, cards that come in one after the other, a bloom of light on
+   the last slide, a light following the mouse. Transforms and opacity only, so that it stays smooth; everything stops under prefers-reduced-motion
+   (motion.css), the page then still and whole. */
+
+/* The tones of a slide morph from one to the next rather than jump. */
+@property --tone-a {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #2a78d6;
+}
+
+@property --tone-b {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1f9d6b;
+}
+
+/* The halos behind the page: four soft lights of the series colors, each drifting on its own slow path. */
+.wrapped-halos {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0e1118;
+  pointer-events: none;
+}
+
+.wrapped-halos span {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--halo) 42%, transparent), transparent 62%);
+  will-change: transform;
+  animation: wrapped-drift-a 28s ease-in-out infinite alternate;
+}
+
+.wrapped-halos span:nth-child(1) {
+  --halo: var(--series-1);
+  top: -32vmax;
+  left: -22vmax;
+}
+
+.wrapped-halos span:nth-child(2) {
+  --halo: var(--series-3);
+  right: -28vmax;
+  bottom: -36vmax;
+  animation-name: wrapped-drift-b;
+  animation-duration: 34s;
+}
+
+.wrapped-halos span:nth-child(3) {
+  --halo: var(--series-2);
+  top: 20%;
+  left: 50%;
+  width: 46vmax;
+  height: 46vmax;
+  opacity: 0.6;
+  animation-name: wrapped-drift-c;
+  animation-duration: 24s;
+}
+
+.wrapped-halos span:nth-child(4) {
+  --halo: var(--series-1);
+  bottom: -10vmax;
+  left: -12vmax;
+  width: 40vmax;
+  height: 40vmax;
+  opacity: 0.5;
+  animation-name: wrapped-drift-b;
+  animation-duration: 40s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes wrapped-drift-a {
+  50% {
+    transform: translate(14vmax, 10vmax) scale(1.15);
+  }
+
+  to {
+    transform: translate(6vmax, 20vmax) scale(0.95);
+  }
+}
+
+@keyframes wrapped-drift-b {
+  50% {
+    transform: translate(-16vmax, -8vmax) scale(1.1);
+  }
+
+  to {
+    transform: translate(-6vmax, -18vmax) scale(1.2);
+  }
+}
+
+@keyframes wrapped-drift-c {
+  50% {
+    transform: translate(-20vmax, 12vmax) scale(0.85);
+  }
+
+  to {
+    transform: translate(-34vmax, -6vmax) scale(1.1);
+  }
+}
+
+/* The story glows in the tones of its slide: two lights orbiting slowly inside it, behind what it says. */
+.wrapped-story {
+  isolation: isolate;
+  transition:
+    --tone-a 900ms ease,
+    --tone-b 900ms ease;
+}
+
+.wrapped-story::before,
+.wrapped-story::after {
+  position: absolute;
+  z-index: -2;
+  width: 150%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+  will-change: transform;
+}
+
+.wrapped-story::before {
+  top: -38%;
+  left: -62%;
+  background: radial-gradient(circle closest-side, color-mix(in srgb, var(--tone-a) 85%, transparent), transparent);
+  animation: wrapped-orbit-a 16s ease-in-out infinite alternate;
+}
+
+.wrapped-story::after {
+  right: -62%;
+  bottom: -38%;
+  background: radial-gradient(circle closest-side, color-mix(in srgb, var(--tone-b) 75%, transparent), transparent);
+  animation: wrapped-orbit-b 20s ease-in-out infinite alternate;
+}
+
+@keyframes wrapped-orbit-a {
+  50% {
+    transform: translate(18%, 10%) scale(1.1);
+  }
+
+  to {
+    transform: translate(8%, 24%) scale(0.92);
+  }
+}
+
+@keyframes wrapped-orbit-b {
+  50% {
+    transform: translate(-16%, -12%) scale(1.12);
+  }
+
+  to {
+    transform: translate(-26%, -4%) scale(0.95);
+  }
+}
+
+/* Sparks rising through the story (wrapped.js sets where, how big, how fast). Unseen when nothing moves. */
+.wrapped-sparks {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wrapped-sparks i {
+  position: absolute;
+  bottom: -12px;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  animation: wrapped-spark var(--duration) linear var(--delay) infinite;
+}
+
+@keyframes wrapped-spark {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+
+  15% {
+    opacity: 0.85;
+  }
+
+  80% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), -920px);
+  }
+}
+
+/* The bar of the slide shown glows as it fills. */
+.wrapped-segment.is-current .wrapped-segment-fill {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+/* A figure pops in, then a gleam of the slide's tone sweeps across it now and then. Still, it is plain white. */
+.wrapped-slide > .wrapped-figure {
+  background: linear-gradient(100deg, #fff 42%, color-mix(in srgb, var(--tone-a) 40%, #fff) 50%, #fff 58%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    wrapped-pop 800ms var(--ease-out) 100ms backwards,
+    wrapped-shine 5s ease-in-out 1.4s infinite;
+}
+
+@keyframes wrapped-pop {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px) scale(0.86);
+  }
+}
+
+@keyframes wrapped-shine {
+  0% {
+    background-position: 100% 0;
+  }
+
+  30%,
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* The face of the first slide floats, ringed with the slide's light. */
+.wrapped-face {
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--tone-a) 35%, transparent),
+    0 0 48px color-mix(in srgb, var(--tone-a) 65%, transparent);
+  animation: wrapped-bob 5s ease-in-out infinite;
+}
+
+@keyframes wrapped-bob {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* The months grow from the ground one after the other (--index, from visuals.js). */
+.wrapped-bar {
+  transform-origin: bottom;
+  animation: wrapped-grow 700ms var(--ease-out) backwards;
+  animation-delay: calc(var(--index, 0) * 45ms + 380ms);
+}
+
+.wrapped-bar.is-busiest {
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.55);
+}
+
+@keyframes wrapped-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* The cards of a slide come in one after the other. */
+.wrapped-records li,
+.wrapped-list li,
+.wrapped-summary div,
+.wrapped-duo-person {
+  animation: wrapped-pop 600ms var(--ease-out) backwards;
+  animation-delay: 420ms;
+}
+
+:is(.wrapped-records, .wrapped-list, .wrapped-summary, .wrapped-duo) > :nth-child(2) {
+  animation-delay: 510ms;
+}
+
+:is(.wrapped-records, .wrapped-list, .wrapped-summary, .wrapped-duo) > :nth-child(3) {
+  animation-delay: 600ms;
+}
+
+:is(.wrapped-records, .wrapped-list, .wrapped-summary, .wrapped-duo) > :nth-child(4) {
+  animation-delay: 690ms;
+}
+
+:is(.wrapped-records, .wrapped-list, .wrapped-summary, .wrapped-duo) > :nth-child(n + 5) {
+  animation-delay: 780ms;
+}
+
+/* The last slide: a bloom of light opens behind it, its thank-you catches the light, and a gleam crosses its cards one
+   after the other. */
+.wrapped-story.is-final .wrapped-slide {
+  position: relative;
+}
+
+.wrapped-story.is-final .wrapped-slide::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 140%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgba(255, 255, 255, 0.28),
+    color-mix(in srgb, var(--tone-a) 45%, transparent) 45%,
+    transparent
+  );
+  content: '';
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+  animation: wrapped-bloom 2.2s var(--ease-out) 150ms forwards;
+}
+
+@keyframes wrapped-bloom {
+  35% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+.wrapped-story.is-final .wrapped-title {
+  background: linear-gradient(100deg, #fff 42%, color-mix(in srgb, var(--tone-a) 45%, #fff) 50%, #fff 58%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    wrapped-rise 600ms var(--ease-out) 120ms backwards,
+    wrapped-shine 5s ease-in-out 1s infinite;
+}
+
+.wrapped-summary div {
+  position: relative;
+  overflow: hidden;
+}
+
+.wrapped-summary div::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.16) 50%, transparent 70%);
+  content: '';
+  transform: translateX(-110%);
+  animation: wrapped-gleam 1.2s ease-in-out forwards;
+  animation-delay: 900ms;
+}
+
+.wrapped-summary div:nth-child(2)::after {
+  animation-delay: 1000ms;
+}
+
+.wrapped-summary div:nth-child(3)::after {
+  animation-delay: 1100ms;
+}
+
+.wrapped-summary div:nth-child(4)::after {
+  animation-delay: 1200ms;
+}
+
+.wrapped-summary div:nth-child(5)::after {
+  animation-delay: 1300ms;
+}
+
+.wrapped-summary div:nth-child(6)::after {
+  animation-delay: 1400ms;
+}
+
+@keyframes wrapped-gleam {
+  to {
+    transform: translateX(110%);
+  }
+}
+
+/* The picker: its title catches the light now and then, its cards come in one after the other, the team's card flows. */
+.wrapped-picker-title {
+  background: linear-gradient(100deg, #fff 42%, color-mix(in srgb, var(--series-2) 65%, #fff) 50%, #fff 58%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    wrapped-pop 900ms var(--ease-out) 80ms backwards,
+    wrapped-shine 7s ease-in-out 1.6s infinite;
+}
+
+.wrapped-picker > .wrapped-eyebrow,
+.wrapped-picker > .wrapped-picker-sub,
+.wrapped-picker > .wrapped-search,
+.wrapped-picker > .wrapped-team,
+.wrapped-squads li,
+.wrapped-people li {
+  animation: wrapped-rise 650ms var(--ease-out) backwards;
+}
+
+.wrapped-picker > .wrapped-picker-sub {
+  animation-delay: 160ms;
+}
+
+.wrapped-picker > .wrapped-search {
+  animation-delay: 240ms;
+}
+
+.wrapped-picker > .wrapped-team {
+  animation:
+    wrapped-rise 650ms var(--ease-out) 320ms backwards,
+    wrapped-flow 12s ease-in-out infinite alternate;
+}
+
+.wrapped-squads li,
+.wrapped-people li {
+  animation-delay: calc(min(var(--index, 0), 24) * 28ms + 380ms);
+}
+
+.wrapped-team {
+  background-image: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--series-1) 80%, #000),
+    color-mix(in srgb, var(--series-3) 70%, #000),
+    color-mix(in srgb, var(--series-2) 60%, #000),
+    color-mix(in srgb, var(--series-1) 80%, #000)
+  );
+  background-size: 300% 100%;
+}
+
+@keyframes wrapped-flow {
+  to {
+    background-position: 100% 0;
+  }
+}
+
+/* The key of the screen without one floats, a ring of light pulsing around it. */
+.wrapped-locked-mark {
+  position: relative;
+  animation: wrapped-bob 4s ease-in-out infinite;
+}
+
+.wrapped-locked-mark::after {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--series-2) 60%, transparent);
+  content: '';
+  animation: wrapped-pulse 2.4s ease-out infinite;
+}
+
+@keyframes wrapped-pulse {
+  to {
+    box-shadow: 0 0 0 18px transparent;
+  }
+}
+
+.wrapped-locked > :not(.wrapped-locked-mark) {
+  animation: wrapped-rise 650ms var(--ease-out) backwards;
+}
+
+.wrapped-locked > :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.wrapped-locked > :nth-child(n + 4) {
+  animation-delay: 220ms;
+}
+
+/* A light under the mouse, which wrapped.js eases there (--glow-x, --glow-y): it lights up the background it passes over,
+   never what the page says. White in overlay brightens each color below in its own hue, the glows warming up while the
+   dark stays dark; it fades out smoothly, from a soft middle to nothing, without an edge. One behind the page, over its
+   halos, which the cards of the picker let through; one in the story, over its glows and sparks (one step lower) and
+   under its slide. Both catch no click, come in on the first move and fade out when the mouse leaves; none on a touch
+   screen, nor when nothing should move. */
+.wrapped-glow,
+.wrapped-story-glow {
+  --glow-size: clamp(360px, 44vmax, 680px);
+  top: 0;
+  left: 0;
+  width: var(--glow-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgba(255, 255, 255, 0.34),
+    rgba(255, 255, 255, 0.28) 16%,
+    rgba(255, 255, 255, 0.18) 34%,
+    rgba(255, 255, 255, 0.09) 54%,
+    rgba(255, 255, 255, 0.03) 74%,
+    transparent
+  );
+  mix-blend-mode: overlay;
+  opacity: 0;
+  pointer-events: none;
+  /* Far away until the mouse first moves over it. */
+  transform: translate3d(calc(var(--glow-x, -100vmax) - var(--glow-size) / 2), calc(var(--glow-y, -100vmax) - var(--glow-size) / 2), 0);
+  transition: opacity 900ms ease;
+  will-change: transform;
+}
+
+.wrapped-glow {
+  position: fixed;
+}
+
+.wrapped-story-glow {
+  position: absolute;
+  z-index: -1;
+}
+
+.is-glowing .wrapped-glow,
+.is-glowing .wrapped-story-glow {
+  opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .wrapped-glow,
+  .wrapped-story-glow {
+    display: none;
+  }
+}
+
+/* Still: no spark, nor bloom, nor light following the mouse. */
+@media (prefers-reduced-motion: reduce) {
+  .wrapped-sparks,
+  .wrapped-story.is-final .wrapped-slide::before,
+  .wrapped-glow,
+  .wrapped-story-glow {
+    display: none;
+  }
+}

@@ -31,6 +31,10 @@
      snapshot started keeping them), `firstPullRequests` (when each person of the records opened their first pull
      request in the organization, for seniority) and `monthly` (each person's monthly figures since the first sync, for
      the badges, with `monthlyRevision`: how they were counted).
+   - `retro.enc.json`: the year in review (`scripts/sync/retro.mjs`), apart: only what its slides show, for the
+     people of `RETRO_YEAR` still in the team, each squad (its members of the year) and the team, gzipped then encrypted
+     with AES-256-GCM and the key `RETRO_KEY` itself, which its link carries after the `#`; none without it. The stats
+     carry that key (`retroKey`) for the link of the sidebar.
    - `version.json`: `{ build, generatedAt }`, written last.
 4. **Page**: polls `version.json` every minute (every 10 s while a sync it started is running), downloads the stats
    only when `generatedAt` changes, reloads itself when `build` changes. Once the data is older than 10 minutes, a
@@ -61,6 +65,7 @@ deploy to: no workflow of another branch can read them.
 | `DISPATCH_TOKEN` | `.env`, secret | Fine-grained token, this repository only, Actions read and write: the sync button of the page |
 | `DISPATCH_REPOSITORY` | `.env` | `owner/repo` of the dashboard, for `DISPATCH_TOKEN` outside CI |
 | `FULL_SYNC_PASSWORD` | `.env`, secret | Password of the full sync started from the page, apart from `DASHBOARD_PASSWORD` (optional: without it, no password asked) |
+| `RETRO_KEY` | `.env`, secret | Key of the year in review, 32 random bytes in base64url: its link carries it (optional: without it, no year in review) |
 | `FULL_SYNC` / `--full` | workflow input / CLI | Full sync instead of an incremental one; the input needs a valid `FULL_SYNC_PROOF` once `FULL_SYNC_PASSWORD` is set, `--full` never does |
 | `FULL_SYNC_PROOF` | workflow input `proof` | Proof of the full sync password, signed by the page: `at.hex(HMAC-SHA256(key, "full-sync:" + repository + ":" + at))`, good for 2 hours |
 | `BUILD_ID` | workflow | Commit of the deployed page, published in `version.json` |

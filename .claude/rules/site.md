@@ -27,7 +27,7 @@ paths:
   the page, a query (`urlQueryOf()` of `model/url-state.js`: the period, or `custom` with `from` and `to`; `compare`,
   `squad`, `q`, `repos-<name>` for each repository filter narrowed, `statuses` of the projects, `month` on the report,
   `person` on the reviewers page once someone is picked for the reviews over time (else the busiest reviewer of the
-  period shows, never stored),
+  period shows, never stored), `for` (a login) or `team` and `year` on the year in review,
   `card` as `person:`, `repo:`, `project:` or `squad:` and its key, `pr` as `repo#number`). `shell/url-state.js` writes
   it back with `history.replaceState()` (no new entry in the history) after `render()` and after any click, input,
   change or dialog closing; it reads it at load (`readUrlState()`, before the first render, so that an address opened
@@ -351,6 +351,19 @@ paths:
   that its share reads from the axis, in `--series-2` (TMA), `--series-1` (projects), `--series-3` (AC) and
   `--text-muted` (the rest); `effortBar()` draws « Où va son effort » in the dialogs of people and squads: a bar cut
   into the shares, its words under it, no tooltip.
+- **Year in review** (« Rétrospective », `pages/wrapped/`, `#/retro`, `filters: false`): full screen over the
+  dashboard (`.wrapped`, fixed, dark whatever the theme; `is-wrapped` on the root stops the page from scrolling), drawn
+  by `renderWrapped()` from `render()` and `renderRoute()`, emptied when leaving it. A picker of the people of the year
+  still in the team (`wrappedPeople()` of `model/wrapped.js`, from `activePeople()`), a field to find oneself, the team,
+  and the years (`wrappedYears()`: those the data covers from January 1st, and the current one; the current year by
+  default, the one before in January). Then the story (`renderStory()`): the slides of `slides.js` (`personSlides()`,
+  `teamSlides()`, from `wrappedPerson()` / `wrappedTeam()`: `personYear()` and `teamYear()` of `domain/wrapped.js`, with
+  the projects of `projectRows()`, the AC of `acsFor()` and the badges of `badgeStandings()` over the months of the
+  year), a slide without anything to say left out; a bar per slide, the next slide when the bar of the current one ends
+  its animation (`SLIDE_MS`; none under reduced motion: taps only), taps on the left third and the rest, the arrow keys,
+  Space to pause, Escape back to the picker then out; it pauses when the tab hides. The team's story never ranks people.
+  The address says whose and which year (`state.wrappedFor`, `wrappedTeam`, `wrappedYear`): « Copier le lien » on the last
+  slide gives it, and it opens behind the password like any address. A story keeps playing when new stats come in.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.

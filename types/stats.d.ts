@@ -121,6 +121,8 @@ interface Stats {
   timezone: string
   syncTrigger: SyncTrigger | null
   fullSyncRefused?: boolean
+  // The key of the year in review (RETRO_KEY), for the link of the sidebar: whoever sees the dashboard may share it.
+  retroKey?: string
   requiredApprovals: number
   squads?: Squad[]
   people: Record<string, string>
@@ -140,6 +142,83 @@ interface Stats {
 interface EncryptedStats {
   iterations: number
   salt: string
+  iv: string
+  data: string
+}
+
+// The year in review (« Rétrospective », site/retro.html) as the sync publishes it apart from the stats
+// (scripts/sync/retro.mjs): only what its slides show, for the people of its year still in the team and for the team,
+// in retro.enc.json, encrypted with the key of RETRO_KEY. Times of day in minutes since midnight, Paris time; durations
+// in minutes on the calendar.
+interface RetroProject {
+  name: string
+  status: 'ongoing' | 'delivered' | 'stalled' | 'abandoned'
+  delivered: boolean
+}
+interface RetroFunFacts {
+  smallest: number | null
+  fastest: number | null
+  slowest: number | null
+  discussed: number | null
+  earliest: number | null
+  latest: number | null
+  fridays: number
+}
+interface RetroYear {
+  code: number
+  merged: number
+  added: number
+  deleted: number
+  hotfixes: number
+  months: { month: string; code: number }[]
+  busiestMonth: string | null
+  // The busiest repositories, the most first.
+  repos: [repo: string, prs: number][]
+  reviewed: number
+  comments: number
+  // The projects worked on within the year, those delivered in it, and the first few, delivered first.
+  projects: number
+  delivered: number
+  projectList: RetroProject[]
+  acs: number
+  facts: RetroFunFacts
+}
+interface RetroPerson extends RetroYear {
+  login: string
+  days: number
+  streak: number
+  busiestWeekday: number | null
+  biggest: { repo: string; number: number; lines: number; title: string | null } | null
+  reviewedBy: { login: string; prs: number } | null
+  reviewedMost: { login: string; prs: number } | null
+}
+interface RetroTeam extends RetroYear {
+  people: number
+  reviewers: number
+  deployments: number
+  deploymentDays: number
+}
+// A squad's year: the code pull requests its members opened, those they reviewed, never a deployment.
+interface RetroSquad extends RetroTeam {
+  name: string
+  // The head of the squad, when it has one.
+  lead?: string
+  // Its members among the people of the year, by name: the thanks of its story.
+  members: string[]
+}
+interface Retro {
+  org: string
+  year: number
+  generatedAt: string
+  // The names of the people it names, when they differ from their login.
+  names: Record<string, string>
+  people: RetroPerson[]
+  // The squads with anything over the year, in the order of SQUADS.
+  squads: RetroSquad[]
+  team: RetroTeam
+}
+// Encrypted with a key of its own, which the link carries: nothing to derive.
+interface EncryptedRetro {
   iv: string
   data: string
 }

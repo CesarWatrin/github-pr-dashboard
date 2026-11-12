@@ -37,6 +37,7 @@ import { $, $$ } from '../ui/dom.js'
 import { renderRepoFilter, repoFilterNames } from '../ui/repo-filter.js'
 import { renderTables } from '../ui/tables/table.js'
 import { renderPeriodSelector, renderSquadFilter } from './filters.js'
+import { renderRetroLink } from './retro-link.js'
 import { renderSyncMenu } from './sync.js'
 import { scheduleUrlWrite } from './url-state.js'
 
@@ -71,6 +72,7 @@ export function render(animate) {
   for (const org of $$('[data-org]')) {
     org.textContent = state.stats.org
   }
+  renderRetroLink()
   $('[data-empty]').hidden = true
   $('[data-main]').classList.remove('is-loading')
   state.renderedSquad = squadKey()

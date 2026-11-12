@@ -73,6 +73,7 @@ jobs:
           DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
           FULL_SYNC: ${{ inputs.full }}
           FULL_SYNC_PASSWORD: ${{ secrets.FULL_SYNC_PASSWORD }}
+          RETRO_KEY: ${{ secrets.RETRO_KEY }}
           FULL_SYNC_PROOF: ${{ inputs.proof }}
           BUILD_ID: ${{ github.sha }}
 

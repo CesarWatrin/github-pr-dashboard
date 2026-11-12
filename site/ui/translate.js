@@ -96,6 +96,7 @@ export function translatePage() {
     }
   }
   document.documentElement.lang = 'en'
-  document.title = t('Stats PR')
+  // The title of the page: « Stats PR », or « Rétrospective » on the page apart.
+  document.title = t(collapse(document.title))
   document.documentElement.classList.add('is-translated')
 }

@@ -5,7 +5,10 @@ import { displayName } from '../model/people.js'
 import { pullRequestOf } from '../model/pull-requests.js'
 import { state } from '../model/state.js'
 import { el, svg } from './dom.js'
+import { avatarUrl, githubUrl } from './github.js'
 import { ICONS_URL } from './icons.js'
+
+export { avatarUrl, githubUrl }
 
 // A click on a name asks for its dialog with one of these events, bubbling from the name; the dialogs listen to them
 // (setupPersonDialog() and the others), so that a link knows no dialog. Its detail: the login, the repository, the
@@ -17,10 +20,6 @@ export const OPEN_PROJECT = 'dashboard:open-project'
 export const OPEN_SQUAD = 'dashboard:open-squad'
 
 export const askToOpen = (opener, type, detail) => opener.dispatchEvent(new CustomEvent(type, { bubbles: true, detail }))
-
-export const githubUrl = (path) => `https://github.com/${path}`
-// GitHub serves the avatar at twice its displayed size, for sharp high-density screens.
-export const avatarUrl = (login, size = 48) => githubUrl(`${encodeURIComponent(login)}.png?size=${size}`)
 
 export function avatar(login) {
   return el('img', { className: 'avatar', src: avatarUrl(login), alt: '', loading: 'lazy', width: 24, height: 24 })

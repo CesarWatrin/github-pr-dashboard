@@ -93,6 +93,72 @@
   stroke-linejoin: round;
 }
 
+/* The year in review, last: it opens apart, in a tab of its own, which the small arrow at its end says; the button
+   beside it copies its link, a check mark once done. */
+.nav-retro {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-retro .nav-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-link-retro svg:first-child {
+  color: var(--series-2);
+}
+
+.nav-link-retro .nav-external {
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+.nav-retro-copy {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.nav-retro-copy:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.nav-retro-copy svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-retro-copied-icon,
+.nav-retro-copy.is-copied .nav-retro-copy-icon {
+  display: none;
+}
+
+.nav-retro-copy.is-copied .nav-retro-copied-icon {
+  display: block;
+}
+
+.nav-retro-copy.is-copied {
+  color: var(--diff-added);
+}
+
 /* What waits for the person of « Mes PR » (ui/title.js), a red badge as on the icon of a phone app: at the end of its
    link, and on the corner of the button that opens the menu on narrower screens. All their own open pull requests in
    a grey one, right after the name of the link. */
@@ -109,6 +175,9 @@
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  /* The box of the number trimmed to its digits, from the top of a capital to the baseline, so that they sit in the
+     middle of the circle whatever the font; where browsers do not trim, a line box of the font, a little off. */
+  text-box: trim-both cap alphabetic;
 }
 
 .nav-link .nav-badge {

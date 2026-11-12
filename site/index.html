@@ -166,11 +166,13 @@
         "./services/build.js": "./services/build.js?v=__BUILD__",
         "./services/github.js": "./services/github.js?v=__BUILD__",
         "./services/notifications.js": "./services/notifications.js?v=__BUILD__",
+        "./services/retro-source.js": "./services/retro-source.js?v=__BUILD__",
         "./services/stats-key.js": "./services/stats-key.js?v=__BUILD__",
         "./services/stats-source.js": "./services/stats-source.js?v=__BUILD__",
         "./shell/filters.js": "./shell/filters.js?v=__BUILD__",
         "./shell/language.js": "./shell/language.js?v=__BUILD__",
         "./shell/render.js": "./shell/render.js?v=__BUILD__",
+        "./shell/retro-link.js": "./shell/retro-link.js?v=__BUILD__",
         "./shell/router.js": "./shell/router.js?v=__BUILD__",
         "./shell/session.js": "./shell/session.js?v=__BUILD__",
         "./shell/sync.js": "./shell/sync.js?v=__BUILD__",
@@ -198,6 +200,7 @@
         "./ui/dialogs/repository-dialog.js": "./ui/dialogs/repository-dialog.js?v=__BUILD__",
         "./ui/dom.js": "./ui/dom.js?v=__BUILD__",
         "./ui/effort.js": "./ui/effort.js?v=__BUILD__",
+        "./ui/github.js": "./ui/github.js?v=__BUILD__",
         "./ui/icons.js": "./ui/icons.js?v=__BUILD__",
         "./ui/links.js": "./ui/links.js?v=__BUILD__",
         "./ui/list.js": "./ui/list.js?v=__BUILD__",
@@ -309,11 +312,13 @@
     <link rel="modulepreload" href="services/build.js?v=__BUILD__" />
     <link rel="modulepreload" href="services/github.js?v=__BUILD__" />
     <link rel="modulepreload" href="services/notifications.js?v=__BUILD__" />
+    <link rel="modulepreload" href="services/retro-source.js?v=__BUILD__" />
     <link rel="modulepreload" href="services/stats-key.js?v=__BUILD__" />
     <link rel="modulepreload" href="services/stats-source.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/filters.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/language.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/render.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/retro-link.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/router.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/session.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/sync.js?v=__BUILD__" />
@@ -341,6 +346,7 @@
     <link rel="modulepreload" href="ui/dialogs/repository-dialog.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/dom.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/effort.js?v=__BUILD__" />
+    <link rel="modulepreload" href="ui/github.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/icons.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/links.js?v=__BUILD__" />
     <link rel="modulepreload" href="ui/list.js?v=__BUILD__" />
@@ -525,6 +531,21 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11v9h-11Z" /><path d="m5 6.5 2 1.5-2 1.5M8.5 10h2.5" /></svg>
             DevOps
           </a>
+          <!-- The year in review, last: a page apart (retro.html), opened in a tab of its own with the key of its link, and
+               the button that copies that link, to give it to the team (shell/retro-link.js). -->
+          <div class="nav-retro" data-retro hidden>
+            <a class="nav-link nav-link-retro" href="retro.html" target="_blank" rel="noopener" title="S’ouvre dans un nouvel onglet" data-retro-link>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 1.5l1.6 3.9 4.2.3-3.2 2.7 1 4.1L8 10.3l-3.6 2.2 1-4.1-3.2-2.7 4.2-.3Z" />
+              </svg>
+              Rétrospective
+              <svg class="nav-external" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 7.5 8.5M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3" /></svg>
+            </a>
+            <button type="button" class="nav-retro-copy" aria-label="Copier le lien à partager à l’équipe" title="Copier le lien à partager à l’équipe" data-retro-copy>
+              <svg class="nav-retro-copy-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" /><path d="M10.5 5.5V4a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" /></svg>
+              <svg class="nav-retro-copied-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.5 3 3 7-7" /></svg>
+            </button>
+          </div>
         </nav>
         <div class="sidebar-footer">
           <p class="sync" data-sync>

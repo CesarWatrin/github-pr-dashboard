@@ -290,4 +290,8 @@ export const FRAME = {
     'Share of each kind of work in the code PRs opened, period by period: maintenance starts from the axis, to follow its share at a glance',
   'Les PR de code des membres de chaque squad, puis celles de toute l’organisation':
     'The code PRs of the members of each squad, then those of the whole organization',
+  // The link of the year in review, last of the sidebar, and the page apart it opens (retro.html).
+  'Rétrospective': 'Year in review',
+  'S’ouvre dans un nouvel onglet': 'Opens in a new tab',
+  'Copier le lien à partager à l’équipe': 'Copy the link to share with the team',
 }
