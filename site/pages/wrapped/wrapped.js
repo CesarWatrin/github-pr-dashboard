@@ -328,8 +328,60 @@ function togglePause(paused = !story?.paused) {
   button?.replaceChildren(icon(paused ? 'play' : 'pause'))
 }
 
-// The keys of the story, a pause when the tab hides, and the story an address pasted in the tab asks for.
+// How far the light under the mouse goes towards it at each frame: it trails a little behind, smoothly.
+const GLOW_EASE = 0.16
+
+// The light under the mouse (wrapped-motion.css): it comes in on the first move, eases towards the mouse frame after
+// frame, rests once there, and fades out when the mouse leaves the page. Only with a mouse, and only when things may move.
+function followPointer() {
+  const glow = document.querySelector('[data-wrapped-glow]')
+  if (!(glow instanceof HTMLElement) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return
+  }
+  const target = { x: 0, y: 0 }
+  /** @type {{ x: number, y: number } | null} */
+  let at = null
+  let frame = 0
+  const step = () => {
+    if (!at) {
+      frame = 0
+
+      return
+    }
+    at.x += (target.x - at.x) * GLOW_EASE
+    at.y += (target.y - at.y) * GLOW_EASE
+    const resting = Math.abs(target.x - at.x) < 0.5 && Math.abs(target.y - at.y) < 0.5
+    if (resting) {
+      at = { ...target }
+    }
+    glow.style.setProperty('--glow-x', `${at.x.toFixed(1)}px`)
+    glow.style.setProperty('--glow-y', `${at.y.toFixed(1)}px`)
+    frame = resting ? 0 : requestAnimationFrame(step)
+  }
+  document.addEventListener('pointermove', (event) => {
+    if (event.pointerType !== 'mouse') {
+      return
+    }
+    target.x = event.clientX
+    target.y = event.clientY
+    // The first move: it lights up right there.
+    at ??= { ...target }
+    glow.classList.add('is-on')
+    frame ||= requestAnimationFrame(step)
+  })
+  // Back on the page, it lights up again where the mouse comes in.
+  const fade = () => {
+    glow.classList.remove('is-on')
+    at = null
+  }
+  document.documentElement.addEventListener('mouseleave', fade)
+  window.addEventListener('blur', fade)
+}
+
+// The keys of the story, a pause when the tab hides, the light under the mouse, and the story an address pasted in the
+// tab asks for.
 export function setupWrapped() {
+  followPointer()
   document.addEventListener('keydown', (event) => {
     if (!story?.root.isConnected || event.defaultPrevented || event.target instanceof HTMLInputElement) {
       return

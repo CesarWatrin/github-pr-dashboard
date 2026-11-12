@@ -1,7 +1,7 @@
 /* The motion of the year in review (retro.html), apart from its layout (wrapped.css): halos of light drifting behind the
    page, glows that follow the tone of each slide and morph from one to the next, sparks rising through the story,
    figures that pop in and catch the light, bars that grow, cards that come in one after the other, a bloom of light on
-   the last slide. Transforms and opacity only, so that it stays smooth; everything stops under prefers-reduced-motion
+   the last slide, a light following the mouse. Transforms and opacity only, so that it stays smooth; everything stops under prefers-reduced-motion
    (motion.css), the page then still and whole. */
 
 /* The tones of a slide morph from one to the next rather than jump. */
@@ -467,10 +467,86 @@
   animation-delay: 220ms;
 }
 
-/* Still: no spark, nor bloom. */
+/* A light under the mouse, which wrapped.js eases there (--glow-x, --glow-y): over the whole page, it lights up the colors
+   it passes over rather than covering them. A wide ring of grey in color-dodge brightens each color below by itself, the
+   glows of the slide blazing in their own tone while the dark stays dark and white text stays white; a small core in
+   screen adds the light itself, in the series colors, one melting into the next. Its box takes no room in the page
+   (display: contents), so that each light blends with the page under it and not only with the other. It catches no
+   click, comes in on the first move and fades out when the mouse leaves; none on a touch screen, nor when nothing
+   should move. */
+@property --glow-tone {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e8892a;
+}
+
+.wrapped-glow {
+  display: contents;
+}
+
+.wrapped-glow span {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: var(--glow-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(calc(var(--glow-x, 50vw) - var(--glow-size) / 2), calc(var(--glow-y, 50vh) - var(--glow-size) / 2), 0);
+  transition: opacity 600ms ease;
+  will-change: transform;
+}
+
+.wrapped-glow span:nth-child(1) {
+  --glow-size: clamp(380px, 48vmax, 720px);
+  background: radial-gradient(circle closest-side, rgba(128, 128, 128, 0.72), rgba(128, 128, 128, 0.3) 45%, transparent);
+  mix-blend-mode: color-dodge;
+}
+
+.wrapped-glow span:nth-child(2) {
+  --glow-size: clamp(220px, 24vmax, 360px);
+  background: radial-gradient(
+    circle closest-side,
+    color-mix(in srgb, color-mix(in srgb, var(--glow-tone) 60%, #fff) 40%, transparent),
+    color-mix(in srgb, var(--glow-tone) 14%, transparent) 55%,
+    transparent
+  );
+  mix-blend-mode: screen;
+  animation: wrapped-glow-tone 18s linear infinite;
+}
+
+@keyframes wrapped-glow-tone {
+  0%,
+  100% {
+    --glow-tone: var(--series-2);
+  }
+
+  33% {
+    --glow-tone: var(--series-1);
+  }
+
+  66% {
+    --glow-tone: var(--series-3);
+  }
+}
+
+.wrapped-glow.is-on span {
+  opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .wrapped-glow {
+    display: none;
+  }
+}
+
+/* Still: no spark, nor bloom, nor light following the mouse. */
 @media (prefers-reduced-motion: reduce) {
   .wrapped-sparks,
-  .wrapped-story.is-final .wrapped-slide::before {
+  .wrapped-story.is-final .wrapped-slide::before,
+  .wrapped-glow {
     display: none;
   }
 }
