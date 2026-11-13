@@ -9,7 +9,7 @@ import { useStats } from './stats.mjs'
 
 beforeEach(() => {
   useStats()
-  Object.assign(state, { repos: Object.fromEntries(Object.keys(state.repos).map((name) => [name, null])), projectStatuses: null, reportMonth: null, person: null, openCard: null, openPullRequest: null })
+  Object.assign(state, { repos: Object.fromEntries(Object.keys(state.repos).map((name) => [name, null])), projectStatuses: null, reportMonth: null, reportPerson: null, person: null, openCard: null, openPullRequest: null })
 })
 
 describe('the address of the page', () => {
@@ -51,6 +51,16 @@ describe('the address of the page', () => {
     assert.equal(new URLSearchParams(urlQueryOf('team')).has('month'), false)
   })
 
+  test('says the person of the report on the report only, and leads back to them', () => {
+    state.reportPerson = 'zoe-r'
+    assert.equal(new URLSearchParams(urlQueryOf('report')).get('member'), 'zoe-r')
+    assert.equal(new URLSearchParams(urlQueryOf('team')).has('member'), false)
+    const query = urlQueryOf('report')
+    state.reportPerson = null
+    applyUrlQuery(query)
+    assert.deepEqual([state.reportPerson, state.person], ['zoe-r', null])
+  })
+
   test('says the person picked for the reviews over time on the reviewers page only, and leads back to them', () => {
     state.person = 'zoe-r'
     assert.equal(new URLSearchParams(urlQueryOf('reviewers')).get('person'), 'zoe-r')
@@ -62,12 +72,12 @@ describe('the address of the page', () => {
   })
 
   test('what it does not say goes back to the defaults, what it says wrong is left aside', () => {
-    Object.assign(state, { compare: 'year', squad: 'Atelier', query: 'kite', projectStatuses: new Set(['stalled']), person: 'zoe-r' })
+    Object.assign(state, { compare: 'year', squad: 'Atelier', query: 'kite', projectStatuses: new Set(['stalled']), reportPerson: 'zoe-r', person: 'zoe-r' })
     state.repos.projects = new Set(['web'])
     const open = applyUrlQuery('period=forever&compare=never&statuses=lost,delivered&month=soon&card=planet:mars&pr=web')
     assert.deepEqual([state.period, state.compare, state.squad, state.query, state.repos.projects], ['365d', 'none', '', '', null])
     assert.deepEqual([...state.projectStatuses], ['delivered'])
-    assert.deepEqual([state.reportMonth, state.person], [null, null])
+    assert.deepEqual([state.reportMonth, state.reportPerson, state.person], [null, null, null])
     assert.deepEqual(open, { card: null, pullRequest: null })
   })
 

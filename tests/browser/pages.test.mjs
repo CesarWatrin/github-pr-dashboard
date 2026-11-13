@@ -326,6 +326,34 @@ for (const language of ['fr', 'en']) {
       assert.ok(shown.length > 0 && shown.every((title) => titled.includes(title)))
     })
 
+    test('the report of the month shows one person picked, its address says who, and it copies as a table', async () => {
+      await show('report')
+      /** @type {(selector: string, value: string) => string} */
+      const pick = (selector, value) =>
+        `(() => { const field = document.querySelector('${selector}'); field.value = ${JSON.stringify(value)}; field.dispatchEvent(new Event('change')) })()`
+      const groups = `[...document.querySelectorAll('[data-report-table] .report-group')].map((row) => row.textContent)`
+      await page.evaluate(pick('[data-report-month]', '2026-05'))
+      await page.evaluate(pick('[data-report-person]', 'ada-l'))
+      await page.waitFor(`location.hash.includes('member=ada-l')`)
+      assert.deepEqual(await page.evaluate(groups), ['Ses PR', 'Ses reviews', 'Projets', 'Améliorations continues'].map(read))
+      assert.deepEqual(await page.evaluate(`['[data-report-arrivals-card]', '[data-report-duos-card]'].map((card) => document.querySelector(card).hidden)`), [true, false])
+      assert.ok(await page.evaluate(`document.querySelectorAll('[data-report-duos] li:not(.feed-empty)').length > 0`), 'the made-up person reviews with others')
+      // Loaded again, the address leads back to the same person and month.
+      await page.evaluate('location.reload()')
+      await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`)
+      assert.deepEqual(await page.evaluate(`['[data-report-person]', '[data-report-month]'].map((picker) => document.querySelector(picker).value)`), ['ada-l', '2026-05'])
+      // « Copier le bilan »: its figures as the table of the page, in a block of code, every line framed.
+      await page.evaluate(`navigator.clipboard.writeText = async (text) => { window.copiedReport = text }`)
+      await page.evaluate(`document.querySelector('[data-report-copy]').click()`)
+      await page.waitFor(`typeof window.copiedReport === 'string'`)
+      const table = (await page.evaluate('window.copiedReport')).split('```')[1].trim().split('\n')
+      assert.ok(table.length > 10 && table.every((line) => /^[+|]/.test(line)), table.join('\n'))
+      assert.ok(table.some((line) => line.startsWith(`| ${read('Commentaires laissés')} `)))
+      await page.evaluate(pick('[data-report-person]', ''))
+      await page.evaluate(pick('[data-report-month]', '2026-06'))
+      await page.waitFor(`!location.hash.includes('member=')`)
+    })
+
     test('the film of the map page plays from the start, and pauses', async () => {
       await show('cartography')
       const date = `document.querySelector('[data-replay-date]').textContent`

@@ -71,6 +71,13 @@ export const FRAME = {
   'Arrivées': 'Arrivals',
   'Première PR dans l’organisation ce mois-ci, ou première review ou premier commentaire s’ils sont plus anciens':
     'First PR in the organization this month, or first review or comment if earlier',
+  'Personne du bilan': 'Person of the report',
+  'Le bilan d’une personne compte ses propres PR, ses reviews des PR des autres, et les projets et AC où la personne a ouvert une PR de code dans le mois ; chaque mois se compare à ses propres mois, depuis son arrivée, jamais à d’autres personnes.':
+    'The report of a person counts their own PRs, their reviews of other people’s PRs, and the projects and AC on which the person opened a code PR in the month; each month is set against their own months, since they arrived, never against other people.',
+  'Ses binômes de review': 'Their review partners',
+  'Chaque personne compte une fois par PR de code ouverte dans le mois': 'Each person counts once per code PR opened in the month',
+  'Ses PR relues par': 'Their PRs reviewed by',
+  'A relu les PR de': 'Reviewed the PRs of',
   'Mois après mois': 'Month after month',
   'Chaque mois que la période touche compte en entier, comme sur le bilan du mois. La médiane sur 3 mois lisse les à-coups d’un mois à l’autre ; le mois en cours, incomplet, est plus clair et n’y entre pas. Le dernier mois complet de la période se compare au même mois un an plus tôt et à la médiane des 12 mois complets jusqu’à lui, même avant la période : en vert quand il va dans le bon sens, en orange dans le mauvais ; les volumes restent neutres.':
     'Each month the period touches counts whole, as on the monthly report. The 3-month median smooths the ups and downs from one month to the next; the current month, unfinished, is lighter and stays out of it. The last whole month of the period is set against the same month a year earlier and against the median of the 12 whole months up to it, even before the period: in green when it goes the right way, in orange the wrong way; volumes stay neutral.',

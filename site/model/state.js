@@ -72,8 +72,10 @@ export const state = {
   activity: null,
   // The badges of each person, worked out once per stats.
   badges: null,
-  // The month of the report, null for the current one, and the stats of each month, worked out once per stats.
+  // The month of the report, null for the current one; the person it is for, null for the whole team; and the stats of
+  // each month, worked out once per stats.
   reportMonth: null,
+  reportPerson: null,
   reportCache: null,
   // The trends page: the stats its months are being worked out for, and its cards, built once per stats.
   trendsPreparing: null,
