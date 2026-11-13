@@ -206,6 +206,8 @@ export const PAGES = {
   'En tête de l’équipe': 'Leads the team',
   '{amount}, en tête de l’équipe': '{amount}, leading the team',
   'Ses dépôts les plus actifs': 'Their most active repositories',
+  'PR de code de {name}, et parmi elles celles de projet, de TMA et d’AC, mois par mois, de {from} à {to}':
+    'Code PRs of {name}, and among them those of a project, of maintenance and of an improvement, month by month, from {from} to {to}',
   'Ses binômes de review': 'Their review partners',
   'Ses PR relues par': 'Their PRs reviewed by',
   'A relu les PR de': 'Reviewed the PRs of',

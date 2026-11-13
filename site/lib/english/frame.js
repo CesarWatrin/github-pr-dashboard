@@ -74,6 +74,9 @@ export const FRAME = {
   'Personne du bilan': 'Person of the report',
   'Le bilan d’une personne compte ses propres PR, ses reviews des PR des autres, et les projets et AC où la personne a ouvert une PR de code dans le mois ; chaque mois se compare à ses propres mois, depuis son arrivée, jamais à d’autres personnes.':
     'The report of a person counts their own PRs, their reviews of other people’s PRs, and the projects and AC on which the person opened a code PR in the month; each month is set against their own months, since they arrived, never against other people.',
+  'Ses PR mois par mois': 'Their PRs month by month',
+  'Le mois choisi et les 12 d’avant, depuis son arrivée : ses PR de code, et parmi elles celles de projet, de TMA et d’AC, chacune comptée une fois comme sur « Où va l’effort »':
+    'The month picked and the 12 before it, since they arrived: their code PRs, and among them those of a project, of maintenance and of an improvement, each counted once as on “Where the effort goes”',
   'Ses binômes de review': 'Their review partners',
   'Chaque personne compte une fois par PR de code ouverte dans le mois': 'Each person counts once per code PR opened in the month',
   'Ses PR relues par': 'Their PRs reviewed by',

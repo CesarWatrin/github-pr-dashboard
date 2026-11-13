@@ -203,7 +203,11 @@ paths:
   pull requests they opened (`monthStats(month, login)`: `personRecords()`, no CI, the projects worked on in the month
   only) then their reviews of anyone's, from their row of the reviewers of the team (`personMonth()`); each month is
   set against their own months only, from their first one (`arrivalMonth()`), never against other people. Under it,
-  their figures of the badges, whether they led the team on each (`personBadges()`), their busiest repositories
+  their code pull requests month by month (`personEffortMonths()`: the month shown and the `REPORT_YEAR_MONTHS` before
+  it, from their arrival, by `personEffortSeries()` of `model/effort.js`), a `columnChart()` of all of them beside
+  those of a project, of the TMA and of an AC (`REPORT_CHART_SERIES` of `pages/report/chart.js`, the colors of
+  `EFFORT_SERIES`, the whole in `--text-muted`), its card hidden for the team and drawn from `renderCharts()` too
+  (`renderReportCharts()`); then their figures of the badges, whether they led the team on each (`personBadges()`), their busiest repositories
   (`personRepositories()`), who reviewed them and whom they reviewed (`personDuos()`, from the `reviewPairs` of the
   team, people still in the team only) and their projects of the month, in place of the champions, repositories and
   arrivals of the team (`pages/report/lists.js`). `reportContent()` works out what the report says, once for the page

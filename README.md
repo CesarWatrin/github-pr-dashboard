@@ -64,7 +64,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   mergées, lignes, délais, part de hotfix, attente de la première review, mergées sans review ou avec un check rouge),
   ses reviews des PR des autres (PR relues, commentaires, approbations, changements demandés, merges), les projets et
   AC où la personne a ouvert une PR de code dans le mois, chaque mois comparé à ses propres mois depuis son arrivée,
-  jamais à d'autres personnes ; puis ses chiffres des badges du mois (en tête de l'équipe ou non), ses dépôts les plus
+  jamais à d'autres personnes ; ses PR de code mois par mois, du mois choisi et des 12 d'avant depuis son arrivée, en
+  colonnes à côté de celles de projet, de TMA et d'AC (chacune comptée une fois, comme sur « Où va l'effort ») ; puis
+  ses chiffres des badges du mois (en tête de l'équipe ou non), ses dépôts les plus
   actifs, ses binômes de review et ses projets du mois. L'adresse dit le mois et la personne. « Copier le bilan » le
   copie en texte, prêt à coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec les valeurs de la
   page (« PR ouvertes : *24*, contre 17 (+41 %) · médiane 14 »), 🟢 ou 🟠 après une évolution qui va dans le bon ou le
@@ -122,7 +124,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   reste à part, comparées à la période d'avant pour voir si la maintenance gagne du terrain ; leur part période par
   période (en colonnes à 100 %, la TMA partant de l'axe), par squad (toute l'organisation en dernier) et pour les
   personnes de l'équipe qui ouvrent le plus de PR de code. Le survol donne aussi les lignes ajoutées par les PR mergées
-  de chaque type. Les fiches des personnes et des squads disent où va leur effort, en une barre.
+  de chaque type. Les fiches des personnes et des squads disent où va leur effort, en une barre ; le bilan du mois
+  d'une personne le montre mois par mois.
 - **Cycle de vie** : où passe le temps d'une PR de code, découpé en quatre étapes : prise en charge (jusqu'à la
   première review), relecture (jusqu'à la dernière approbation), merge, puis mise en prod. La médiane de chaque étape,
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
