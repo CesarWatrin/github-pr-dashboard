@@ -207,11 +207,11 @@ paths:
   (`personRepositories()`), who reviewed them and whom they reviewed (`personDuos()`, from the `reviewPairs` of the
   team, people still in the team only) and their projects of the month, in place of the champions, repositories and
   arrivals of the team (`pages/report/lists.js`). `reportContent()` works out what the report says, once for the page
-  (`renderReport()`) and for « Copier le bilan » (`reportText()` of `pages/report/text.js`): the figures as the table
-  of the page in a block of code (`textTable()` of `lib/text-table.js`: framed with + - and |, each column as wide as
-  its widest cell, each group on a line across), which Google Chat and Slack show in a font of fixed width, 🟢 or 🟠
-  after the row of a change with a better way, the figures without a value left out; then its lists, `*bold*` titles
-  and bullets as they read them, and the link of the page. On a phone the names of the figures wrap, so that the
+  (`renderReport()`) and for « Copier le bilan » (`reportText()` of `pages/report/text.js`): `*bold*` titles and
+  bullets as Google Chat and Slack read them, under what the month is set against (`sub`, as the page says it), a line
+  per figure with the values of the page (`figureLine()`: « PR ouvertes : *24*, contre 17 (+41 %) · médiane 14 », each
+  part only when it has a value), 🟢 or 🟠 after a change with a better way, the figures without a value left out;
+  then its lists and the link of the page. On a phone the names of the figures wrap, so that the
   month shown fits beside them and the other months scroll.
 - **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), from `monthStats()`,
   over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/domain/`: each month

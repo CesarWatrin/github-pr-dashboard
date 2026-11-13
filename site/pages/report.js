@@ -88,6 +88,7 @@ function reportContent() {
     current,
     previous,
     whole,
+    sub: reportSub({ person, current, previous, whole }),
     groups,
     projects: reportProjects(month, stats.projects.rows),
     ...(person
@@ -111,7 +112,7 @@ function reportProjects(month, rows) {
   }
 }
 
-// What the report says under its title: what the month is set against.
+// What the report says under its title, and the text under its own: what the month is set against.
 function reportSub({ person, current, previous, whole }) {
   if (current) {
     return t('Mois en cours, jusqu’à la dernière synchro : provisoire, trop tôt pour le comparer au mois précédent')
@@ -132,7 +133,7 @@ function reportSub({ person, current, previous, whole }) {
 
 export function renderReport() {
   const content = reportContent()
-  const { months, people, person, month, previous, groups } = content
+  const { months, people, person, month, previous, sub, groups } = content
   const who = $('[data-report-person]', HTMLSelectElement)
   who.replaceChildren(new Option(t('Toute l’équipe'), ''), ...people.map((login) => new Option(displayName(login), login)))
   who.value = person ?? ''
@@ -142,7 +143,7 @@ export function renderReport() {
   )
   picker.value = month
   $('[data-report-title]').textContent = person ? t('Les chiffres du mois : {name}', { name: displayName(person) }) : t('Les chiffres du mois')
-  $('[data-report-sub]').textContent = reportSub(content)
+  $('[data-report-sub]').textContent = sub
   $('[data-report-person-note]').hidden = !person
 
   const head = el(

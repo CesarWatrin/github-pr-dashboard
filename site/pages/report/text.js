@@ -1,45 +1,18 @@
-// « Copier le bilan »: the report as text to paste in a chat or a meeting. Its figures as the table of the page, in a
-// block of code (textTable()), which Google Chat and Slack show in a font whose characters all take the same width; a
-// change in green or orange on the page gets a dot of that color after its row. Then its lists, *bold* titles and
-// bullets, as they read them, and the link of the page. Figures without a value, such as the CI of a month GitHub had
-// forgotten the runs of, are left out.
+// « Copier le bilan »: the report as text to paste in a chat or a meeting, *bold* titles and bullets as Google Chat and
+// Slack read them. Under what the month is set against, as the page says it, a line per figure with the values of the
+// page: the month in bold, the month before and the change, a dot of its color when the page shows it in green or
+// orange, and the median of the year. Then its lists and the link of the page. Figures without a value, such as the CI
+// of a month GitHub had forgotten the runs of, are left out.
 
 import { isMissing } from '../../domain/math.js'
 import { capitalize, formatNumber, monthName } from '../../lib/format.js'
 import { inContext, t } from '../../lib/i18n.js'
-import { textTable } from '../../lib/text-table.js'
 import { displayName, isCurrent } from '../../model/people.js'
 import { ROUTES } from '../../model/routes.js'
 import { amountOf } from '../../ui/badges.js'
 import { projectLabel } from '../../ui/projects.js'
 
-const REPORT_TONE_MARKS = { better: '🟢', worse: '🟠', neutral: '' }
-
-// The figures of the report, by group, as on the page.
-function reportTable({ month, previous, groups }) {
-  const head = [
-    t('Indicateur'),
-    capitalize(monthName(month)),
-    previous ? capitalize(monthName(previous)) : t('Mois précédent'),
-    t('Évolution'),
-    t('Médiane sur 12 mois'),
-  ]
-
-  return textTable(
-    head,
-    groups
-      .map((group) => ({
-        label: group.label.toLocaleUpperCase(),
-        rows: group.rows
-          .filter((row) => !isMissing(row.value))
-          .map(({ figure, format, value, earlier, change, yearly }) => ({
-            cells: [figure.label, format(value), format(earlier), change?.text ?? '–', format(yearly)],
-            note: change ? REPORT_TONE_MARKS[change.tone] : '',
-          })),
-      }))
-      .filter((group) => group.rows.length),
-  )
-}
+const REPORT_TONE_MARKS = { better: ' 🟢', worse: ' 🟠', neutral: '' }
 
 /** @type {(label: string, value: string) => string} */
 const bullet = (label, value) => `• ${t('{label} : {value}', { label, value })}`
@@ -47,23 +20,33 @@ const bullet = (label, value) => `• ${t('{label} : {value}', { label, value })
 /** @type {(pairs: [string, number][], name: (key: string) => string) => string} */
 const pairsText = (pairs, name) => (pairs.length ? pairs.map(([key, count]) => `${name(key)} (${formatNumber(count)})`).join(', ') : t('aucun'))
 
+// « PR ouvertes : *24*, contre 17 (+41 %) · médiane 14 », each part only when it has a value.
+function figureLine({ figure, format, value, earlier, change, yearly }) {
+  let text = `*${format(value)}*`
+  if (!isMissing(earlier)) {
+    text = t('{value}, contre {earlier}', { value: text, earlier: format(earlier) })
+    if (change) {
+      text += ` (${change.text}${REPORT_TONE_MARKS[change.tone]})`
+    }
+  }
+  if (!isMissing(yearly)) {
+    text += ` · ${t('médiane {value}', { value: format(yearly) })}`
+  }
+
+  return bullet(figure.label, text)
+}
+
 export function reportText(content) {
-  const { month, current, previous, person, projects } = content
-  const title = t('Bilan de {month}', { month: monthName(month) })
-  const lines = [
-    `*${person ? t('{label} : {value}', { label: title, value: displayName(person) }) : title}*`,
-    current
-      ? t('Mois en cours, jusqu’à la dernière synchro : chiffres provisoires.')
-      : previous
-        ? t('Évolutions par rapport à {month}.', { month: monthName(previous) })
-        : person
-          ? t('Premier mois de la personne dans les données synchronisées.')
-          : t('Premier mois complet des données synchronisées.'),
-    '',
-    '```',
-    reportTable(content),
-    '```',
-  ]
+  const { month, person, sub, groups, projects } = content
+  // « Bilan du mois : Octobre 2026 · Ada Lune », without « de » before a month that starts with a vowel.
+  const shown = capitalize(monthName(month))
+  const lines = [`*${t('{label} : {value}', { label: t('Bilan du mois'), value: person ? `${shown} · ${displayName(person)}` : shown })}*`, `${sub}.`]
+  for (const group of groups) {
+    const rows = group.rows.filter((row) => !isMissing(row.value))
+    if (rows.length) {
+      lines.push('', `*${group.label}*`, ...rows.map(figureLine))
+    }
+  }
   if (person) {
     lines.push(
       '',

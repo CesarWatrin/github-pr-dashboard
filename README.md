@@ -66,8 +66,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   AC où la personne a ouvert une PR de code dans le mois, chaque mois comparé à ses propres mois depuis son arrivée,
   jamais à d'autres personnes ; puis ses chiffres des badges du mois (en tête de l'équipe ou non), ses dépôts les plus
   actifs, ses binômes de review et ses projets du mois. L'adresse dit le mois et la personne. « Copier le bilan » le
-  copie en texte, prêt à coller dans Google Chat ou Slack : titre en gras, les chiffres en table comme sur la page, dans
-  un bloc de code pour que les colonnes s'alignent, 🟢 ou 🟠 au bout de la ligne d'une évolution qui va dans le bon ou le
+  copie en texte, prêt à coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec les valeurs de la
+  page (« PR ouvertes : *24*, contre 17 (+41 %) · médiane 14 »), 🟢 ou 🟠 après une évolution qui va dans le bon ou le
   mauvais sens, puis les listes et le lien de la page.
 - **Tendances** : les indicateurs clés du bilan (PR de code mergées, délai de merge, attente de la première review,
   commentaires par PR relue, délai jusqu'en prod, taux de reprise, part de hotfix, CI en échec, projets actifs et

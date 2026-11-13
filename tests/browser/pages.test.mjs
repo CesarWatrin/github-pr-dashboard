@@ -326,7 +326,7 @@ for (const language of ['fr', 'en']) {
       assert.ok(shown.length > 0 && shown.every((title) => titled.includes(title)))
     })
 
-    test('the report of the month shows one person picked, its address says who, and it copies as a table', async () => {
+    test('the report of the month shows one person picked, its address says who, and it copies a line per figure', async () => {
       await show('report')
       /** @type {(selector: string, value: string) => string} */
       const pick = (selector, value) =>
@@ -342,13 +342,14 @@ for (const language of ['fr', 'en']) {
       await page.evaluate('location.reload()')
       await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`)
       assert.deepEqual(await page.evaluate(`['[data-report-person]', '[data-report-month]'].map((picker) => document.querySelector(picker).value)`), ['ada-l', '2026-05'])
-      // « Copier le bilan »: its figures as the table of the page, in a block of code, every line framed.
+      // « Copier le bilan »: a line per figure, its value in bold, against the month before.
       await page.evaluate(`navigator.clipboard.writeText = async (text) => { window.copiedReport = text }`)
       await page.evaluate(`document.querySelector('[data-report-copy]').click()`)
       await page.waitFor(`typeof window.copiedReport === 'string'`)
-      const table = (await page.evaluate('window.copiedReport')).split('```')[1].trim().split('\n')
-      assert.ok(table.length > 10 && table.every((line) => /^[+|]/.test(line)), table.join('\n'))
-      assert.ok(table.some((line) => line.startsWith(`| ${read('Commentaires laissés')} `)))
+      const copied = (await page.evaluate('window.copiedReport')).split('\n')
+      const line = copied.find((text) => text.startsWith(`• ${read('Commentaires laissés')}`))
+      assert.ok(line && /\*[^*]+\*/.test(line), copied.join('\n'))
+      assert.ok(copied.includes(`*${read('Ses reviews')}*`))
       await page.evaluate(pick('[data-report-person]', ''))
       await page.evaluate(pick('[data-report-month]', '2026-06'))
       await page.waitFor(`!location.hash.includes('member=')`)
