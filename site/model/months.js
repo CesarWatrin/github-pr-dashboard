@@ -117,21 +117,45 @@ export function reportMonths() {
   return [...badgeMonths(), parisDay(Date.parse(loadedStats().generatedAt)).slice(0, 7)]
 }
 
-// The stats of a month, worked out once per stats and squad: those of a period, of the CI and of the projects over its
-// Paris days, up to the last sync for the current month. The CI stays that of the whole organization: no run belongs to a
-// squad. The projects are those whose life meets the month (projectRows()), with what they add up to; and what its AC add
-// up to (acSummary()).
+// The pull requests a person opened, worked out once per stats and person: what the report of one person counts.
+/** @type {WeakMap<Stats, Map<string, PullRequestRecord[]>>} */
+const personRecordsByStats = new WeakMap()
+
+/**
+ * @param {string} login
+ * @returns {PullRequestRecord[]}
+ */
+export function personRecords(login) {
+  const stats = loadedStats()
+  const byLogin = personRecordsByStats.get(stats) ?? new Map()
+  personRecordsByStats.set(stats, byLogin)
+  if (!byLogin.has(login)) {
+    byLogin.set(
+      login,
+      stats.pullRequests.filter((pr) => pr.author === login),
+    )
+  }
+
+  return /** @type {PullRequestRecord[]} */ (byLogin.get(login))
+}
+
+// The stats of a month, worked out once per stats and squad, or person: those of a period, of the CI and of the projects
+// over its Paris days, up to the last sync for the current month. The CI stays that of the whole organization: no run
+// belongs to a squad, and a person has none. The projects are those whose life meets the month (projectRows()), with
+// what they add up to; for a person, only those worked on in the month: a code pull request opened in it, or one
+// delivered in it. And what its AC add up to (acSummary()).
 /**
  * @param {string} month 'YYYY-MM'
+ * @param {string | null} [login] a person, for their own report: the pull requests they opened
  * @returns {MonthStats}
  */
-export function monthStats(month) {
+export function monthStats(month, login = null) {
   const stats = loadedStats()
   if (state.reportCache?.stats !== stats) {
     state.reportCache = { stats, months: new Map() }
   }
   const { months } = state.reportCache
-  const key = `${squadKey()}:${month}`
+  const key = `${login ? `@${login}` : squadKey()}:${month}`
   if (!months.has(key)) {
     /** @type {TimeRange} */
     const range = {
@@ -139,15 +163,20 @@ export function monthStats(month) {
       end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(stats.generatedAt)),
       bucket: 'week',
     }
+    const records = login ? personRecords(login) : scopedRecords()
     // A month the runs do not cover whole has no CI: GitHub had forgotten its runs.
-    const ci = range.start >= ciStart() ? computeCi(stats.ci ?? [], range) : null
-    const period = computePeriod(scopedRecords(), range)
-    const rows = projectRows(scopedRecords(), range, { all: stats.pullRequests, now: Date.parse(stats.generatedAt) })
+    const ci = !login && range.start >= ciStart() ? computeCi(stats.ci ?? [], range) : null
+    const period = computePeriod(records, range)
+    /** @param {number | null} at minutes */
+    const within = (at) => at !== null && at * 60_000 >= range.start && at * 60_000 < range.end
+    const rows = projectRows(records, range, { all: stats.pullRequests, now: Date.parse(stats.generatedAt) }).filter(
+      (row) => !login || row.code > 0 || (row.status === 'delivered' && within(row.deliveredAt)),
+    )
     months.set(key, {
       period,
       ci,
       projects: { ...withCodeShare(projectSummary(rows, range), period), rows },
-      acs: withCodeShare(acSummary(acsFor(scopedRecords()), range), period),
+      acs: withCodeShare(acSummary(acsFor(records), range), period),
     })
   }
 

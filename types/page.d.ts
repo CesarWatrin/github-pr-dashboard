@@ -61,6 +61,7 @@ interface State {
   activity: { stats: Stats; bounds: ActivityBounds } | null
   badges: import('../site/model/badges.js').BadgeStandings | null
   reportMonth: string | null
+  reportPerson: string | null
   reportCache: { stats: Stats; months: Map<string, MonthStats> } | null
   trendsPreparing: { stats: Stats; squad: string } | null
   trendsCards: { stats: Stats; key: string; cards: { card: HTMLElement; draw: () => void }[] } | null

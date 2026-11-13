@@ -12,7 +12,7 @@ enforces what can be checked; the rest is for review.
 | `model/` | The state of the page (`state`) and what it reads of the stats for the filters picked: period, comparison, squad, people, repositories, badges, months, effort. No DOM: unit tested in Node | `domain/`, `lib/` |
 | `services/` | The outside world: published stats and their key, the build, the GitHub API, notifications | the layers above |
 | `ui/` | Shared building blocks of the view: `dom.js` (`$`, `el`, `svg`), tiles, charts, tables, links, lists, dialogs | the layers above |
-| `pages/` | One module per page (a folder when it needs several: `analysis/`, `squads/`, `wrapped/`), with its tiles, columns and charts | the layers above, never another page |
+| `pages/` | One module per page (a folder when it needs several: `analysis/`, `report/`, `squads/`, `wrapped/`), with its tiles, columns and charts | the layers above, never another page |
 | `shell/` | The frame around the pages: router and drawer, filters, global `render()`, session (unlock, lock, polling), sync menu, theme, the registry of the tables | the layers above |
 | `app.js` | The composition root: registers the tables, calls every `setup…()`, draws the frame, unlocks | everything |
 

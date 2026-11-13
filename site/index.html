@@ -122,6 +122,7 @@
         "./model/months.js": "./model/months.js?v=__BUILD__",
         "./model/people.js": "./model/people.js?v=__BUILD__",
         "./model/periods.js": "./model/periods.js?v=__BUILD__",
+        "./model/person-report.js": "./model/person-report.js?v=__BUILD__",
         "./model/projects.js": "./model/projects.js?v=__BUILD__",
         "./model/pull-requests.js": "./model/pull-requests.js?v=__BUILD__",
         "./model/replay.js": "./model/replay.js?v=__BUILD__",
@@ -155,6 +156,8 @@
         "./pages/projects/figures.js": "./pages/projects/figures.js?v=__BUILD__",
         "./pages/projects/projects.js": "./pages/projects/projects.js?v=__BUILD__",
         "./pages/report.js": "./pages/report.js?v=__BUILD__",
+        "./pages/report/lists.js": "./pages/report/lists.js?v=__BUILD__",
+        "./pages/report/text.js": "./pages/report/text.js?v=__BUILD__",
         "./pages/repositories.js": "./pages/repositories.js?v=__BUILD__",
         "./pages/reviewers.js": "./pages/reviewers.js?v=__BUILD__",
         "./pages/squads/cards.js": "./pages/squads/cards.js?v=__BUILD__",
@@ -270,6 +273,7 @@
     <link rel="modulepreload" href="model/months.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/people.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/periods.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/person-report.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/pull-requests.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/replay.js?v=__BUILD__" />
@@ -303,6 +307,8 @@
     <link rel="modulepreload" href="pages/projects/figures.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/projects/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/report.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/report/lists.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/report/text.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/repositories.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/reviewers.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/squads/cards.js?v=__BUILD__" />
@@ -905,7 +911,7 @@
           <div class="route" data-route="report" hidden>
             <section class="card" aria-labelledby="report-title">
               <div class="card-toolbar">
-                <h2 id="report-title">Les chiffres du mois</h2>
+                <h2 id="report-title" data-report-title>Les chiffres du mois</h2>
                 <div class="report-actions">
                   <span class="report-copied" role="status" data-report-copied></span>
                   <button type="button" class="button-secondary report-copy" data-report-copy>
@@ -915,6 +921,7 @@
                     </svg>
                     Copier le bilan
                   </button>
+                  <select class="search" name="member" aria-label="Personne du bilan" data-report-person></select>
                   <select class="search" name="month" aria-label="Mois du bilan" data-report-month></select>
                 </div>
               </div>
@@ -925,27 +932,41 @@
                 de ce mois-là, comme une période choisie sur les autres pages ; ses projets sont ceux dont la vie croise
                 le mois. Une évolution en vert va dans le bon sens, en orange dans le mauvais ; les autres sont neutres.
               </p>
+              <p class="card-note" data-report-person-note hidden>
+                Le bilan d’une personne compte ses propres PR, ses reviews des PR des autres, et les projets et AC où la
+                personne a ouvert une PR de code dans le mois ; chaque mois se compare à ses propres mois, depuis son
+                arrivée, jamais à d’autres personnes.
+              </p>
             </section>
 
             <div class="grid-2 grid-even">
               <section class="card" aria-labelledby="report-champions-title">
-                <h2 id="report-champions-title">Champions du mois</h2>
-                <p class="card-sub">Les badges du Palmarès</p>
+                <h2 id="report-champions-title" data-report-champions-title>Champions du mois</h2>
+                <p class="card-sub" data-report-champions-sub>Les badges du Palmarès</p>
                 <ul class="report-list report-champions" data-report-champions></ul>
               </section>
 
               <section class="card" aria-labelledby="report-repos-title">
-                <h2 id="report-repos-title">Dépôts les plus actifs</h2>
+                <h2 id="report-repos-title" data-report-repos-title>Dépôts les plus actifs</h2>
                 <div class="minis">
                   <div class="mini"><h3>PR de code ouvertes</h3><ol class="report-list" data-report-repos="code"></ol></div>
-                  <div class="mini"><h3>Déploiements</h3><ol class="report-list" data-report-repos="deployments"></ol></div>
+                  <div class="mini"><h3 data-report-repos-label>Déploiements</h3><ol class="report-list" data-report-repos="other"></ol></div>
                 </div>
               </section>
 
-              <section class="card" aria-labelledby="report-arrivals-title">
+              <section class="card" aria-labelledby="report-arrivals-title" data-report-arrivals-card>
                 <h2 id="report-arrivals-title">Arrivées</h2>
                 <p class="card-sub">Première PR dans l’organisation ce mois-ci, ou première review ou premier commentaire s’ils sont plus anciens</p>
                 <ul class="report-list" data-report-arrivals></ul>
+              </section>
+
+              <section class="card" aria-labelledby="report-duos-title" data-report-duos-card hidden>
+                <h2 id="report-duos-title">Ses binômes de review</h2>
+                <p class="card-sub">Chaque personne compte une fois par PR de code ouverte dans le mois</p>
+                <div class="minis">
+                  <div class="mini"><h3>Ses PR relues par</h3><ol class="report-list" data-report-duos="reviewedBy"></ol></div>
+                  <div class="mini"><h3>A relu les PR de</h3><ol class="report-list" data-report-duos="reviewed"></ol></div>
+                </div>
               </section>
 
               <section class="card" aria-labelledby="report-projects-title">

@@ -54,14 +54,21 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   devenue prête à merger…), tant qu'un onglet du dashboard reste
   ouvert, même en arrière-plan : une seule pour plusieurs, aucune quand « Mes PR » est à l'écran, aucune pour les PR
   déjà là à l'ouverture de l'onglet.
-- **Bilan du mois** : un mois au choix, comparé au précédent et à la médiane des 12 derniers mois complets :
+- **Bilan du mois** : un mois au choix, pour toute l'équipe ou une personne choisie, comparé au précédent et à la
+  médiane des 12 derniers mois complets :
   livraison (lignes ajoutées et supprimées comprises), revue, intégration continue, projets (actifs, démarrés, livrés,
   durée médiane des livrés, part des PR de code sur des projets) et équipe, chaque évolution en vert ou en orange
   quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs, les arrivées et les projets démarrés ou livrés dans le mois. Il s'ouvre sur le mois en cours, provisoire et
-  sans comparaison ; les mois complets se choisissent dans la liste. « Copier le bilan » le copie en texte, prêt à
-  coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec son évolution, 🟢 ou 🟠 quand elle va
-  dans le bon ou le mauvais sens, puis le lien de la page.
+  sans comparaison ; les mois complets se choisissent dans la liste. Pour une personne : ses propres PR (ouvertes,
+  mergées, lignes, délais, part de hotfix, attente de la première review, mergées sans review ou avec un check rouge),
+  ses reviews des PR des autres (PR relues, commentaires, approbations, changements demandés, merges), les projets et
+  AC où la personne a ouvert une PR de code dans le mois, chaque mois comparé à ses propres mois depuis son arrivée,
+  jamais à d'autres personnes ; puis ses chiffres des badges du mois (en tête de l'équipe ou non), ses dépôts les plus
+  actifs, ses binômes de review et ses projets du mois. L'adresse dit le mois et la personne. « Copier le bilan » le
+  copie en texte, prêt à coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec les valeurs de la
+  page (« PR ouvertes : *24*, contre 17 (+41 %) · médiane 14 »), 🟢 ou 🟠 après une évolution qui va dans le bon ou le
+  mauvais sens, puis les listes et le lien de la page.
 - **Tendances** : les indicateurs clés du bilan (PR de code mergées, délai de merge, attente de la première review,
   commentaires par PR relue, délai jusqu'en prod, taux de reprise, part de hotfix, CI en échec, projets actifs et
   livrés) mois après mois, sur

@@ -51,3 +51,12 @@
   background: color-mix(in srgb, var(--series-2) 26%, var(--surface));
 }
 
+
+/* A person's figure of a badge, after a pill when they led the team on it: on one line, wrapping on a phone. */
+.report-badge-figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 8px;
+}

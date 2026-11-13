@@ -18,14 +18,14 @@ paths:
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
   team, squads, awards, repositories, projects, acs, effort, tma, devops, method). The period selector and the search apply to every page but the
-  method, report, awards and « Mes PR » ones (`filters: false`): the report has a month picker of its own, « Pour
+  method, report, awards and « Mes PR » ones (`filters: false`): the report has a month and a person picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
   analysis, trends, squads, AC and effort pages the period only (`search: false`). The Méthode page has no link among the pages: a
   button beside the actions of the sidebar (`data-route-link="method"`), tinted while it shows. In the column of wide
   screens, only the periods of the filters stack (`.filters .segmented`), the other segmented pickers keep their row.
 - **The address** follows the filters and the card open, so that a place of the page can be shared: after the hash of
   the page, a query (`urlQueryOf()` of `model/url-state.js`: the period, or `custom` with `from` and `to`; `compare`,
-  `squad`, `q`, `repos-<name>` for each repository filter narrowed, `statuses` of the projects, `month` on the report,
+  `squad`, `q`, `repos-<name>` for each repository filter narrowed, `statuses` of the projects, `month` and `member` (a login) on the report,
   `person` on the reviewers page once someone is picked for the reviews over time (else the busiest reviewer of the
   period shows, never stored), `for` (a login) or `team` and `year` on the year in review,
   `card` as `person:`, `repo:`, `project:` or `squad:` and its key, `pr` as `repo#number`). `shell/url-state.js` writes
@@ -198,10 +198,21 @@ paths:
   median of the last `REPORT_YEAR_MONTHS` whole months, whichever month is shown; the months come from
   `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change. The page
   opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month
-  picked. `reportContent()` works out what the report says, once for the page (`renderReport()`) and for « Copier le
-  bilan » (`reportText()`): the same figures as text, `*bold*` titles and bullets as Google Chat and Slack read them,
-  🟢 or 🟠 after a change with a better way, the figures without a value left out, then the link of the page. On a
-  phone the names of the figures wrap, so that the month shown fits beside them and the other months scroll.
+  picked. A person picker beside it (`state.reportPerson`, null for the whole team; the people of `mePeople()`) turns
+  it into that person's report (`model/person-report.js`): `PERSON_REPORT_GROUPS`, figures of `REPORT_GROUPS` over the
+  pull requests they opened (`monthStats(month, login)`: `personRecords()`, no CI, the projects worked on in the month
+  only) then their reviews of anyone's, from their row of the reviewers of the team (`personMonth()`); each month is
+  set against their own months only, from their first one (`arrivalMonth()`), never against other people. Under it,
+  their figures of the badges, whether they led the team on each (`personBadges()`), their busiest repositories
+  (`personRepositories()`), who reviewed them and whom they reviewed (`personDuos()`, from the `reviewPairs` of the
+  team, people still in the team only) and their projects of the month, in place of the champions, repositories and
+  arrivals of the team (`pages/report/lists.js`). `reportContent()` works out what the report says, once for the page
+  (`renderReport()`) and for « Copier le bilan » (`reportText()` of `pages/report/text.js`): `*bold*` titles and
+  bullets as Google Chat and Slack read them, under what the month is set against (`sub`, as the page says it), a line
+  per figure with the values of the page (`figureLine()`: « PR ouvertes : *24*, contre 17 (+41 %) · médiane 14 », each
+  part only when it has a value), 🟢 or 🟠 after a change with a better way, the figures without a value left out;
+  then its lists and the link of the page. On a phone the names of the figures wrap, so that the
+  month shown fits beside them and the other months scroll.
 - **Trends page**: `TREND_FIGURES`, figures of `REPORT_GROUPS` (their `kind` and `better` too), from `monthStats()`,
   over the months of `reportMonths()` that `periodRange()` touches (`monthsTouched()` of `site/domain/`: each month
   whole, the first month of the data, cut by its start, left out); the period selector applies, not the search. 30 or
