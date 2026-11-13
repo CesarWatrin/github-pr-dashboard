@@ -19,6 +19,7 @@ import { ACTIVITY_SERIES, setupOverview } from './pages/overview/overview.js'
 import { AC_OVERVIEW_SERIES, PROJECT_SERIES } from './pages/overview/projects.js'
 import { setupProjects } from './pages/projects/projects.js'
 import { setupReport } from './pages/report.js'
+import { REPORT_CHART_SERIES } from './pages/report/chart.js'
 import { setupReviewers } from './pages/reviewers.js'
 import { SQUAD_TYPES } from './pages/squads/charts.js'
 import { setupSquads } from './pages/squads/squads.js'
@@ -90,6 +91,7 @@ renderLegend($('[data-acs-overview-chart-legend]'), AC_OVERVIEW_SERIES)
 for (const name of ['chart', 'squads', 'people']) {
   renderLegend($(`[data-effort-${name}-legend]`), EFFORT_SERIES)
 }
+renderLegend($('[data-report-chart-legend]'), REPORT_CHART_SERIES)
 renderLegend($('[data-deployments-legend]'), DEPLOYMENT_SERIES)
 renderLegend($('[data-cycle-legend]'), CYCLE_STAGES)
 renderLegend($('[data-squads-stages-legend]'), CYCLE_STAGES)

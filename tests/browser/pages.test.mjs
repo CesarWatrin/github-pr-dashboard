@@ -14,9 +14,10 @@ import { browserPath, launch } from './chrome.mjs'
 import { serveSite, TEST_PASSWORD, TEST_RETRO_KEY } from './site.mjs'
 
 const stats = madeUpStats()
-// The containers that stay empty on purpose: until the report is copied, the pairs that replace the review matrix on a
-// narrow screen only, the note of a CI that starts after the period (none over 12 months).
-const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-collaboration-pairs', 'data-ci-cut'])
+// The containers that stay empty on purpose: until the report is copied, the chart of a person's report and its data
+// until one is picked, the pairs that replace the review matrix on a narrow screen only, the note of a CI that starts
+// after the period (none over 12 months).
+const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-report-chart', 'data-report-chart-table', 'data-collaboration-pairs', 'data-ci-cut'])
 
 const skip = !browserPath() && !process.env.CI && 'Chrome not found: set CHROME_PATH'
 // Where a test stops the clock of the page, in the session of the tab: it holds across reloads.
@@ -338,6 +339,12 @@ for (const language of ['fr', 'en']) {
       assert.deepEqual(await page.evaluate(groups), ['Ses PR', 'Ses reviews', 'Projets', 'Améliorations continues'].map(read))
       assert.deepEqual(await page.evaluate(`['[data-report-arrivals-card]', '[data-report-duos-card]'].map((card) => document.querySelector(card).hidden)`), [true, false])
       assert.ok(await page.evaluate(`document.querySelectorAll('[data-report-duos] li:not(.feed-empty)').length > 0`), 'the made-up person reviews with others')
+      // Their code pull requests month by month, beside those of a project, of the TMA and of an AC: a group of columns per
+      // month, up to the month shown, and its data under it.
+      assert.equal(await page.evaluate(`document.querySelector('[data-report-chart-card]').hidden`), false)
+      assert.ok(await page.evaluate(`document.querySelectorAll('[data-report-chart] .bar').length > 0`), 'the made-up person opens code PRs')
+      assert.equal(await page.evaluate(`document.querySelectorAll('[data-report-chart] .bar-group').length`), await page.evaluate(`document.querySelectorAll('[data-report-chart-table] tbody tr').length`))
+      assert.equal(await page.evaluate(`document.querySelector('[data-report-chart-table] tbody td').textContent`), language === 'en' ? 'May 2026' : 'Mai 2026')
       // Loaded again, the address leads back to the same person and month.
       await page.evaluate('location.reload()')
       await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`)
@@ -353,6 +360,7 @@ for (const language of ['fr', 'en']) {
       await page.evaluate(pick('[data-report-person]', ''))
       await page.evaluate(pick('[data-report-month]', '2026-06'))
       await page.waitFor(`!location.hash.includes('member=')`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-report-chart-card]').hidden`), true)
     })
 
     test('the film of the map page plays from the start, and pauses', async () => {

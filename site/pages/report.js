@@ -1,6 +1,7 @@
-// Bilan du mois: a month of the team, or of one person picked, against the one before and the year; then the team's
-// champions, repositories, arrivals and projects, or the person's badges, repositories, review partners and projects
-// (report/lists.js); on the page and as text to paste (report/text.js).
+// Bilan du mois: a month of the team, or of one person picked, against the one before and the year; for a person, their
+// code pull requests month by month by kind of work (report/chart.js); then the team's champions, repositories,
+// arrivals and projects, or the person's badges, repositories, review partners and projects (report/lists.js); on the
+// page and as text to paste (report/text.js).
 
 import { isMissing, median } from '../domain/math.js'
 import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
@@ -28,15 +29,16 @@ import {
 } from '../model/person-report.js'
 import { state } from '../model/state.js'
 import { $, el } from '../ui/dom.js'
+import { renderReportChart } from './report/chart.js'
 import { renderReportLists } from './report/lists.js'
 import { reportText } from './report/text.js'
 
 // How long « Bilan copié » shows beside the button.
 const REPORT_COPIED_MS = 3000
 
-// What the report of the month shown says, for the team or the person picked: its figures by group, against the month
-// before and the median of the last whole months, then its lists. The page draws it; « Copier le bilan » writes it out.
-function reportContent() {
+// The months and people the report offers, and those it shows: the month picked, else the current one, and the person
+// picked, else the team, a choice no longer offered going back to its default.
+function reportSelection() {
   const months = reportMonths()
   if (!months.includes(state.reportMonth)) {
     state.reportMonth = null
@@ -46,10 +48,16 @@ function reportContent() {
   if (!people.includes(state.reportPerson)) {
     state.reportPerson = null
   }
-  const person = state.reportPerson
-  // The month picked, else the current one, unfinished: its figures so far, without any change. Left on it, the page
-  // follows the current month into the next one.
-  const month = state.reportMonth ?? months.at(-1)
+
+  // The current month, unfinished, shows its figures so far, without any change. Left on it, the page follows the
+  // current month into the next one.
+  return { months, people, person: state.reportPerson, month: state.reportMonth ?? months.at(-1) }
+}
+
+// What the report of the month shown says, for the team or the person picked: its figures by group, against the month
+// before and the median of the last whole months, then its lists. The page draws it; « Copier le bilan » writes it out.
+function reportContent() {
+  const { months, people, person, month } = reportSelection()
   const current = month === months.at(-1)
   // A person is set against their own months only, from the first one they show in.
   const since = person ? arrivalMonth(person) : null
@@ -181,6 +189,13 @@ export function renderReport() {
   renderReportLists(content)
 }
 
+// The chart of the person picked (report/chart.js): drawn when the page shows, and again as it resizes or as another
+// person or month is picked.
+export function renderReportCharts() {
+  const { person, month } = reportSelection()
+  renderReportChart(person, month)
+}
+
 // The champions of each badge for the month: from the history, or so far for the current month.
 function reportChampions(month, current) {
   const { leaders } = badgeStandings()
@@ -237,11 +252,13 @@ export function setupReport() {
   $('[data-report-person]').addEventListener('change', (event) => {
     state.reportPerson = /** @type {HTMLSelectElement} */ (event.target).value || null
     renderReport()
+    renderReportCharts()
   })
   $('[data-report-month]').addEventListener('change', (event) => {
     const months = reportMonths()
     const { value } = /** @type {HTMLSelectElement} */ (event.target)
     state.reportMonth = value === months.at(-1) ? null : value
     renderReport()
+    renderReportCharts()
   })
 }

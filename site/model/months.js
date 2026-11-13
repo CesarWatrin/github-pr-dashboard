@@ -117,6 +117,18 @@ export function reportMonths() {
   return [...badgeMonths(), parisDay(Date.parse(loadedStats().generatedAt)).slice(0, 7)]
 }
 
+// The Paris days of a month, up to the last sync for the current one.
+/**
+ * @param {string} month 'YYYY-MM'
+ * @returns {Pick<TimeRange, 'start' | 'end'>}
+ */
+export function monthRange(month) {
+  return {
+    start: parisMidnight(`${month}-01`),
+    end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(loadedStats().generatedAt)),
+  }
+}
+
 // The pull requests a person opened, worked out once per stats and person: what the report of one person counts.
 /** @type {WeakMap<Stats, Map<string, PullRequestRecord[]>>} */
 const personRecordsByStats = new WeakMap()
@@ -158,11 +170,7 @@ export function monthStats(month, login = null) {
   const key = `${login ? `@${login}` : squadKey()}:${month}`
   if (!months.has(key)) {
     /** @type {TimeRange} */
-    const range = {
-      start: parisMidnight(`${month}-01`),
-      end: Math.min(parisMidnight(`${nextMonthOf(month)}-01`), Date.parse(stats.generatedAt)),
-      bucket: 'week',
-    }
+    const range = { ...monthRange(month), bucket: 'week' }
     const records = login ? personRecords(login) : scopedRecords()
     // A month the runs do not cover whole has no CI: GitHub had forgotten its runs.
     const ci = !login && range.start >= ciStart() ? computeCi(stats.ci ?? [], range) : null

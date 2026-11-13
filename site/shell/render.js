@@ -24,7 +24,7 @@ import {
 } from '../pages/overview/overview.js'
 import { renderAcOverviewChart, renderAcOverviewTable, renderProjectChart, renderProjectList } from '../pages/overview/projects.js'
 import { renderProjects, renderProjectTimeline } from '../pages/projects/projects.js'
-import { renderReport } from '../pages/report.js'
+import { renderReport, renderReportCharts } from '../pages/report.js'
 import { renderRepositories } from '../pages/repositories.js'
 import { renderMiniCharts, renderPersonPicker } from '../pages/reviewers.js'
 import { renderSquadCharts } from '../pages/squads/charts.js'
@@ -60,6 +60,7 @@ export function renderCharts() {
   renderProjectTimeline()
   renderAcCharts()
   renderEffortCharts()
+  renderReportCharts()
   renderMiniCharts()
 }
 

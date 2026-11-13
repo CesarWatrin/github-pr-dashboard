@@ -5,7 +5,14 @@ import assert from 'node:assert/strict'
 import { beforeEach, describe, test } from 'node:test'
 
 import { monthStats } from '../../site/model/months.js'
-import { arrivalMonth, personBadges, personDuos, personMonth, personRepositories } from '../../site/model/person-report.js'
+import {
+  arrivalMonth,
+  personBadges,
+  personDuos,
+  personEffortMonths,
+  personMonth,
+  personRepositories,
+} from '../../site/model/person-report.js'
 import { minutes, record, useStats } from './stats.mjs'
 
 beforeEach(() => {
@@ -13,6 +20,9 @@ beforeEach(() => {
     people: { ada: 'Ada Lune', ben: 'Ben Kerr', cleo: 'Cleo Pax' },
     firstPullRequests: { ada: minutes('2025-11-03T09:00:00Z') },
     pullRequests: [
+      // March: a hotfix of Ada's, and an AC.
+      record('ada', '2026-03-10T09:00:00Z', { hotfix: true }),
+      record('ada', '2026-03-11T09:00:00Z', { ac: 'feature/quiet-lamp' }),
       // April: Ada starts a project, two code pull requests of it.
       record('ada', '2026-04-07T09:00:00Z', { project: 'paper-kite' }),
       record('ada', '2026-04-08T09:00:00Z', { project: 'paper-kite' }),
@@ -64,6 +74,30 @@ describe('the report of a person', () => {
     assert.deepEqual(badges.comments, [0, false])
     const ongoing = Object.fromEntries(personBadges('2026-06', 'ben', true).map(({ badge, value, leads }) => [badge.key, [value, leads]]))
     assert.deepEqual(ongoing.opened, [1, true])
+  })
+
+  test('counts their code pull requests month by month, each in one kind of work, from the month they arrived', () => {
+    /** @type {(points: ReturnType<typeof personEffortMonths>) => [string, number, number, number, number, boolean][]} */
+    const months = (points) => points.map(({ key, code, counts, partial }) => [key, code, counts.projects, counts.tma, counts.acs, partial])
+    assert.deepEqual(months(personEffortMonths('2026-06', 'ada')), [
+      ['2025-11', 0, 0, 0, 0, false],
+      ['2025-12', 0, 0, 0, 0, false],
+      ['2026-01', 0, 0, 0, 0, false],
+      ['2026-02', 0, 0, 0, 0, false],
+      ['2026-03', 2, 0, 1, 1, false],
+      ['2026-04', 2, 2, 0, 0, false],
+      ['2026-05', 2, 0, 0, 0, false],
+      ['2026-06', 1, 0, 0, 0, true],
+    ])
+    // A month before the last one ends with it, whole; a person who arrived in it shows it alone.
+    assert.deepEqual(personEffortMonths('2026-04', 'ada').at(-1)?.key, '2026-04')
+    assert.deepEqual(months(personEffortMonths('2026-05', 'ben')), [['2026-05', 1, 1, 0, 0, false]])
+    // Someone there for longer: the month shown and the 12 before it.
+    useStats({ firstPullRequests: { ada: minutes('2024-01-08T09:00:00Z') }, pullRequests: [record('ada', '2026-06-01T09:00:00Z')] })
+    assert.deepEqual(
+      personEffortMonths('2026-06', 'ada').map((point) => point.key),
+      ['2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
+    )
   })
 
   test('starts from the first month a person shows in, when it is known', () => {

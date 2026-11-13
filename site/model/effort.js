@@ -1,9 +1,11 @@
 // Where the code effort goes (domain/effort.js), as the pages read it: over the period for the squad picked, against the
-// period compared, bucket by bucket, for each squad and the whole organization, for each person still in the team, and
-// for one person or one squad (their dialogs). Worked out once per stats, range and squad. A pull request is of a project
-// when the projects page counts it (projectKeyOf(): a branch made by mistake makes none).
+// period compared, bucket by bucket, for each squad and the whole organization, for each person still in the team, for
+// one person or one squad (their dialogs), and a person's months (their monthly report). Worked out once per stats, range
+// and squad. A pull request is of a project when the projects page counts it (projectKeyOf(): a branch made by mistake
+// makes none).
 
 import { effortByAuthor, effortOf, effortSeries } from '../domain/effort.js'
+import { personRecords } from './months.js'
 import { displayName, isCurrent } from './people.js'
 import { projectKeyOf } from './projects.js'
 import { comparedRange, periodRange } from './selection.js'
@@ -85,6 +87,10 @@ export const peopleEfforts = () =>
 // Where the effort of a person goes over the period: their dialog. Null without any code pull request.
 /** @type {(login: string) => EffortSummary | null} */
 export const personEffort = (login) => authorEfforts().get(login) ?? null
+
+// The code pull requests a person opened, bucket by bucket over a range, whatever squad is picked: their monthly report.
+/** @type {(login: string, range: TimeRange) => import('../domain/effort.js').EffortPoint[]} */
+export const personEffortSeries = (login, range) => once(`person:${login}:${rangeKey(range)}`, () => effortSeries(personRecords(login), range, options))
 
 // Where the effort of a squad goes over the period, whatever squad is picked: its dialog.
 /** @type {(squad: Squad) => EffortSummary} */

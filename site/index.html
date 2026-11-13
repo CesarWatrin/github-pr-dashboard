@@ -156,6 +156,7 @@
         "./pages/projects/figures.js": "./pages/projects/figures.js?v=__BUILD__",
         "./pages/projects/projects.js": "./pages/projects/projects.js?v=__BUILD__",
         "./pages/report.js": "./pages/report.js?v=__BUILD__",
+        "./pages/report/chart.js": "./pages/report/chart.js?v=__BUILD__",
         "./pages/report/lists.js": "./pages/report/lists.js?v=__BUILD__",
         "./pages/report/text.js": "./pages/report/text.js?v=__BUILD__",
         "./pages/repositories.js": "./pages/repositories.js?v=__BUILD__",
@@ -307,6 +308,7 @@
     <link rel="modulepreload" href="pages/projects/figures.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/projects/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/report.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/report/chart.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/report/lists.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/report/text.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/repositories.js?v=__BUILD__" />
@@ -937,6 +939,20 @@
                 personne a ouvert une PR de code dans le mois ; chaque mois se compare à ses propres mois, depuis son
                 arrivée, jamais à d’autres personnes.
               </p>
+            </section>
+
+            <section class="card" aria-labelledby="report-chart-title" data-report-chart-card hidden>
+              <h2 id="report-chart-title">Ses PR mois par mois</h2>
+              <p class="card-sub">
+                Le mois choisi et les 12 d’avant, depuis son arrivée : ses PR de code, et parmi elles celles de projet,
+                de TMA et d’AC, chacune comptée une fois comme sur « Où va l’effort »
+              </p>
+              <div class="legend" data-report-chart-legend></div>
+              <div class="chart" data-report-chart></div>
+              <details class="chart-data">
+                <summary>Voir les données du graphique</summary>
+                <div class="table-wrap" data-report-chart-table></div>
+              </details>
             </section>
 
             <div class="grid-2 grid-even">
@@ -1719,7 +1735,7 @@
                   AC : la part de maintenir se compte sur les deux, le reste à part, et se compare à la période d’avant ou
                   à l’an dernier. Les PR se comptent, quelle que soit leur taille : le survol des graphiques donne aussi
                   les lignes ajoutées par celles mergées. La page montre cette répartition période par période, squad par
-                  squad (toute l’organisation en dernier) et pour chaque personne de l’équipe qui a ouvert des PR de code ; la fiche d’une personne ou d’une squad dit où va son effort.
+                  squad (toute l’organisation en dernier) et pour chaque personne de l’équipe qui a ouvert des PR de code ; la fiche d’une personne ou d’une squad dit où va son effort, et le bilan du mois d’une personne le montre mois par mois.
                 </dd>
                 <dt>PR de code</dt>
                 <dd>
