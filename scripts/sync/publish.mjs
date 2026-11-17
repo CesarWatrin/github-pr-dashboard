@@ -7,6 +7,7 @@ import { dirname } from 'node:path'
 import { gunzipSync, gzipSync } from 'node:zlib'
 
 import { DAY_MS, parisDay } from '../../site/domain/time.js'
+import { podiumOf } from '../../site/domain/today.js'
 import { ORG, SNAPSHOT_PATH } from './config.mjs'
 import { isBot } from './people.mjs'
 
@@ -98,25 +99,9 @@ export async function writeJson(path, data) {
   await writeFile(path, JSON.stringify(data))
 }
 
-// The places of a podium of the day.
-export const PODIUM_SIZE = 3
-
-// Who did the most of something in the day, the most first, then by login: the first PODIUM_SIZE, and anyone tied with
-// the last of them, so that a tie never leaves someone out at random. Empty for a day without any.
-/**
- * @param {Map<string, number>} counts
- * @returns {TodayPodium}
- */
-export function podiumOf(counts) {
-  const ranked = [...counts].sort(([a, countA], [b, countB]) => countB - countA || a.localeCompare(b))
-  const last = ranked[PODIUM_SIZE - 1]?.[1] ?? 0
-
-  return ranked.filter(([, count], index) => index < PODIUM_SIZE || count === last)
-}
-
 // The counters of the Paris day of the sync, for people (bots aside): pull requests opened, merged, reviews submitted on
 // someone else's pull request; and the podium of each, the authors of the pull requests opened or merged, the reviewers
-// of the reviews.
+// of the reviews (podiumOf() of site/domain/today.js).
 /**
  * @param {SnapshotPullRequest[]} pullRequests
  * @param {Date} now

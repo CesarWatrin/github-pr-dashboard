@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
 import './environment.mjs'
-import { computeToday, podiumOf } from '../../scripts/sync/publish.mjs'
+import { computeToday } from '../../scripts/sync/publish.mjs'
 import { pullRequest } from './pull-request.mjs'
 
 describe('computeToday', () => {
@@ -46,27 +46,7 @@ describe('computeToday', () => {
     })
   })
 
-  test('the first three, and anyone tied with the third', () => {
-    const counts = new Map([
-      ['erin', 1],
-      ['alice', 5],
-      ['dave', 2],
-      ['bob', 3],
-      ['carol', 2],
-      ['fred', 2],
-    ])
-    assert.deepEqual(podiumOf(counts), [
-      ['alice', 5],
-      ['bob', 3],
-      ['carol', 2],
-      ['dave', 2],
-      ['fred', 2],
-    ])
-    assert.deepEqual(podiumOf(new Map([['alice', 1]])), [['alice', 1]])
-  })
-
   test('nobody is on the podium of a day without anything', () => {
-    assert.deepEqual(podiumOf(new Map()), [])
     assert.deepEqual(computeToday([], now).podiums, { opened: [], merged: [], reviews: [] })
   })
 })

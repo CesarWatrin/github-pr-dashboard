@@ -149,7 +149,9 @@ for (const language of ['fr', 'en']) {
         `Object.fromEntries([...document.querySelectorAll('[data-today] .tile')].map((tile) => [tile.dataset.key, [...tile.querySelectorAll('.tile-podium li')].map((line) => line.querySelector('.tile-podium-medal')?.textContent ?? '+')]))`,
       )
       // Four tied on the merges: three medals, then one counted.
-      assert.deepEqual(podiums, { opened: ['🥇', '🥇'], merged: ['🥇', '🥇', '🥇', '+'], reviews: ['🥇', '🥈'] })
+      // The AC delivered and the TMA come from the records: an AC of two people; two hotfixes of one, ahead of one made
+      // up at random on that day too.
+      assert.deepEqual(podiums, { opened: ['🥇', '🥇'], merged: ['🥇', '🥇', '🥇', '+'], reviews: ['🥇', '🥈'], acs: ['🥇', '🥇'], tma: ['🥇', '🥈'] })
     })
 
     test('the links of the sidebar never make it scroll sideways nor cut a name, even beside a scrollbar', async () => {

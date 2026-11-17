@@ -2,6 +2,7 @@
 // projects in projects.js.
 
 import { median } from '../../domain/math.js'
+import { deliveredOn } from '../../domain/today.js'
 import {
   capitalize,
   dayLongFormat,
@@ -13,6 +14,7 @@ import {
   plural,
 } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { acsFor } from '../../model/acs.js'
 import { displayName } from '../../model/people.js'
 import { BUCKET_TITLES } from '../../model/periods.js'
 import { repoInfo, technologyWeights } from '../../model/repositories.js'
@@ -38,10 +40,13 @@ const EVENT_VERBS = {
   commented: t('a commenté'),
 }
 
+// The counters of the day: those the sync counts, then the AC delivered and the TMA, from the records.
 const TODAY_TILES = [
   { key: 'opened', label: t('PR ouvertes') },
   { key: 'merged', label: t('PR mergées') },
   { key: 'reviews', label: t('Reviews soumises') },
+  { key: 'acs', label: t('AC livrées') },
+  { key: 'tma', label: t('TMA livrées') },
 ]
 
 // A tile with a route leads to the page that details it.
@@ -107,8 +112,10 @@ export function renderToday(mode) {
   const currentDay = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
   $('[data-today-title]').textContent =
     today.date === currentDay ? t('Aujourd’hui') : t('Le {day}', { day: dayLongFormat.format(new Date(`${today.date}T12:00:00Z`)) })
-  renderTiles($('[data-today]'), TODAY_TILES, today, mode)
-  renderTodayPodiums(today.podiums)
+  // The AC delivered and the hotfixes merged on the day of the sync, over every record: the card is the organization's.
+  const delivered = deliveredOn(state.stats.pullRequests, acsFor(state.stats.pullRequests), today.date)
+  renderTiles($('[data-today]'), TODAY_TILES, { ...today, acs: delivered.acs, tma: delivered.tma }, mode)
+  renderTodayPodiums({ ...today.podiums, ...delivered.podiums })
 }
 
 // The podium of each counter of the day, under it: who did the most of it, a line each, the most first, with their

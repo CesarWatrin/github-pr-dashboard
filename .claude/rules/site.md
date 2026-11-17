@@ -85,7 +85,9 @@ paths:
 - **Today** (overview): the counters of the day come from the sync (`today` of the stats, the whole organization),
   each with its podium under it (`today.podiums`: the authors of the pull requests opened or merged, the reviewers; a
   line per person, the most first, with a medal shared by those tied and their count; past `PODIUM_LINES`, those tied
-  with the last line counted as « +N à égalité »; `renderTodayPodiums()`).
+  with the last line counted as « +N à égalité »; `renderTodayPodiums()`). Then the AC delivered and the TMA (hotfixes
+  merged) of that day, which the page counts from every record, with their podiums: `deliveredOn()` of
+  `site/domain/today.js`, which holds `podiumOf()`, shared with the sync.
 - **Calendar of deployments** (DevOps page): `renderDeploymentCalendar()` draws the `deploymentCalendar` of
   `computePeriod()` (per repository, `[deployments, corrective]` per bucket) in a `heatmapChart()`: the
   `CALENDAR_REPOS` repositories that deploy the most, then the others on a grouped row.

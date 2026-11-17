@@ -7,7 +7,7 @@ enforces what can be checked; the rest is for review.
 
 | Layer | Holds | May import |
 |---|---|---|
-| `domain/` | The rules shared with the sync: stats of a range, CI, open pull requests, timeline, months, comparisons, analysis, projects, AC, where the effort goes, year in review, full sync password, auto sync. Pure, no DOM: Node runs it | `domain/` |
+| `domain/` | The rules shared with the sync: stats of a range, CI, open pull requests, timeline, months, comparisons, analysis, projects, AC, where the effort goes, year in review, full sync password, auto sync, the day of the last sync. Pure, no DOM: Node runs it | `domain/` |
 | `lib/` | Formats (French numbers, working time, dates), small arithmetic, the force layout of the networks. No DOM | `domain/` |
 | `model/` | The state of the page (`state`) and what it reads of the stats for the filters picked: period, comparison, squad, people, repositories, badges, months, effort. No DOM: unit tested in Node | `domain/`, `lib/` |
 | `services/` | The outside world: published stats and their key, the build, the GitHub API, notifications | the layers above |

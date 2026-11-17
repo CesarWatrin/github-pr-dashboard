@@ -365,6 +365,14 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
   const readyBack = open('eli-p', 2, { repo: 'core-api', interventions: [['ben-k', ago(1), 'APPROVED', 0]] })
   const readyFront = open('ada-l', 2, { repo: 'web-shop', interventions: [['ivo-w', ago(1), 'APPROVED', 0]], counterparts: [['core-api', readyBack.number]] })
   readyBack.counterparts = [['web-shop', readyFront.number]]
+  // Delivered on the day of the sync, for its counters: an AC of two people, and two hotfixes of one.
+  const hourAgo = toMinutes(now - 3_600_000)
+  const delivered = (author, fields) =>
+    add({ repo: 'web-shop', author, kind: 'code', createdAt: ago(2), mergedAt: hourAgo, lines: 40, deleted: 5, interventions: [['ivo-w', ago(1), 'APPROVED', 0]], ...fields })
+  delivered('fay-r', { ac: 'feature/quick-filters' })
+  delivered('cleo-m', { ac: 'feature/quick-filters' })
+  delivered('gus-t', { repo: 'billing', hotfix: true })
+  delivered('gus-t', { repo: 'billing', hotfix: true, mergedAt: toMinutes(now - 7_200_000) })
   // Merged without approval, recently, on a main repository.
   add({
     repo: 'web-shop',

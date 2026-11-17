@@ -20,6 +20,7 @@ export const PAGES = {
   'Lignes supprimées': 'Lines deleted',
   'Taille médiane des PR': 'Median PR size',
   'Le podium de la journée': 'The podium of the day',
+  'TMA livrées': 'Maintenance delivered',
   '+{count} à égalité': '+{count} tied',
   'PR relues': 'PRs reviewed',
   'Commentaires par PR relue': 'Comments per PR reviewed',
