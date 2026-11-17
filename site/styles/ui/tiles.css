@@ -79,11 +79,6 @@
   white-space: nowrap;
 }
 
-.tile-leader-mark {
-  margin-right: 4px;
-  font-size: 14px;
-}
-
 .tile-leader-count {
   font-variant-numeric: tabular-nums;
 }

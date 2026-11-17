@@ -127,8 +127,8 @@ function renderTodayLeaders(leaders) {
     }
     const shown = leader.logins.slice(0, TODAY_LEADERS)
     const others = leader.logins.slice(TODAY_LEADERS)
-    // Each name with what goes with it, the trophy before the first, the comma after the others but the last, the others
-    // and the count after the last: the line never breaks between them.
+    // Each name with what follows it, the comma or, for the last one, the others and the count: the line never breaks
+    // before them.
     const after = (index) =>
       index < shown.length - 1
         ? [document.createTextNode(',')]
@@ -138,8 +138,7 @@ function renderTodayLeaders(leaders) {
               : []),
             el('span', { className: 'tile-leader-count', textContent: ` · ${formatNumber(leader.count)}` }),
           ]
-    const before = (index) => (index ? [] : [el('span', { className: 'tile-leader-mark', textContent: '🏆', ariaHidden: 'true' })])
-    node.replaceChildren(...shown.map((login, index) => el('span', { className: 'tile-leader-person' }, ...before(index), personLink(login), ...after(index))))
+    node.replaceChildren(...shown.map((login, index) => el('span', { className: 'tile-leader-person' }, personLink(login), ...after(index))))
   }
 }
 
