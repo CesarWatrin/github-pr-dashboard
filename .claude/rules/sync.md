@@ -8,7 +8,7 @@ paths:
 
 Each part has its module in `scripts/sync/` (`structure.md`): the fetching below lives in `pull-requests.mjs`,
 `runs.mjs`, `people.mjs`, `repositories.mjs` and `backfill.mjs`, on top of `github.mjs` and `queries.mjs`; the
-classification and the records in `records.mjs`, the project of each pull request in `projects.mjs`, its AC (a branch `feature/<name>` or `feat/<name>` into `develop`, or stacked on one) in `acs.mjs`; the monthly history in `history.mjs`; what is written in
+classification and the records in `records.mjs`, the project of each pull request in `projects.mjs`, its counterparts on another side in `counterparts.mjs`, its AC (a branch `feature/<name>` or `feat/<name>` into `develop`, or stacked on one) in `acs.mjs`; the monthly history in `history.mjs`; what is written in
 `publish.mjs`; the configuration in `config.mjs`; one sync end to end in `run.mjs`.
 
 ## Fetching
@@ -94,6 +94,13 @@ classification and the records in `records.mjs`, the project of each pull reques
   `toPeriodRecord()` publishes the `reviewRequests` of an open pull request that is not a draft as
   `requestedReviewers`, bots aside. `graphql()` lets through the errors on a
   `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/domain/period.js` documents the shape; `site/domain/` is the only consumer.
+- `counterparts` on an open pull request of people (`counterparts.mjs`): the pull requests of the same branch on
+  another side (front, back, mobile: the repository type), open or merged less than `COUNTERPART_DAYS` before it was
+  opened, as `[repository, number]`, never the branch. A branch shared within one side, or by tooling, is most often a
+  change made everywhere at once; long-lived, release and dependency branches never pair. The snapshot already kept
+  the heads: no `SNAPSHOT_VERSION` bump.
+- `today` (`computeToday()`): the counters of the Paris day of the sync, people only, and `leaders`, who did the most
+  of each (`leaderOf()`: everyone tied at the top, null for nobody).
 - `squads`: `parseSquads()` of `SQUADS` (`name:*lead,login,login;name:login,…`, refused when an entry has no name, no
   member, a name already given or two leads, the entry shown only outside CI), published as `[{ name, members, lead? }]`
   when any: a star before a login marks the head of the squad, who stays a member.

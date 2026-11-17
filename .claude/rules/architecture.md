@@ -21,11 +21,11 @@
      is derived from `DASHBOARD_PASSWORD` with PBKDF2-SHA256 (600 000 iterations) and a salt made of the first 16
      bytes of `sha256("github-pr-dashboard:" + ORG)`, so it stays the same from one sync to the next.
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
-     today's counters, the 7-day activity feed, the squads (`squads`, from `SQUADS`: `[{ name, members, lead? }]`), the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
+     today's counters and who did the most of each (`leaders`, everyone tied at the top), the 7-day activity feed, the squads (`squads`, from `SQUADS`: `[{ name, members, lead? }]`), the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
      `fullSync`: `{ salt, iterations, verifier }`, what the page checks the full sync password against), and above all
      `pullRequests` (one compact record per pull request, no content; the title and the state of the checks only for
      the pull requests the page opens the timeline of: open, or active over the last 30 days; the name of its project for
-     a code pull request of one, and for the merge of a project branch, with its stage for a project in stages and when it was closed when it was not merged; the branch of its AC for a code pull request of one, feature/<name> or feat/<name>, which names it and which the timeline links to) since `windowStart` (the start of the
+     a code pull request of one, and for the merge of a project branch, with its stage for a project in stages and when it was closed when it was not merged; the branch of its AC for a code pull request of one, feature/<name> or feat/<name>, which names it and which the timeline links to; for an open one, the pull requests of its branch on another side, front, back or mobile, by repository and number, never the branch) since `windowStart` (the start of the
      data: the window, or what the snapshot covers while the backfill runs), `ci` (Actions runs per repository,
      workflow and Paris day) since `ciStart` (GitHub forgets runs after about 13 months: they go back to when the
      snapshot started keeping them), `firstPullRequests` (when each person of the records opened their first pull

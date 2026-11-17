@@ -3,6 +3,7 @@
 
 import { isBot } from './people.mjs'
 import { acOf } from './acs.mjs'
+import { counterpartsOf } from './counterparts.mjs'
 import { isProjectMerge, LONG_LIVED_BRANCHES, projectStageOf } from './projects.mjs'
 
 // The pull requests the page opens the timeline of carry their title and the state of their checks: the open ones, and
@@ -169,9 +170,10 @@ function hasDetails(pr, detailsSince) {
  * @param {DeliveryIndex} index
  * @param {string | null} [detailsSince]
  * @param {ProjectIndex | null} [projects]
+ * @param {CounterpartIndex | null} [counterparts] counterpartIndex() of counterparts.mjs
  * @returns {PullRequestRecord | null}
  */
-export function toPeriodRecord(pr, index, detailsSince = null, projects = null) {
+export function toPeriodRecord(pr, index, detailsSince = null, projects = null, counterparts = null) {
   const kind = classify(pr)
   const production = kind === 'release' && RELEASE_BASES.includes(pr.base)
   const bot = isBot(pr.author)
@@ -191,6 +193,7 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
   const project = ofProject?.project ?? null
   // Likewise the AC page: a code pull request of a project is none of an AC.
   const ac = projects && !bot && kind === 'code' && !project ? acOf(pr, projects) : null
+  const linked = counterparts && !bot ? counterpartsOf(pr, counterparts) : []
 
   return {
     repo: pr.repo,
@@ -236,5 +239,8 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null) 
     // Only for the timelines the page opens: the title, and the state of the checks of the last commit (null without
     // any), read again at each sync for an open pull request.
     ...(hasDetails(pr, detailsSince) && { title: pr.title, checks: pr.checks ?? null }),
+    // The pull requests of its branch on another side (the back end of a front-end feature…), for an open one: never
+    // the branch.
+    ...(linked.length > 0 && { counterparts: linked }),
   }
 }

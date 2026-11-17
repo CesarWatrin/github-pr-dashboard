@@ -50,6 +50,12 @@
   color: var(--text-secondary);
 }
 
+/* A pull request ready to merge that still waits for its counterpart in another repository (« Mes PR »): it stands out. */
+.feed-counterpart.is-waiting {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 .feed-team {
   color: var(--text-primary);
   font-weight: 500;

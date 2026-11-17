@@ -1,11 +1,12 @@
 // Mes PR: the reviews asked of one person, their open pull requests and drafts, and the notifications of new ones.
 
-import { openPullRequests, ownDrafts, personalQueue } from '../domain/open-pull-requests.js'
+import { counterpartStates, openPullRequests, ownDrafts, personalQueue } from '../domain/open-pull-requests.js'
 import { minutesIso } from '../lib/dates.js'
 import { formatNumber } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName, isCurrent, mePeople } from '../model/people.js'
 import { pullRequestOf, requiredApprovals } from '../model/pull-requests.js'
+import { repoInfo } from '../model/repositories.js'
 import { state, storeMe, storeNotify } from '../model/state.js'
 import { notificationsOn, notificationsSupported, notifyNewItems } from '../services/notifications.js'
 import { $, el } from '../ui/dom.js'
@@ -129,7 +130,7 @@ const ME_ITEMS = {
       minutesIso(pr.createdAt),
       `${t('ouverte')} `,
     ),
-  ready: (pr) => ownItem(pr),
+  ready: (pr) => ownItem(pr, { counterparts: true }),
   changes: (pr) => ownItem(pr),
   owners: (pr) => ownItem(pr),
   forgotten: (pr) => ownItem(pr, { tagged: true, forgotten: true }),
@@ -144,9 +145,55 @@ const ME_ITEMS = {
     ),
 }
 
+// A counterpart of a pull request (the back end of a front-end feature…), named after its side: after its repository
+// when its type changed since the sync.
+const SIDES = { front: t('le front'), back: t('le back'), mobile: t('le mobile') }
+const sideOf = (counterpart) => SIDES[repoInfo(counterpart.repo).category] ?? counterpart.repo
+
+// What its counterparts tell of a pull request ready to merge, the pull requests of its branch on another side (front
+// end, back end, mobile app): those it still waits for first, then those ready too, then those already merged.
+const COUNTERPART_STATES = {
+  waiting: (side) => t('attend {side}', { side }),
+  ready: (side) => t('{side} est prêt aussi', { side }),
+  merged: (side) => t('{side} est déjà mergé', { side }),
+}
+function counterpartLines(pr) {
+  const counterparts = meCounterparts(pr)
+
+  return Object.entries(COUNTERPART_STATES).flatMap(([state, sentence]) => {
+    // Per side, the counterparts in this state.
+    const sides = new Map()
+    for (const counterpart of counterparts.filter((other) => other.state === state)) {
+      sides.set(sideOf(counterpart), [...(sides.get(sideOf(counterpart)) ?? []), counterpart])
+    }
+
+    return [...sides].map(([side, ofSide]) =>
+      el(
+        'span',
+        { className: `feed-by feed-counterpart is-${state}` },
+        document.createTextNode(` · ${sentence(side)} `),
+        ...ofSide.flatMap((other, index) => [...(index ? [document.createTextNode(', ')] : []), pullRequestLink(other.repo, other.number)]),
+      ),
+    )
+  })
+}
+
+// Where the counterparts of a pull request stand, worked out once per stats.
+/** @type {WeakMap<Stats, ReturnType<typeof counterpartStates>>} */
+const counterpartsOfStats = new WeakMap()
+function meCounterparts(pr) {
+  let states = counterpartsOfStats.get(state.stats)
+  if (!states) {
+    states = counterpartStates(state.stats.pullRequests, { requiredApprovals: requiredApprovals() })
+    counterpartsOfStats.set(state.stats, states)
+  }
+
+  return states(pr)
+}
+
 // One of the person's own pull requests: who it waits for and since when it stands where it does, or, forgotten, its
-// latest activity; where it stands when its list does not say.
-function ownItem(pr, { tagged = false, forgotten = false } = {}) {
+// latest activity; where it stands when its list does not say; ready to merge, what its counterparts tell.
+function ownItem(pr, { tagged = false, forgotten = false, counterparts = false } = {}) {
   const stance = UNBLOCK_STANCES.find((other) => other.key === pr.stance)
   const text = el(
     'p',
@@ -155,6 +202,7 @@ function ownItem(pr, { tagged = false, forgotten = false } = {}) {
     ...kindTag(pr),
     ...(tagged ? [el('span', { className: 'feed-tag', textContent: stance.tag })] : []),
     ...(forgotten ? [] : waitedFor(pr)),
+    ...(counterparts ? counterpartLines(pr) : []),
     ...prTitle(pr),
   )
 

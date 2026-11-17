@@ -5,6 +5,7 @@ import { rm } from 'node:fs/promises'
 import { DAY_MS, TIMEZONE } from '../../site/domain/time.js'
 import { backfill, BACKFILL_LOGS, RECENT_DAYS, snapshotCoverage, WINDOW_DAYS } from './backfill.mjs'
 import { ORG, REQUIRED_APPROVALS, RETRO_KEY, RETRO_PATH, SNAPSHOT_PATH, SQUADS, STATS_PATH, SYNC_TRIGGER, VERSION_PATH } from './config.mjs'
+import { counterpartIndex } from './counterparts.mjs'
 import { publishedSyncTrigger } from './full-sync.mjs'
 import { HISTORY_LEAD_DAYS, mergeMonthlyHistory, MONTHLY_REVISION, readPublishedHistory } from './history.mjs'
 import { fetchFirstPullRequests, isBot, people, peopleOf, peopleToLookUp } from './people.mjs'
@@ -99,8 +100,9 @@ export async function sync({ full, fullSync = null, refused = false }) {
 
   const index = deliveryIndex(inWindow)
   const projects = projectIndex(inWindow)
+  const counterparts = counterpartIndex(inWindow, (repo) => repositoryCategory(repo, languages[repo]))
   const records = /** @type {PullRequestRecord[]} */ (
-    inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS), projects)).filter(Boolean)
+    inWindow.map((pr) => toPeriodRecord(pr, index, before(DETAILS_DAYS), projects, counterparts)).filter(Boolean)
   )
   // Kept by the snapshot, even through a full sync, and read back from the published stats when it has none. Without
   // any, the history starts from the data, counted the current way.

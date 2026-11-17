@@ -44,7 +44,7 @@ export function reportText(content) {
   for (const group of groups) {
     const rows = group.rows.filter((row) => !isMissing(row.value))
     if (rows.length) {
-      lines.push('', `*${group.label}*`, ...rows.map(figureLine))
+      lines.push('', `*${group.icon} ${group.label}*`, ...rows.map(figureLine))
     }
   }
   if (person) {

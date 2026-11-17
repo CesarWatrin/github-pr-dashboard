@@ -52,6 +52,9 @@ interface PullRequestRecord {
   ac?: string
   title?: string
   checks?: CheckState | null
+  // Of an open pull request, those of its branch on another side (the back end of a front-end feature…), open or merged
+  // lately: never the branch, only their repository and number.
+  counterparts?: [repo: string, number: number][]
 }
 
 // The Actions runs of a workflow per Paris day: [runs, failed, rerun, durations in seconds].
@@ -78,6 +81,12 @@ interface MonthlyFigures {
 }
 // Per month ('YYYY-MM'), each person's figures.
 type MonthlyHistory = Record<string, Record<string, Partial<MonthlyFigures>>>
+
+// Who did the most of something in a day: everyone tied at the top, and how many each.
+interface TodayLeader {
+  logins: string[]
+  count: number
+}
 
 interface Squad {
   name: string
@@ -127,7 +136,8 @@ interface Stats {
   squads?: Squad[]
   people: Record<string, string>
   repos: Record<string, RepositoryInfo>
-  today: { date: string; opened: number; merged: number; reviews: number }
+  // The counters of the day of the sync, and who did the most of each (stats published before them have none).
+  today: { date: string; opened: number; merged: number; reviews: number; leaders?: Record<'opened' | 'merged' | 'reviews', TodayLeader | null> }
   windowStart: string
   pullRequests: PullRequestRecord[]
   firstPullRequests?: Record<string, number>

@@ -23,7 +23,8 @@ l'effort, la TMA et DevOps, un choix « Comparer à » met chaque chiffre de la 
 dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
-- **Vue d'ensemble** : l'activité du jour, puis celle de la période en trois volets, livraison (PR ouvertes et
+- **Vue d'ensemble** : l'activité du jour (sous chaque compteur, qui en compte le plus : PR ouvertes, PR mergées
+  dont la personne est l'autrice, reviews soumises ; toutes les personnes à égalité), puis celle de la période en trois volets, livraison (PR ouvertes et
   mergées, délai de merge, mises en production, part de hotfix), lignes de code (ajoutées, supprimées, taille médiane
   des PR) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR mergées sans review), et les
   projets (actifs, démarrés, livrés, part des PR de code sur des projets), chaque tuile menant à sa page ; l'activité
@@ -45,7 +46,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   seule liste et sans délai minimum : prêtes à merger, changements demandés, oubliées (sans review ni commentaire
   depuis plus d'un mois, ce qui l'emporte sur le reste), bloquées par un code owner, et les autres, chacune avec où
   elle en est et qui elle attend ; enfin ses brouillons. Les PR de release et d'intégration y figurent aussi,
-  étiquetées. Chaque PR montre son titre en discret sous son lien. D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
+  étiquetées. Une PR prête à merger dit aussi où en est la PR de la même branche de l'autre côté (le back d'une PR
+  front, le front ou le mobile d'une PR back) : « attend le back », « le back est prêt aussi » ou « le back est déjà
+  mergé », avec son lien. Chaque PR montre son titre en discret sous son lien. D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
   les pages : les reviews qu'on lui demande, et ses PR prêtes à merger, avec des changements demandés ou oubliées,
   « (5) Stats PR » ; un badge rouge le répète au bout de « Mes PR » dans la barre latérale, et sur le bouton du menu
   des écrans étroits, et une notification compte de même. Un badge gris, juste après « Mes PR », compte toutes ses PR
@@ -56,12 +59,12 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   déjà là à l'ouverture de l'onglet.
 - **Bilan du mois** : un mois au choix, pour toute l'équipe ou une personne choisie, comparé au précédent et à la
   médiane des 12 derniers mois complets :
-  livraison (lignes ajoutées et supprimées comprises), revue, intégration continue, projets (actifs, démarrés, livrés,
+  livraison (lignes ajoutées et supprimées et taille médiane des PR comprises), revue, intégration continue, projets (actifs, démarrés, livrés,
   durée médiane des livrés, part des PR de code sur des projets) et équipe, chaque évolution en vert ou en orange
   quand elle a un bon sens ;
   les champions du mois, les dépôts les plus actifs, les arrivées et les projets démarrés ou livrés dans le mois. Il s'ouvre sur le mois en cours, provisoire et
   sans comparaison ; les mois complets se choisissent dans la liste. Pour une personne : ses propres PR (ouvertes,
-  mergées, lignes, délais, part de hotfix, attente de la première review, mergées sans review ou avec un check rouge),
+  mergées, lignes, taille médiane, délais, part de hotfix, attente de la première review, mergées sans review ou avec un check rouge),
   ses reviews des PR des autres (PR relues, commentaires, approbations, changements demandés, merges), les projets et
   AC où la personne a ouvert une PR de code dans le mois, chaque mois comparé à ses propres mois depuis son arrivée,
   jamais à d'autres personnes ; ses PR de code mois par mois, du mois choisi et des 12 d'avant depuis son arrivée, en

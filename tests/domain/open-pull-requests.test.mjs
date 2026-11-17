@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { openPullRequests, ownDrafts, personalQueue } from '../../site/domain/open-pull-requests.js'
+import { counterpartStates, openPullRequests, ownDrafts, personalQueue } from '../../site/domain/open-pull-requests.js'
 import { at, iso, record } from './records.mjs'
 
 describe('openPullRequests', () => {
@@ -178,5 +178,44 @@ describe('ownDrafts', () => {
       ownDrafts(records, 'alice', { kinds: ['code', 'release'] }).map(({ number }) => number),
       [2, 1],
     )
+  })
+})
+
+describe('counterpartStates', () => {
+  const pr = (repo, number, fields) => record({ repo, number, author: 'alice', createdAt: at('2026-03-02T09:00:00Z'), ...fields })
+  const approved = { interventions: [['bob', at('2026-03-02T10:00:00Z'), 'APPROVED', 0]] }
+  const records = [
+    pr('web', 1, { ...approved, counterparts: [['api', 1], ['api', 2], ['app', 1], ['app', 2], ['app', 3], ['docs', 9]] }),
+    pr('api', 1, { author: 'bob', interventions: [['carol', at('2026-03-02T11:00:00Z'), 'COMMENTED', 1]] }),
+    pr('api', 2, { draft: true }),
+    pr('app', 1, approved),
+    pr('app', 2, { mergedAt: at('2026-03-03T09:00:00Z') }),
+    pr('app', 3, { closed: true }),
+  ]
+  const statesOf = (key, options) => {
+    const [repo, number] = key.split('#')
+    const open = openPullRequests(records, options).find((other) => other.repo === repo && other.number === Number(number))
+    return counterpartStates(records, options)(open).map(({ repo, number, state }) => [`${repo}#${number}`, state])
+  }
+
+  test('each counterpart merged, ready or waiting; closed or unknown ones left out', () => {
+    assert.deepEqual(statesOf('web#1'), [
+      ['api#1', 'waiting'],
+      ['api#2', 'waiting'],
+      ['app#1', 'ready'],
+      ['app#2', 'merged'],
+    ])
+  })
+
+  test('ready takes the approvals merging needs', () => {
+    assert.deepEqual(
+      counterpartStates(records, { requiredApprovals: 2 })({ counterparts: [['app', 1]] }).map(({ state }) => state),
+      ['waiting'],
+    )
+  })
+
+  test('a pull request without counterparts has none', () => {
+    assert.deepEqual(counterpartStates(records)({ counterparts: [] }), [])
+    assert.deepEqual(openPullRequests([pr('web', 5)])[0].counterparts, [])
   })
 })

@@ -49,7 +49,7 @@ enforces what can be checked; the rest is for review.
 
 `scripts/sync.mjs` runs a sync; its parts live in `scripts/sync/`, one per responsibility: `config.mjs` (the
 environment, read when loaded: the only module that does), `github.mjs` (calls, retries, concurrency), `queries.mjs`
-(GraphQL), `pull-requests.mjs`, `runs.mjs`, `people.mjs`, `repositories.mjs`, `projects.mjs` (the project of each pull request), `acs.mjs` (its AC),
+(GraphQL), `pull-requests.mjs`, `runs.mjs`, `people.mjs`, `repositories.mjs`, `projects.mjs` (the project of each pull request), `acs.mjs` (its AC), `counterparts.mjs` (its counterparts on another side),
 `records.mjs` (classification, published
 records), `backfill.mjs`, `history.mjs` (monthly history), `publish.mjs` (snapshot, encryption, feed), `full-sync.mjs`,
 `run.mjs` (one sync, end to end). The sync imports the rules it shares with the page from `site/domain/`.

@@ -108,6 +108,38 @@ export function renderToday(mode) {
   $('[data-today-title]').textContent =
     today.date === currentDay ? t('Aujourd’hui') : t('Le {day}', { day: dayLongFormat.format(new Date(`${today.date}T12:00:00Z`)) })
   renderTiles($('[data-today]'), TODAY_TILES, today, mode)
+  renderTodayLeaders(today.leaders)
+}
+
+// Who did the most of each counter of the day, under it: everyone tied at the top, the first TODAY_LEADERS by name and
+// the others counted, then how many each. Nothing for a day without any, nor in stats published before the sync worked
+// them out.
+const TODAY_LEADERS = 3
+function renderTodayLeaders(leaders) {
+  for (const { key } of TODAY_TILES) {
+    const tile = $(`[data-today] [data-key="${key}"]`)
+    const node = tile.querySelector('.tile-leader') ?? tile.appendChild(el('span', { className: 'tile-leader', title: t('Qui en compte le plus ce jour-là') }))
+    const leader = leaders?.[key] ?? null
+    node.hidden = !leader
+    if (!leader) {
+      node.replaceChildren()
+      continue
+    }
+    const shown = leader.logins.slice(0, TODAY_LEADERS)
+    const others = leader.logins.slice(TODAY_LEADERS)
+    // Each name with what follows it, the comma or, for the last one, the others and the count: the line never breaks
+    // before them.
+    const after = (index) =>
+      index < shown.length - 1
+        ? [document.createTextNode(',')]
+        : [
+            ...(others.length
+              ? [el('span', { className: 'tile-leader-more', textContent: ` +${formatNumber(others.length)}`, title: others.map(displayName).join(', ') })]
+              : []),
+            el('span', { className: 'tile-leader-count', textContent: ` · ${formatNumber(leader.count)}` }),
+          ]
+    node.replaceChildren(...shown.map((login, index) => el('span', { className: 'tile-leader-person' }, personLink(login), ...after(index))))
+  }
 }
 
 export function renderTotals(mode) {
