@@ -7,7 +7,7 @@ import { isMissing, median } from '../domain/math.js'
 import { computePeriod } from '../domain/period.js'
 import { projectRows, projectSummary } from '../domain/projects.js'
 import { parisDay, parisMidnight } from '../domain/time.js'
-import { formatDecimal, formatDuration, formatNumber, formatShare, formatSpan } from '../lib/format.js'
+import { formatDecimal, formatDuration, formatNumber, formatShare, formatSpan, plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { acsFor } from './acs.js'
 import { badgeMonths } from './badges.js'
@@ -16,25 +16,26 @@ import { ciStart } from './selection.js'
 import { scopedRecords, squadKey } from './squads.js'
 import { loadedStats, state } from './state.js'
 
-// The figures of the monthly report, read from { period, ci, projects } of a month, in groups. kind tells how two months
-// compare: counts and durations (working time, or on the calendar: span) by how much they changed, shares by how many
-// points. better tells which way is good, when one
-// is: the change then takes its color.
+// The figures of the monthly report, read from { period, ci, projects } of a month, in groups, each group with its icon.
+// kind tells how two months compare: counts, lines and durations (working time, or on the calendar: span) by how much
+// they changed, shares by how many points. better tells which way is good, when one is: the change then takes its
+// color. diff marks the lines added or deleted, shown signed in the colors of a diff.
 /**
- * @typedef {'count' | 'duration' | 'span' | 'share' | 'decimal'} FigureKind
- * @typedef {{ label: string, value: (month: MonthStats) => number | null | undefined, kind: FigureKind, better?: 'up' | 'down' }} ReportFigure
+ * @typedef {'count' | 'lines' | 'duration' | 'span' | 'share' | 'decimal'} FigureKind
+ * @typedef {{ label: string, value: (month: MonthStats) => number | null | undefined, kind: FigureKind, better?: 'up' | 'down', diff?: 'added' | 'deleted' }} ReportFigure
  */
 
-/** @type {{ label: string, figures: ReportFigure[] }[]} */
+/** @type {{ label: string, icon: string, figures: ReportFigure[] }[]} */
 const GROUPS = [
   {
     label: 'Livraison',
+    icon: '📦',
     figures: [
       { label: 'PR ouvertes', value: ({ period }) => period.totals.opened, kind: 'count' },
       { label: 'PR de code mergées', value: ({ period }) => period.totals.merged, kind: 'count' },
-      { label: 'Lignes ajoutées', value: ({ period }) => period.totals.added, kind: 'count' },
-      { label: 'Lignes supprimées', value: ({ period }) => period.totals.deleted, kind: 'count' },
-      { label: 'Taille médiane des PR', value: ({ period }) => period.totals.medianSize, kind: 'count' },
+      { label: 'Lignes ajoutées', value: ({ period }) => period.totals.added, kind: 'count', diff: 'added' },
+      { label: 'Lignes supprimées', value: ({ period }) => period.totals.deleted, kind: 'count', diff: 'deleted' },
+      { label: 'Taille médiane des PR', value: ({ period }) => period.totals.medianSize, kind: 'lines' },
       { label: 'Délai médian de merge', value: ({ period }) => period.totals.medianTimeToMergeHours, kind: 'duration', better: 'down' },
       { label: 'Déploiements', value: ({ period }) => period.delivery.deployments, kind: 'count' },
       { label: 'Délai médian jusqu’en prod', value: ({ period }) => period.delivery.medianLeadTimeHours, kind: 'duration', better: 'down' },
@@ -44,6 +45,7 @@ const GROUPS = [
   },
   {
     label: 'Revue',
+    icon: '👀',
     figures: [
       { label: 'PR relues', value: ({ period }) => period.totals.reviewed, kind: 'count' },
       {
@@ -58,6 +60,7 @@ const GROUPS = [
   },
   {
     label: 'Intégration continue',
+    icon: '⚙️',
     figures: [
       { label: 'Exécutions', value: ({ ci }) => ci?.totals.runs, kind: 'count' },
       { label: 'En échec', value: ({ ci }) => ci?.totals.failureRate, kind: 'share', better: 'down' },
@@ -66,6 +69,7 @@ const GROUPS = [
   },
   {
     label: 'Projets',
+    icon: '🚀',
     figures: [
       { label: 'Projets actifs', value: ({ projects }) => projects.active, kind: 'count' },
       { label: 'Projets démarrés', value: ({ projects }) => projects.started, kind: 'count' },
@@ -76,6 +80,7 @@ const GROUPS = [
   },
   {
     label: 'Améliorations continues',
+    icon: '🛠️',
     figures: [
       { label: 'AC démarrées', value: ({ acs }) => acs.started, kind: 'count' },
       { label: 'AC livrées', value: ({ acs }) => acs.delivered, kind: 'count' },
@@ -85,6 +90,7 @@ const GROUPS = [
   },
   {
     label: 'Équipe',
+    icon: '👥',
     figures: [
       { label: 'Auteurs de PR de code', value: ({ period }) => period.authors.filter((person) => Object.values(person.repos).some((stats) => stats.code > 0)).length, kind: 'count' },
       { label: 'Relecteurs', value: ({ period }) => period.reviewers.filter((person) => Object.values(person.repos).some((stats) => stats.prs > 0)).length, kind: 'count' },
@@ -98,10 +104,28 @@ export const REPORT_FIGURES = new Map(GROUPS.flatMap((group) => group.figures).m
 // The groups of the report, their figures those of REPORT_FIGURES.
 export const REPORT_GROUPS = GROUPS.map((group) => ({
   label: t(group.label),
+  icon: group.icon,
   figures: group.figures.map((figure) => /** @type {ReportFigure} */ (REPORT_FIGURES.get(figure.label))),
 }))
 /** @type {Record<FigureKind, (value: number | null | undefined) => string>} */
-export const REPORT_FORMATS = { count: formatNumber, duration: formatDuration, span: formatSpan, share: formatShare, decimal: formatDecimal }
+export const REPORT_FORMATS = {
+  count: formatNumber,
+  // A size in lines, whole: a median may fall between two.
+  lines: (value) => (isMissing(value) ? formatNumber(value) : plural(Math.round(value), 'ligne')),
+  duration: formatDuration,
+  span: formatSpan,
+  share: formatShare,
+  decimal: formatDecimal,
+}
+const DIFF_SIGNS = { added: '+', deleted: '−' }
+// How the report writes a figure: as its kind says, the lines added or deleted signed and whole, as in a diff.
+/** @type {(figure: ReportFigure) => (value: number | null | undefined) => string} */
+export function figureFormat(figure) {
+  const format = REPORT_FORMATS[figure.kind]
+  const sign = figure.diff ? DIFF_SIGNS[figure.diff] : null
+
+  return sign ? (value) => (isMissing(value) ? format(value) : `${sign}${format(Math.round(value))}`) : format
+}
 // A month of the report is set against the median of this many last whole months.
 export const REPORT_YEAR_MONTHS = 12
 

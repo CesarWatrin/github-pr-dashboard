@@ -10,8 +10,8 @@ import { capitalize, formatNumber, monthName } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { BADGES, badgeStandings, monthFigures } from '../model/badges.js'
 import {
+  figureFormat,
   monthStats,
-  REPORT_FORMATS,
   REPORT_GROUPS,
   REPORT_YEAR_MONTHS,
   reportChange,
@@ -72,13 +72,14 @@ function reportContent() {
   const year = whole.map(statsOf)
   const groups = (person ? PERSON_REPORT_GROUPS : REPORT_GROUPS).map((group) => ({
     label: group.label,
+    icon: group.icon,
     rows: group.figures.map((figure) => {
       const value = figure.value(stats)
       const before = earlier ? figure.value(earlier) : null
 
       return {
         figure,
-        format: REPORT_FORMATS[figure.kind],
+        format: figureFormat(figure),
         value,
         earlier: before,
         // An unfinished month rests on too few pull requests to compare with a whole one.
@@ -161,28 +162,36 @@ export function renderReport() {
       'tr',
       {},
       el('th', { scope: 'col', className: 'text', textContent: t('Indicateur') }),
-      el('th', { scope: 'col', textContent: capitalize(monthName(month)) }),
+      el('th', { scope: 'col', className: 'report-month', textContent: capitalize(monthName(month)) }),
       el('th', { scope: 'col', textContent: previous ? capitalize(monthName(previous)) : t('Mois précédent') }),
       el('th', { scope: 'col', textContent: t('Évolution') }),
-      el('th', { scope: 'col', textContent: t('Médiane sur 12 mois') }),
+      el('th', { scope: 'col', className: 'report-yearly', textContent: t('Médiane sur 12 mois') }),
     ),
   )
   const body = el(
     'tbody',
     {},
     ...groups.flatMap((group) => [
-      el('tr', { className: 'report-group' }, el('th', { scope: 'rowgroup', colSpan: 5, className: 'text', textContent: group.label })),
-      ...group.rows.map(({ figure, format, value, earlier, change, yearly }) =>
-        el(
+      el(
+        'tr',
+        { className: 'report-group' },
+        el('th', { scope: 'rowgroup', colSpan: 5, className: 'text' }, el('span', { className: 'report-group-icon', textContent: group.icon, ariaHidden: 'true' }), el('span', { className: 'report-group-label', textContent: group.label })),
+      ),
+      ...group.rows.map(({ figure, format, value, earlier, change, yearly }) => {
+        // The lines added or deleted in the colors of a diff, wherever they have a value.
+        const cell = (amount, className) =>
+          el('td', { className: [className, isMissing(amount) ? 'muted' : figure.diff && `is-${figure.diff}`].filter(Boolean).join(' '), textContent: format(amount) })
+
+        return el(
           'tr',
           {},
           el('th', { scope: 'row', className: 'text', textContent: figure.label }),
-          el('td', { className: 'report-value', textContent: format(value) }),
-          el('td', { className: isMissing(earlier) ? 'muted' : '', textContent: format(earlier) }),
+          cell(value, 'report-value report-month'),
+          cell(earlier, ''),
           el('td', {}, change ? el('span', { className: `report-change is-${change.tone}`, textContent: change.text }) : el('span', { className: 'muted', textContent: '–' })),
-          el('td', { textContent: format(yearly) }),
-        ),
-      ),
+          cell(yearly, 'report-yearly'),
+        )
+      }),
     ]),
   )
   $('[data-report-table]').replaceChildren(el('table', { className: 'report-table' }, head, body))

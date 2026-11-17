@@ -200,7 +200,9 @@ paths:
   deploys, not the review: no rule judges it.
 - **Monthly report**: `REPORT_GROUPS` lists its figures, read from `monthStats()` of a month (`computePeriod()` and
   `computeCi()` over its Paris days, worked out once per stats and month), each with a `kind` (how two months compare)
-  and, when one way is better, `better`, which colors the change. Each month is set against the previous one and the
+  and, when one way is better, `better`, which colors the change; each group has its icon, the lines added and deleted
+  show signed in the colors of a diff (`diff`, `figureFormat()`), the median size in lines (`kind: 'lines'`), the month
+  shown on a band of its own, the median of the year quieter. Each month is set against the previous one and the
   median of the last `REPORT_YEAR_MONTHS` whole months, whichever month is shown; the months come from
   `reportMonths()`, every whole month of the synced data; the current month, unfinished, shows no change. The page
   opens on the current month (`state.reportMonth` null, which follows it into the next one), else on the month

@@ -30,10 +30,11 @@ const reported = (labels) => labels.map((label) => /** @type {ReportFigure} */ (
 
 // The figures of a person's report, in groups: those of the team's report over their own pull requests, then their
 // reviews.
-/** @type {{ label: string, figures: PersonFigure[] }[]} */
+/** @type {{ label: string, icon: string, figures: PersonFigure[] }[]} */
 export const PERSON_REPORT_GROUPS = [
   {
     label: t('Ses PR'),
+    icon: '📦',
     figures: reported([
       'PR ouvertes',
       'PR de code mergées',
@@ -50,6 +51,7 @@ export const PERSON_REPORT_GROUPS = [
   },
   {
     label: t('Ses reviews'),
+    icon: '👀',
     figures: [
       { label: t('PR relues'), value: ({ reviews }) => reviews.prs, kind: 'count' },
       { label: t('Commentaires laissés'), value: ({ reviews }) => reviews.comments, kind: 'count' },
@@ -59,9 +61,10 @@ export const PERSON_REPORT_GROUPS = [
       { label: t('Merges effectués'), value: ({ reviews }) => reviews.merges, kind: 'count' },
     ],
   },
-  { label: t('Projets'), figures: reported(['Projets actifs', 'Projets démarrés', 'Projets livrés', 'PR de code sur des projets']) },
+  { label: t('Projets'), icon: '🚀', figures: reported(['Projets actifs', 'Projets démarrés', 'Projets livrés', 'PR de code sur des projets']) },
   {
     label: t('Améliorations continues'),
+    icon: '🛠️',
     figures: reported(['AC démarrées', 'AC livrées', 'Délai médian des AC jusqu’au merge', 'PR de code en AC']),
   },
 ]

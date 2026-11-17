@@ -29,8 +29,39 @@
   text-transform: uppercase;
 }
 
+/* The icon of a group, before its name. */
+.report-group-icon {
+  margin-right: 8px;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+/* The month shown, the column the report is about: a band of its own, its values in bold. */
+.report-table .report-month {
+  background: color-mix(in srgb, var(--series-1) 7%, transparent);
+}
+
+.report-table thead .report-month {
+  border-radius: 8px 8px 0 0;
+  color: var(--text-primary);
+}
+
 .report-value {
   font-weight: 600;
+}
+
+/* The median of the year: the reference, quieter than the months. */
+.report-table td.report-yearly {
+  color: var(--text-secondary);
+}
+
+/* The lines added and deleted in the colors of a diff, as on GitHub. */
+.report-table td.is-added {
+  color: var(--diff-added);
+}
+
+.report-table td.is-deleted {
+  color: var(--diff-deleted);
 }
 
 .report-change {

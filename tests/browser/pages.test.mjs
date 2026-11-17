@@ -335,7 +335,7 @@ for (const language of ['fr', 'en']) {
       /** @type {(selector: string, value: string) => string} */
       const pick = (selector, value) =>
         `(() => { const field = document.querySelector('${selector}'); field.value = ${JSON.stringify(value)}; field.dispatchEvent(new Event('change')) })()`
-      const groups = `[...document.querySelectorAll('[data-report-table] .report-group')].map((row) => row.textContent)`
+      const groups = `[...document.querySelectorAll('[data-report-table] .report-group-label')].map((label) => label.textContent)`
       await page.evaluate(pick('[data-report-month]', '2026-05'))
       await page.evaluate(pick('[data-report-person]', 'ada-l'))
       await page.waitFor(`location.hash.includes('member=ada-l')`)
@@ -359,7 +359,9 @@ for (const language of ['fr', 'en']) {
       const copied = (await page.evaluate('window.copiedReport')).split('\n')
       const line = copied.find((text) => text.startsWith(`• ${read('Commentaires laissés')}`))
       assert.ok(line && /\*[^*]+\*/.test(line), copied.join('\n'))
-      assert.ok(copied.includes(`*${read('Ses reviews')}*`))
+      assert.ok(copied.includes(`*👀 ${read('Ses reviews')}*`))
+      // The lines added and deleted signed, as on the page.
+      assert.match(copied.find((text) => text.startsWith(`• ${read('Lignes ajoutées')}`)) ?? '', /\*\+[\d\s\u202f\u00a0,]+\*/)
       await page.evaluate(pick('[data-report-person]', ''))
       await page.evaluate(pick('[data-report-month]', '2026-06'))
       await page.waitFor(`!location.hash.includes('member=')`)
