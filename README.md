@@ -23,8 +23,9 @@ l'effort, la TMA et DevOps, un choix « Comparer à » met chaque chiffre de la 
 dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. Tous les délais ne comptent que les heures ouvrées, du lundi au vendredi de 9 h à
 18 h, heure de Paris ; un jour en compte 9. Seules les durées des exécutions de CI restent en temps réel :
 
-- **Vue d'ensemble** : l'activité du jour (sous chaque compteur, qui en compte le plus : PR ouvertes, PR mergées
-  dont la personne est l'autrice, reviews soumises ; toutes les personnes à égalité), puis celle de la période en trois volets, livraison (PR ouvertes et
+- **Vue d'ensemble** : l'activité du jour (sous chaque compteur, son podium : les trois personnes qui en comptent le
+  plus, PR ouvertes, PR mergées dont elles sont l'autrice, reviews soumises, avec leur médaille, partagée en cas
+  d'égalité), puis celle de la période en trois volets, livraison (PR ouvertes et
   mergées, délai de merge, mises en production, part de hotfix), lignes de code (ajoutées, supprimées, taille médiane
   des PR) et revue (PR relues, commentaires par PR, approbations sans commentaire, PR mergées sans review), et les
   projets (actifs, démarrés, livrés, part des PR de code sur des projets), chaque tuile menant à sa page ; l'activité

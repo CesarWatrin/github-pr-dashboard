@@ -83,8 +83,9 @@ paths:
   hover), `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
 - **Today** (overview): the counters of the day come from the sync (`today` of the stats, the whole organization),
-  each with who did the most of it under it (`today.leaders`: the authors of the pull requests opened or merged, the
-  reviewers; everyone tied, the first `TODAY_LEADERS` by name, the others as « +N »; `renderTodayLeaders()`).
+  each with its podium under it (`today.podiums`: the authors of the pull requests opened or merged, the reviewers; a
+  line per person, the most first, with a medal shared by those tied and their count; past `PODIUM_LINES`, those tied
+  with the last line counted as « +N à égalité »; `renderTodayPodiums()`).
 - **Calendar of deployments** (DevOps page): `renderDeploymentCalendar()` draws the `deploymentCalendar` of
   `computePeriod()` (per repository, `[deployments, corrective]` per bucket) in a `heatmapChart()`: the
   `CALENDAR_REPOS` repositories that deploy the most, then the others on a grouped row.

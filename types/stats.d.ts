@@ -82,11 +82,9 @@ interface MonthlyFigures {
 // Per month ('YYYY-MM'), each person's figures.
 type MonthlyHistory = Record<string, Record<string, Partial<MonthlyFigures>>>
 
-// Who did the most of something in a day: everyone tied at the top, and how many each.
-interface TodayLeader {
-  logins: string[]
-  count: number
-}
+// The podium of something in a day: who did the most of it, the most first, the first three and anyone tied with the
+// third.
+type TodayPodium = [login: string, count: number][]
 
 interface Squad {
   name: string
@@ -136,8 +134,8 @@ interface Stats {
   squads?: Squad[]
   people: Record<string, string>
   repos: Record<string, RepositoryInfo>
-  // The counters of the day of the sync, and who did the most of each (stats published before them have none).
-  today: { date: string; opened: number; merged: number; reviews: number; leaders?: Record<'opened' | 'merged' | 'reviews', TodayLeader | null> }
+  // The counters of the day of the sync, and the podium of each (stats published before them have none).
+  today: { date: string; opened: number; merged: number; reviews: number; podiums?: Record<'opened' | 'merged' | 'reviews', TodayPodium> }
   windowStart: string
   pullRequests: PullRequestRecord[]
   firstPullRequests?: Record<string, number>

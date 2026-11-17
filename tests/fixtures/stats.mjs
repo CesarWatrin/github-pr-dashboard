@@ -454,9 +454,14 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
     today: {
       date: parisDay(now),
       opened: 2,
-      merged: 1,
+      merged: 4,
       reviews: 3,
-      leaders: { opened: { logins: ['ada-l', 'ben-k'], count: 1 }, merged: { logins: ['cleo-m'], count: 1 }, reviews: { logins: ['dev-o'], count: 2 } },
+      // Two tied first on the pull requests opened; four tied on the merges, one past the podium.
+      podiums: {
+        opened: [['ada-l', 1], ['ben-k', 1]],
+        merged: [['cleo-m', 1], ['eli-p', 1], ['fay-r', 1], ['gus-t', 1]],
+        reviews: [['dev-o', 2], ['hana-v', 1]],
+      },
     },
     windowStart: new Date(windowStart).toISOString(),
     pullRequests,

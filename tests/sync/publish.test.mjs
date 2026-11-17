@@ -1,11 +1,11 @@
-// Tests of today's counters and who did the most of each (computeToday() of scripts/sync/publish.mjs). Every
+// Tests of today's counters and the podium of each (computeToday() of scripts/sync/publish.mjs). Every
 // repository, person and figure here is made up.
 
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
 import './environment.mjs'
-import { computeToday, leaderOf } from '../../scripts/sync/publish.mjs'
+import { computeToday, podiumOf } from '../../scripts/sync/publish.mjs'
 import { pullRequest } from './pull-request.mjs'
 
 describe('computeToday', () => {
@@ -23,22 +23,50 @@ describe('computeToday', () => {
     pullRequest({ number: 6, author: 'erin', createdAt: '2026-03-08T08:00:00Z', reviews: [review('robot', '2026-03-10T08:00:00Z')] }),
   ]
 
-  test('the counters of the day, and who did the most of each, everyone tied at the top', () => {
+  test('the counters of the day, and the podium of each, the most first', () => {
     assert.deepEqual(computeToday(pullRequests, now), {
       date: '2026-03-10',
       opened: 3,
       merged: 2,
       reviews: 3,
-      leaders: {
-        opened: { logins: ['alice'], count: 2 },
-        merged: { logins: ['carol', 'dave'], count: 1 },
-        reviews: { logins: ['bob'], count: 2 },
+      podiums: {
+        opened: [
+          ['alice', 2],
+          ['carol', 1],
+        ],
+        merged: [
+          ['carol', 1],
+          ['dave', 1],
+        ],
+        reviews: [
+          ['bob', 2],
+          ['dave', 1],
+        ],
       },
     })
   })
 
-  test('nobody leads a day without anything', () => {
-    assert.equal(leaderOf(new Map()), null)
-    assert.deepEqual(computeToday([], now).leaders, { opened: null, merged: null, reviews: null })
+  test('the first three, and anyone tied with the third', () => {
+    const counts = new Map([
+      ['erin', 1],
+      ['alice', 5],
+      ['dave', 2],
+      ['bob', 3],
+      ['carol', 2],
+      ['fred', 2],
+    ])
+    assert.deepEqual(podiumOf(counts), [
+      ['alice', 5],
+      ['bob', 3],
+      ['carol', 2],
+      ['dave', 2],
+      ['fred', 2],
+    ])
+    assert.deepEqual(podiumOf(new Map([['alice', 1]])), [['alice', 1]])
+  })
+
+  test('nobody is on the podium of a day without anything', () => {
+    assert.deepEqual(podiumOf(new Map()), [])
+    assert.deepEqual(computeToday([], now).podiums, { opened: [], merged: [], reviews: [] })
   })
 })

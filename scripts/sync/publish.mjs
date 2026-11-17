@@ -98,22 +98,25 @@ export async function writeJson(path, data) {
   await writeFile(path, JSON.stringify(data))
 }
 
-// Who did the most of something in the day: everyone tied at the top, by login, and how many each; null for nobody.
+// The places of a podium of the day.
+export const PODIUM_SIZE = 3
+
+// Who did the most of something in the day, the most first, then by login: the first PODIUM_SIZE, and anyone tied with
+// the last of them, so that a tie never leaves someone out at random. Empty for a day without any.
 /**
  * @param {Map<string, number>} counts
- * @returns {TodayLeader | null}
+ * @returns {TodayPodium}
  */
-export function leaderOf(counts) {
-  const count = Math.max(0, ...counts.values())
+export function podiumOf(counts) {
+  const ranked = [...counts].sort(([a, countA], [b, countB]) => countB - countA || a.localeCompare(b))
+  const last = ranked[PODIUM_SIZE - 1]?.[1] ?? 0
 
-  return count > 0
-    ? { logins: [...counts].filter(([, each]) => each === count).map(([login]) => login).sort(), count }
-    : null
+  return ranked.filter(([, count], index) => index < PODIUM_SIZE || count === last)
 }
 
 // The counters of the Paris day of the sync, for people (bots aside): pull requests opened, merged, reviews submitted on
-// someone else's pull request; and who did the most of each, the author of the pull requests opened or merged, the
-// reviewer of the reviews.
+// someone else's pull request; and the podium of each, the authors of the pull requests opened or merged, the reviewers
+// of the reviews.
 /**
  * @param {SnapshotPullRequest[]} pullRequests
  * @param {Date} now
@@ -149,7 +152,7 @@ export function computeToday(pullRequests, now) {
 
   return {
     ...totals,
-    leaders: { opened: leaderOf(counts.opened), merged: leaderOf(counts.merged), reviews: leaderOf(counts.reviews) },
+    podiums: { opened: podiumOf(counts.opened), merged: podiumOf(counts.merged), reviews: podiumOf(counts.reviews) },
   }
 }
 

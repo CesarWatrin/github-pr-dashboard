@@ -144,6 +144,14 @@ for (const language of ['fr', 'en']) {
       assert.equal(await page.evaluate(`document.querySelector('[data-org]').textContent`), stats.org)
     })
 
+    test('each counter of the day shows its podium, tied people sharing their medal', async () => {
+      const podiums = await page.evaluate(
+        `Object.fromEntries([...document.querySelectorAll('[data-today] .tile')].map((tile) => [tile.dataset.key, [...tile.querySelectorAll('.tile-podium li')].map((line) => line.querySelector('.tile-podium-medal')?.textContent ?? '+')]))`,
+      )
+      // Four tied on the merges: three medals, then one counted.
+      assert.deepEqual(podiums, { opened: ['🥇', '🥇'], merged: ['🥇', '🥇', '🥇', '+'], reviews: ['🥇', '🥈'] })
+    })
+
     test('the links of the sidebar never make it scroll sideways nor cut a name, even beside a scrollbar', async () => {
       // The year in review the widest of them, with its copy button; a scrollbar as a mouse shows it takes some room.
       const fits = `(() => {

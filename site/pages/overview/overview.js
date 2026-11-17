@@ -108,37 +108,36 @@ export function renderToday(mode) {
   $('[data-today-title]').textContent =
     today.date === currentDay ? t('Aujourd’hui') : t('Le {day}', { day: dayLongFormat.format(new Date(`${today.date}T12:00:00Z`)) })
   renderTiles($('[data-today]'), TODAY_TILES, today, mode)
-  renderTodayLeaders(today.leaders)
+  renderTodayPodiums(today.podiums)
 }
 
-// Who did the most of each counter of the day, under it: everyone tied at the top, the first TODAY_LEADERS by name and
-// the others counted, then how many each. Nothing for a day without any, nor in stats published before the sync worked
-// them out.
-const TODAY_LEADERS = 3
-function renderTodayLeaders(leaders) {
+// The podium of each counter of the day, under it: who did the most of it, a line each, the most first, with their
+// medal (tied people share theirs) and how many; past PODIUM_LINES, those tied with the last one shown are counted on
+// a line of their own. Nothing for a day without any, nor in stats published before the sync worked them out.
+const MEDALS = ['🥇', '🥈', '🥉']
+const PODIUM_LINES = 3
+function renderTodayPodiums(podiums) {
   for (const { key } of TODAY_TILES) {
     const tile = $(`[data-today] [data-key="${key}"]`)
-    const node = tile.querySelector('.tile-leader') ?? tile.appendChild(el('span', { className: 'tile-leader', title: t('Qui en compte le plus ce jour-là') }))
-    const leader = leaders?.[key] ?? null
-    node.hidden = !leader
-    if (!leader) {
-      node.replaceChildren()
-      continue
-    }
-    const shown = leader.logins.slice(0, TODAY_LEADERS)
-    const others = leader.logins.slice(TODAY_LEADERS)
-    // Each name with what follows it, the comma or, for the last one, the others and the count: the line never breaks
-    // before them.
-    const after = (index) =>
-      index < shown.length - 1
-        ? [document.createTextNode(',')]
-        : [
-            ...(others.length
-              ? [el('span', { className: 'tile-leader-more', textContent: ` +${formatNumber(others.length)}`, title: others.map(displayName).join(', ') })]
-              : []),
-            el('span', { className: 'tile-leader-count', textContent: ` · ${formatNumber(leader.count)}` }),
-          ]
-    node.replaceChildren(...shown.map((login, index) => el('span', { className: 'tile-leader-person' }, personLink(login), ...after(index))))
+    const list = tile.querySelector('.tile-podium') ?? tile.appendChild(el('ol', { className: 'tile-podium', title: t('Le podium de la journée') }))
+    const podium = podiums?.[key] ?? []
+    const shown = podium.slice(0, PODIUM_LINES)
+    const others = podium.slice(PODIUM_LINES)
+    list.hidden = !podium.length
+    list.replaceChildren(
+      ...shown.map(([login, count]) =>
+        el(
+          'li',
+          {},
+          el('span', { className: 'tile-podium-medal', textContent: MEDALS[podium.filter(([, other]) => other > count).length] ?? '', ariaHidden: 'true' }),
+          personLink(login),
+          el('span', { className: 'tile-podium-count', textContent: `· ${formatNumber(count)}` }),
+        ),
+      ),
+      ...(others.length
+        ? [el('li', { className: 'tile-podium-more', textContent: t('+{count} à égalité', { count: formatNumber(others.length) }), title: others.map(([other]) => displayName(other)).join(', ') })]
+        : []),
+    )
   }
 }
 
