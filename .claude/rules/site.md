@@ -82,6 +82,9 @@ paths:
   for lines over months (trends page: broken where a month has no value, the unfinished month lighter, a crosshair on
   hover), `renderLegend(container, series)`. Every chart has an `ariaLabel` and a tooltip.
 - **Lists**: `listItem()` and `renderList()`, as in the activity feed; a `.feed` fills its card.
+- **Today** (overview): the counters of the day come from the sync (`today` of the stats, the whole organization),
+  each with who did the most of it under it (`today.leaders`: the authors of the pull requests opened or merged, the
+  reviewers; everyone tied, the first `TODAY_LEADERS` by name, the others as « +N »; `renderTodayLeaders()`).
 - **Calendar of deployments** (DevOps page): `renderDeploymentCalendar()` draws the `deploymentCalendar` of
   `computePeriod()` (per repository, `[deployments, corrective]` per bucket) in a `heatmapChart()`: the
   `CALENDAR_REPOS` repositories that deploy the most, then the others on a grouped row.
@@ -158,7 +161,10 @@ paths:
   theirs, each in one list only, named and defined as on the unblock page but without its delays: forgotten first
   (`FORGOTTEN_AFTER_DAYS`, whatever it stands), else approved (ready), changes requested, blocked by code owners, and
   the others last (open), each with who it waits for (`waitedFor()`) and, where its list does not say, where it stands
-  (the tags of `UNBLOCK_STANCES`), its title quiet under its link (`prTitle()`, from the record); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out.
+  (the tags of `UNBLOCK_STANCES`), its title quiet under its link (`prTitle()`, from the record); ready to merge, where
+  its counterparts stand (`counterparts` of the records: the pull requests of its branch on another side), from
+  `counterpartStates()` of `site/domain/`: « attend le back » while one is not ready (stands out), « le back est prêt
+  aussi », « le back est déjà mergé », each with its links (`counterpartLines()`); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out.
   The page shows first the lists whose pull requests wait on the person (`urgent` in `ME_LISTS`: reviews asked, ready,
   changes requested, forgotten), then the others. No score, no ranking. Its lists, like those of the unblock
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a

@@ -98,6 +98,22 @@ export async function writeJson(path, data) {
   await writeFile(path, JSON.stringify(data))
 }
 
+// Who did the most of something in the day: everyone tied at the top, by login, and how many each; null for nobody.
+/**
+ * @param {Map<string, number>} counts
+ * @returns {TodayLeader | null}
+ */
+export function leaderOf(counts) {
+  const count = Math.max(0, ...counts.values())
+
+  return count > 0
+    ? { logins: [...counts].filter(([, each]) => each === count).map(([login]) => login).sort(), count }
+    : null
+}
+
+// The counters of the Paris day of the sync, for people (bots aside): pull requests opened, merged, reviews submitted on
+// someone else's pull request; and who did the most of each, the author of the pull requests opened or merged, the
+// reviewer of the reviews.
 /**
  * @param {SnapshotPullRequest[]} pullRequests
  * @param {Date} now
@@ -106,25 +122,35 @@ export async function writeJson(path, data) {
 export function computeToday(pullRequests, now) {
   const today = parisDay(now.toISOString())
   const totals = { date: today, opened: 0, merged: 0, reviews: 0 }
+  /** @type {Record<'opened' | 'merged' | 'reviews', Map<string, number>>} */
+  const counts = { opened: new Map(), merged: new Map(), reviews: new Map() }
+  /** @type {(key: 'opened' | 'merged' | 'reviews', login: string) => void} */
+  const count = (key, login) => {
+    totals[key]++
+    counts[key].set(login, (counts[key].get(login) ?? 0) + 1)
+  }
   for (const pr of pullRequests) {
     if (isBot(pr.author)) {
       continue
     }
     if (parisDay(pr.createdAt) === today) {
-      totals.opened++
+      count('opened', pr.author)
     }
     if (pr.mergedAt && parisDay(pr.mergedAt) === today) {
-      totals.merged++
+      count('merged', pr.author)
     }
     for (const review of pr.reviews) {
       const counted = review.submittedAt && review.author !== pr.author && !isBot(review.author)
       if (counted && parisDay(/** @type {string} */ (review.submittedAt)) === today) {
-        totals.reviews++
+        count('reviews', review.author)
       }
     }
   }
 
-  return totals
+  return {
+    ...totals,
+    leaders: { opened: leaderOf(counts.opened), merged: leaderOf(counts.merged), reviews: leaderOf(counts.reviews) },
+  }
 }
 
 /**

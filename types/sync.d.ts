@@ -194,6 +194,12 @@ interface DeliveryIndex {
   branchMerges: Map<string, string[]>
 }
 
+// The pull requests of each branch, whatever the repository, and the side of each repository (counterparts.mjs).
+interface CounterpartIndex {
+  branches: Map<string, SnapshotPullRequest[]>
+  categoryOf: (repo: string) => Category
+}
+
 // A project, and the stage of it (null for none): of a branch, a name of the project branches, a pull request.
 interface ProjectStage {
   project: string

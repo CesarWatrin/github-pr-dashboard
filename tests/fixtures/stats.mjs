@@ -357,6 +357,14 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
   open('hana-v', 2, { kind: 'release', requestedReviewers: ['ada-l'] })
   open('ivo-w', 1, { requestedReviewers: ['ada-l', 'dev-o'], checks: 'EXPECTED' })
   open('kim-new', 5, { interventions: [['eli-p', ago(4), 'COMMENTED', 1]] })
+  // A feature on both sides, on one branch: the front end approved, the back end still under review, so the front end
+  // waits for it; and another approved front end whose back end is approved too.
+  const back = open('ben-k', 3, { repo: 'core-api', interventions: [['eli-p', ago(2), 'COMMENTED', 1]] })
+  const front = open('ada-l', 3, { repo: 'web-shop', interventions: [['cleo-m', ago(1), 'APPROVED', 0]], counterparts: [['core-api', back.number]] })
+  back.counterparts = [['web-shop', front.number]]
+  const readyBack = open('eli-p', 2, { repo: 'core-api', interventions: [['ben-k', ago(1), 'APPROVED', 0]] })
+  const readyFront = open('ada-l', 2, { repo: 'web-shop', interventions: [['ivo-w', ago(1), 'APPROVED', 0]], counterparts: [['core-api', readyBack.number]] })
+  readyBack.counterparts = [['web-shop', readyFront.number]]
   // Merged without approval, recently, on a main repository.
   add({
     repo: 'web-shop',
@@ -443,7 +451,13 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
     squads: SQUADS,
     people: PEOPLE,
     repos: REPOS,
-    today: { date: parisDay(now), opened: 2, merged: 1, reviews: 3 },
+    today: {
+      date: parisDay(now),
+      opened: 2,
+      merged: 1,
+      reviews: 3,
+      leaders: { opened: { logins: ['ada-l', 'ben-k'], count: 1 }, merged: { logins: ['cleo-m'], count: 1 }, reviews: { logins: ['dev-o'], count: 2 } },
+    },
     windowStart: new Date(windowStart).toISOString(),
     pullRequests,
     firstPullRequests: Object.fromEntries(

@@ -34,6 +34,7 @@ const GROUPS = [
       { label: 'PR de code mergées', value: ({ period }) => period.totals.merged, kind: 'count' },
       { label: 'Lignes ajoutées', value: ({ period }) => period.totals.added, kind: 'count' },
       { label: 'Lignes supprimées', value: ({ period }) => period.totals.deleted, kind: 'count' },
+      { label: 'Taille médiane des PR', value: ({ period }) => period.totals.medianSize, kind: 'count' },
       { label: 'Délai médian de merge', value: ({ period }) => period.totals.medianTimeToMergeHours, kind: 'duration', better: 'down' },
       { label: 'Déploiements', value: ({ period }) => period.delivery.deployments, kind: 'count' },
       { label: 'Délai médian jusqu’en prod', value: ({ period }) => period.delivery.medianLeadTimeHours, kind: 'duration', better: 'down' },

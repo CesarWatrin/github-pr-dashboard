@@ -39,6 +39,7 @@ export const PERSON_REPORT_GROUPS = [
       'PR de code mergées',
       'Lignes ajoutées',
       'Lignes supprimées',
+      'Taille médiane des PR',
       'Délai médian de merge',
       'Délai médian jusqu’en prod',
       'Part de hotfix',

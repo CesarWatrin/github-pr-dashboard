@@ -7,7 +7,8 @@
 // (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
 // since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
 // the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
-// or comment, else its opening; requestedReviewers: the people still asked to review it.
+// or comment, else its opening; requestedReviewers: the people still asked to review it; counterparts: the pull
+// requests of its branch in other repositories, as [repository, number] (see counterpartStates()).
 /**
  * @param {PullRequestRecord[]} records
  * @param {{ requiredApprovals?: number, kinds?: PullRequestKind[] }} [options]
@@ -57,7 +58,40 @@ export function openPullRequests(records, { requiredApprovals = 1, kinds = ['cod
         by: owners ? pr.codeOwners : deciders.map(([login]) => login).sort(),
         lastAt: pr.interventions.at(-1)?.[1] ?? pr.createdAt,
         requestedReviewers: pr.requestedReviewers ?? [],
+        counterparts: pr.counterparts ?? [],
       }
+    })
+}
+
+// Where the counterparts of an open pull request stand (counterparts of the records: the pull requests of its branch
+// in other repositories, such as the back end of a front-end feature): merged, ready (approved by as many people as
+// merging needs, as for the pull request itself), or waiting (open otherwise, drafts included). One closed without a
+// merge, or missing from the records, is left out. Worked out once per records: the function it gives looks each one up.
+/**
+ * @param {PullRequestRecord[]} records
+ * @param {{ requiredApprovals?: number }} [options]
+ * @returns {(pr: { counterparts: [repo: string, number: number][] }) => { repo: string, number: number, state: 'merged' | 'ready' | 'waiting' }[]}
+ */
+export function counterpartStates(records, { requiredApprovals = 1 } = {}) {
+  /** @type {(pr: { repo: string, number: number }) => string} */
+  const key = (pr) => `${pr.repo}#${pr.number}`
+  const byKey = new Map(records.map((pr) => [key(pr), pr]))
+  const ready = new Set(
+    openPullRequests(records, { requiredApprovals, kinds: ['code', 'integration', 'release'] })
+      .filter((pr) => pr.stance === 'approved')
+      .map(key),
+  )
+
+  return ({ counterparts }) =>
+    counterparts.flatMap(([repo, number]) => {
+      const record = byKey.get(key({ repo, number }))
+      if (!record || record.closed) {
+        return []
+      }
+      /** @type {'merged' | 'ready' | 'waiting'} */
+      const state = record.mergedAt !== null ? 'merged' : ready.has(key(record)) ? 'ready' : 'waiting'
+
+      return [{ repo, number, state }]
     })
 }
 

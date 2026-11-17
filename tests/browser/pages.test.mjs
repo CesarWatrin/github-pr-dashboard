@@ -325,6 +325,9 @@ for (const language of ['fr', 'en']) {
       const titled = stats.pullRequests.filter((pr) => pr.title).map((pr) => pr.title)
       const shown = await page.evaluate(`[...document.querySelectorAll('[data-me] .feed-pr-title')].map((title) => title.textContent)`)
       assert.ok(shown.length > 0 && shown.every((title) => titled.includes(title)))
+      // Ready to merge, a pull request tells whether the pull request of its branch in another repository is ready too.
+      const counterparts = await page.evaluate(`[...document.querySelectorAll('[data-me="ready"] .feed-counterpart')].map((line) => line.className)`)
+      assert.deepEqual(counterparts.sort(), ['feed-by feed-counterpart is-ready', 'feed-by feed-counterpart is-waiting'])
     })
 
     test('the report of the month shows one person picked, its address says who, and it copies a line per figure', async () => {

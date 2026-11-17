@@ -62,6 +62,32 @@
 }
 
 /* The change against the range compared to, under the value: a pill like those of the monthly report. */
+/* Who did the most of a counter of the day, under it: quiet, the count after the names. */
+.tile-leader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.tile-leader-person {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.tile-leader-mark {
+  margin-right: 4px;
+  font-size: 14px;
+}
+
+.tile-leader-count {
+  font-variant-numeric: tabular-nums;
+}
+
 .tile-change {
   justify-self: start;
   margin-top: 2px;
