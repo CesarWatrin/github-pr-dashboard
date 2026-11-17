@@ -7,6 +7,7 @@ import { dirname } from 'node:path'
 import { gunzipSync, gzipSync } from 'node:zlib'
 
 import { DAY_MS, parisDay } from '../../site/domain/time.js'
+import { podiumOf } from '../../site/domain/today.js'
 import { ORG, SNAPSHOT_PATH } from './config.mjs'
 import { isBot } from './people.mjs'
 
@@ -98,22 +99,9 @@ export async function writeJson(path, data) {
   await writeFile(path, JSON.stringify(data))
 }
 
-// Who did the most of something in the day: everyone tied at the top, by login, and how many each; null for nobody.
-/**
- * @param {Map<string, number>} counts
- * @returns {TodayLeader | null}
- */
-export function leaderOf(counts) {
-  const count = Math.max(0, ...counts.values())
-
-  return count > 0
-    ? { logins: [...counts].filter(([, each]) => each === count).map(([login]) => login).sort(), count }
-    : null
-}
-
 // The counters of the Paris day of the sync, for people (bots aside): pull requests opened, merged, reviews submitted on
-// someone else's pull request; and who did the most of each, the author of the pull requests opened or merged, the
-// reviewer of the reviews.
+// someone else's pull request; and the podium of each, the authors of the pull requests opened or merged, the reviewers
+// of the reviews (podiumOf() of site/domain/today.js).
 /**
  * @param {SnapshotPullRequest[]} pullRequests
  * @param {Date} now
@@ -149,7 +137,7 @@ export function computeToday(pullRequests, now) {
 
   return {
     ...totals,
-    leaders: { opened: leaderOf(counts.opened), merged: leaderOf(counts.merged), reviews: leaderOf(counts.reviews) },
+    podiums: { opened: podiumOf(counts.opened), merged: podiumOf(counts.merged), reviews: podiumOf(counts.reviews) },
   }
 }
 

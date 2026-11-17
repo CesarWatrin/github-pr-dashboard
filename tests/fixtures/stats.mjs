@@ -365,6 +365,14 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
   const readyBack = open('eli-p', 2, { repo: 'core-api', interventions: [['ben-k', ago(1), 'APPROVED', 0]] })
   const readyFront = open('ada-l', 2, { repo: 'web-shop', interventions: [['ivo-w', ago(1), 'APPROVED', 0]], counterparts: [['core-api', readyBack.number]] })
   readyBack.counterparts = [['web-shop', readyFront.number]]
+  // Delivered on the day of the sync, for its counters: an AC of two people, and two hotfixes of one.
+  const hourAgo = toMinutes(now - 3_600_000)
+  const delivered = (author, fields) =>
+    add({ repo: 'web-shop', author, kind: 'code', createdAt: ago(2), mergedAt: hourAgo, lines: 40, deleted: 5, interventions: [['ivo-w', ago(1), 'APPROVED', 0]], ...fields })
+  delivered('fay-r', { ac: 'feature/quick-filters' })
+  delivered('cleo-m', { ac: 'feature/quick-filters' })
+  delivered('gus-t', { repo: 'billing', hotfix: true })
+  delivered('gus-t', { repo: 'billing', hotfix: true, mergedAt: toMinutes(now - 7_200_000) })
   // Merged without approval, recently, on a main repository.
   add({
     repo: 'web-shop',
@@ -454,9 +462,14 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
     today: {
       date: parisDay(now),
       opened: 2,
-      merged: 1,
+      merged: 4,
       reviews: 3,
-      leaders: { opened: { logins: ['ada-l', 'ben-k'], count: 1 }, merged: { logins: ['cleo-m'], count: 1 }, reviews: { logins: ['dev-o'], count: 2 } },
+      // Two tied first on the pull requests opened; four tied on the merges, one past the podium.
+      podiums: {
+        opened: [['ada-l', 1], ['ben-k', 1]],
+        merged: [['cleo-m', 1], ['eli-p', 1], ['fay-r', 1], ['gus-t', 1]],
+        reviews: [['dev-o', 2], ['hana-v', 1]],
+      },
     },
     windowStart: new Date(windowStart).toISOString(),
     pullRequests,

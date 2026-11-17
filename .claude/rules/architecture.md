@@ -21,7 +21,7 @@
      is derived from `DASHBOARD_PASSWORD` with PBKDF2-SHA256 (600 000 iterations) and a salt made of the first 16
      bytes of `sha256("github-pr-dashboard:" + ORG)`, so it stays the same from one sync to the next.
    - It holds the organization, the generation time, display names, the type and technologies of each repository,
-     today's counters and who did the most of each (`leaders`, everyone tied at the top), the 7-day activity feed, the squads (`squads`, from `SQUADS`: `[{ name, members, lead? }]`), the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
+     today's counters and the podium of each (`podiums`: the first three, and anyone tied with the third), the 7-day activity feed, the squads (`squads`, from `SQUADS`: `[{ name, members, lead? }]`), the sync trigger (with `DISPATCH_TOKEN`; with `FULL_SYNC_PASSWORD`,
      `fullSync`: `{ salt, iterations, verifier }`, what the page checks the full sync password against), and above all
      `pullRequests` (one compact record per pull request, no content; the title and the state of the checks only for
      the pull requests the page opens the timeline of: open, or active over the last 30 days; the name of its project for

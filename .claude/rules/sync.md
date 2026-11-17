@@ -99,8 +99,9 @@ classification and the records in `records.mjs`, the project of each pull reques
   opened, as `[repository, number]`, never the branch. A branch shared within one side, or by tooling, is most often a
   change made everywhere at once; long-lived, release and dependency branches never pair. The snapshot already kept
   the heads: no `SNAPSHOT_VERSION` bump.
-- `today` (`computeToday()`): the counters of the Paris day of the sync, people only, and `leaders`, who did the most
-  of each (`leaderOf()`: everyone tied at the top, null for nobody).
+- `today` (`computeToday()`): the counters of the Paris day of the sync, people only, and `podiums`, who did the most
+  of each (`podiumOf()` of `site/domain/today.js`: `[login, count]`, the most first, the first `PODIUM_SIZE` and anyone tied with the last of
+  them; empty for nobody).
 - `squads`: `parseSquads()` of `SQUADS` (`name:*lead,login,login;name:login,…`, refused when an entry has no name, no
   member, a name already given or two leads, the entry shown only outside CI), published as `[{ name, members, lead? }]`
   when any: a star before a login marks the head of the squad, who stays a member.
