@@ -11,10 +11,10 @@ import { stackType } from '../../model/repositories.js'
 // The groups of the board, in their order: the recommendations, then the heads of squad, judged apart.
 /** @type {{ key: Group, label: string, hint: string }[]} */
 export const GROUPS = [
-  { key: 'priority', label: t('Récompense prioritaire'), hint: t('Haut niveau sur la livraison, la review et le poids dans l’équipe.') },
-  { key: 'reward', label: t('Récompense'), hint: t('Au-dessus de l’équipe sur la plupart des axes.') },
-  { key: 'steady', label: t('Solide'), hint: t('Une contribution correcte sans écart marquant, ou un point de process à corriger.') },
-  { key: 'support', label: t('À accompagner'), hint: t('En retrait sur plusieurs axes, ou une présence à expliquer.') },
+  { key: 'priority', label: t('Performance exceptionnelle'), hint: t('Haut niveau sur la livraison, la review et le poids dans l’équipe.') },
+  { key: 'reward', label: t('Au-dessus des attentes'), hint: t('Au-dessus de l’équipe sur la plupart des axes.') },
+  { key: 'steady', label: t('Conforme aux attentes'), hint: t('Une contribution correcte sans écart marquant, ou un point de process à corriger.') },
+  { key: 'support', label: t('En dessous des attentes'), hint: t('En retrait sur plusieurs axes, ou une présence à expliquer.') },
   { key: 'lead', label: t('Chef de squad'), hint: t('Jugés d’abord sur le résultat de leur squad, et sur ce que GitHub ne montre pas.') },
 ]
 
