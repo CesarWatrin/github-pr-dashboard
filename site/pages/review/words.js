@@ -11,7 +11,7 @@ import { stackType } from '../../model/repositories.js'
 // The groups of the board, in their order: the recommendations, then the heads of squad, judged apart.
 /** @type {{ key: Group, label: string, hint: string }[]} */
 export const GROUPS = [
-  { key: 'exceptional', label: t('Performance exceptionnelle'), hint: t('Haut niveau sur la livraison, la review et le poids dans l’équipe.') },
+  { key: 'exceptional', label: t('Bien au-delà des attentes'), hint: t('Haut niveau sur la livraison, la review et le poids dans l’équipe.') },
   { key: 'above', label: t('Au-dessus des attentes'), hint: t('Au-dessus de l’équipe sur la plupart des axes.') },
   { key: 'meets', label: t('Conforme aux attentes'), hint: t('Une contribution correcte sans écart marquant, ou un point de process à corriger.') },
   { key: 'below', label: t('En dessous des attentes'), hint: t('En retrait sur plusieurs axes, ou une présence à expliquer.') },
@@ -24,6 +24,10 @@ export const groupOf = (person) => /** @type {Group} */ (person.squad ? 'lead' :
 // The profiles of the review, as the page names them: those who do mostly maintenance (TMA), some, or little.
 /** @type {Record<string, string>} */
 export const PROFILE_LABELS = { Build: t('hors TMA'), Mixte: t('TMA partielle'), TMA: t('TMA') }
+
+// Whom productivity compares a person with (comparisonOf() of site/domain/review/scores.js), as « médiane des devs … ».
+/** @type {Record<string, string>} */
+export const COMPARISON_LABELS = { TMA: t('TMA'), code: t('qui ne sont pas en TMA') }
 
 // The stack of a person, as the team page says it: front, back, mobile or full-stack.
 /** @param {ReviewedPerson} person */
@@ -41,9 +45,9 @@ const NOTES = {
   squadLeads: (v) => t('Sa squad est parmi les plus performantes (résultat {mark}/100) : {units} unités livrées par membre et par mois, {reviews} PR relues.', { mark: Number(v.mark), units: one(Number(v.units)), reviews: formatNumber(Math.round(Number(v.reviews))) }),
   squadLags: (v) => t('Sa squad est en retrait sur l’année (résultat {mark}/100) : {units} unités livrées par membre et par mois, {reviews} PR relues.', { mark: Number(v.mark), units: one(Number(v.units)), reviews: formatNumber(Math.round(Number(v.reviews))) }),
   presence: (v) => t('Active sur GitHub {share} des jours ouvrés seulement ({days} sur {available}) : vérifier un temps partiel, d’autres missions ou des absences avant de conclure.', { share: formatShare(Number(v.share)), days: Number(v.days), available: Number(v.available) }),
-  delivers: (v) => t('Livre nettement plus que la médiane des devs {profile} ({times} fois), un écart statistiquement solide.', { profile: PROFILE_LABELS[String(v.profile)], times: one(Number(v.times)) }),
+  delivers: (v) => t('Livre nettement plus que la médiane des devs {profile} ({times} fois), un écart statistiquement solide.', { profile: COMPARISON_LABELS[String(v.profile)], times: one(Number(v.times)) }),
   fewHotfixes: (v) => t('Moins de hotfixes livrés que les autres devs TMA ({mine} par mois contre {profile}), un écart statistiquement solide.', { mine: one(Number(v.mine)), profile: one(Number(v.profile)) }),
-  delivery: (v) => t('Livre moins que la médiane des devs {profile} ({share} de la médiane), un écart statistiquement solide.', { profile: PROFILE_LABELS[String(v.profile)], share: formatShare(Number(v.share)) }),
+  delivery: (v) => t('Livre moins que la médiane des devs {profile} ({share} de la médiane), un écart statistiquement solide.', { profile: COMPARISON_LABELS[String(v.profile)], share: formatShare(Number(v.share)) }),
   pillar: (v) => t('Pilier de la review : {mine} PR relues par mois, contre {team} en médiane.', { mine: formatNumber(Math.round(Number(v.mine))), team: formatNumber(Math.round(Number(v.team))) }),
   fewReviews: (v) => t('Relit peu le code des autres : {mine} PR par mois, contre {team} en médiane.', { mine: formatNumber(Math.round(Number(v.mine))), team: formatNumber(Math.round(Number(v.team))) }),
   dependents: (v) => t('{count} personnes passent par ses reviews pour au moins 30 % de leurs PR.', { count: Number(v.count) }),

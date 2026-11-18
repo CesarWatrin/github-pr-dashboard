@@ -401,7 +401,7 @@ paths:
   slide gives it, and it opens behind the password like any address. A story keeps playing when new stats come in.
 - **Annual performance** (« Performance annuelle », « Performance » in the sidebar so that it fits, `pages/review/`, `#/performance`, `filters: false`), the one page that ranks people
   and scores them, for the managers only: its link, the last of the pages of the sidebar (`[data-review-link]`), shows
-  once the stats carry `manager` (`MANAGER_PASSWORD`), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
+  once the stats carry `manager` (`MANAGER_PASSWORD`, unless `PERFORMANCE_PAGE` is false), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
   of `model/state.js`: the managers' password typed on this browser within `MANAGER_UNLOCK_DAYS` (30), checked by
   `isManagerPassword()` of `site/domain/manager.js`, only its verifier kept (`github-pr-dashboard:manager`); a button at
   the bottom of the page closes it again. `teamReview()` of `site/domain/review.js` works it out over the
@@ -410,7 +410,7 @@ paths:
   lines; reviews; when they act in the week), their figures (`review/figures.js`: the months after their arrival, the
   profile from their share of hotfixes, `TMA_SHARE` and `MIXED_SHARE`, monthly means with a bootstrap interval, working
   days active, `workingDaysOf()` with the French public holidays), four marks as ranks (`review/scores.js`: productivity
-  within the profile, efficiency, collaboration, importance), the overall mark and recommendation (`overallOf()`: the
+  against `comparisonOf()`, the TMA among themselves and everyone else together, efficiency, collaboration, importance), the overall mark and recommendation (`overallOf()`: the
   head of a squad judged for a quarter on `squadResults()`; `UNREVIEWED_LIMIT` caps the level at « meets expectations »), the notes
   (`review/notes.js`, their sentences in `pages/review/words.js`), and whether people differ (`kruskalWallis()`,
   `intraclassCorrelation()` of `review/statistics.js`). People without `MIN_MONTHS` and `MIN_CODE` are listed apart.

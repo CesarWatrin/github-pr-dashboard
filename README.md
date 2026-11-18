@@ -234,7 +234,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Performance annuelle**, réservée aux managers : son lien, la dernière des pages de la barre latérale, porte un cadenas, fermé tant
   que le mot de passe des managers (`MANAGER_PASSWORD`) n'a pas été saisi sur l'appareil, ouvert pendant les 30 jours où
   il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets. En haut,
-  les niveaux de fin d'année (performance exceptionnelle, au-dessus des attentes, conforme aux attentes, en dessous des
+  les niveaux de fin d'année (bien au-delà des attentes, au-dessus des attentes, conforme aux attentes, en dessous des
   attentes ; les chefs de squad à
   part, jugés aussi sur le résultat de leur squad ; ceux qui ont trop peu de recul, sans niveau), puis si les
   écarts entre personnes sont réels, le classement et les squads. Un clic sur un nom ouvre son dossier dans une
@@ -243,7 +243,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   son poids dans l'équipe et son rythme de travail (part de l'activité entre 9 h et 18 h en semaine, jours ouvrés
   actifs, heure par heure de la semaine). Chacun y figure avec sa stack (front, back, mobile, full-stack, comme sur la page
   Équipe), et les membres de la TMA sont marqués : TMA à partir de 50 % de hotfix, TMA partielle de 30 à 50 %. La
-  productivité ne se compare qu'entre devs de la même catégorie, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
+  productivité des devs TMA se compare entre eux, celle de tous les autres ensemble, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
   unité), et la TMA compte ses hotfix. Un test statistique dit si les écarts entre personnes dépassent le hasard d'un
   mois à l'autre, et chaque moyenne a son intervalle de confiance. La page explique en bas, dans un encart replié, comment se lisent ses notes et ses limites : GitHub ne voit ni la difficulté
   d'un sujet, ni l'aide à l'oral, ni les réunions. Le mot de passe cache la page, pas les données : elle se calcule
@@ -285,7 +285,7 @@ pour un visiteur comme pour un robot.
 - La Performance annuelle s'ouvre avec un mot de passe à part, celui des managers (`MANAGER_PASSWORD`, dans le `.env` et
   les secrets de l'environnement `github-pages`) : les stats ne portent qu'un condensé de la clé qui en est dérivée
   (PBKDF2-SHA256, 600 000 itérations, avec son propre sel), et le navigateur ne garde que ce condensé, 30 jours. Sans
-  `MANAGER_PASSWORD`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
+  `MANAGER_PASSWORD`, ou avec `PERFORMANCE_PAGE=false`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
   bord lit les mêmes PR.
 - Une fois le mot de passe accepté, la page demande au navigateur de l'enregistrer sous le nom « Stats PR » (Chrome
   et Edge ; les autres navigateurs le proposent selon leurs propres règles). Le gestionnaire de mots de passe le
@@ -459,6 +459,9 @@ Prérequis :
      sans elle, pas de Rétrospective.
    - `MANAGER_PASSWORD` (facultatif) : le mot de passe des managers, qui ouvre la Performance annuelle ; sans lui, pas de
      Performance annuelle.
+   - `PERFORMANCE_PAGE` (facultatif, une variable et non un secret, dans le même environnement) : un booléen, `true` par
+     défaut ; `false` masque la Performance annuelle et son lien, même avec `MANAGER_PASSWORD`
+     (`gh variable set PERFORMANCE_PAGE --env github-pages --body false`).
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types
@@ -467,5 +470,5 @@ protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
 `REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
-`RETRO_KEY`, `MANAGER_PASSWORD`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
+`RETRO_KEY`, `MANAGER_PASSWORD`, `PERFORMANCE_PAGE`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
 l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en CI).

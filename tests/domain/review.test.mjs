@@ -8,7 +8,7 @@ import { teamReview } from '../../site/domain/review.js'
 import { frenchHolidays, parisClock, reviewMonths, workingDaysOf } from '../../site/domain/review/calendar.js'
 import { personFigures } from '../../site/domain/review/figures.js'
 import { notesOf } from '../../site/domain/review/notes.js'
-import { overallOf } from '../../site/domain/review/scores.js'
+import { comparisonOf, overallOf } from '../../site/domain/review/scores.js'
 import { bootstrapInterval, chiSquareSurvival, intraclassCorrelation, kruskalWallis, rankShares } from '../../site/domain/review/statistics.js'
 import { reviewTallies, workUnits } from '../../site/domain/review/tallies.js'
 import { at, record } from './records.mjs'
@@ -299,7 +299,8 @@ describe('the review of a team', () => {
     assert.equal(review.months.length, 12)
   })
 
-  test('compares productivity within a profile: the TMA among themselves', () => {
+  test('compares productivity of the TMA among themselves, everyone else together', () => {
+    assert.deepEqual(['Build', 'Mixte', 'TMA'].map(comparisonOf), ['code', 'code', 'TMA'])
     assert.equal(of('eve').profile, 'TMA')
     assert.equal(of('ann').profile, 'Build')
     assert.equal(of('ann').marks.productivity, 100)

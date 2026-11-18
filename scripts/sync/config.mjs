@@ -67,6 +67,22 @@ export function requiredApprovals(value = '') {
 
 export const REQUIRED_APPROVALS = requiredApprovals(process.env.REQUIRED_APPROVALS)
 
+// Whether the page shows the annual performance, from PERFORMANCE_PAGE, a boolean: true by default (the page still needs
+// MANAGER_PASSWORD). False, the stats carry nothing of the managers' password: neither the page nor its link show.
+/** @param {string} [value] */
+export function performancePage(value = '') {
+  const text = value.trim().toLowerCase()
+  if (text === '' || text === 'true') {
+    return true
+  }
+  if (text === 'false') {
+    return false
+  }
+  throw new Error('PERFORMANCE_PAGE should be true or false')
+}
+
+export const PERFORMANCE_PAGE = performancePage(process.env.PERFORMANCE_PAGE)
+
 // The squads of the organization, as "name:login,login;name:login,…": from SQUADS, none without it. Their names and
 // members are private, so they come from the environment, and only travel inside the encrypted stats, for the squads
 // page and the squad filter. A person may belong to several squads; the order is kept, the page lists them so. A star

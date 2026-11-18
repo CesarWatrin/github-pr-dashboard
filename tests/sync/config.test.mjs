@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
 import './environment.mjs'
-import { parseSquads, requiredApprovals } from '../../scripts/sync/config.mjs'
+import { parseSquads, performancePage, requiredApprovals } from '../../scripts/sync/config.mjs'
 
 describe('requiredApprovals', () => {
   test('1 by default, else the number given', () => {
@@ -16,6 +16,21 @@ describe('requiredApprovals', () => {
   test('anything but a whole number of 1 or more is refused', () => {
     for (const value of ['0', '-1', '1.5', 'two']) {
       assert.throws(() => requiredApprovals(value), /REQUIRED_APPROVALS/)
+    }
+  })
+})
+
+describe('performancePage', () => {
+  test('true by default, false when asked, in any case', () => {
+    assert.equal(performancePage(), true)
+    assert.equal(performancePage(' TRUE '), true)
+    assert.equal(performancePage('false'), false)
+    assert.equal(performancePage('False'), false)
+  })
+
+  test('anything but a boolean is refused', () => {
+    for (const value of ['off', 'no', '0', 'maybe']) {
+      assert.throws(() => performancePage(value), /PERFORMANCE_PAGE/, value)
     }
   })
 })
