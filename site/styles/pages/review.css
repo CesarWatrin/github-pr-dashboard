@@ -1,0 +1,528 @@
+/* Revue annuelle (pages/review/): the managers' gate, the board of recommendations, the facts, the ranking, the squads
+   and a dossier per person. Each recommendation has its color, on bands and tints only: text keeps the text colors. */
+.review,
+.review-dossiers {
+  display: grid;
+  gap: 16px;
+}
+
+.is-priority {
+  --verdict: var(--status-good);
+}
+
+.is-reward {
+  --verdict: var(--series-3);
+}
+
+.is-steady {
+  --verdict: var(--series-1);
+}
+
+.is-support {
+  --verdict: var(--status-serious);
+}
+
+.is-lead {
+  --verdict: var(--gold);
+}
+
+/* The link of the sidebar, under the actions: a padlock closed, open while this browser opens the page. */
+.nav-link-review {
+  margin-top: 8px;
+}
+
+.nav-link-review .review-padlock-open,
+.nav-link-review.is-unlocked .review-padlock-closed {
+  display: none;
+}
+
+.nav-link-review.is-unlocked .review-padlock-open {
+  display: block;
+  color: var(--status-good);
+}
+
+.review-gate {
+  max-width: 560px;
+}
+
+.review-gate-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.review-gate-form input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.review-gate-error:empty {
+  display: none;
+}
+
+.review-gate-error {
+  margin: 10px 0 0;
+  color: var(--text-primary);
+}
+
+.review-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.review-lane {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--verdict);
+  border-radius: 10px;
+}
+
+.review-lane h3 {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.review-lane p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.review-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.review-chip {
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--verdict) 16%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.review-chip:hover,
+.review-chip:focus-visible {
+  border-color: var(--verdict);
+}
+
+.review-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.review-fact {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.review-fact strong {
+  font-size: 22px;
+}
+
+.review-fact p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.review-table .person-link {
+  max-width: 200px;
+}
+
+.review-sort {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.review-table th[aria-sort] .review-sort {
+  color: var(--text-primary);
+}
+
+.review-pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--verdict) 18%, transparent);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.review-meter {
+  display: inline-grid;
+  grid-template-columns: 26px 48px;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-meter-bar,
+.review-mark-bar {
+  display: block;
+  overflow: hidden;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gridline);
+}
+
+.review-meter-bar i,
+.review-mark-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--series-1);
+}
+
+/* A dossier: a band of the color of its recommendation, the verdict on the right of its head. */
+.review-dossier {
+  display: grid;
+  gap: 18px;
+  border-top: 4px solid var(--verdict);
+  scroll-margin-top: 80px;
+}
+
+.review-dossier-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.review-dossier-id {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.review-dossier-id h3 {
+  font-size: 20px;
+}
+
+.review-eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.review-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.review-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.review-tag.is-lead {
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.review-verdict {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: right;
+}
+
+.review-overall {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.review-overall strong {
+  color: var(--text-primary);
+  font-size: 30px;
+}
+
+.review-advice {
+  max-width: 36ch;
+  margin: 0;
+  font-size: 13px;
+}
+
+.review-marks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.review-mark {
+  display: grid;
+  gap: 6px;
+}
+
+.review-mark p {
+  margin: 0;
+}
+
+.review-mark-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.review-mark-bar {
+  height: 8px;
+}
+
+.review-mark-reading,
+.review-small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.review-small {
+  margin: 4px 0 0;
+}
+
+.review-notes,
+.review-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 18px;
+}
+
+.review-panel {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-panel h4 {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.review-panel dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.review-panel dt {
+  color: var(--text-secondary);
+}
+
+.review-panel dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-panel dd small {
+  color: var(--text-muted);
+}
+
+.review-panel dd small.is-better::after {
+  content: ' ▲';
+  color: var(--diff-added);
+}
+
+.review-panel dd small.is-worse::after {
+  content: ' ▼';
+  color: var(--diff-deleted);
+}
+
+.review-strengths,
+.review-weaknesses {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.review-strengths li,
+.review-weaknesses li {
+  position: relative;
+  padding-left: 20px;
+}
+
+.review-strengths li::before,
+.review-weaknesses li::before {
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.review-strengths li::before {
+  content: '+';
+  color: var(--diff-added);
+}
+
+.review-weaknesses li::before {
+  content: '!';
+  color: var(--status-serious);
+}
+
+.review-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.review-chart text {
+  fill: var(--text-muted);
+  font-size: 10px;
+}
+
+.review-grid {
+  stroke: var(--gridline);
+  stroke-dasharray: 2 3;
+}
+
+.review-baseline {
+  stroke: var(--baseline);
+}
+
+.review-column {
+  fill: var(--series-1);
+}
+
+.review-column.is-tma {
+  fill: var(--series-2);
+}
+
+.review-absent {
+  fill: var(--gridline);
+}
+
+.review-line {
+  fill: none;
+  stroke: var(--series-3);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.review-dot {
+  fill: var(--series-3);
+}
+
+.review-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.review-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 2px;
+  background: var(--series-1);
+  vertical-align: -1px;
+}
+
+.review-legend .is-tma::before {
+  background: var(--series-2);
+}
+
+.review-legend .is-reviews::before {
+  background: var(--series-3);
+}
+
+/* The week: a row per day, a cell per hour, darker for more actions, the working hours ringed. */
+.review-week {
+  display: grid;
+  grid-template-columns: 28px repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.review-week span {
+  overflow: hidden;
+  text-align: center;
+}
+
+.review-week b {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--series-1) calc(var(--level) * 100%), transparent);
+  outline: 1px solid var(--gridline);
+  outline-offset: -1px;
+}
+
+.review-week b.is-work {
+  outline-color: color-mix(in srgb, var(--series-1) 45%, transparent);
+}
+
+.review-others {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.review-other p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.review-method {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.review-lock {
+  justify-self: start;
+}
+
+@media (max-width: 600px) {
+  .review-verdict {
+    justify-items: start;
+    text-align: left;
+  }
+}

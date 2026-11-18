@@ -74,6 +74,7 @@ jobs:
           FULL_SYNC: ${{ inputs.full }}
           FULL_SYNC_PASSWORD: ${{ secrets.FULL_SYNC_PASSWORD }}
           RETRO_KEY: ${{ secrets.RETRO_KEY }}
+          MANAGER_PASSWORD: ${{ secrets.MANAGER_PASSWORD }}
           FULL_SYNC_PROOF: ${{ inputs.proof }}
           BUILD_ID: ${{ github.sha }}
 

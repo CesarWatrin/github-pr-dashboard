@@ -14,8 +14,19 @@ import { retroOf } from '../../scripts/sync/retro.mjs'
 export const TEST_PASSWORD = 'test-password'
 // The key of the year in review, as its link carries it: 32 bytes in base64url, made up.
 export const TEST_RETRO_KEY = Buffer.alloc(32, 7).toString('base64url')
+// The managers' password of the test, which opens the annual review.
+export const TEST_MANAGER_PASSWORD = 'test-manager-password'
 // Far fewer than the sync's: the page reads them from the file, and unlocking stays quick.
 const TEST_ITERATIONS = 1000
+
+// What the page checks the managers' password against, derived as site/domain/manager.js does.
+function managerCheck(org, password = TEST_MANAGER_PASSWORD) {
+  const salt = createHash('sha256').update(`github-pr-dashboard:manager:${org}`).digest().subarray(0, 16)
+  const key = pbkdf2Sync(password, salt, TEST_ITERATIONS, 32, 'sha256')
+  const verifier = createHash('sha256').update(Buffer.concat([Buffer.from('verify:'), key])).digest('base64')
+
+  return { salt: salt.toString('base64'), iterations: TEST_ITERATIONS, verifier }
+}
 
 export function encryptStats(stats, password = TEST_PASSWORD) {
   const salt = createHash('sha256').update(`github-pr-dashboard:${stats.org}`).digest().subarray(0, 16)
@@ -37,7 +48,7 @@ export async function serveSite(stats, { source = join(import.meta.dirname, '..'
     }
   }
   await mkdir(join(root, 'data'))
-  await writeFile(join(root, 'data', 'stats.enc.json'), JSON.stringify(encryptStats({ ...stats, retroKey: TEST_RETRO_KEY })))
+  await writeFile(join(root, 'data', 'stats.enc.json'), JSON.stringify(encryptStats({ ...stats, retroKey: TEST_RETRO_KEY, manager: managerCheck(stats.org) })))
   const retro = retroOf(stats)
   if (retro) {
     const iv = randomBytes(12)

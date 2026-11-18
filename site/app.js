@@ -19,6 +19,7 @@ import { ACTIVITY_SERIES, setupOverview } from './pages/overview/overview.js'
 import { AC_OVERVIEW_SERIES, PROJECT_SERIES } from './pages/overview/projects.js'
 import { setupProjects } from './pages/projects/projects.js'
 import { setupReport } from './pages/report.js'
+import { setupReview } from './pages/review/review.js'
 import { REPORT_CHART_SERIES } from './pages/report/chart.js'
 import { setupReviewers } from './pages/reviewers.js'
 import { SQUAD_TYPES } from './pages/squads/charts.js'
@@ -68,6 +69,7 @@ setupSquads()
 setupProjects()
 setupReviewers()
 setupReport()
+setupReview({ render: () => render(false) })
 setupMe()
 setupReplay()
 setupOverview()

@@ -230,9 +230,23 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   efface les exécutions de CI au bout d'environ 13 mois : la CI ne remonte qu'à celles que la synchro a déjà lues, et
   s'allonge avec le temps jusqu'à 36 mois ; une période qui commence avant le dit.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
+- **Revue annuelle**, réservée aux managers : son lien, tout en bas de la barre latérale, porte un cadenas, fermé tant
+  que le mot de passe des managers (`MANAGER_PASSWORD`) n'a pas été saisi sur l'appareil, ouvert pendant les 30 jours où
+  il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets : sa
+  recommandation de fin d'année (récompense prioritaire, récompense, solide, à accompagner ; les chefs de squad à part,
+  jugés aussi sur le résultat de leur squad), une note globale et quatre notes de 0 à 100 (productivité, efficacité,
+  collaboration, importance), ses points forts et ses points à travailler, sa livraison et ses reviews mois par mois,
+  son poids dans l'équipe et son rythme de travail (part de l'activité entre 9 h et 18 h en semaine, jours ouvrés
+  actifs, heure par heure de la semaine). La productivité ne se compare qu'à profil égal : chacun est Build, Mixte ou
+  TMA selon sa part de hotfix, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
+  unité), et la TMA compte ses hotfix. Un test statistique dit si les écarts entre personnes dépassent le hasard d'un
+  mois à l'autre, et chaque moyenne a son intervalle de confiance. Les arrivées récentes sont listées à part, sans
+  recommandation. La page explique en bas comment se lisent ses notes et ses limites : GitHub ne voit ni la difficulté
+  d'un sujet, ni l'aide à l'oral, ni les réunions. Le mot de passe cache la page, pas les données : elle se calcule
+  dans le navigateur à partir des PR que tout le dashboard montre.
 
 Chaque page a son adresse (`#/a-debloquer`, `#/mes-pr`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
-`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`, `#/revue`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
@@ -264,6 +278,11 @@ pour un visiteur comme pour un robot.
   renvoyé vers la Rétrospective depuis l'adresse du tableau de bord : l'équipe ne voit qu'elle, jamais l'écran du mot
   de passe. Celui-ci ne s'affiche qu'à un navigateur qui a déjà déverrouillé le tableau de bord une fois, même
   reverrouillé depuis, ou qui n'a jamais ouvert la Rétrospective.
+- La Revue annuelle s'ouvre avec un mot de passe à part, celui des managers (`MANAGER_PASSWORD`, dans le `.env` et
+  les secrets de l'environnement `github-pages`) : les stats ne portent qu'un condensé de la clé qui en est dérivée
+  (PBKDF2-SHA256, 600 000 itérations, avec son propre sel), et le navigateur ne garde que ce condensé, 30 jours. Sans
+  `MANAGER_PASSWORD`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
+  bord lit les mêmes PR.
 - Une fois le mot de passe accepté, la page demande au navigateur de l'enregistrer sous le nom « Stats PR » (Chrome
   et Edge ; les autres navigateurs le proposent selon leurs propres règles). Le gestionnaire de mots de passe le
   remplit ensuite tout seul. Un Chrome géré par une organisation peut avoir l'enregistrement désactivé (règle
@@ -434,6 +453,8 @@ Prérequis :
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
    - `RETRO_KEY` (facultatif) : la clé de la Rétrospective, 32 octets aléatoires en base64url, voir « Accès protégé » ;
      sans elle, pas de Rétrospective.
+   - `MANAGER_PASSWORD` (facultatif) : le mot de passe des managers, qui ouvre la Revue annuelle ; sans lui, pas de
+     Revue annuelle.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types
@@ -442,5 +463,5 @@ protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
 `REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
-`RETRO_KEY`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
+`RETRO_KEY`, `MANAGER_PASSWORD`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
 l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en CI).

@@ -52,6 +52,7 @@
     <link rel="stylesheet" href="styles/pages/squads.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/projects.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/acs.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/review.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/force-graph.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/cartography.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/bus-factor.css?v=__BUILD__" />
@@ -84,6 +85,7 @@
         "./domain/comparison.js": "./domain/comparison.js?v=__BUILD__",
         "./domain/effort.js": "./domain/effort.js?v=__BUILD__",
         "./domain/full-sync.js": "./domain/full-sync.js?v=__BUILD__",
+        "./domain/manager.js": "./domain/manager.js?v=__BUILD__",
         "./domain/math.js": "./domain/math.js?v=__BUILD__",
         "./domain/months.js": "./domain/months.js?v=__BUILD__",
         "./domain/open-pull-requests.js": "./domain/open-pull-requests.js?v=__BUILD__",
@@ -98,6 +100,13 @@
         "./domain/period/sizes.js": "./domain/period/sizes.js?v=__BUILD__",
         "./domain/projects.js": "./domain/projects.js?v=__BUILD__",
         "./domain/projects/series.js": "./domain/projects/series.js?v=__BUILD__",
+        "./domain/review.js": "./domain/review.js?v=__BUILD__",
+        "./domain/review/calendar.js": "./domain/review/calendar.js?v=__BUILD__",
+        "./domain/review/figures.js": "./domain/review/figures.js?v=__BUILD__",
+        "./domain/review/notes.js": "./domain/review/notes.js?v=__BUILD__",
+        "./domain/review/scores.js": "./domain/review/scores.js?v=__BUILD__",
+        "./domain/review/statistics.js": "./domain/review/statistics.js?v=__BUILD__",
+        "./domain/review/tallies.js": "./domain/review/tallies.js?v=__BUILD__",
         "./domain/team.js": "./domain/team.js?v=__BUILD__",
         "./domain/time.js": "./domain/time.js?v=__BUILD__",
         "./domain/timeline.js": "./domain/timeline.js?v=__BUILD__",
@@ -110,6 +119,7 @@
         "./lib/english/frame.js": "./lib/english/frame.js?v=__BUILD__",
         "./lib/english/method.js": "./lib/english/method.js?v=__BUILD__",
         "./lib/english/pages.js": "./lib/english/pages.js?v=__BUILD__",
+        "./lib/english/review.js": "./lib/english/review.js?v=__BUILD__",
         "./lib/force-layout.js": "./lib/force-layout.js?v=__BUILD__",
         "./lib/format.js": "./lib/format.js?v=__BUILD__",
         "./lib/i18n.js": "./lib/i18n.js?v=__BUILD__",
@@ -129,6 +139,7 @@
         "./model/replay.js": "./model/replay.js?v=__BUILD__",
         "./model/repositories.js": "./model/repositories.js?v=__BUILD__",
         "./model/repository-rows.js": "./model/repository-rows.js?v=__BUILD__",
+        "./model/review.js": "./model/review.js?v=__BUILD__",
         "./model/routes.js": "./model/routes.js?v=__BUILD__",
         "./model/selection.js": "./model/selection.js?v=__BUILD__",
         "./model/squads.js": "./model/squads.js?v=__BUILD__",
@@ -161,6 +172,10 @@
         "./pages/report/lists.js": "./pages/report/lists.js?v=__BUILD__",
         "./pages/report/text.js": "./pages/report/text.js?v=__BUILD__",
         "./pages/repositories.js": "./pages/repositories.js?v=__BUILD__",
+        "./pages/review/charts.js": "./pages/review/charts.js?v=__BUILD__",
+        "./pages/review/dossier.js": "./pages/review/dossier.js?v=__BUILD__",
+        "./pages/review/review.js": "./pages/review/review.js?v=__BUILD__",
+        "./pages/review/words.js": "./pages/review/words.js?v=__BUILD__",
         "./pages/reviewers.js": "./pages/reviewers.js?v=__BUILD__",
         "./pages/squads/cards.js": "./pages/squads/cards.js?v=__BUILD__",
         "./pages/squads/charts.js": "./pages/squads/charts.js?v=__BUILD__",
@@ -243,6 +258,7 @@
     <link rel="modulepreload" href="domain/comparison.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/effort.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/full-sync.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/manager.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/math.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/months.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/open-pull-requests.js?v=__BUILD__" />
@@ -257,6 +273,13 @@
     <link rel="modulepreload" href="domain/period/sizes.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/projects/series.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review/calendar.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review/figures.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review/notes.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review/scores.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review/statistics.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review/tallies.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/team.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/time.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/timeline.js?v=__BUILD__" />
@@ -283,6 +306,7 @@
     <link rel="modulepreload" href="model/replay.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/repositories.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/repository-rows.js?v=__BUILD__" />
+    <link rel="modulepreload" href="model/review.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/routes.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/selection.js?v=__BUILD__" />
     <link rel="modulepreload" href="model/squads.js?v=__BUILD__" />
@@ -315,6 +339,10 @@
     <link rel="modulepreload" href="pages/report/lists.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/report/text.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/repositories.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/review/charts.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/review/dossier.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/review/review.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/review/words.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/reviewers.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/squads/cards.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/squads/charts.js?v=__BUILD__" />
@@ -613,6 +641,17 @@
               <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7.5L13 5v8.5H3Z" /><path d="M5.5 7h5M5.5 9.5h5" /></svg>
             </a>
           </div>
+          <!-- The annual review, last: shown once the stats carry the managers' password (MANAGER_PASSWORD), its padlock
+               open while this browser opens it (pages/review/review.js). -->
+          <a class="nav-link nav-link-review" href="#/revue" data-route-link="review" data-review-link hidden>
+            <svg class="review-padlock-closed" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+            </svg>
+            <svg class="review-padlock-open" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7" />
+            </svg>
+            Revue annuelle
+          </a>
         </div>
       </aside>
       <div class="nav-backdrop" data-nav-backdrop></div>
@@ -1710,6 +1749,57 @@
           </div>
 
           <!-- Méthode -->
+          <div class="route" data-route="review" hidden>
+            <!-- The managers' password, asked once every 30 days on this browser (pages/review/review.js). -->
+            <section class="card review-gate" aria-labelledby="review-gate-title" data-review-gate hidden>
+              <h2 id="review-gate-title">Accès réservé aux managers</h2>
+              <p class="card-note">
+                Cette page classe chaque développeur et dit qui récompenser en fin d’année. Elle s’ouvre avec le mot de passe
+                des managers, pour 30 jours sur cet appareil.
+              </p>
+              <form class="review-gate-form" data-review-form>
+                <input type="password" class="search" autocomplete="new-password" aria-label="Mot de passe des managers" placeholder="Mot de passe des managers" data-review-password />
+                <button type="submit" class="button-primary">Ouvrir</button>
+              </form>
+              <p class="review-gate-error" role="alert" data-review-error></p>
+            </section>
+            <div class="review" data-review-content hidden>
+              <section class="card" aria-labelledby="review-board-title">
+                <h2 id="review-board-title">Recommandations de fin d’année</h2>
+                <p class="card-note" data-review-period></p>
+                <div class="review-board" data-review-board></div>
+              </section>
+              <section class="card" aria-labelledby="review-facts-title">
+                <h2 id="review-facts-title">Les écarts de productivité sont-ils réels ?</h2>
+                <div class="review-facts" data-review-facts></div>
+              </section>
+              <section class="card" aria-labelledby="review-table-title">
+                <h2 id="review-table-title">Vue d’ensemble</h2>
+                <div class="table-wrap" data-review-table></div>
+                <p class="card-note">
+                  Un clic sur une colonne la trie. Les quatre notes vont de 0 à 100 : le rang de la personne dans l’équipe, 100
+                  pour la meilleure (dans son profil pour la productivité).
+                </p>
+              </section>
+              <section class="card" aria-labelledby="review-squads-title" data-review-squads-card>
+                <h2 id="review-squads-title">Les squads</h2>
+                <div class="table-wrap" data-review-squads></div>
+                <p class="card-note">Par membre évalué. Le résultat d’une squad compte pour un quart de la note de son chef.</p>
+              </section>
+              <section class="review-dossiers" aria-label="Dossiers individuels" data-review-dossiers></section>
+              <section class="card" aria-labelledby="review-others-title" data-review-others-card>
+                <h2 id="review-others-title">Trop peu de recul pour juger</h2>
+                <p class="card-note">Arrivées récentes ou activité de code marginale sur ces mois : leurs chiffres, sans recommandation.</p>
+                <div class="review-others" data-review-others></div>
+              </section>
+              <section class="card" aria-labelledby="review-method-title">
+                <h2 id="review-method-title">Comment lire cette page</h2>
+                <ul class="review-method" data-review-method></ul>
+              </section>
+              <button type="button" class="button-secondary review-lock" data-review-lock>Fermer l’accès sur cet appareil</button>
+            </div>
+          </div>
+
           <div class="route" data-route="method" hidden>
             <section class="card" aria-label="Définitions">
               <dl class="definitions">

@@ -5,6 +5,7 @@ import { COMPARED_ROUTES, currentRoute, ROUTES } from '../model/routes.js'
 import { squadKey } from '../model/squads.js'
 import { state } from '../model/state.js'
 import { renderAnalysis } from '../pages/analysis/analysis.js'
+import { renderReview } from '../pages/review/review.js'
 import { renderSquads } from '../pages/squads/squads.js'
 import { $, $$ } from '../ui/dom.js'
 import { playEntrance } from '../ui/motion.js'
@@ -45,6 +46,7 @@ export function renderRoute() {
   // takes a moment to work out, and the squads.
   renderCharts()
   renderAnalysis()
+  renderReview()
   if (state.stats) {
     renderSquads()
   }

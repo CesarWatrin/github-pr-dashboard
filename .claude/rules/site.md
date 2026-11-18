@@ -17,7 +17,7 @@ paths:
   (`ui/dom.js`). One `state` object (`model/state.js`); `render(animate)`
   (`shell/render.js`) redraws everything, `renderRoute()` (`shell/router.js`) shows the page of the hash (`ROUTES` of
   `model/routes.js`: overview, unblock, me, report, trends, analysis, authors, reviewers, cycle, collaboration,
-  team, squads, awards, repositories, projects, acs, effort, tma, devops, method). The period selector and the search apply to every page but the
+  team, squads, awards, repositories, projects, acs, effort, tma, devops, method, review). The period selector and the search apply to every page but the
   method, report, awards and « Mes PR » ones (`filters: false`): the report has a month and a person picker of its own, « Pour
   moi » a person picker; the unblock page, about what stands now, keeps the search only (`period: false`), the
   analysis, trends, squads, AC and effort pages the period only (`search: false`). The Méthode page has no link among the pages: a
@@ -396,6 +396,22 @@ paths:
   Space to pause, Escape back to the picker then out; it pauses when the tab hides. The team's story never ranks people.
   The address says whose and which year (`state.wrappedFor`, `wrappedTeam`, `wrappedYear`): « Copier le lien » on the last
   slide gives it, and it opens behind the password like any address. A story keeps playing when new stats come in.
+- **Annual review** (« Revue annuelle », `pages/review/`, `#/revue`, `filters: false`), the one page that ranks people
+  and scores them, for the managers only: its link, last in the sidebar under the actions (`[data-review-link]`), shows
+  once the stats carry `manager` (`MANAGER_PASSWORD`), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
+  of `model/state.js`: the managers' password typed on this browser within `MANAGER_UNLOCK_DAYS` (30), checked by
+  `isManagerPassword()` of `site/domain/manager.js`, only its verifier kept (`github-pr-dashboard:manager`); a button at
+  the bottom of the page closes it again. `teamReview()` of `site/domain/review.js` works it out over the
+  `REVIEW_MONTHS` whole months before the current one (`currentReview()` of `model/review.js`, once per stats, only when
+  the page shows): the tallies of each person (`review/tallies.js`: units of work, `workUnits()`, logarithmic in the
+  lines; reviews; when they act in the week), their figures (`review/figures.js`: the months after their arrival, the
+  profile from their share of hotfixes, `TMA_SHARE` and `MIXED_SHARE`, monthly means with a bootstrap interval, working
+  days active, `workingDaysOf()` with the French public holidays), four marks as ranks (`review/scores.js`: productivity
+  within the profile, efficiency, collaboration, importance), the overall mark and recommendation (`overallOf()`: the
+  head of a squad judged for a quarter on `squadResults()`; `UNREVIEWED_LIMIT` holds any reward back), the notes
+  (`review/notes.js`, their sentences in `pages/review/words.js`), and whether people differ (`kruskalWallis()`,
+  `intraclassCorrelation()` of `review/statistics.js`). People without `MIN_MONTHS` and `MIN_CODE` are listed apart.
+  The page explains its marks and limits at its bottom; its English lives in `lib/english/review.js`.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.
@@ -473,7 +489,7 @@ paths:
   French as its key: `t('{count} membres', { count })` for a template, whose French once filled is the text as it was,
   `plural()` of `lib/format.js` for a counted noun. Its English goes in the same change into the part of
   `lib/english/` of its area: `frame.js` (index.html and `shell/`, `services/`), `method.js` (the method page),
-  `pages.js` (`pages/` but the analysis), `blocks.js` (`ui/`, `model/`, `pages/analysis/`, the formats). The static
+  `pages.js` (`pages/` but the analysis and the annual review), `blocks.js` (`ui/`, `model/`, `pages/analysis/`, the formats), `review.js` (the annual review, its route and its markup). The static
   texts of index.html translate through `ui/translate.js`, before anything writes in the page: a sentence with inline
   markup (strong, code, a link…) as a whole, keyed by its HTML, any other text alone, and the text attributes (`title`,
   `aria-label`, `placeholder`, `data-label`, `alt`). English reads as English: US spelling, ’ and “ ”, no space before

@@ -20,8 +20,8 @@ import { computeCi, fetchRuns, RUNS_OVERLAP_MS } from './runs.mjs'
 export const WATCH_INTERVAL_MS = 60_000
 const SYNC_OVERLAP_MS = 10 * 60_000
 
-/** @param {{ full: boolean, fullSync?: FullSyncCheck | null, refused?: boolean }} options */
-export async function sync({ full, fullSync = null, refused = false }) {
+/** @param {{ full: boolean, fullSync?: FullSyncCheck | null, refused?: boolean, manager?: FullSyncCheck | null }} options */
+export async function sync({ full, fullSync = null, refused = false, manager = null }) {
   const now = new Date()
   /** @type {(days: number) => string} */
   const before = (days) => new Date(now.getTime() - days * DAY_MS).toISOString()
@@ -147,6 +147,8 @@ export async function sync({ full, fullSync = null, refused = false }) {
     ...(refused && { fullSyncRefused: true }),
     // The link of the year in review, in the sidebar: whoever sees the dashboard may give it to the team.
     ...(RETRO_KEY && { retroKey: RETRO_KEY.toString('base64url') }),
+    // What the page checks the managers' password against, which opens the annual review (MANAGER_PASSWORD).
+    ...(manager && { manager }),
     requiredApprovals: REQUIRED_APPROVALS,
     ...(SQUADS.length && { squads: SQUADS }),
     people: Object.fromEntries([...people.names].filter(([login]) => !isBot(login))),

@@ -26,6 +26,7 @@ import { renderAcOverviewChart, renderAcOverviewTable, renderProjectChart, rende
 import { renderProjects, renderProjectTimeline } from '../pages/projects/projects.js'
 import { renderReport, renderReportCharts } from '../pages/report.js'
 import { renderRepositories } from '../pages/repositories.js'
+import { renderReview } from '../pages/review/review.js'
 import { renderMiniCharts, renderPersonPicker } from '../pages/reviewers.js'
 import { renderSquadCharts } from '../pages/squads/charts.js'
 import { renderSquads } from '../pages/squads/squads.js'
@@ -107,6 +108,7 @@ export function render(animate) {
   renderUnblock(tileMode)
   renderMe(tileMode)
   renderUnapproved(animate)
+  renderReview()
   renderSyncMenu()
   scheduleUrlWrite()
 }
