@@ -8,12 +8,15 @@
 // Usage: node scripts/sync.mjs [--full] [--watch]
 
 import { DASHBOARD_REPOSITORY, ORG } from './sync/config.mjs'
+import { managerCheck } from '../site/domain/manager.js'
 import { chooseFullSync, fullSyncSettings } from './sync/full-sync.mjs'
 import { wait } from './sync/github.mjs'
 import { sync, WATCH_INTERVAL_MS } from './sync/run.mjs'
 
 const args = new Set(process.argv.slice(2))
 const fullSync = await fullSyncSettings(process.env.FULL_SYNC_PASSWORD, ORG)
+// What the page checks the managers' password against, for the annual review: none without MANAGER_PASSWORD.
+const manager = await managerCheck(process.env.MANAGER_PASSWORD, ORG)
 const { full, refused } = await chooseFullSync({
   commandLine: args.has('--full'),
   requested: process.env.FULL_SYNC === 'true',
@@ -27,8 +30,8 @@ if (refused) {
   console.warn('full sync refused: no valid proof of the full sync password, incremental sync instead')
 }
 
-await sync({ full, fullSync: fullSync?.published, refused })
+await sync({ full, fullSync: fullSync?.published, refused, manager })
 while (args.has('--watch')) {
   await wait(WATCH_INTERVAL_MS)
-  await sync({ full: false, fullSync: fullSync?.published }).catch((error) => console.error(error))
+  await sync({ full: false, fullSync: fullSync?.published, manager }).catch((error) => console.error(error))
 }

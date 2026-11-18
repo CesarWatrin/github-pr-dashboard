@@ -133,6 +133,8 @@ interface Stats {
   fullSyncRefused?: boolean
   // The key of the year in review (RETRO_KEY), for the link of the sidebar: whoever sees the dashboard may share it.
   retroKey?: string
+  // What the page checks the managers' password against (MANAGER_PASSWORD), which opens the annual review.
+  manager?: FullSyncCheck
   requiredApprovals: number
   squads?: Squad[]
   people: Record<string, string>

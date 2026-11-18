@@ -30,7 +30,8 @@
      workflow and Paris day) since `ciStart` (GitHub forgets runs after about 13 months: they go back to when the
      snapshot started keeping them), `firstPullRequests` (when each person of the records opened their first pull
      request in the organization, for seniority) and `monthly` (each person's monthly figures since the first sync, for
-     the badges, with `monthlyRevision`: how they were counted).
+     the badges, with `monthlyRevision`: how they were counted). With `MANAGER_PASSWORD`, `manager`: `{ salt, iterations,
+     verifier }`, what the page checks the managers' password against (`site/domain/manager.js`).
    - `retro.enc.json`: the year in review (`scripts/sync/retro.mjs`), apart: only what its slides show, for the
      people of `RETRO_YEAR` still in the team, each squad (its members of the year) and the team, gzipped then encrypted
      with AES-256-GCM and the key `RETRO_KEY` itself, which its link carries after the `#`; none without it. The stats
@@ -65,6 +66,7 @@ deploy to: no workflow of another branch can read them.
 | `DISPATCH_TOKEN` | `.env`, secret | Fine-grained token, this repository only, Actions read and write: the sync button of the page |
 | `DISPATCH_REPOSITORY` | `.env` | `owner/repo` of the dashboard, for `DISPATCH_TOKEN` outside CI |
 | `FULL_SYNC_PASSWORD` | `.env`, secret | Password of the full sync started from the page, apart from `DASHBOARD_PASSWORD` (optional: without it, no password asked) |
+| `MANAGER_PASSWORD` | `.env`, secret | Password of the managers, apart from `DASHBOARD_PASSWORD`: it opens the annual review (optional: without it, no review) |
 | `RETRO_KEY` | `.env`, secret | Key of the year in review, 32 random bytes in base64url: its link carries it (optional: without it, no year in review) |
 | `FULL_SYNC` / `--full` | workflow input / CLI | Full sync instead of an incremental one; the input needs a valid `FULL_SYNC_PROOF` once `FULL_SYNC_PASSWORD` is set, `--full` never does |
 | `FULL_SYNC_PROOF` | workflow input `proof` | Proof of the full sync password, signed by the page: `at.hex(HMAC-SHA256(key, "full-sync:" + repository + ":" + at))`, good for 2 hours |

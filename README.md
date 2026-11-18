@@ -15,7 +15,7 @@ Le dashboard est découpé en pages, dans une barre latérale. Sous 1280 px, une
 la synchro, et son bouton menu ouvre la barre latérale par-dessus la page, sans défilement horizontal. La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
 une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1535 px, elles restent collées en haut de
-la fenêtre. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
+la fenêtre. Dès que la page a défilé d'un écran, un bouton rond en bas à droite remonte en haut. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
 les PR ouvertes par ses membres, et ce qui s'y passe (qui les relit, leurs délais, leurs mises en prod). La CI reste
 celle de toute l'organisation, une exécution ne se rattachant à aucune squad, et le compteur du jour, qui ne se
 découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, les AC,
@@ -231,9 +231,26 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   efface les exécutions de CI au bout d'environ 13 mois : la CI ne remonte qu'à celles que la synchro a déjà lues, et
   s'allonge avec le temps jusqu'à 36 mois ; une période qui commence avant le dit.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
+- **Performance annuelle**, réservée aux managers : son lien, la dernière des pages de la barre latérale, porte un cadenas, fermé tant
+  que le mot de passe des managers (`MANAGER_PASSWORD`) n'a pas été saisi sur l'appareil, ouvert pendant les 30 jours où
+  il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets. En haut,
+  les niveaux de fin d'année (performance exceptionnelle, au-dessus des attentes, conforme aux attentes, en dessous des
+  attentes ; les chefs de squad à
+  part, jugés aussi sur le résultat de leur squad ; ceux qui ont trop peu de recul, sans recommandation), puis si les
+  écarts entre personnes sont réels, le classement et les squads. Un clic sur un nom ouvre son dossier dans une
+  fenêtre : une note globale et quatre notes de 0 à 100 (productivité, efficacité,
+  collaboration, importance), ses points forts et ses points à travailler, sa livraison et ses reviews mois par mois,
+  son poids dans l'équipe et son rythme de travail (part de l'activité entre 9 h et 18 h en semaine, jours ouvrés
+  actifs, heure par heure de la semaine). Chacun y figure avec sa stack (front, back, mobile, full-stack, comme sur la page
+  Équipe), et les membres de la TMA sont marqués : TMA à partir de 50 % de hotfix, TMA partielle de 30 à 50 %. La
+  productivité ne se compare qu'entre devs de la même catégorie, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
+  unité), et la TMA compte ses hotfix. Un test statistique dit si les écarts entre personnes dépassent le hasard d'un
+  mois à l'autre, et chaque moyenne a son intervalle de confiance. La page explique en bas, dans un encart replié, comment se lisent ses notes et ses limites : GitHub ne voit ni la difficulté
+  d'un sujet, ni l'aide à l'oral, ni les réunions. Le mot de passe cache la page, pas les données : elle se calcule
+  dans le navigateur à partir des PR que tout le dashboard montre.
 
 Chaque page a son adresse (`#/a-debloquer`, `#/mes-pr`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
-`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`) : les liens se partagent.
+`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`, `#/performance`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
@@ -265,6 +282,11 @@ pour un visiteur comme pour un robot.
   renvoyé vers la Rétrospective depuis l'adresse du tableau de bord : l'équipe ne voit qu'elle, jamais l'écran du mot
   de passe. Celui-ci ne s'affiche qu'à un navigateur qui a déjà déverrouillé le tableau de bord une fois, même
   reverrouillé depuis, ou qui n'a jamais ouvert la Rétrospective.
+- La Performance annuelle s'ouvre avec un mot de passe à part, celui des managers (`MANAGER_PASSWORD`, dans le `.env` et
+  les secrets de l'environnement `github-pages`) : les stats ne portent qu'un condensé de la clé qui en est dérivée
+  (PBKDF2-SHA256, 600 000 itérations, avec son propre sel), et le navigateur ne garde que ce condensé, 30 jours. Sans
+  `MANAGER_PASSWORD`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
+  bord lit les mêmes PR.
 - Une fois le mot de passe accepté, la page demande au navigateur de l'enregistrer sous le nom « Stats PR » (Chrome
   et Edge ; les autres navigateurs le proposent selon leurs propres règles). Le gestionnaire de mots de passe le
   remplit ensuite tout seul. Un Chrome géré par une organisation peut avoir l'enregistrement désactivé (règle
@@ -435,6 +457,8 @@ Prérequis :
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
    - `RETRO_KEY` (facultatif) : la clé de la Rétrospective, 32 octets aléatoires en base64url, voir « Accès protégé » ;
      sans elle, pas de Rétrospective.
+   - `MANAGER_PASSWORD` (facultatif) : le mot de passe des managers, qui ouvre la Performance annuelle ; sans lui, pas de
+     Performance annuelle.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types
@@ -443,5 +467,5 @@ protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
 `REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
-`RETRO_KEY`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
+`RETRO_KEY`, `MANAGER_PASSWORD`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
 l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en CI).

@@ -11,13 +11,13 @@ import { LANGUAGE_STORAGE_KEY } from '../../site/lib/i18n.js'
 import { ROUTES } from '../../site/model/routes.js'
 import { madeUpStats } from '../fixtures/stats.mjs'
 import { browserPath, launch } from './chrome.mjs'
-import { serveSite, TEST_PASSWORD, TEST_RETRO_KEY } from './site.mjs'
+import { serveSite, TEST_MANAGER_PASSWORD, TEST_PASSWORD, TEST_RETRO_KEY } from './site.mjs'
 
 const stats = madeUpStats()
 // The containers that stay empty on purpose: until the report or a list of « Mes PR » is copied, the chart of a person's report, its data and
 // the projects of a month until one is picked, the pairs that replace the review matrix on a narrow screen only, the note of a CI that starts
-// after the period (none over 12 months).
-const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-list-copied', 'data-report-chart', 'data-report-chart-table', 'data-report-chart-projects-title', 'data-report-chart-projects', 'data-collaboration-pairs', 'data-ci-cut'])
+// after the period (none over 12 months), the error of the managers' password until a wrong one is typed.
+const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-list-copied', 'data-report-chart', 'data-report-chart-table', 'data-report-chart-projects-title', 'data-report-chart-projects', 'data-collaboration-pairs', 'data-ci-cut', 'data-review-error'])
 
 const skip = !browserPath() && !process.env.CI && 'Chrome not found: set CHROME_PATH'
 // Where a test stops the clock of the page, in the session of the tab: it holds across reloads.
@@ -166,6 +166,32 @@ for (const language of ['fr', 'en']) {
       await page.evaluate(`document.querySelector('.nav').style.paddingRight = '16px'`)
       assert.equal(await page.evaluate(fits), true)
       await page.evaluate(`document.querySelector('.nav').style.paddingRight = ''`)
+    })
+
+    test('the annual review asks for the managers’ password, refuses a wrong one, then opens, its padlock open', async () => {
+      await show('review')
+      const link = `document.querySelector('[data-review-link]')`
+      assert.equal(await page.evaluate(`!${link}.hidden && !${link}.classList.contains('is-unlocked')`), true)
+      assert.equal(await page.evaluate(`!document.querySelector('[data-review-gate]').hidden && document.querySelector('[data-review-content]').hidden`), true)
+      const submit = (password) =>
+        page.evaluate(`(() => {
+          document.querySelector('[data-review-password]').value = ${JSON.stringify(password)}
+          document.querySelector('[data-review-form]').requestSubmit()
+        })()`)
+      await submit('not-the-password')
+      await page.waitFor(`document.querySelector('[data-review-error]').textContent !== ''`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-review-content]').hidden`), true)
+      await submit(TEST_MANAGER_PASSWORD)
+      await page.waitFor(`!document.querySelector('[data-review-content]').hidden && ${link}.classList.contains('is-unlocked')`)
+      // A name of the ranking opens its dossier in a dialog; the backdrop closes it.
+      await page.evaluate(`document.querySelector('[data-review-table] .review-name').click()`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-review-dialog]').open && document.querySelectorAll('[data-review-dialog] .review-mark').length === 4`), true)
+      await noteFrench('review dossier', '[data-review-dialog]')
+      await page.evaluate(`document.querySelector('[data-review-dialog]').click()`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-review-dialog]').open`), false)
+      // Remembered for 30 days on this browser: a reload keeps it open.
+      const until = await page.evaluate(`JSON.parse(localStorage.getItem('github-pr-dashboard:manager')).until - Date.now()`)
+      assert.ok(until > 29 * 86_400_000 && until <= 30 * 86_400_000)
     })
 
     for (const [route, { title }] of Object.entries(ROUTES)) {

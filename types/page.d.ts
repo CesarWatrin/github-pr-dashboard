@@ -97,4 +97,7 @@ interface State {
   // How many open pull requests of their own, drafts included.
   meOwn: number
   fetchFailed: boolean
+  // The annual review, worked out once per stats; until when this browser opens it (the managers' password).
+  reviewCache: { stats: Stats; review: import('../site/domain/review.js').TeamReview } | null
+  managerUntil: number
 }

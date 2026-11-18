@@ -19,6 +19,7 @@ import { ACTIVITY_SERIES, setupOverview } from './pages/overview/overview.js'
 import { AC_OVERVIEW_SERIES, PROJECT_SERIES } from './pages/overview/projects.js'
 import { setupProjects } from './pages/projects/projects.js'
 import { setupReport } from './pages/report.js'
+import { setupReview } from './pages/review/review.js'
 import { REPORT_CHART_SERIES } from './pages/report/chart.js'
 import { setupReviewers } from './pages/reviewers.js'
 import { SQUAD_TYPES } from './pages/squads/charts.js'
@@ -30,6 +31,7 @@ import { renderLanguageToggle, setupLanguage } from './shell/language.js'
 import { render, setupResize } from './shell/render.js'
 import { renderRoute, setupNavigation } from './shell/router.js'
 import { setupRetroLink } from './shell/retro-link.js'
+import { setupScrollTop } from './shell/scroll-top.js'
 import { refresh, setupSession, showDashboard, showLock } from './shell/session.js'
 import { refreshClock, setupSync } from './shell/sync.js'
 import { registerTables, renderTableLegends } from './shell/tables.js'
@@ -68,6 +70,7 @@ setupSquads()
 setupProjects()
 setupReviewers()
 setupReport()
+setupReview({ render: () => render(false) })
 setupMe()
 setupReplay()
 setupOverview()
@@ -76,6 +79,7 @@ setupPersonDialog()
 setupRepositoryDialog()
 setupPullRequestDialog()
 setupResize()
+setupScrollTop()
 for (const name of repoFilterNames()) {
   setupRepoFilter(name)
 }

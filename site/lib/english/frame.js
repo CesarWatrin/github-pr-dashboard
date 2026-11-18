@@ -307,4 +307,5 @@ export const FRAME = {
   'Rétro {year}': 'Retro {year}',
   'S’ouvre dans un nouvel onglet': 'Opens in a new tab',
   'Copier le lien public': 'Copy the public link',
+  'Remonter en haut': 'Back to top',
 }

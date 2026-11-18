@@ -103,6 +103,8 @@ export const state = {
   forMe: null,
   meOwn: 0,
   fetchFailed: false,
+  reviewCache: null,
+  managerUntil: readStoredManager(),
 }
 
 /** @returns {string} */
@@ -205,6 +207,53 @@ export function storeNotify() {
     }
   } catch {
     // Without storage, notifications are turned on again on the next visit.
+  }
+}
+
+// Until when this browser opens the annual review, in milliseconds, for the verifier of the managers' password it was
+// opened with: a new password locks it again.
+const MANAGER_STORAGE_KEY = 'github-pr-dashboard:manager'
+export const MANAGER_UNLOCK_DAYS = 30
+
+/** @returns {{ verifier: string, until: number } | null} */
+function readManager() {
+  try {
+    /** @type {{ verifier?: unknown, until?: unknown } | null} */
+    const stored = JSON.parse(String(localStorage.getItem(MANAGER_STORAGE_KEY)))
+
+    return typeof stored?.verifier === 'string' && typeof stored.until === 'number' ? { verifier: stored.verifier, until: stored.until } : null
+  } catch {
+    return null
+  }
+}
+
+/** @returns {number} */
+function readStoredManager() {
+  return readManager()?.until ?? 0
+}
+
+// Whether this browser opens the annual review: the managers' password typed here within MANAGER_UNLOCK_DAYS, the very
+// one the stats check.
+export function managerUnlocked() {
+  const stored = readManager()
+
+  const verifier = state.stats?.manager?.verifier
+
+  return typeof verifier === 'string' && stored?.verifier === verifier && stored.until > Date.now()
+}
+
+// Remembers the managers' password as typed in this browser, never the password itself: the verifier it matched.
+/** @param {string | null} verifier null to lock the review again */
+export function storeManager(verifier) {
+  state.managerUntil = verifier ? Date.now() + MANAGER_UNLOCK_DAYS * 86_400_000 : 0
+  try {
+    if (verifier) {
+      localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify({ verifier, until: state.managerUntil }))
+    } else {
+      localStorage.removeItem(MANAGER_STORAGE_KEY)
+    }
+  } catch {
+    // Without storage, the review asks for the password again on the next visit.
   }
 }
 
