@@ -1,5 +1,5 @@
 // The four marks of each person of the annual review, from 0 to 100, as ranks among the people evaluated: productivity
-// (among those of the same profile), efficiency, collaboration and importance; the overall mark, a head of squad also
+// (against those of a comparable work, comparisonOf()), efficiency, collaboration and importance; the overall mark, a head of squad also
 // judged on the results of their squad; and the level that follows.
 
 import { median } from '../math.js'
@@ -13,6 +13,11 @@ export const OWNER_SHARE = 0.4
 export const OWNER_MIN_CODE = 10
 // How many of the authors a person reviews the most count for how focused their reviews are.
 export const REVIEWED_MOST = 3
+// Whom productivity compares a person with: the people of the TMA among themselves, everyone else together. Those partly
+// in the TMA deliver code as the others do, in units of work, and are too few to rank among themselves.
+/** @typedef {'TMA' | 'code'} Comparison */
+/** @type {(profile: import('./figures.js').Profile) => Comparison} */
+export const comparisonOf = (profile) => (profile === 'TMA' ? 'TMA' : 'code')
 // A share of pull requests merged without any review from which the level stays at « meets expectations » at most.
 export const UNREVIEWED_LIMIT = 0.25
 // The overall marks from which a person's level is exceptional, above or meeting expectations; below them, under.
@@ -84,17 +89,18 @@ export function scorePeople(evaluated, { tallies, current }) {
     }
   })
 
-  // Productivity, among those of the same profile: what they deliver a month, then how many pull requests they merge.
+  // Productivity, among those compared with them (comparisonOf()): what they deliver a month, then how many pull requests
+  // they merge.
   /** @type {Map<string, { delivered: number, units: number, hotfixes: number, count: number }>} */
   const profiles = new Map()
   /** @type {Map<object, number>} */
   const productivity = new Map()
   /** @type {Map<object, 'above' | 'below' | 'within'>} */
   const standing = new Map()
-  for (const profile of new Set(people.map((person) => person.profile))) {
-    const group = people.filter((person) => person.profile === profile)
+  for (const comparison of new Set(people.map((person) => comparisonOf(person.profile)))) {
+    const group = people.filter((person) => comparisonOf(person.profile) === comparison)
     const delivered = /** @type {number} */ (median(group.map((person) => person.deliveredMean)))
-    profiles.set(profile, {
+    profiles.set(comparison, {
       delivered,
       units: /** @type {number} */ (median(group.map((person) => person.unitsMean))),
       hotfixes: /** @type {number} */ (median(group.map((person) => person.hotfixesMean))),
@@ -138,8 +144,9 @@ export function scorePeople(evaluated, { tallies, current }) {
     profiles: Object.fromEntries(profiles),
     people: people.map((person) => ({
       ...person,
+      comparison: comparisonOf(person.profile),
       standing: /** @type {'above' | 'below' | 'within'} */ (standing.get(person)),
-      deliveredVsProfile: person.deliveredMean / (/** @type {{ delivered: number }} */ (profiles.get(person.profile)).delivered || 1),
+      deliveredVsProfile: person.deliveredMean / (/** @type {{ delivered: number }} */ (profiles.get(comparisonOf(person.profile))).delivered || 1),
       marks: {
         productivity: /** @type {number} */ (productivity.get(person)),
         efficiency: weigh(efficiency, person),

@@ -83,13 +83,13 @@ export function notesOf(person, team, { requiredApprovals, profile, squad }) {
     weaknesses.push({ key: 'presence', values: { share: person.presence, days: person.activeDays, available: person.availableDays } })
   }
   if (person.standing === 'above') {
-    strengths.push({ key: 'delivers', values: { profile: person.profile, times: person.deliveredVsProfile } })
+    strengths.push({ key: 'delivers', values: { profile: person.comparison, times: person.deliveredVsProfile } })
   }
   if (person.standing === 'below') {
     weaknesses.push(
       tma
         ? { key: 'fewHotfixes', values: { mine: person.hotfixesMean, profile: profile.hotfixes } }
-        : { key: 'delivery', values: { profile: person.profile, share: person.deliveredVsProfile } },
+        : { key: 'delivery', values: { profile: person.comparison, share: person.deliveredVsProfile } },
     )
   }
   if (person.reviewsInterval[0] > team.reviewsMean * L.pillar) {

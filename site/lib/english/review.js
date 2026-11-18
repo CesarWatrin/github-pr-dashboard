@@ -31,6 +31,7 @@ export const REVIEW = {
   'Trop peu de recul': 'Too new to judge',
   'Arrivée récente ou activité de code marginale : pas de niveau.': 'Recent arrival or little code: no level.',
   'hors TMA': 'outside maintenance',
+  'qui ne sont pas en TMA': 'outside maintenance',
   'TMA partielle': 'partly maintenance',
   'au-dessus des devs comparables': 'above comparable devs',
   'en dessous des devs comparables': 'below comparable devs',
@@ -42,8 +43,8 @@ export const REVIEW = {
     'Fewer hotfixes delivered than the other maintenance devs ({mine} a month against {profile}), a statistically sound gap.',
   'Livre moins que la médiane des devs {profile} ({share} de la médiane), un écart statistiquement solide.':
     'Delivers less than the median of devs {profile} ({share} of the median), a statistically sound gap.',
-  'Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. La productivité ne se compare qu’entre devs de la même catégorie : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.':
-    'Stack and maintenance. The stack (front, back, mobile, full-stack) reads as on the Team page. By the share of hotfixes in their code PRs, each person is TMA from 50%, partly maintenance from 30 to 50%, outside maintenance below. Productivity is only compared among devs of the same kind: a 5-line hotfix does not weigh like a 400-line feature.',
+  'Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. La productivité des devs TMA se compare entre eux, celle de tous les autres ensemble, TMA partielle comprise : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.':
+    'Stack and maintenance. The stack (front, back, mobile, full-stack) reads as on the Team page. By the share of hotfixes in their code PRs, each person is TMA from 50%, partly maintenance from 30 to 50%, outside maintenance below. The productivity of maintenance devs is compared among themselves, that of all the others together, partly maintenance included: a 5-line hotfix does not weigh like a 400-line feature.',
   'Bien au-delà des attentes': 'Well above expectations',
   'Haut niveau sur la livraison, la review et le poids dans l’équipe.': 'High marks on delivery, review and weight in the team.',
   'Au-dessus des attentes': 'Above expectations',

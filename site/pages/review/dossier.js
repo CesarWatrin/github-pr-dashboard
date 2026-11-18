@@ -9,7 +9,7 @@ import { el } from '../../ui/dom.js'
 import { effortBar } from '../../ui/effort.js'
 import { personLink } from '../../ui/links.js'
 import { monthChart, weekChart } from './charts.js'
-import { GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
+import { COMPARISON_LABELS, GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
 /** @typedef {import('../../domain/review.js').TeamReview} TeamReview */
@@ -70,7 +70,7 @@ const clock = (hour) => `${Math.floor(hour)} h ${String(Math.round((hour % 1) * 
 export function dossier(person, review) {
   const group = groupOf(person)
   const team = review.team
-  const profile = review.profiles[person.profile]
+  const profile = review.profiles[person.comparison]
   const tma = person.profile === 'TMA'
   const since = seniority(person.login)
   const effort = effortSummary({ counts: person.effort, added: { projects: 0, tma: 0, acs: 0, rest: 0 } })
@@ -110,7 +110,7 @@ export function dossier(person, review) {
       person.marks.productivity,
       t('{delivered} par mois, médiane des devs {profile} : {median} · {standing}', {
         delivered: tma ? t('{count} hotfixes', { count: one(person.hotfixesMean) }) : t('{count} unités', { count: one(person.unitsMean) }),
-        profile: PROFILE_LABELS[person.profile],
+        profile: COMPARISON_LABELS[person.comparison],
         median: one(profile.delivered),
         standing: STANDINGS[person.standing],
       }),

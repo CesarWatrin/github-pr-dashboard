@@ -410,7 +410,7 @@ paths:
   lines; reviews; when they act in the week), their figures (`review/figures.js`: the months after their arrival, the
   profile from their share of hotfixes, `TMA_SHARE` and `MIXED_SHARE`, monthly means with a bootstrap interval, working
   days active, `workingDaysOf()` with the French public holidays), four marks as ranks (`review/scores.js`: productivity
-  within the profile, efficiency, collaboration, importance), the overall mark and recommendation (`overallOf()`: the
+  against `comparisonOf()`, the TMA among themselves and everyone else together, efficiency, collaboration, importance), the overall mark and recommendation (`overallOf()`: the
   head of a squad judged for a quarter on `squadResults()`; `UNREVIEWED_LIMIT` caps the level at « meets expectations »), the notes
   (`review/notes.js`, their sentences in `pages/review/words.js`), and whether people differ (`kruskalWallis()`,
   `intraclassCorrelation()` of `review/statistics.js`). People without `MIN_MONTHS` and `MIN_CODE` are listed apart.
