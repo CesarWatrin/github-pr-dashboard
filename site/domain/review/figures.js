@@ -105,6 +105,9 @@ export function personFigures(tally, { months, first, last }) {
     commentsPerReview: tally.reviewed ? tally.reviewComments / tally.reviewed : 0,
     silentShare: tally.approvals ? tally.silentApprovals / tally.approvals : null,
     changesRequested: tally.changesRequested,
+    // The share of the pull requests they reviewed on which they left a remark or asked for changes.
+    remarkedShare: tally.reviewed ? tally.remarked / tally.reviewed : 0,
+    remarked: tally.remarked,
     reviewHours: median(tally.reviewHours),
     mergesOfOthers: tally.mergesOfOthers,
     availableDays,

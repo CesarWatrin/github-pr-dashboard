@@ -20,7 +20,7 @@ export const workUnits = (lines) => Math.log2(1 + Math.max(0, lines)) / Math.log
  *   failed: number, hotfixes: number, mergeHours: number[], hotfixMergeHours: number[], firstReviewHours: number[],
  *   sizes: number[], added: number, deleted: number, categories: Record<string, number>, repos: Record<string, number>,
  *   projects: Set<string>, acs: Set<string>, effort: EffortCounts, reviewed: number, reviewComments: number,
- *   approvals: number, silentApprovals: number, changesRequested: number, reviewHours: number[], mergesOfOthers: number,
+ *   approvals: number, silentApprovals: number, changesRequested: number, remarked: number, reviewHours: number[], mergesOfOthers: number,
  *   reviewedAuthors: Record<string, number>, grid: number[][], days: Set<string>,
  * }} PersonTally
  */
@@ -55,6 +55,7 @@ const blank = (login, months) => ({
   approvals: 0,
   silentApprovals: 0,
   changesRequested: 0,
+  remarked: 0,
   reviewHours: [],
   mergesOfOthers: 0,
   reviewedAuthors: {},
@@ -196,8 +197,13 @@ export function reviewTallies(records, months, repositories) {
           reviewer.silentApprovals++
         }
       }
-      if (interventions.some(([, , stance]) => stance === 'CHANGES_REQUESTED')) {
+      const changes = interventions.some(([, , stance]) => stance === 'CHANGES_REQUESTED')
+      if (changes) {
         reviewer.changesRequested++
+      }
+      // A remark asks for a change as « Request changes » does: the team asks for its changes either way.
+      if (changes || comments > 0) {
+        reviewer.remarked++
       }
     }
   }

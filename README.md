@@ -230,7 +230,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   efface les exécutions de CI au bout d'environ 13 mois : la CI ne remonte qu'à celles que la synchro a déjà lues, et
   s'allonge avec le temps jusqu'à 36 mois ; une période qui commence avant le dit.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
-- **Revue annuelle**, réservée aux managers : son lien, la dernière des pages de la barre latérale, porte un cadenas, fermé tant
+- **Performance annuelle**, réservée aux managers : son lien, la dernière des pages de la barre latérale, porte un cadenas, fermé tant
   que le mot de passe des managers (`MANAGER_PASSWORD`) n'a pas été saisi sur l'appareil, ouvert pendant les 30 jours où
   il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets. En haut,
   les niveaux de fin d'année (performance exceptionnelle, au-dessus des attentes, conforme aux attentes, en dessous des
@@ -249,7 +249,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   dans le navigateur à partir des PR que tout le dashboard montre.
 
 Chaque page a son adresse (`#/a-debloquer`, `#/mes-pr`, `#/bilan`, `#/auteurs`, `#/relecteurs`, `#/cycle`, `#/collaboration`,
-`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`, `#/revue`) : les liens se partagent.
+`#/equipe`, `#/palmares`, `#/depots`, `#/effort`, `#/tma`, `#/devops`, `#/methode`, `#/performance`) : les liens se partagent.
 
 Une page restée ouverte se recharge d'elle-même après un nouveau déploiement. Le bouton en haut à droite bascule
 entre mode clair et mode sombre (par défaut, celui du système), et le choix est retenu par le navigateur.
@@ -281,7 +281,7 @@ pour un visiteur comme pour un robot.
   renvoyé vers la Rétrospective depuis l'adresse du tableau de bord : l'équipe ne voit qu'elle, jamais l'écran du mot
   de passe. Celui-ci ne s'affiche qu'à un navigateur qui a déjà déverrouillé le tableau de bord une fois, même
   reverrouillé depuis, ou qui n'a jamais ouvert la Rétrospective.
-- La Revue annuelle s'ouvre avec un mot de passe à part, celui des managers (`MANAGER_PASSWORD`, dans le `.env` et
+- La Performance annuelle s'ouvre avec un mot de passe à part, celui des managers (`MANAGER_PASSWORD`, dans le `.env` et
   les secrets de l'environnement `github-pages`) : les stats ne portent qu'un condensé de la clé qui en est dérivée
   (PBKDF2-SHA256, 600 000 itérations, avec son propre sel), et le navigateur ne garde que ce condensé, 30 jours. Sans
   `MANAGER_PASSWORD`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
@@ -456,8 +456,8 @@ Prérequis :
    - `FULL_SYNC_PASSWORD` (facultatif) : le mot de passe de la synchro complète, voir « Bouton de synchro ».
    - `RETRO_KEY` (facultatif) : la clé de la Rétrospective, 32 octets aléatoires en base64url, voir « Accès protégé » ;
      sans elle, pas de Rétrospective.
-   - `MANAGER_PASSWORD` (facultatif) : le mot de passe des managers, qui ouvre la Revue annuelle ; sans lui, pas de
-     Revue annuelle.
+   - `MANAGER_PASSWORD` (facultatif) : le mot de passe des managers, qui ouvre la Performance annuelle ; sans lui, pas de
+     Performance annuelle.
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types

@@ -130,6 +130,10 @@ describe('what each person did over the months', () => {
     assert.equal(bob.reviewed, 1)
     assert.equal(alice.reviewed, 1)
     assert.equal(alice.changesRequested, 1)
+    // Alice asked for changes, bob left two remarks, carol approved without a word.
+    assert.equal(alice.remarked, 1)
+    assert.equal(bob.remarked, 1)
+    assert.equal(carol.remarked, 0)
     assert.equal(alice.reviewComments, 3)
     assert.equal(carol.silentApprovals, 1)
     assert.equal(reviewPairs, 3)
@@ -187,7 +191,7 @@ describe('the overall mark and the recommendation', () => {
 })
 
 describe('the notes of a person', () => {
-  const team = { mergeHours: 4, hotfixMergeHours: 2, firstReviewHours: 1, reviewHours: 2, reviewsMean: 30, commentsPerReview: 1, size: 100, closedShare: 0.05, variation: 0.5, work: 0.95 }
+  const team = { mergeHours: 4, hotfixMergeHours: 2, firstReviewHours: 1, reviewHours: 2, reviewsMean: 30, commentsPerReview: 1, remarkedShare: 0.3, size: 100, closedShare: 0.05, variation: 0.5, work: 0.95 }
   const base = {
     profile: 'Build',
     standing: 'within',
@@ -213,7 +217,7 @@ describe('the notes of a person', () => {
     reviewHours: 2,
     reviewFocus: 0.3,
     reviewedMost: [{ login: 'ann', share: 0.1 }],
-    changesRequested: 5,
+    remarkedShare: 0.3,
     presence: 0.9,
     activeDays: 200,
     availableDays: 220,
@@ -235,11 +239,11 @@ describe('the notes of a person', () => {
     assert.deepEqual(keys({ rhythm: { work: 0.8, edges: 0.05, night: 0.05, weekend: 0.1 } }).weaknesses, ['offHours'])
   })
 
-  test('reviews focused on a few people, or that never ask for changes, are to work on', () => {
+  test('reviews focused on a few people, or that almost never leave a remark nor ask for changes, are to work on', () => {
     assert.deepEqual(keys({ reviewFocus: 0.6 }).weaknesses, ['focused'])
-    assert.deepEqual(keys({ changesRequested: 0 }).weaknesses, ['noChanges'])
+    assert.deepEqual(keys({ remarkedShare: 0.02 }).weaknesses, ['fewRemarks'])
     // Too few reviews to say so.
-    assert.deepEqual(keys({ changesRequested: 0, reviewed: 60 }).weaknesses, [])
+    assert.deepEqual(keys({ remarkedShare: 0, reviewed: 30 }).weaknesses, [])
   })
 
   test('a person of the TMA is said to deliver too few hotfixes, not too little code', () => {

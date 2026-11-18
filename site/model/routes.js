@@ -51,8 +51,8 @@ export const ROUTES = {
   tma: { hash: '#/tma', title: t('TMA'), subtitle: t('Les hotfix, ouverts depuis une branche hotfix/*, et qui les fait') },
   devops: { hash: '#/devops', title: t('DevOps'), subtitle: t('Mises en production, intégration continue et mises à jour de dépendances') },
   review: {
-    hash: '#/revue',
-    title: t('Revue annuelle'),
+    hash: '#/performance',
+    title: t('Performance annuelle'),
     subtitle: t('Chaque développeur sur les 12 derniers mois complets, et la recommandation de fin d’année'),
     filters: false,
   },

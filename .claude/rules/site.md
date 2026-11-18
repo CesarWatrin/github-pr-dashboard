@@ -396,7 +396,7 @@ paths:
   Space to pause, Escape back to the picker then out; it pauses when the tab hides. The team's story never ranks people.
   The address says whose and which year (`state.wrappedFor`, `wrappedTeam`, `wrappedYear`): « Copier le lien » on the last
   slide gives it, and it opens behind the password like any address. A story keeps playing when new stats come in.
-- **Annual review** (« Revue annuelle », `pages/review/`, `#/revue`, `filters: false`), the one page that ranks people
+- **Annual performance** (« Performance annuelle », `pages/review/`, `#/performance`, `filters: false`), the one page that ranks people
   and scores them, for the managers only: its link, the last of the pages of the sidebar (`[data-review-link]`), shows
   once the stats carry `manager` (`MANAGER_PASSWORD`), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
   of `model/state.js`: the managers' password typed on this browser within `MANAGER_UNLOCK_DAYS` (30), checked by

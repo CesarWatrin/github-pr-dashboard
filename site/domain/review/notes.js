@@ -19,6 +19,7 @@ export function teamMedians(people) {
     reviewHours: of((person) => person.reviewHours),
     reviewsMean: of((person) => person.reviewsMean),
     commentsPerReview: of((person) => person.commentsPerReview),
+    remarkedShare: of((person) => person.remarkedShare),
     size: of((person) => person.size),
     closedShare: of((person) => person.closedShare),
     variation: of((person) => person.variation),
@@ -53,8 +54,8 @@ export const NOTE_LIMITS = {
   calmWork: 0.97,
   // Reviews focused on a few people: their three most reviewed authors take at least this share of them.
   focused: 0.5,
-  // Enough reviews to say that someone never asks for changes.
-  minForChanges: 100,
+  // Reviews that almost never leave a remark nor ask for changes.
+  fewRemarks: 0.05,
 }
 
 /**
@@ -108,8 +109,8 @@ export function notesOf(person, team, { requiredApprovals, profile, squad }) {
   if (person.reviewed >= L.minReviewed && person.reviewFocus >= L.focused) {
     weaknesses.push({ key: 'focused', values: { share: person.reviewFocus, logins: person.reviewedMost.map(({ login }) => login).join(',') } })
   }
-  if (person.reviewed >= L.minForChanges && person.changesRequested === 0) {
-    weaknesses.push({ key: 'noChanges', values: { reviewed: person.reviewed } })
+  if (person.reviewed >= L.minReviewed && person.remarkedShare < L.fewRemarks) {
+    weaknesses.push({ key: 'fewRemarks', values: { share: person.remarkedShare, reviewed: person.reviewed } })
   }
   if (person.owned.length >= L.owner) {
     weaknesses.push({ key: 'busFactor', values: { count: person.owned.length } })

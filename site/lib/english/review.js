@@ -5,7 +5,7 @@
 /** @type {Record<string, string>} */
 export const REVIEW = {
   // The route, the link of the sidebar and the markup of index.html.
-  'Revue annuelle': 'Annual review',
+  'Performance annuelle': 'Annual performance',
   'Chaque développeur sur les 12 derniers mois complets, et la recommandation de fin d’année':
     'Each developer over the last 12 whole months, and the year-end recommendation',
   'Accès réservé aux managers': 'Managers only',
@@ -196,8 +196,10 @@ export const REVIEW = {
     'The only go-to person for {count} repositories (at least 40% of their PRs): a risk if they are away, this knowledge should be shared.',
   'Relit surtout les mêmes personnes : {share} de ses reviews vont à {people}. Relire plus largement diffuse la connaissance du code.':
     'Reviews mostly the same people: {share} of their reviews go to {people}. Reviewing more widely spreads the knowledge of the code.',
-  'Aucune demande de changements sur {reviewed} PR relues : vérifier que ses reviews ne sont pas des validations de principe.':
-    'No changes requested on {reviewed} PRs reviewed: check that their reviews are more than a formality.',
+  'Presque aucun retour en review : {share} des {reviewed} PR relues portent une remarque ou une demande de changements. Vérifier que ses reviews ne sont pas des validations de principe.':
+    'Hardly any feedback in review: {share} of the {reviewed} PRs reviewed carry a remark or a change request. Check that their reviews are more than a formality.',
+  'Avec remarque ou changements demandés': 'With a remark or changes requested',
+  '{count} ({share})': '{count} ({share})',
   'Relit le plus : {people}.': 'Reviews the most: {people}.',
   'Référent de {repos} (au moins 40 % des PR).': 'Go-to person for {repos} (at least 40% of the PRs).',
   '{share} de ses PR sont mergées sans aucune review, alors que {approvals} approbations sont requises.':

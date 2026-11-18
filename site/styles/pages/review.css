@@ -1,4 +1,4 @@
-/* Revue annuelle (pages/review/): the managers' gate, the board of recommendations, the facts, the ranking, the squads
+/* Performance annuelle (pages/review/): the managers' gate, the board of recommendations, the facts, the ranking, the squads
    and a dossier per person. Each recommendation has its color, on bands and tints only: text keeps the text colors. */
 .review {
   display: grid;

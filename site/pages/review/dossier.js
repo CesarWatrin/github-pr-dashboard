@@ -202,7 +202,12 @@ export function dossier(person, review) {
           ...figure(t('Fermées sans merge'), formatShare(person.closedShare), { mine: person.closedShare, team: team.closedShare, format: formatShare }),
           ...figure(t('PR des autres relues'), t('{count} ({month} par mois)', { count: formatNumber(person.reviewed), month: formatNumber(Math.round(person.reviewsMean)) })),
           ...figure(t('Approbations sans commentaire'), formatShare(person.silentShare)),
-          ...figure(t('Changements demandés'), formatNumber(person.changesRequested)),
+          ...figure(t('Avec remarque ou changements demandés'), t('{count} ({share})', { count: formatNumber(person.remarked), share: formatShare(person.remarkedShare) }), {
+            mine: person.remarkedShare,
+            team: team.remarkedShare,
+            lowerIsBetter: false,
+            format: formatShare,
+          }),
           ...figure(t('Réactivité en review'), formatDuration(person.reviewHours), { mine: person.reviewHours, team: team.reviewHours, format: formatDuration }),
           ...figure(t('PR des autres mergées'), formatNumber(person.mergesOfOthers)),
         ),

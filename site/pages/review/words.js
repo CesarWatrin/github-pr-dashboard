@@ -54,8 +54,11 @@ const NOTES = {
       share: formatShare(Number(v.share)),
       people: String(v.logins).split(',').map(displayName).join(', '),
     }),
-  noChanges: (v) =>
-    t('Aucune demande de changements sur {reviewed} PR relues : vérifier que ses reviews ne sont pas des validations de principe.', { reviewed: formatNumber(Number(v.reviewed)) }),
+  fewRemarks: (v) =>
+    t('Presque aucun retour en review : {share} des {reviewed} PR relues portent une remarque ou une demande de changements. Vérifier que ses reviews ne sont pas des validations de principe.', {
+      share: formatShare(Number(v.share)),
+      reviewed: formatNumber(Number(v.reviewed)),
+    }),
   busFactor: (v) => t('Seul repère de {count} dépôts (au moins 40 % de leurs PR) : un risque en cas d’absence, ce savoir est à partager.', { count: Number(v.count) }),
   owner: (v) => t('Référent de {repos} (au moins 40 % des PR).', { repos: v.repos }),
   unreviewed: (v) => t('{share} de ses PR sont mergées sans aucune review, alors que {approvals} approbations sont requises.', { share: formatShare(Number(v.share)), approvals: Number(v.approvals) }),

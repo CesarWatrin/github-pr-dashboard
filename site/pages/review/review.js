@@ -1,4 +1,4 @@
-// Revue annuelle: each developer over the last twelve whole months (site/domain/review.js), for the managers only. The
+// Performance annuelle: each developer over the last twelve whole months (site/domain/review.js), for the managers only. The
 // page asks for their password (MANAGER_PASSWORD) and opens for 30 days on the browser it was typed in; its link, last
 // in the sidebar, shows a padlock open meanwhile. Then the recommendations, whether the gaps between people are real,
 // the ranking, the squads, a dossier per person, those too new to judge and how to read it all.
