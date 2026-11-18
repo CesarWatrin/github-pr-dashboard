@@ -5,19 +5,19 @@
   gap: 16px;
 }
 
-.is-priority {
+.is-exceptional {
   --verdict: var(--status-good);
 }
 
-.is-reward {
+.is-above {
   --verdict: var(--series-3);
 }
 
-.is-steady {
+.is-meets {
   --verdict: var(--series-1);
 }
 
-.is-support {
+.is-below {
   --verdict: var(--status-serious);
 }
 

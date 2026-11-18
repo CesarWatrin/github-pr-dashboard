@@ -7,15 +7,15 @@ export const REVIEW = {
   // The route, the link of the sidebar and the markup of index.html.
   'Performance annuelle': 'Annual performance',
   Performance: 'Performance',
-  'Chaque développeur sur les 12 derniers mois complets, et la recommandation de fin d’année':
-    'Each developer over the last 12 whole months, and the year-end recommendation',
+  'Chaque développeur sur les 12 derniers mois complets, et son niveau de l’année':
+    'Each developer over the last 12 whole months, and their level for the year',
   'Accès réservé aux managers': 'Managers only',
-  'Cette page classe chaque développeur et dit qui récompenser en fin d’année. Elle s’ouvre avec le mot de passe des managers, pour 30 jours sur cet appareil.':
-    'This page ranks each developer and says whom to reward at the end of the year. It opens with the managers’ password, for 30 days on this device.',
+  'Cette page fait le point sur la performance de chaque développeur sur l’année. Elle s’ouvre avec le mot de passe des managers, pour 30 jours sur cet appareil.':
+    'This page reviews the performance of each developer over the year. It opens with the managers’ password, for 30 days on this device.',
   'Mot de passe des managers': 'Managers’ password',
   Ouvrir: 'Open',
   'Mot de passe incorrect.': 'Wrong password.',
-  'Recommandations de fin d’année': 'Year-end recommendations',
+  'Niveaux de l’année': 'Levels of the year',
   'Les écarts de productivité sont-ils réels ?': 'Are the gaps in productivity real?',
   'Vue d’ensemble': 'Overview',
   'Un clic sur une colonne la trie. Les quatre notes vont de 0 à 100 : le rang de la personne dans l’équipe, 100 pour la meilleure (face aux devs de même catégorie pour la productivité).':
@@ -29,7 +29,7 @@ export const REVIEW = {
   // The board, the facts, the ranking and the squads.
   'Un clic sur un nom, ici ou dans le classement, ouvre son dossier.': 'Click a name, here or in the ranking, to open their file.',
   'Trop peu de recul': 'Too new to judge',
-  'Arrivée récente ou activité de code marginale : pas de recommandation.': 'Recent arrival or little code: no recommendation.',
+  'Arrivée récente ou activité de code marginale : pas de niveau.': 'Recent arrival or little code: no level.',
   'hors TMA': 'outside maintenance',
   'TMA partielle': 'partly maintenance',
   'au-dessus des devs comparables': 'above comparable devs',
@@ -77,7 +77,7 @@ export const REVIEW = {
   'Entre les {count} personnes {category} évaluées, p = {p}.': 'Among the {count} {category} people evaluated, p = {p}.',
   'de l’activité GitHub tombe entre 9 h et 18 h, du lundi au vendredi : les plus productifs livrent plus dans le même temps, pas en faisant des heures.':
     'of the activity on GitHub falls between 9:00 and 18:00, Monday to Friday: the most productive deliver more in the same time, not by working longer.',
-  Recommandation: 'Recommendation',
+  Niveau: 'Level',
   Note: 'Mark',
   Productivité: 'Productivity',
   Efficacité: 'Efficiency',
@@ -104,8 +104,8 @@ export const REVIEW = {
     'Working hours. Every delay only counts the hours from 9:00 to 18:00, Monday to Friday, Paris time. A day is 9 hours: “2.5 d” means two and a half working days, not calendar days. Active days count the working days, public holidays aside, on which the person did at least one thing on GitHub: a floor, as a day of meetings or specifications leaves no trace.',
   'Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, face aux devs de sa catégorie. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.':
     'The four marks are ranks from 0 to 100. Productivity: what the person delivers a month, against devs of the same kind. Efficiency: time to merge, abandoned PRs, merges without review, failed checks, regularity. Collaboration: PRs reviewed a month, comments, people who depend on their reviews, responsiveness. Importance: their share of the team’s code, reviews and maintenance, the repositories that rest on them, their projects and AC, the PRs of others they merge.',
-  'Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, aucune récompense n’est recommandée tant que ce n’est pas corrigé.':
-    'Overall mark: 35% productivity, 25% collaboration, 25% importance, 15% efficiency. For a head of squad, productivity only counts for 15%, efficiency for 10%, and the result of their squad for 25%. Beyond 25% of PRs merged without review, no reward is recommended until it is corrected.',
+  'Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, le niveau ne dépasse pas « conforme aux attentes » tant que ce n’est pas corrigé.':
+    'Overall mark: 35% productivity, 25% collaboration, 25% importance, 15% efficiency. For a head of squad, productivity only counts for 15%, efficiency for 10%, and the result of their squad for 25%. Beyond 25% of PRs merged without review, the level goes no higher than “meets expectations” until it is corrected.',
   'Niveau : performance exceptionnelle à partir de 72, au-dessus des attentes à partir de 58, conforme aux attentes à partir de 42, en dessous des attentes sous 42.':
     'Level: exceptional performance from 72, above expectations from 58, meets expectations from 42, below expectations under 42.',
   'Limites. GitHub ne voit ni la difficulté d’un sujet, ni l’aide donnée à l’oral, ni les spécifications, l’astreinte ou les réunions. Cette page objective et prépare les entretiens, elle ne remplace pas l’avis des chefs de squad.':

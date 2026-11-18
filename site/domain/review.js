@@ -1,5 +1,5 @@
 // The annual review of the team: over the last twelve whole months, each person still in the team with enough activity
-// gets their figures, four marks, an overall mark and a recommendation for the end of the year, with their strengths and
+// gets their figures, four marks, an overall mark and a level for the end of the year, with their strengths and
 // what to work on; the others are listed apart. Whether the people differ more than chance would make them is tested
 // too. Pure: the page works it out from the records. Its parts live in review/.
 

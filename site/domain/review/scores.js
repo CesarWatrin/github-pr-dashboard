@@ -1,6 +1,6 @@
 // The four marks of each person of the annual review, from 0 to 100, as ranks among the people evaluated: productivity
 // (among those of the same profile), efficiency, collaboration and importance; the overall mark, a head of squad also
-// judged on the results of their squad; and the recommendation that follows.
+// judged on the results of their squad; and the level that follows.
 
 import { median } from '../math.js'
 import { mean, rankShares } from './statistics.js'
@@ -13,17 +13,17 @@ export const OWNER_SHARE = 0.4
 export const OWNER_MIN_CODE = 10
 // How many of the authors a person reviews the most count for how focused their reviews are.
 export const REVIEWED_MOST = 3
-// A share of pull requests merged without any review from which no reward is recommended until it is mended.
+// A share of pull requests merged without any review from which the level stays at « meets expectations » at most.
 export const UNREVIEWED_LIMIT = 0.25
-// The overall marks from which a reward is recommended, a priority one, or under which the person needs support.
-export const PRIORITY_FROM = 72
-export const REWARD_FROM = 58
-export const SUPPORT_UNDER = 42
+// The overall marks from which a person's level is exceptional, above or meeting expectations; below them, under.
+export const EXCEPTIONAL_FROM = 72
+export const ABOVE_FROM = 58
+export const MEETS_FROM = 42
 // Heads of squad: a squad that leads from this mark, or lags under that one.
 export const SQUAD_LEADS_FROM = 60
 export const SQUAD_LAGS_UNDER = 40
 
-/** @typedef {'priority' | 'reward' | 'steady' | 'support'} Verdict */
+/** @typedef {'exceptional' | 'above' | 'meets' | 'below'} Verdict */
 /** @typedef {import('./figures.js').PersonFigures} PersonFigures */
 
 /**
@@ -188,8 +188,8 @@ export function squadResults(squads, people) {
 
 /** @typedef {ReturnType<typeof squadResults>[number]} SquadResult */
 
-// The overall mark and the recommendation: productivity weighs most, but for a head of squad, whose role takes them away
-// from the code and whose squad then counts for a quarter. Too many merges without review hold any reward back.
+// The overall mark and the level: productivity weighs most, but for a head of squad, whose role takes them away
+// from the code and whose squad then counts for a quarter. Too many merges without review cap the level.
 /**
  * @param {ScoredPerson} person
  * @param {SquadResult | null} squad the squad the person heads, if any
@@ -202,10 +202,10 @@ export function overallOf(person, squad) {
       : 0.35 * productivity + 0.25 * collaboration + 0.25 * importance + 0.15 * efficiency,
   )
   /** @type {Verdict} */
-  let verdict = overall >= PRIORITY_FROM ? 'priority' : overall >= REWARD_FROM ? 'reward' : overall >= SUPPORT_UNDER ? 'steady' : 'support'
+  let verdict = overall >= EXCEPTIONAL_FROM ? 'exceptional' : overall >= ABOVE_FROM ? 'above' : overall >= MEETS_FROM ? 'meets' : 'below'
   const process = person.unreviewedShare >= UNREVIEWED_LIMIT
-  if (process && (verdict === 'priority' || verdict === 'reward')) {
-    verdict = 'steady'
+  if (process && (verdict === 'exceptional' || verdict === 'above')) {
+    verdict = 'meets'
   }
 
   return { overall, verdict, process }
