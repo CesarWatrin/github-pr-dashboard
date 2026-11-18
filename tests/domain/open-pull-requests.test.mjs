@@ -95,6 +95,53 @@ describe('openPullRequests', () => {
     ])
   })
 
+  test('remarks left in a review since the last commit ask for changes, unless their author approved it', () => {
+    const committed = at('2026-03-02T10:00:00Z')
+    const remarked = openPullRequests([
+      // Bob's remarks, then Dave's, both since the last commit, after Carol approved it: changes, since Dave's.
+      open(1, {
+        lastCommitAt: committed,
+        interventions: [
+          ['carol', at('2026-03-02T11:00:00Z'), 'APPROVED', 0],
+          ['bob', at('2026-03-02T12:00:00Z'), 'COMMENTED', 2],
+          ['dave', at('2026-03-02T13:00:00Z'), 'COMMENTED', 1],
+          // A mere comment in the conversation is no review.
+          ['erin', at('2026-03-02T14:00:00Z'), null, 1],
+        ],
+      }),
+      // Remarks a commit answered since: discussed.
+      open(2, { lastCommitAt: at('2026-03-02T12:00:00Z'), interventions: [['bob', at('2026-03-02T11:00:00Z'), 'COMMENTED', 2]] }),
+      // Bob's remarks, then his approval: approved.
+      open(3, {
+        lastCommitAt: committed,
+        interventions: [
+          ['bob', at('2026-03-02T11:00:00Z'), 'COMMENTED', 2],
+          ['bob', at('2026-03-02T12:00:00Z'), 'APPROVED', 0],
+        ],
+      }),
+      // Changes requested by Carol, remarks by Bob: Carol's request comes first.
+      open(4, {
+        lastCommitAt: committed,
+        interventions: [
+          ['carol', at('2026-03-02T11:00:00Z'), 'CHANGES_REQUESTED', 1],
+          ['bob', at('2026-03-02T12:00:00Z'), 'COMMENTED', 2],
+        ],
+      }),
+      // Without the time of its last commit, remarks are only discussed.
+      open(5, { interventions: [['bob', at('2026-03-02T11:00:00Z'), 'COMMENTED', 2]] }),
+    ])
+    assert.deepEqual(
+      remarked.map(({ number, stance, since, by }) => [number, stance, iso(since), by]),
+      [
+        [1, 'changes', '2026-03-02T13:00:00.000Z', ['bob', 'dave']],
+        [2, 'discussed', '2026-03-02T11:00:00.000Z', []],
+        [3, 'approved', '2026-03-02T12:00:00.000Z', ['bob']],
+        [4, 'changes', '2026-03-02T11:00:00.000Z', ['carol']],
+        [5, 'discussed', '2026-03-02T11:00:00.000Z', []],
+      ],
+    )
+  })
+
   test('the people still asked to review it, none when the sync published none', () => {
     const asked = openPullRequests([open(1, { requestedReviewers: ['bob', 'carol'] }), open(2)])
     assert.deepEqual(

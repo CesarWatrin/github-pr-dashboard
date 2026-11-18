@@ -48,7 +48,7 @@ const ME_LISTS = {
   changes: {
     label: unblockStance('changes').label,
     tile: unblockStance('changes').label,
-    hint: t('Des changements demandés, sans nouvelle approbation depuis : à corriger, ou à faire relire de nouveau'),
+    hint: t('Des changements demandés, ou des remarques laissées en review sans commit depuis, sans nouvelle approbation : à corriger, ou à faire relire de nouveau'),
     empty: t('Aucune PR avec des changements demandés'),
     urgent: true,
   },

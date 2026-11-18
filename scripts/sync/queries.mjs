@@ -3,7 +3,7 @@
 const ACTOR_FIELDS = '__typename login ... on User { name }'
 const REVIEW_FIELDS = `author { ${ACTOR_FIELDS} } state submittedAt comments { totalCount }`
 const COMMENT_FIELDS = `author { ${ACTOR_FIELDS} } createdAt`
-const CHECKS_FIELDS = 'commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }'
+const CHECKS_FIELDS = 'commits(last: 1) { nodes { commit { committedDate statusCheckRollup { state } } } }'
 
 const PULL_REQUEST_FIELDS = `
   number title state isDraft createdAt mergedAt closedAt additions deletions headRefName baseRefName

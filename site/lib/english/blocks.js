@@ -190,7 +190,7 @@ export const BLOCKS = {
   'Changements demandés': 'Changes requested',
   'changements demandés': 'changes requested',
   'demandés par': 'requested by',
-  'Changements demandés il y a plus de trois jours ouvrés, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.': 'Changes requested more than three working days ago, with no new approval since: to fix, or to review again.',
+  'Changements demandés, ou remarques laissées en review sans commit depuis, il y a plus de trois jours ouvrés, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.': 'Changes requested, or remarks left in a review with no commit since, more than three working days ago, with no new approval since: to fix, or to review again.',
   'Aucune demande de changements qui traîne': 'No change request dragging on',
   'En discussion': 'Under discussion',
   'dernier échange': 'last exchange',

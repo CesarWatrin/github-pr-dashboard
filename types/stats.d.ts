@@ -52,6 +52,9 @@ interface PullRequestRecord {
   ac?: string
   title?: string
   checks?: CheckState | null
+  // Of an open pull request ready for review, when its last commit was made: a review comment from before it was
+  // answered by a commit.
+  lastCommitAt?: number
   // Of an open pull request, those of its branch on another side (the back end of a front-end feature…), open or merged
   // lately: never the branch, only their repository and number.
   counterparts?: [repo: string, number: number][]

@@ -331,7 +331,8 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
   }
 
   // Open pull requests in every stance: waiting for a first look, discussed, changes asked, approved, blocked by code
-  // owners, a draft, one forgotten for weeks; some ask for reviews, and one is a release.
+  // owners, a draft, one forgotten for weeks; some ask for reviews, and one is a release. Remarks left in a review ask
+  // for changes until a commit answers them.
   const open = (author, daysAgo, fields) =>
     add({
       repo: HOMES[author][0],
@@ -347,7 +348,8 @@ export function madeUpStats({ now = Date.parse('2026-06-15T10:00:00Z'), seed = 7
     })
   const ago = (days) => toMinutes(now - days * DAY_MS)
   open('ada-l', 6, { requestedReviewers: ['ben-k', 'cleo-m'], checks: 'PENDING' })
-  open('ben-k', 9, { interventions: [['cleo-m', ago(8), 'COMMENTED', 2]], requestedReviewers: ['ada-l'] })
+  open('ben-k', 9, { interventions: [['cleo-m', ago(8), 'COMMENTED', 2]], lastCommitAt: ago(7), requestedReviewers: ['ada-l'] })
+  open('fay-r', 5, { interventions: [['gus-t', ago(4), 'COMMENTED', 3]], lastCommitAt: ago(4.5) })
   open('cleo-m', 12, { interventions: [['ada-l', ago(10), 'CHANGES_REQUESTED', 4]], checks: 'FAILURE' })
   open('dev-o', 4, { interventions: [['hana-v', ago(3), 'APPROVED', 0]] })
   open('eli-p', 8, { codeOwners: ['ben-k', '@example-org/back'], requestedReviewers: ['ben-k'] })

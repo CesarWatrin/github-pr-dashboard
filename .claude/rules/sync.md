@@ -21,9 +21,9 @@ classification and the records in `records.mjs`, the project of each pull reques
   answers at most 1000 results: beyond that, the sync falls back to a full one.
 - **Checks of the open pull requests**, at every sync, full or not (`fetchOpenChecks()`): a check that ends does not
   move the `updatedAt` of its pull request, so the incremental search would keep it `PENDING`. One search
-  `org:… is:pr is:open sort:updated-desc`, 100 a page, asking only the state of the checks of the last commit (about a
-  point a page); past 1000 open pull requests, the most recently updated only. `withOpenChecks()` sets it on the open
-  pull requests of the snapshot (one merged or closed since keeps what the sync read). When GitHub does not answer,
+  `org:… is:pr is:open sort:updated-desc`, 100 a page, asking only the state of the checks of the last commit and when
+  it was made (about a point a page); past 1000 open pull requests, the most recently updated only. `withOpenChecks()`
+  sets both on the open pull requests of the snapshot (one merged or closed since keeps what the sync read). When GitHub does not answer,
   `readOpenChecks()` keeps the states last read and the sync goes on; in CI the warning says nothing more.
 - **Backfill**: the window (`WINDOW_DAYS`) is three years, too long to read at once (timeout, hourly quota). The
   snapshot keeps what it covers (`pullRequestsSince`; a snapshot without it covers the year before its sync). Each
@@ -94,6 +94,9 @@ classification and the records in `records.mjs`, the project of each pull reques
   `toPeriodRecord()` publishes the `reviewRequests` of an open pull request that is not a draft as
   `requestedReviewers`, bots aside. `graphql()` lets through the errors on a
   `requestedReviewer` the token may not read, such as a team: that reviewer comes back null. `site/domain/period.js` documents the shape; `site/domain/` is the only consumer.
+- `lastCommitAt` on an open pull request that is not a draft: when its last commit was made (`committedDate`, made
+  again by a rebase or an amend), in minutes. `openPullRequests()` of `site/domain/` takes a review comment left since
+  for changes asked, as the team asks for most of them so. Read again at each sync with the checks.
 - `counterparts` on an open pull request of people (`counterparts.mjs`): the pull requests of the same branch on
   another side (front, back, mobile: the repository type), open or merged less than `COUNTERPART_DAYS` before it was
   opened, as `[repository, number]`, never the branch. A branch shared within one side, or by tooling, is most often a

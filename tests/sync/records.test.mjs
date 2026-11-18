@@ -171,6 +171,15 @@ describe('toPeriodRecord', () => {
     assert.equal(recordOf('feature').draft, undefined)
   })
 
+  test('only an open pull request ready for review carries its last commit', () => {
+    const lastCommitAt = '2026-03-04T10:00:00Z'
+    const of = (fields) => toPeriodRecord(pullRequest({ number: 40, lastCommitAt, ...fields }), index).lastCommitAt
+    assert.deepEqual(
+      [of({}), of({ draft: true }), of({ mergedAt: '2026-03-05T10:00:00Z' }), of({ lastCommitAt: null })],
+      [minutes(lastCommitAt), undefined, undefined, undefined],
+    )
+  })
+
   test('code owners still asked to review an open pull request GitHub does not let merge yet', () => {
     assert.deepEqual(recordOf('ownersWaited').codeOwners, ['carol', '@backend', null])
     assert.equal(recordOf('ownersApproved').codeOwners, undefined)
@@ -311,18 +320,24 @@ describe('timeline details', () => {
       PULL_REQUESTS.mergedLately,
       pullRequest({ number: 35, checks: 'PENDING' }),
     ]
-    /** @type {Map<string, CheckState>} */
+    /** @type {Map<string, OpenPullRequestState>} */
     const checks = new Map([
-      ['web#30', 'FAILURE'],
+      ['web#30', { checks: 'FAILURE', lastCommitAt: '2026-03-04T10:00:00Z' }],
       // Merged since the search indexed it: kept as the snapshot read it.
-      ['web#31', 'PENDING'],
+      ['web#31', { checks: 'PENDING', lastCommitAt: '2026-03-04T10:00:00Z' }],
     ])
     assert.deepEqual(
-      withOpenChecks(pullRequests, checks).map((pr) => pr.checks),
-      ['FAILURE', 'SUCCESS', 'PENDING'],
+      withOpenChecks(pullRequests, checks).map((pr) => [pr.checks, pr.lastCommitAt]),
+      [
+        ['FAILURE', '2026-03-04T10:00:00Z'],
+        ['SUCCESS', undefined],
+        ['PENDING', undefined],
+      ],
     )
-    // A failed check of an open pull request now shows on its record.
-    assert.equal(toPeriodRecord(withOpenChecks(pullRequests, checks)[0], index).checksFailed, true)
+    // A failed check of an open pull request now shows on its record, and so does its last commit.
+    const record = toPeriodRecord(withOpenChecks(pullRequests, checks)[0], index)
+    assert.equal(record.checksFailed, true)
+    assert.equal(record.lastCommitAt, minutes('2026-03-04T10:00:00Z'))
   })
 
   test('the checks of the open pull requests are read page after page', async (t) => {
@@ -331,15 +346,15 @@ describe('timeline details', () => {
     const node = (repo, number, state) => ({
       number,
       repository: { name: repo },
-      commits: { nodes: [{ commit: { statusCheckRollup: state === null ? null : { state } } }] },
+      commits: { nodes: [{ commit: { committedDate: '2026-03-04T10:00:00Z', statusCheckRollup: state === null ? null : { state } } }] },
     })
     const answers = [page([node('web', 30, 'SUCCESS'), {}], true), page([node('api', 7, null)], false)]
     const fetch = t.mock.method(globalThis, 'fetch', async () => answers.shift())
     assert.deepEqual(
       [...(await fetchOpenChecks())],
       [
-        ['web#30', 'SUCCESS'],
-        ['api#7', null],
+        ['web#30', { checks: 'SUCCESS', lastCommitAt: '2026-03-04T10:00:00Z' }],
+        ['api#7', { checks: null, lastCommitAt: '2026-03-04T10:00:00Z' }],
       ],
     )
     assert.equal(fetch.mock.callCount(), 2)

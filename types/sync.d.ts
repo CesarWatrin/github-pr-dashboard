@@ -33,9 +33,16 @@ interface GithubComment {
   createdAt: string
 }
 
-// The state of the checks of the last commit.
+// The last commit: when it was committed (again, on a rebase or an amend), and the state of its checks.
 interface GithubCommits {
-  commits: { nodes: { commit: { statusCheckRollup: { state: CheckState } | null } }[] }
+  commits: { nodes: { commit: { committedDate: string; statusCheckRollup: { state: CheckState } | null } }[] }
+}
+
+// What the sync reads again of an open pull request at each sync: the state of the checks of its last commit, and when
+// that commit was made.
+interface OpenPullRequestState {
+  checks: CheckState | null
+  lastCommitAt: string | null
 }
 
 // Someone asked to review: a person, a team, or a reviewer the token cannot read (null).
@@ -141,6 +148,8 @@ interface SnapshotPullRequest {
   reviews: SnapshotReview[]
   comments: SnapshotComment[]
   checks: CheckState | null
+  // When its last commit was made: a pull request not read since the field came has none.
+  lastCommitAt?: string | null
   reviewDecision?: ReviewDecision | null
   codeOwnerRequests?: (string | null)[]
   reviewRequests?: string[]

@@ -100,7 +100,8 @@ paths:
   Friday, 9 to 18, Paris time; `WORK_DAY_HOURS` a day), and `formatDuration()` shows them in hours, then in working
   days. Only the durations of CI runs stay in real time; dates and ages (« il y a 3 jours ») stay on the calendar.
 - **Unblock page**: `openPullRequests()` of `site/domain/` tells where each open code pull request stands, after the
-  latest decision of each reviewer, as GitHub does, the code owners it still waits for (`codeOwners` of the records),
+  latest decision of each reviewer, as GitHub does, but for the remarks left in a review since the last commit
+  (`lastCommitAt` of the records), which ask for changes as « Request changes » does (`remarksOf()`), the code owners it still waits for (`codeOwners` of the records),
   and the approvals merging needs (`requiredApprovals` of the stats, from `REQUIRED_APPROVALS`, 1 without it).
   `blockedPullRequests()` lists, for each of `UNBLOCK_STANCES`, those of the people still in the team that have stood
   there for longer than its delay (`afterDays`, in working days), and apart those without any review or comment for
