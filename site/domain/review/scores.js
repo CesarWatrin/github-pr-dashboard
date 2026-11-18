@@ -11,6 +11,8 @@ export const DEPENDENCY_MIN_CODE = 10
 // A repository rests on a person who wrote at least this share of its code pull requests, among those with enough.
 export const OWNER_SHARE = 0.4
 export const OWNER_MIN_CODE = 10
+// How many of the authors a person reviews the most count for how focused their reviews are.
+export const REVIEWED_MOST = 3
 // A share of pull requests merged without any review from which no reward is recommended until it is mended.
 export const UNREVIEWED_LIMIT = 0.25
 // The overall marks from which a reward is recommended, a priority one, or under which the person needs support.
@@ -63,10 +65,18 @@ export function scorePeople(evaluated, { tallies, current }) {
       .map(({ repo, total, mine }) => ({ repo, share: mine / total }))
       .sort((a, b) => b.share - a.share)
 
+    // Whom they review the most: their three most reviewed authors, and the share of their reviews these take.
+    const reviewedMost = Object.entries(tally.reviewedAuthors)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, REVIEWED_MOST)
+      .map(([login, count]) => ({ login, share: tally.reviewed ? count / tally.reviewed : 0 }))
+
     return {
       ...person,
       dependents,
       owned,
+      reviewedMost,
+      reviewFocus: reviewedMost.reduce((total, author) => total + author.share, 0),
       breadth: Object.values(tally.repos).filter((count) => count >= 5).length,
       codeShare: (person.unitsMean * person.months) / totalUnits,
       reviewShare: tallies.reviewPairs ? person.reviewed / tallies.reviewPairs : 0,

@@ -9,15 +9,13 @@ import { el } from '../../ui/dom.js'
 import { effortBar } from '../../ui/effort.js'
 import { personLink } from '../../ui/links.js'
 import { monthChart, weekChart } from './charts.js'
-import { adviceOf, GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS } from './words.js'
+import { adviceOf, GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
 /** @typedef {import('../../domain/review.js').TeamReview} TeamReview */
 
 /** @param {number} value */
 const one = (value) => formatDecimal(Math.round(value * 10) / 10)
-/** @param {ReviewedPerson} person */
-export const dossierId = (person) => `review-${person.login.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
 // A mark from 0 to 100, its bar and what it rests on.
 /**
@@ -85,11 +83,12 @@ export function dossier(person, review) {
     el(
       'div',
       { className: 'review-dossier-id' },
-      el('p', { className: 'review-eyebrow', textContent: `${PROFILE_LABELS[person.profile]} · ${person.category} · ${t('{share} de TMA', { share: formatShare(person.hotfixShare) })}` }),
-      el('h3', {}, personLink(person.login)),
+      el('p', { className: 'review-eyebrow', textContent: `${stackOf(person)} · ${t('{share} de TMA', { share: formatShare(person.hotfixShare) })}` }),
+      el('h2', { id: 'review-dialog-title' }, personLink(person.login)),
       el(
         'p',
         { className: 'review-tags' },
+        ...(person.profile === 'Build' ? [] : [el('span', { className: 'review-tag is-tma', textContent: PROFILE_LABELS[person.profile] })]),
         ...(person.squad ? [el('span', { className: 'review-tag is-lead', textContent: t('★ Chef de {squad}', { squad: person.squad.name }) })] : []),
         el('span', { className: 'review-tag', textContent: t('{count} mois évalués', { count: person.months }) }),
         ...(since ? [el('span', { className: 'review-tag', title: since.title, textContent: t('Ancienneté : {label}', { label: since.label }) })] : []),
@@ -110,7 +109,7 @@ export function dossier(person, review) {
     mark(
       t('Productivité'),
       person.marks.productivity,
-      t('{delivered} par mois, médiane {profile} : {median} · {standing}', {
+      t('{delivered} par mois, médiane des devs {profile} : {median} · {standing}', {
         delivered: tma ? t('{count} hotfixes', { count: one(person.hotfixesMean) }) : t('{count} unités', { count: one(person.unitsMean) }),
         profile: PROFILE_LABELS[person.profile],
         median: one(profile.delivered),
@@ -145,11 +144,11 @@ export function dossier(person, review) {
    * @param {string} empty
    */
   const notes = (title, className, notes, empty) =>
-    panel(title, notes.length ? el('ul', { className }, ...notes.map((note) => el('li', { textContent: noteText(note) }))) : el('p', { className: 'empty', textContent: empty }))
+    panel(title, notes.length ? el('ul', { className }, ...notes.map((note) => el('li', { textContent: noteText(note) }))) : el('p', { className: 'review-empty', textContent: empty }))
 
   return el(
     'article',
-    { className: `card review-dossier is-${group}`, id: dossierId(person) },
+    { className: `review-dossier is-${group}` },
     head,
     marks,
     el(
@@ -219,6 +218,9 @@ export function dossier(person, review) {
           ...figure(t('Part de la TMA'), formatShare(person.hotfixTeamShare)),
           ...figure(t('Dépôts réguliers (5 PR et plus)'), formatNumber(person.breadth)),
         ),
+        ...(person.reviewedMost.length
+          ? [el('p', { className: 'review-small', textContent: t('Relit le plus : {people}.', { people: person.reviewedMost.map((author) => `${displayName(author.login)} (${formatShare(author.share)})`).join(', ') }) })]
+          : []),
         ...(person.dependents.length
           ? [el('p', { className: 'review-small', textContent: t('Relit au moins 30 % des PR de : {people}.', { people: person.dependents.map((dependent) => `${displayName(dependent.login)} (${formatShare(dependent.share)})`).join(', ') }) })]
           : []),

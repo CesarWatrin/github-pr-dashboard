@@ -2,6 +2,8 @@
 
 import { formatDecimal, formatDuration, formatNumber, formatShare } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { displayName } from '../../model/people.js'
+import { stackType } from '../../model/repositories.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
 /** @typedef {'priority' | 'reward' | 'steady' | 'support' | 'lead'} Group */
@@ -41,10 +43,16 @@ export function adviceOf(person) {
   }[person.verdict]
 }
 
+// The profiles of the review, as the page names them: those who do mostly maintenance (TMA), some, or little.
 /** @type {Record<string, string>} */
-export const PROFILE_LABELS = { Build: t('Build'), Mixte: t('Mixte'), TMA: t('TMA') }
+export const PROFILE_LABELS = { Build: t('hors TMA'), Mixte: t('TMA partielle'), TMA: t('TMA') }
+
+// The stack of a person, as the team page says it: front, back, mobile or full-stack.
+/** @param {ReviewedPerson} person */
+export const stackOf = (person) => stackType({ front: 0, back: 0, mobile: 0, other: 0, ...person.categories })?.label ?? '–'
+
 /** @type {Record<string, string>} */
-export const STANDINGS = { above: t('au-dessus de son profil'), below: t('en dessous de son profil'), within: t('dans la norme de son profil') }
+export const STANDINGS = { above: t('au-dessus des devs comparables'), below: t('en dessous des devs comparables'), within: t('dans la norme des devs comparables') }
 
 /** @param {number} value */
 const one = (value) => formatDecimal(Math.round(value * 10) / 10)
@@ -55,14 +63,21 @@ const NOTES = {
   squadLeads: (v) => t('Sa squad est parmi les plus performantes (résultat {mark}/100) : {units} unités livrées par membre et par mois, {reviews} PR relues.', { mark: Number(v.mark), units: one(Number(v.units)), reviews: formatNumber(Math.round(Number(v.reviews))) }),
   squadLags: (v) => t('Sa squad est en retrait sur l’année (résultat {mark}/100) : {units} unités livrées par membre et par mois, {reviews} PR relues.', { mark: Number(v.mark), units: one(Number(v.units)), reviews: formatNumber(Math.round(Number(v.reviews))) }),
   presence: (v) => t('Active sur GitHub {share} des jours ouvrés seulement ({days} sur {available}) : vérifier un temps partiel, d’autres missions ou des absences avant de conclure.', { share: formatShare(Number(v.share)), days: Number(v.days), available: Number(v.available) }),
-  delivers: (v) => t('Livre nettement plus que la médiane des profils {profile} ({times} fois), un écart statistiquement solide.', { profile: PROFILE_LABELS[String(v.profile)], times: one(Number(v.times)) }),
-  fewHotfixes: (v) => t('Moins de hotfixes livrés que les autres profils TMA ({mine} par mois contre {profile}), un écart statistiquement solide.', { mine: one(Number(v.mine)), profile: one(Number(v.profile)) }),
-  delivery: (v) => t('Livre moins que la médiane des profils {profile} ({share} de la médiane), un écart statistiquement solide.', { profile: PROFILE_LABELS[String(v.profile)], share: formatShare(Number(v.share)) }),
+  delivers: (v) => t('Livre nettement plus que la médiane des devs {profile} ({times} fois), un écart statistiquement solide.', { profile: PROFILE_LABELS[String(v.profile)], times: one(Number(v.times)) }),
+  fewHotfixes: (v) => t('Moins de hotfixes livrés que les autres devs TMA ({mine} par mois contre {profile}), un écart statistiquement solide.', { mine: one(Number(v.mine)), profile: one(Number(v.profile)) }),
+  delivery: (v) => t('Livre moins que la médiane des devs {profile} ({share} de la médiane), un écart statistiquement solide.', { profile: PROFILE_LABELS[String(v.profile)], share: formatShare(Number(v.share)) }),
   pillar: (v) => t('Pilier de la review : {mine} PR relues par mois, contre {team} en médiane.', { mine: formatNumber(Math.round(Number(v.mine))), team: formatNumber(Math.round(Number(v.team))) }),
   fewReviews: (v) => t('Relit peu le code des autres : {mine} PR par mois, contre {team} en médiane.', { mine: formatNumber(Math.round(Number(v.mine))), team: formatNumber(Math.round(Number(v.team))) }),
   dependents: (v) => t('{count} personnes passent par ses reviews pour au moins 30 % de leurs PR.', { count: Number(v.count) }),
   deepReviews: (v) => t('Reviews approfondies : {mine} commentaires par PR relue, contre {team} en médiane.', { mine: one(Number(v.mine)), team: one(Number(v.team)) }),
   silent: (v) => t('{share} de ses approbations sont données sans aucun commentaire.', { share: formatShare(Number(v.share)) }),
+  focused: (v) =>
+    t('Relit surtout les mêmes personnes : {share} de ses reviews vont à {people}. Relire plus largement diffuse la connaissance du code.', {
+      share: formatShare(Number(v.share)),
+      people: String(v.logins).split(',').map(displayName).join(', '),
+    }),
+  noChanges: (v) =>
+    t('Aucune demande de changements sur {reviewed} PR relues : vérifier que ses reviews ne sont pas des validations de principe.', { reviewed: formatNumber(Number(v.reviewed)) }),
   busFactor: (v) => t('Seul repère de {count} dépôts (au moins 40 % de leurs PR) : un risque en cas d’absence, ce savoir est à partager.', { count: Number(v.count) }),
   owner: (v) => t('Référent de {repos} (au moins 40 % des PR).', { repos: v.repos }),
   unreviewed: (v) => t('{share} de ses PR sont mergées sans aucune review, alors que {approvals} approbations sont requises.', { share: formatShare(Number(v.share)), approvals: Number(v.approvals) }),

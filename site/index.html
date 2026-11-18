@@ -38,6 +38,7 @@
     <link rel="stylesheet" href="styles/ui/pull-request-dialog.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/shell/sync-status.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/shell/filters.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/shell/scroll-top.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/layout.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/tiles.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/charts.css?v=__BUILD__" />
@@ -196,6 +197,7 @@
         "./shell/render.js": "./shell/render.js?v=__BUILD__",
         "./shell/retro-link.js": "./shell/retro-link.js?v=__BUILD__",
         "./shell/router.js": "./shell/router.js?v=__BUILD__",
+        "./shell/scroll-top.js": "./shell/scroll-top.js?v=__BUILD__",
         "./shell/session.js": "./shell/session.js?v=__BUILD__",
         "./shell/sync.js": "./shell/sync.js?v=__BUILD__",
         "./shell/tables.js": "./shell/tables.js?v=__BUILD__",
@@ -363,6 +365,7 @@
     <link rel="modulepreload" href="shell/render.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/retro-link.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/router.js?v=__BUILD__" />
+    <link rel="modulepreload" href="shell/scroll-top.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/session.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/sync.js?v=__BUILD__" />
     <link rel="modulepreload" href="shell/tables.js?v=__BUILD__" />
@@ -575,6 +578,17 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11v9h-11Z" /><path d="m5 6.5 2 1.5-2 1.5M8.5 10h2.5" /></svg>
             DevOps
           </a>
+          <!-- The annual review, the last of the pages: shown once the stats carry the managers' password (MANAGER_PASSWORD),
+               its padlock open while this browser opens it (pages/review/review.js). -->
+          <a class="nav-link nav-link-review" href="#/revue" data-route-link="review" data-review-link hidden>
+            <svg class="review-padlock-closed" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+            </svg>
+            <svg class="review-padlock-open" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7" />
+            </svg>
+            Revue annuelle
+          </a>
           <!-- The year in review, last: a page apart (retro.html), opened in a tab of its own with the key of its link, and
                the button that copies that link, to give it to the team (shell/retro-link.js). -->
           <div class="nav-retro" data-retro hidden>
@@ -641,17 +655,6 @@
               <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7.5L13 5v8.5H3Z" /><path d="M5.5 7h5M5.5 9.5h5" /></svg>
             </a>
           </div>
-          <!-- The annual review, last: shown once the stats carry the managers' password (MANAGER_PASSWORD), its padlock
-               open while this browser opens it (pages/review/review.js). -->
-          <a class="nav-link nav-link-review" href="#/revue" data-route-link="review" data-review-link hidden>
-            <svg class="review-padlock-closed" viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
-            </svg>
-            <svg class="review-padlock-open" viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7" />
-            </svg>
-            Revue annuelle
-          </a>
         </div>
       </aside>
       <div class="nav-backdrop" data-nav-backdrop></div>
@@ -1766,6 +1769,7 @@
             <div class="review" data-review-content hidden>
               <section class="card" aria-labelledby="review-board-title">
                 <h2 id="review-board-title">Recommandations de fin d’année</h2>
+                <p class="card-note">Un clic sur un nom, ici ou dans le classement, ouvre son dossier.</p>
                 <p class="card-note" data-review-period></p>
                 <div class="review-board" data-review-board></div>
               </section>
@@ -1778,7 +1782,7 @@
                 <div class="table-wrap" data-review-table></div>
                 <p class="card-note">
                   Un clic sur une colonne la trie. Les quatre notes vont de 0 à 100 : le rang de la personne dans l’équipe, 100
-                  pour la meilleure (dans son profil pour la productivité).
+                  pour la meilleure (face aux devs de même catégorie pour la productivité).
                 </p>
               </section>
               <section class="card" aria-labelledby="review-squads-title" data-review-squads-card>
@@ -1786,16 +1790,10 @@
                 <div class="table-wrap" data-review-squads></div>
                 <p class="card-note">Par membre évalué. Le résultat d’une squad compte pour un quart de la note de son chef.</p>
               </section>
-              <section class="review-dossiers" aria-label="Dossiers individuels" data-review-dossiers></section>
-              <section class="card" aria-labelledby="review-others-title" data-review-others-card>
-                <h2 id="review-others-title">Trop peu de recul pour juger</h2>
-                <p class="card-note">Arrivées récentes ou activité de code marginale sur ces mois : leurs chiffres, sans recommandation.</p>
-                <div class="review-others" data-review-others></div>
-              </section>
-              <section class="card" aria-labelledby="review-method-title">
-                <h2 id="review-method-title">Comment lire cette page</h2>
+              <details class="card review-method-card">
+                <summary>Comment lire cette page</summary>
                 <ul class="review-method" data-review-method></ul>
-              </section>
+              </details>
               <button type="button" class="button-secondary review-lock" data-review-lock>Fermer l’accès sur cet appareil</button>
             </div>
           </div>
@@ -2162,6 +2160,11 @@
           </div>
         </main>
 
+        <!-- Back to the top of the page, on every page, once it has scrolled down (shell/scroll-top.js). -->
+        <button type="button" class="scroll-top" aria-label="Remonter en haut" title="Remonter en haut" hidden data-scroll-top>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3.5M3.5 8 8 3.5 12.5 8" /></svg>
+        </button>
+
         <footer class="page-footer">
           <p>
             Données GitHub actualisées automatiquement : tant qu’elle est affichée, ou en arrière-plan avec les
@@ -2211,6 +2214,11 @@
     </dialog>
 
     <!-- The timeline of a pull request, opened from its reference in any list: drawn when it opens. -->
+    <!-- The dossier of a person of the annual review (pages/review/review.js). -->
+    <dialog class="review-dialog" aria-labelledby="review-dialog-title" data-review-dialog>
+      <div class="review-dialog-card" data-review-dialog-card></div>
+    </dialog>
+
     <dialog class="pr-dialog" aria-labelledby="pr-dialog-title" data-pr-dialog>
       <article class="pr-dialog-card" data-pr-dialog-card></article>
     </dialog>

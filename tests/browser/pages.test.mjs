@@ -183,7 +183,12 @@ for (const language of ['fr', 'en']) {
       assert.equal(await page.evaluate(`document.querySelector('[data-review-content]').hidden`), true)
       await submit(TEST_MANAGER_PASSWORD)
       await page.waitFor(`!document.querySelector('[data-review-content]').hidden && ${link}.classList.contains('is-unlocked')`)
-      assert.ok(await page.evaluate(`document.querySelectorAll('.review-dossier').length > 0`))
+      // A name of the ranking opens its dossier in a dialog; the backdrop closes it.
+      await page.evaluate(`document.querySelector('[data-review-table] .review-name').click()`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-review-dialog]').open && document.querySelectorAll('[data-review-dialog] .review-mark').length === 4`), true)
+      await noteFrench('review dossier', '[data-review-dialog]')
+      await page.evaluate(`document.querySelector('[data-review-dialog]').click()`)
+      assert.equal(await page.evaluate(`document.querySelector('[data-review-dialog]').open`), false)
       // Remembered for 30 days on this browser: a reload keeps it open.
       const until = await page.evaluate(`JSON.parse(localStorage.getItem('github-pr-dashboard:manager')).until - Date.now()`)
       assert.ok(until > 29 * 86_400_000 && until <= 30 * 86_400_000)

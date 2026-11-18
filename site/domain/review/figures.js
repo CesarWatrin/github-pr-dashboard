@@ -74,6 +74,7 @@ export function personFigures(tally, { months, first, last }) {
     evaluated: active.length >= MIN_MONTHS && tally.code >= MIN_CODE,
     profile,
     hotfixShare,
+    categories: tally.categories,
     category: /** @type {Category} */ (Object.entries(tally.categories).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'other'),
     code: tally.code,
     merged: tally.merged,

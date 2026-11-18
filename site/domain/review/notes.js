@@ -51,6 +51,10 @@ export const NOTE_LIMITS = {
   presence: 0.6,
   offHours: 0.08,
   calmWork: 0.97,
+  // Reviews focused on a few people: their three most reviewed authors take at least this share of them.
+  focused: 0.5,
+  // Enough reviews to say that someone never asks for changes.
+  minForChanges: 100,
 }
 
 /**
@@ -100,6 +104,12 @@ export function notesOf(person, team, { requiredApprovals, profile, squad }) {
   }
   if (person.reviewed >= L.minReviewed && typeof person.silentShare === 'number' && person.silentShare >= L.silent && person.commentsPerReview < team.commentsPerReview) {
     weaknesses.push({ key: 'silent', values: { share: person.silentShare } })
+  }
+  if (person.reviewed >= L.minReviewed && person.reviewFocus >= L.focused) {
+    weaknesses.push({ key: 'focused', values: { share: person.reviewFocus, logins: person.reviewedMost.map(({ login }) => login).join(',') } })
+  }
+  if (person.reviewed >= L.minForChanges && person.changesRequested === 0) {
+    weaknesses.push({ key: 'noChanges', values: { reviewed: person.reviewed } })
   }
   if (person.owned.length >= L.owner) {
     weaknesses.push({ key: 'busFactor', values: { count: person.owned.length } })

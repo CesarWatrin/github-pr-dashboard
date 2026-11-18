@@ -6,13 +6,14 @@
 import { isManagerPassword } from '../../domain/manager.js'
 import { formatDecimal, formatDuration, formatNumber, formatShare, monthName } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
+import { displayName } from '../../model/people.js'
 import { currentReview } from '../../model/review.js'
 import { currentRoute } from '../../model/routes.js'
 import { managerUnlocked, state, storeManager } from '../../model/state.js'
-import { $, el } from '../../ui/dom.js'
-import { personLink } from '../../ui/links.js'
-import { dossier, dossierId } from './dossier.js'
-import { GROUPS, groupOf, PROFILE_LABELS } from './words.js'
+import { $, el, svg } from '../../ui/dom.js'
+import { askToOpen, OPEN_PERSON, personLink } from '../../ui/links.js'
+import { dossier } from './dossier.js'
+import { GROUPS, groupOf, PROFILE_LABELS, stackOf } from './words.js'
 
 /** @typedef {import('../../domain/review.js').TeamReview} TeamReview */
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
@@ -23,7 +24,7 @@ const one = (value) => formatDecimal(Math.round(value * 10) / 10)
 // The columns of the ranking: what each reads, how it sorts.
 /** @type {{ key: string, label: string, text?: boolean, sort: (person: ReviewedPerson) => number | string, cell: (person: ReviewedPerson) => Node | string }[]} */
 const COLUMNS = [
-  { key: 'name', label: t('Personne'), text: true, sort: (person) => person.login.toLowerCase(), cell: (person) => personLink(person.login) },
+  { key: 'name', label: t('Personne'), text: true, sort: (person) => displayName(person.login).toLowerCase(), cell: (person) => dossierButton(person, 'review-name') },
   {
     key: 'group',
     label: t('Recommandation'),
@@ -31,7 +32,19 @@ const COLUMNS = [
     sort: (person) => GROUPS.findIndex((group) => group.key === groupOf(person)),
     cell: (person) => el('span', { className: `review-pill is-${groupOf(person)}`, textContent: GROUPS.find((group) => group.key === groupOf(person))?.label ?? '' }),
   },
-  { key: 'profile', label: t('Profil'), text: true, sort: (person) => person.profile, cell: (person) => `${PROFILE_LABELS[person.profile]} · ${person.category}` },
+  {
+    key: 'profile',
+    label: t('Stack'),
+    text: true,
+    sort: (person) => `${person.profile === 'Build' ? 'a' : person.profile === 'Mixte' ? 'b' : 'c'} ${stackOf(person)}`,
+    cell: (person) =>
+      el(
+        'span',
+        { className: 'review-work' },
+        stackOf(person),
+        ...(person.profile === 'Build' ? [] : [el('span', { className: 'review-tag is-tma', textContent: PROFILE_LABELS[person.profile] })]),
+      ),
+  },
   { key: 'overall', label: t('Note'), sort: (person) => person.overall, cell: (person) => el('strong', { textContent: String(person.overall) }) },
   { key: 'productivity', label: t('Productivité'), sort: (person) => person.marks.productivity, cell: (person) => meter(person.marks.productivity) },
   { key: 'efficiency', label: t('Efficacité'), sort: (person) => person.marks.efficiency, cell: (person) => meter(person.marks.efficiency) },
@@ -47,6 +60,38 @@ const COLUMNS = [
   { key: 'presence', label: t('Présence'), sort: (person) => person.presence, cell: (person) => formatShare(person.presence) },
 ]
 let sort = { key: 'overall', direction: -1 }
+
+// A person's name that opens their dossier, in the dialog of the review.
+/**
+ * @param {ReviewedPerson} person
+ * @param {string} className
+ */
+function dossierButton(person, className) {
+  const button = el('button', { type: 'button', className, textContent: displayName(person.login) })
+  button.setAttribute('aria-haspopup', 'dialog')
+  button.addEventListener('click', () => openDossier(person, button))
+
+  return button
+}
+
+// The dossier of a person, in a dialog over the page: closed by its button, Escape or the backdrop.
+/**
+ * @param {ReviewedPerson} person
+ * @param {HTMLElement} opener
+ */
+function openDossier(person, opener) {
+  const dialog = $('[data-review-dialog]', HTMLDialogElement)
+  const close = el('button', { type: 'button', className: 'icon-button review-dialog-close', title: t('Fermer') }, svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }))
+  close.firstChild?.appendChild(svg('path', { d: 'M4 4l8 8M12 4l-8 8' }))
+  close.setAttribute('aria-label', t('Fermer'))
+  close.addEventListener('click', () => dialog.close())
+  $('[data-review-dialog-card]').replaceChildren(close, dossier(person, currentReview()))
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true })
+  if (!dialog.open) {
+    dialog.showModal()
+  }
+  dialog.scrollTop = 0
+}
 
 /** @param {number} value */
 function meter(value) {
@@ -82,30 +127,6 @@ export function renderReview() {
   renderFacts(review)
   renderTable(review)
   renderSquadTable(review)
-  $('[data-review-dossiers]').replaceChildren(
-    ...review.people
-      .toSorted((a, b) => GROUPS.findIndex((group) => group.key === groupOf(a)) - GROUPS.findIndex((group) => group.key === groupOf(b)) || b.overall - a.overall)
-      .map((person) => dossier(person, review)),
-  )
-  $('[data-review-others-card]').hidden = review.others.length === 0
-  $('[data-review-others]').replaceChildren(
-    ...review.others.map((person) =>
-      el(
-        'div',
-        { className: 'review-other' },
-        personLink(person.login),
-        el('p', {
-          textContent: t('{months} mois évalués, {code} PR de code dont {merged} mergées, {reviewed} PR relues, {tma} de TMA.', {
-            months: person.months,
-            code: person.code,
-            merged: person.merged,
-            reviewed: person.reviewed,
-            tma: formatShare(person.hotfixShare),
-          }),
-        }),
-      ),
-    ),
-  )
   renderMethod()
 }
 
@@ -125,17 +146,45 @@ function renderBoard(review) {
               el(
                 'div',
                 { className: 'review-chips' },
-                ...people.map((person) => {
-                  const chip = el('button', { type: 'button', className: 'review-chip', textContent: state.stats?.people?.[person.login] ?? person.login })
-                  chip.addEventListener('click', () => document.getElementById(dossierId(person))?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-
-                  return chip
-                }),
+                ...people.map((person) => dossierButton(person, 'review-chip')),
               ),
             ),
           ]
         : []
     }),
+    // Those too new to judge, or with too little code: their figures on hover, their card on a click.
+    ...(review.others.length
+      ? [
+          el(
+            'div',
+            { className: 'review-lane is-short' },
+            el('h3', {}, el('span', { textContent: t('Trop peu de recul') }), el('span', { textContent: String(review.others.length) })),
+            el('p', { textContent: t('Arrivée récente ou activité de code marginale : pas de recommandation.') }),
+            el(
+              'div',
+              { className: 'review-chips' },
+              ...review.others.map((person) => {
+                const chip = el('button', {
+                  type: 'button',
+                  className: 'review-chip',
+                  textContent: displayName(person.login),
+                  title: t('{months} mois évalués, {code} PR de code dont {merged} mergées, {reviewed} PR relues, {tma} de TMA.', {
+                    months: person.months,
+                    code: person.code,
+                    merged: person.merged,
+                    reviewed: person.reviewed,
+                    tma: formatShare(person.hotfixShare),
+                  }),
+                })
+                chip.setAttribute('aria-haspopup', 'dialog')
+                chip.addEventListener('click', () => askToOpen(chip, OPEN_PERSON, person.login))
+
+                return chip
+              }),
+            ),
+          ),
+        ]
+      : []),
   )
 }
 
@@ -255,11 +304,11 @@ function renderSquadTable(review) {
 
 function renderMethod() {
   const items = [
-    t('Profils. Chacun est rangé selon la part de hotfixes (TMA) dans ses PR de code : TMA à partir de 50 %, Mixte de 30 à 50 %, Build en dessous. La productivité ne se compare qu’entre personnes du même profil : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.'),
-    t('Livraison. Pour les profils Build et Mixte, chaque PR mergée compte selon sa taille, sur une échelle logarithmique : 100 lignes valent une unité, 10 lignes une demie, 1 000 lignes une et demie. Le code généré ou importé ne gonfle donc pas les chiffres. Pour la TMA, c’est le nombre de hotfixes mergés par mois.'),
-    t('Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous de son profil veut dire que tout l’intervalle l’est : l’écart ne tient pas à un ou deux mois atypiques.'),
+    t('Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. La productivité ne se compare qu’entre devs de la même catégorie : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.'),
+    t('Livraison. Hors TMA et en TMA partielle, chaque PR mergée compte selon sa taille, sur une échelle logarithmique : 100 lignes valent une unité, 10 lignes une demie, 1 000 lignes une et demie. Le code généré ou importé ne gonfle donc pas les chiffres. Pour la TMA, c’est le nombre de hotfixes mergés par mois.'),
+    t('Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous des devs comparables veut dire que tout l’intervalle l’est : l’écart ne tient pas à un ou deux mois atypiques.'),
     t('Heures ouvrées. Chaque délai ne compte que les heures de 9 h à 18 h, du lundi au vendredi, heure de Paris. Une journée vaut 9 heures : « 2,5 j » veut dire deux journées et demie de travail, pas de calendrier. Les jours actifs comptent les jours ouvrés, fériés retirés, où la personne a fait au moins une action sur GitHub : un plancher, une journée de réunions ou de spécifications n’y laisse pas de trace.'),
-    t('Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, dans son profil. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.'),
+    t('Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, face aux devs de sa catégorie. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.'),
     t('Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, aucune récompense n’est recommandée tant que ce n’est pas corrigé.'),
     t('Recommandation : récompense prioritaire à partir de 72, récompense à partir de 58, solide à partir de 42, à accompagner en dessous.'),
     t('Limites. GitHub ne voit ni la difficulté d’un sujet, ni l’aide donnée à l’oral, ni les spécifications, l’astreinte ou les réunions. Cette page objective et prépare les entretiens, elle ne remplace pas l’avis des chefs de squad.'),
@@ -275,6 +324,9 @@ export function setupReview({ render }) {
   const form = $('[data-review-form]', HTMLFormElement)
   const field = $('[data-review-password]', HTMLInputElement)
   const error = $('[data-review-error]')
+  const dialog = $('[data-review-dialog]', HTMLDialogElement)
+  // A click on the backdrop, outside the card, closes the dossier.
+  dialog.addEventListener('click', (event) => event.target === dialog && dialog.close())
   form.addEventListener('submit', async (event) => {
     event.preventDefault()
     const check = state.stats?.manager

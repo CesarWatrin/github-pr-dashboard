@@ -15,7 +15,7 @@ Le dashboard est découpé en pages, dans une barre latérale. Sous 1280 px, une
 la synchro, et son bouton menu ouvre la barre latérale par-dessus la page, sans défilement horizontal. La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
 une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1535 px, elles restent collées en haut de
-la fenêtre. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
+la fenêtre. Dès que la page a défilé d'un écran, un bouton rond en bas à droite remonte en haut. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
 les PR ouvertes par ses membres, et ce qui s'y passe (qui les relit, leurs délais, leurs mises en prod). La CI reste
 celle de toute l'organisation, une exécution ne se rattachant à aucune squad, et le compteur du jour, qui ne se
 découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, les AC,
@@ -230,18 +230,20 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   efface les exécutions de CI au bout d'environ 13 mois : la CI ne remonte qu'à celles que la synchro a déjà lues, et
   s'allonge avec le temps jusqu'à 36 mois ; une période qui commence avant le dit.
 - **Méthode** : les règles communes ; chaque colonne est expliquée sous son tableau.
-- **Revue annuelle**, réservée aux managers : son lien, tout en bas de la barre latérale, porte un cadenas, fermé tant
+- **Revue annuelle**, réservée aux managers : son lien, la dernière des pages de la barre latérale, porte un cadenas, fermé tant
   que le mot de passe des managers (`MANAGER_PASSWORD`) n'a pas été saisi sur l'appareil, ouvert pendant les 30 jours où
-  il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets : sa
-  recommandation de fin d'année (récompense prioritaire, récompense, solide, à accompagner ; les chefs de squad à part,
-  jugés aussi sur le résultat de leur squad), une note globale et quatre notes de 0 à 100 (productivité, efficacité,
+  il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets. En haut,
+  les recommandations de fin d'année (récompense prioritaire, récompense, solide, à accompagner ; les chefs de squad à
+  part, jugés aussi sur le résultat de leur squad ; ceux qui ont trop peu de recul, sans recommandation), puis si les
+  écarts entre personnes sont réels, le classement et les squads. Un clic sur un nom ouvre son dossier dans une
+  fenêtre : une note globale et quatre notes de 0 à 100 (productivité, efficacité,
   collaboration, importance), ses points forts et ses points à travailler, sa livraison et ses reviews mois par mois,
   son poids dans l'équipe et son rythme de travail (part de l'activité entre 9 h et 18 h en semaine, jours ouvrés
-  actifs, heure par heure de la semaine). La productivité ne se compare qu'à profil égal : chacun est Build, Mixte ou
-  TMA selon sa part de hotfix, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
+  actifs, heure par heure de la semaine). Chacun y figure avec sa stack (front, back, mobile, full-stack, comme sur la page
+  Équipe), et les membres de la TMA sont marqués : TMA à partir de 50 % de hotfix, TMA partielle de 30 à 50 %. La
+  productivité ne se compare qu'entre devs de la même catégorie, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
   unité), et la TMA compte ses hotfix. Un test statistique dit si les écarts entre personnes dépassent le hasard d'un
-  mois à l'autre, et chaque moyenne a son intervalle de confiance. Les arrivées récentes sont listées à part, sans
-  recommandation. La page explique en bas comment se lisent ses notes et ses limites : GitHub ne voit ni la difficulté
+  mois à l'autre, et chaque moyenne a son intervalle de confiance. La page explique en bas, dans un encart replié, comment se lisent ses notes et ses limites : GitHub ne voit ni la difficulté
   d'un sujet, ni l'aide à l'oral, ni les réunions. Le mot de passe cache la page, pas les données : elle se calcule
   dans le navigateur à partir des PR que tout le dashboard montre.
 

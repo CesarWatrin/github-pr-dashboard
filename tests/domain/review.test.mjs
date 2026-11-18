@@ -211,6 +211,9 @@ describe('the notes of a person', () => {
     acs: 1,
     mergesOfOthers: 0,
     reviewHours: 2,
+    reviewFocus: 0.3,
+    reviewedMost: [{ login: 'ann', share: 0.1 }],
+    changesRequested: 5,
     presence: 0.9,
     activeDays: 200,
     availableDays: 220,
@@ -230,6 +233,13 @@ describe('the notes of a person', () => {
     assert.deepEqual(keys({ standing: 'above', reviewsInterval: [60, 80], reviewsMean: 70 }).strengths, ['delivers', 'pillar'])
     assert.deepEqual(keys({ unreviewedShare: 0.4, closedShare: 0.2, presence: 0.4 }).weaknesses, ['presence', 'unreviewed', 'closed'])
     assert.deepEqual(keys({ rhythm: { work: 0.8, edges: 0.05, night: 0.05, weekend: 0.1 } }).weaknesses, ['offHours'])
+  })
+
+  test('reviews focused on a few people, or that never ask for changes, are to work on', () => {
+    assert.deepEqual(keys({ reviewFocus: 0.6 }).weaknesses, ['focused'])
+    assert.deepEqual(keys({ changesRequested: 0 }).weaknesses, ['noChanges'])
+    // Too few reviews to say so.
+    assert.deepEqual(keys({ changesRequested: 0, reviewed: 60 }).weaknesses, [])
   })
 
   test('a person of the TMA is said to deliver too few hotfixes, not too little code', () => {

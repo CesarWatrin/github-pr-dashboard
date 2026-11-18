@@ -397,7 +397,7 @@ paths:
   The address says whose and which year (`state.wrappedFor`, `wrappedTeam`, `wrappedYear`): « Copier le lien » on the last
   slide gives it, and it opens behind the password like any address. A story keeps playing when new stats come in.
 - **Annual review** (« Revue annuelle », `pages/review/`, `#/revue`, `filters: false`), the one page that ranks people
-  and scores them, for the managers only: its link, last in the sidebar under the actions (`[data-review-link]`), shows
+  and scores them, for the managers only: its link, the last of the pages of the sidebar (`[data-review-link]`), shows
   once the stats carry `manager` (`MANAGER_PASSWORD`), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
   of `model/state.js`: the managers' password typed on this browser within `MANAGER_UNLOCK_DAYS` (30), checked by
   `isManagerPassword()` of `site/domain/manager.js`, only its verifier kept (`github-pr-dashboard:manager`); a button at
@@ -411,7 +411,12 @@ paths:
   head of a squad judged for a quarter on `squadResults()`; `UNREVIEWED_LIMIT` holds any reward back), the notes
   (`review/notes.js`, their sentences in `pages/review/words.js`), and whether people differ (`kruskalWallis()`,
   `intraclassCorrelation()` of `review/statistics.js`). People without `MIN_MONTHS` and `MIN_CODE` are listed apart.
-  The page explains its marks and limits at its bottom; its English lives in `lib/english/review.js`.
+  The page keeps to the summary: the board of recommendations (people too new to judge in a lane of their own, their
+  card on a click), the facts, the ranking (sorted on a click of a column) and the squads; a name opens the person's
+  dossier in a dialog of its own (`[data-review-dialog]`, closed by its button, Escape or the backdrop). Each person
+  shows by their stack (`stackType()`, as on the team page), the TMA marked (`PROFILE_LABELS`: TMA, partly TMA); the
+  page never says « Build ». It explains its marks and limits in a folded box at its bottom; its English lives in
+  `lib/english/review.js`.
 - **Names of repositories**: always `repoLink(repo)`, never a GitHub link. Wherever it shows, a table, the repositories
   page or a dialog, it opens the repository's dialog (`openRepoOf()`), which links to GitHub; a repository without
   anything over the period opens on GitHub instead.
@@ -468,6 +473,9 @@ paths:
   to 1535 px they stick to the top of the window instead, on a band of the page's background, underlined once stuck
   (`is-stuck`, set by an `IntersectionObserver`: their top sits one pixel above the window). Tables
   fit at 1080 px without horizontal scrolling. Check 1920, 1536, 1280, 1080 and 390 px (phone), light and dark.
+- Back to the top: on every page, a round button in the bottom corner (`[data-scroll-top]`, `shell/scroll-top.js`) shows
+  once the window has scrolled by more than its height, and scrolls back up (at once under reduced motion), the focus
+  going to the title of the page.
 - Card dialogs (a person, a repository, a squad, a project: `showCardDialog()`): never taller than the window; the head, its
   first child, stays in place with the close button, the rest goes in `.person-dialog-body`, which scrolls only when
   it does not fit (`fitCardDialog()`, `is-scrollable`, measured again by a `ResizeObserver`): a scrolling box

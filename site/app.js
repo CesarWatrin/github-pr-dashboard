@@ -31,6 +31,7 @@ import { renderLanguageToggle, setupLanguage } from './shell/language.js'
 import { render, setupResize } from './shell/render.js'
 import { renderRoute, setupNavigation } from './shell/router.js'
 import { setupRetroLink } from './shell/retro-link.js'
+import { setupScrollTop } from './shell/scroll-top.js'
 import { refresh, setupSession, showDashboard, showLock } from './shell/session.js'
 import { refreshClock, setupSync } from './shell/sync.js'
 import { registerTables, renderTableLegends } from './shell/tables.js'
@@ -78,6 +79,7 @@ setupPersonDialog()
 setupRepositoryDialog()
 setupPullRequestDialog()
 setupResize()
+setupScrollTop()
 for (const name of repoFilterNames()) {
   setupRepoFilter(name)
 }
