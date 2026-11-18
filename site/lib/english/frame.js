@@ -196,6 +196,8 @@ export const FRAME = {
   'Me prévenir des nouvelles PR': 'Notify me of new PRs',
   'Je suis': 'I am',
   'Copier le bilan': 'Copy the report',
+  Copier: 'Copy',
+  'Copier les PR de la liste en un seul texte, pour Claude': 'Copy the PRs of the list as one text, for Claude',
   'Mot de passe de la synchro complète': 'Password of the full sync',
   'Ouvrir le menu': 'Open the menu',
   'Menu': 'Menu',

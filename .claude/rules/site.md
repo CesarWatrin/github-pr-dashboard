@@ -168,7 +168,10 @@ paths:
   (the tags of `UNBLOCK_STANCES`), its title quiet under its link (`prTitle()`, from the record); ready to merge, where
   its counterparts stand (`counterparts` of the records: the pull requests of its branch on another side), from
   `counterpartStates()` of `site/domain/`: « attend le back » while one is not ready (stands out), « le back est prêt
-  aussi », « le back est déjà mergé », each with its links (`counterpartLines()`); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out.
+  aussi », « le back est déjà mergé », each with its links (`counterpartLines()`); `ownDrafts()` gives their drafts (drafts), which `openPullRequests()` leaves out. The « Copier » button of
+  each list (`setupListCopies()` of `ui/list-copy.js`, hidden while the list is empty) copies it as one text to paste
+  into a chat with Claude: the title of the card, its hint, then a line per pull request read from its item (what it
+  says, the title, the address on GitHub, the time).
   The page shows first the lists whose pull requests wait on the person (`urgent` in `ME_LISTS`: reviews asked, ready,
   changes requested, forgotten), then the others. No score, no ranking. Its lists, like those of the unblock
   page (`.unblock-lists`), keep to what they hold, up to the height of a feed, so that an empty or short one leaves a

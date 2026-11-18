@@ -50,7 +50,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   elle en est et qui elle attend ; enfin ses brouillons. Les PR de release et d'intégration y figurent aussi,
   étiquetées. Une PR prête à merger dit aussi où en est la PR de la même branche de l'autre côté (le back d'une PR
   front, le front ou le mobile d'une PR back) : « attend le back », « le back est prêt aussi » ou « le back est déjà
-  mergé », avec son lien. Chaque PR montre son titre en discret sous son lien. D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
+  mergé », avec son lien. Chaque PR montre son titre en discret sous son lien. Le
+  bouton « Copier » de chaque liste en copie toutes les PR en un seul texte, pour les donner à Claude : le titre de la
+  liste, ce qu'elle contient, puis une ligne par PR (où elle en est, son titre, son lien GitHub, depuis quand). D'après la dernière synchro. Le titre de l'onglet compte ce qui demande d'agir à la personne, sur toutes
   les pages : les reviews qu'on lui demande, et ses PR prêtes à merger, avec des changements demandés ou oubliées,
   « (5) Stats PR » ; un badge rouge le répète au bout de « Mes PR » dans la barre latérale, et sur le bouton du menu
   des écrans étroits, et une notification compte de même. Un badge gris, juste après « Mes PR », compte toutes ses PR

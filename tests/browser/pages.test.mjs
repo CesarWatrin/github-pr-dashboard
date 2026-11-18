@@ -14,10 +14,10 @@ import { browserPath, launch } from './chrome.mjs'
 import { serveSite, TEST_PASSWORD, TEST_RETRO_KEY } from './site.mjs'
 
 const stats = madeUpStats()
-// The containers that stay empty on purpose: until the report is copied, the chart of a person's report and its data
+// The containers that stay empty on purpose: until the report or a list of « Mes PR » is copied, the chart of a person's report and its data
 // until one is picked, the pairs that replace the review matrix on a narrow screen only, the note of a CI that starts
 // after the period (none over 12 months).
-const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-report-chart', 'data-report-chart-table', 'data-collaboration-pairs', 'data-ci-cut'])
+const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-list-copied', 'data-report-chart', 'data-report-chart-table', 'data-collaboration-pairs', 'data-ci-cut'])
 
 const skip = !browserPath() && !process.env.CI && 'Chrome not found: set CHROME_PATH'
 // Where a test stops the clock of the page, in the session of the tab: it holds across reloads.
@@ -338,6 +338,18 @@ for (const language of ['fr', 'en']) {
       // Ready to merge, a pull request tells whether the pull request of its branch in another repository is ready too.
       const counterparts = await page.evaluate(`[...document.querySelectorAll('[data-me="ready"] .feed-counterpart')].map((line) => line.className)`)
       assert.deepEqual(counterparts.sort(), ['feed-by feed-counterpart is-ready', 'feed-by feed-counterpart is-waiting'])
+      // Each list copies as one text, its title then a line per pull request with its address; an empty one has no button.
+      const copied = await page.evaluate(`import(new URL('ui/list-copy.js', location.href).href).then(({ listText }) =>
+        listText(document.querySelector('[data-me="ready"]').closest('.card')))`)
+      const [heading, , blank, ...lines] = copied.split('\n')
+      assert.equal(heading, await page.evaluate(`document.querySelector('[data-me-title="ready"]').textContent`))
+      assert.equal(blank, '')
+      assert.equal(lines.length, await listed(['ready']))
+      assert.ok(lines.every((line) => /^- .+ — https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+ — /.test(line)), copied)
+      const hidden = await page.evaluate(`[...document.querySelectorAll('[data-me-copy]')].map((button) => [button.dataset.meCopy, button.hidden])`)
+      for (const [list, off] of hidden) {
+        assert.equal(off, (await listed([list])) === 0, list)
+      }
     })
 
     test('the report of the month shows one person picked, its address says who, and it copies a line per figure', async () => {
