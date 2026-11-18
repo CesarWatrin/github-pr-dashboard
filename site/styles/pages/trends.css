@@ -88,6 +88,22 @@
   min-width: 0;
 }
 
+/* The projects of the month picked on the chart of a person, spread over the width of the card. */
+.report-chart-projects {
+  margin-top: 16px;
+}
+
+.report-chart-projects h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.report-chart-projects .report-list {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 32px;
+}
+
 .report-champions li {
   align-items: flex-start;
 }

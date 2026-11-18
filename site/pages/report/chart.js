@@ -1,16 +1,19 @@
 // The chart of a person's monthly report: their code pull requests month by month, beside those of a project, of the TMA
-// and of an AC, each counting once as « Où va l’effort » counts them (personEffortMonths()), its data as a table under
-// it. Its card hides for the team.
+// and of an AC, each counting once as « Où va l’effort » counts them (personEffortMonths()); under it, the projects of
+// the month picked on it (personMonthProjects()), the month shown until another is clicked; its data as a table. Its
+// card hides for the team.
 
-import { formatNumber, monthName } from '../../lib/format.js'
+import { formatNumber, monthName, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { displayName } from '../../model/people.js'
-import { personEffortMonths } from '../../model/person-report.js'
+import { personEffortMonths, personMonthProjects } from '../../model/person-report.js'
 import { bucketTitle } from '../../ui/charts/axis.js'
 import { columnChart } from '../../ui/charts/column-chart.js'
 import { dataTable } from '../../ui/charts/data-table.js'
-import { $ } from '../../ui/dom.js'
+import { $, el } from '../../ui/dom.js'
 import { EFFORT_SERIES } from '../../ui/effort.js'
+import { renderList } from '../../ui/list.js'
+import { projectLink } from '../../ui/projects.js'
 
 /** @typedef {import('../../domain/effort.js').EffortPoint} EffortPoint */
 
@@ -36,6 +39,26 @@ export const REPORT_CHART_SERIES = [
 const monthTitle = (point) =>
   point.partial ? t('{bucket} (incomplète)', { bucket: bucketTitle(point.key, 'month') }) : bucketTitle(point.key, 'month')
 
+// The month picked on the chart, for the person and the month shown it was picked for: another of them shows its month.
+/** @type {{ person: string, month: string, key: string } | null} */
+let picked = null
+
+// The projects of a person over a month of the chart, each with its code pull requests.
+/**
+ * @param {string} person
+ * @param {string} key
+ */
+function renderMonthProjects(person, key) {
+  $('[data-report-chart-projects-title]').textContent = t('Ses projets en {month}', { month: monthName(key) })
+  renderList(
+    $('[data-report-chart-projects]'),
+    personMonthProjects(key, person).map(({ row, code }) =>
+      el('li', {}, projectLink(row), el('span', { className: 'pair-count', textContent: plural(code, 'PR de code', 'PR de code') })),
+    ),
+    t('Aucun projet ce mois-ci'),
+  )
+}
+
 // The card of the person picked, for the month shown: drawn as wide as it, so again as the page resizes. Without anyone,
 // the card hides and empties.
 /**
@@ -49,10 +72,15 @@ export function renderReportChart(person, month) {
   if (!person) {
     chart.replaceChildren()
     table.replaceChildren()
+    $('[data-report-chart-projects]').replaceChildren()
 
     return
   }
   const points = personEffortMonths(month, person)
+  if (picked?.person !== person || picked.month !== month || !points.some((point) => point.key === picked?.key)) {
+    picked = { person, month, key: month }
+  }
+  renderMonthProjects(person, picked.key)
   dataTable(
     table,
     [t('Mois'), ...REPORT_CHART_SERIES.map((series) => series.label), t('Le reste')],
@@ -65,6 +93,11 @@ export function renderReportChart(person, month) {
     bucket: 'month',
     series: REPORT_CHART_SERIES,
     extraRows: (point) => [{ label: t('Le reste'), value: formatNumber(point.counts.rest) }],
+    picked: picked.key,
+    onPick: (point) => {
+      picked = { person, month, key: point.key }
+      renderMonthProjects(person, point.key)
+    },
     ariaLabel: t('PR de code de {name}, et parmi elles celles de projet, de TMA et d’AC, mois par mois, de {from} à {to}', {
       name: displayName(person),
       from: monthName(points[0].key),

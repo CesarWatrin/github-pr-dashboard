@@ -1,17 +1,19 @@
 // The monthly report of one person (Bilan du mois, someone picked): their own pull requests, their reviews of anyone's,
-// the projects and AC they worked on, their code pull requests month by month by kind of work, their figures of the
+// the projects and AC they worked on, their code pull requests month by month by kind of work and the projects of each
+// month, their figures of the
 // badges and who they reviewed with. Each month is set against their own months, from the first one they show in: never
 // against other people.
 
 import { round } from '../domain/math.js'
 import { monthlyActivity, monthlyLeaders } from '../domain/months.js'
-import { parisDay } from '../domain/time.js'
+import { MINUTE_MS, parisDay } from '../domain/time.js'
 import { sumOf } from '../lib/math.js'
 import { t } from '../lib/i18n.js'
 import { BADGES, badgeStandings, monthFigures } from './badges.js'
 import { personEffortSeries } from './effort.js'
-import { monthRange, monthStats, REPORT_FIGURES, REPORT_YEAR_MONTHS, reportMonths } from './months.js'
+import { monthRange, monthStats, personRecords, REPORT_FIGURES, REPORT_YEAR_MONTHS, reportMonths } from './months.js'
 import { firstShown, isCurrent } from './people.js'
+import { projectsOfRecords } from './projects.js'
 import { loadedStats } from './state.js'
 
 /**
@@ -122,6 +124,20 @@ export function personEffortMonths(month, login) {
   const first = since && since > earliest ? (since < month ? since : month) : earliest
 
   return personEffortSeries(login, { start: monthRange(first).start, end: monthRange(month).end, bucket: 'month' })
+}
+
+// The projects of the code pull requests a person opened over a month, the busiest first: those the chart of their
+// report counts that month (personEffortMonths()).
+/**
+ * @param {string} month
+ * @param {string} login
+ */
+export function personMonthProjects(month, login) {
+  const { start, end } = monthRange(month)
+
+  return projectsOfRecords(
+    personRecords(login).filter((pr) => pr.createdAt * MINUTE_MS >= start && pr.createdAt * MINUTE_MS < end),
+  )
 }
 
 // The largest counts first, then by key; REPORT_TOP of them.

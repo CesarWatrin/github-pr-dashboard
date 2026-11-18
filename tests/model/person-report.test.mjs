@@ -11,6 +11,7 @@ import {
   personDuos,
   personEffortMonths,
   personMonth,
+  personMonthProjects,
   personRepositories,
 } from '../../site/model/person-report.js'
 import { minutes, record, useStats } from './stats.mjs'
@@ -98,6 +99,20 @@ describe('the report of a person', () => {
       personEffortMonths('2026-06', 'ada').map((point) => point.key),
       ['2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
     )
+  })
+
+  test('names the projects of a month of their chart, each with their code pull requests that month', () => {
+    /** @type {(month: string, login: string) => [string, number][]} */
+    const projects = (month, login) => personMonthProjects(month, login).map(({ row, code }) => [row.key, code])
+    assert.deepEqual(projects('2026-04', 'ada'), [['paper-kite', 2]])
+    // Its life is the project's, over the whole data, not that of the month.
+    assert.equal(personMonthProjects('2026-04', 'ada')[0].row.code, 3)
+    assert.deepEqual(projects('2026-05', 'ada'), [])
+    assert.deepEqual(projects('2026-05', 'ben'), [['paper-kite', 1]])
+    // As many as the chart counts of a project that month.
+    for (const point of personEffortMonths('2026-06', 'ada')) {
+      assert.equal(personMonthProjects(point.key, 'ada').reduce((total, { code }) => total + code, 0), point.counts.projects)
+    }
   })
 
   test('starts from the first month a person shows in, when it is known', () => {
