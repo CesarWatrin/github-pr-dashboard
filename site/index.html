@@ -580,14 +580,14 @@
           </a>
           <!-- The annual review, the last of the pages: shown once the stats carry the managers' password (MANAGER_PASSWORD),
                its padlock open while this browser opens it (pages/review/review.js). -->
-          <a class="nav-link nav-link-review" href="#/performance" data-route-link="review" data-review-link hidden>
+          <a class="nav-link nav-link-review" href="#/performance" title="Performance annuelle" data-route-link="review" data-review-link hidden>
             <svg class="review-padlock-closed" viewBox="0 0 16 16" aria-hidden="true">
               <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
             </svg>
             <svg class="review-padlock-open" viewBox="0 0 16 16" aria-hidden="true">
               <rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7" />
             </svg>
-            Performance annuelle
+            Performance
           </a>
           <!-- The year in review, last: a page apart (retro.html), opened in a tab of its own with the key of its link, and
                the button that copies that link, to give it to the team (shell/retro-link.js). -->
@@ -1075,10 +1075,15 @@
               <h2 id="report-chart-title">Ses PR mois par mois</h2>
               <p class="card-sub">
                 Le mois choisi et les 12 d’avant, depuis son arrivée : ses PR de code, et parmi elles celles de projet,
-                de TMA et d’AC, chacune comptée une fois comme sur « Où va l’effort »
+                de TMA et d’AC, chacune comptée une fois comme sur « Où va l’effort ». Un clic sur un mois montre ses
+                projets dessous
               </p>
               <div class="legend" data-report-chart-legend></div>
               <div class="chart" data-report-chart></div>
+              <div class="report-chart-projects">
+                <h3 data-report-chart-projects-title></h3>
+                <ol class="report-list" data-report-chart-projects></ol>
+              </div>
               <details class="chart-data">
                 <summary>Voir les données du graphique</summary>
                 <div class="table-wrap" data-report-chart-table></div>

@@ -511,6 +511,8 @@ export const PAGES = {
   'Toutes les données synchronisées': 'All the synced data',
   'Aucun projet démarré ce mois-ci': 'No project started this month',
   'Aucun projet livré ce mois-ci': 'No project delivered this month',
+  'Aucun projet ce mois-ci': 'No project this month',
+  'Ses projets en {month}': 'Their projects in {month}',
   'Projets du mois': 'Projects of the month',
   'Ses projets': 'Their projects',
   'Ses projets, PR de code de la squad': 'Their projects, code PRs of the squad',

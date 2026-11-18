@@ -14,10 +14,10 @@ import { browserPath, launch } from './chrome.mjs'
 import { serveSite, TEST_MANAGER_PASSWORD, TEST_PASSWORD, TEST_RETRO_KEY } from './site.mjs'
 
 const stats = madeUpStats()
-// The containers that stay empty on purpose: until the report or a list of « Mes PR » is copied, the chart of a person's report and its data
-// until one is picked, the pairs that replace the review matrix on a narrow screen only, the note of a CI that starts
+// The containers that stay empty on purpose: until the report or a list of « Mes PR » is copied, the chart of a person's report, its data and
+// the projects of a month until one is picked, the pairs that replace the review matrix on a narrow screen only, the note of a CI that starts
 // after the period (none over 12 months), the error of the managers' password until a wrong one is typed.
-const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-list-copied', 'data-report-chart', 'data-report-chart-table', 'data-collaboration-pairs', 'data-ci-cut', 'data-review-error'])
+const EMPTY_ON_PURPOSE = new Set(['data-report-copied', 'data-list-copied', 'data-report-chart', 'data-report-chart-table', 'data-report-chart-projects-title', 'data-report-chart-projects', 'data-collaboration-pairs', 'data-ci-cut', 'data-review-error'])
 
 const skip = !browserPath() && !process.env.CI && 'Chrome not found: set CHROME_PATH'
 // Where a test stops the clock of the page, in the session of the tab: it holds across reloads.
@@ -396,6 +396,15 @@ for (const language of ['fr', 'en']) {
       assert.ok(await page.evaluate(`document.querySelectorAll('[data-report-chart] .bar').length > 0`), 'the made-up person opens code PRs')
       assert.equal(await page.evaluate(`document.querySelectorAll('[data-report-chart] .bar-group').length`), await page.evaluate(`document.querySelectorAll('[data-report-chart-table] tbody tr').length`))
       assert.equal(await page.evaluate(`document.querySelector('[data-report-chart-table] tbody td').textContent`), language === 'en' ? 'May 2026' : 'Mai 2026')
+      // Under it, the projects of the month shown, then of a month clicked, its band behind it; some month has one.
+      const projectsTitle = `document.querySelector('[data-report-chart-projects-title]').textContent`
+      assert.match(await page.evaluate(projectsTitle), language === 'en' ? /May 2026/ : /mai 2026/)
+      const months = await page.evaluate(`[...document.querySelectorAll('[data-report-chart] .hit')].map((hit) => { hit.dispatchEvent(new MouseEvent('click')); return [hit.getAttribute('aria-pressed'), document.querySelectorAll('[data-report-chart-projects] .project-link').length] })`)
+      assert.ok(months.every(([pressed]) => pressed === 'true'), JSON.stringify(months))
+      assert.ok(months.some(([, projects]) => projects > 0), 'the made-up person works on a project')
+      await page.evaluate(`document.querySelector('[data-report-chart] .hit').dispatchEvent(new MouseEvent('click'))`)
+      assert.doesNotMatch(await page.evaluate(projectsTitle), language === 'en' ? /May 2026/ : /mai 2026/)
+      assert.equal(await page.evaluate(`document.querySelectorAll('[data-report-chart] .hit[aria-pressed="true"]').length`), 1)
       // Loaded again, the address leads back to the same person and month.
       await page.evaluate('location.reload()')
       await page.waitFor(`document.readyState === 'complete' && document.querySelector('[data-lock]').hidden && !document.querySelector('[data-main]').classList.contains('is-loading')`)

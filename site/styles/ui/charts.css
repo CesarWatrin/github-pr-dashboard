@@ -70,6 +70,15 @@
   fill: transparent;
 }
 
+/* A bucket that can be picked, and the band behind the one picked. */
+.hit.is-pickable {
+  cursor: pointer;
+}
+
+.pick-band {
+  fill: var(--surface-hover);
+}
+
 .chart-empty {
   margin: 0;
   padding: 24px 0;

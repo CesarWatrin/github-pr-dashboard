@@ -6,6 +6,7 @@
 export const REVIEW = {
   // The route, the link of the sidebar and the markup of index.html.
   'Performance annuelle': 'Annual performance',
+  Performance: 'Performance',
   'Chaque développeur sur les 12 derniers mois complets, et la recommandation de fin d’année':
     'Each developer over the last 12 whole months, and the year-end recommendation',
   'Accès réservé aux managers': 'Managers only',
