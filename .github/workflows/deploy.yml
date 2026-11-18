@@ -75,6 +75,8 @@ jobs:
           FULL_SYNC_PASSWORD: ${{ secrets.FULL_SYNC_PASSWORD }}
           RETRO_KEY: ${{ secrets.RETRO_KEY }}
           MANAGER_PASSWORD: ${{ secrets.MANAGER_PASSWORD }}
+          # A variable, not a secret: true or false, nothing of the organization.
+          PERFORMANCE_PAGE: ${{ vars.PERFORMANCE_PAGE }}
           FULL_SYNC_PROOF: ${{ inputs.proof }}
           BUILD_ID: ${{ github.sha }}
 

@@ -401,7 +401,7 @@ paths:
   slide gives it, and it opens behind the password like any address. A story keeps playing when new stats come in.
 - **Annual performance** (« Performance annuelle », « Performance » in the sidebar so that it fits, `pages/review/`, `#/performance`, `filters: false`), the one page that ranks people
   and scores them, for the managers only: its link, the last of the pages of the sidebar (`[data-review-link]`), shows
-  once the stats carry `manager` (`MANAGER_PASSWORD`), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
+  once the stats carry `manager` (`MANAGER_PASSWORD`, unless `PERFORMANCE_PAGE` is false), its padlock closed, open (`is-unlocked`) while `managerUnlocked()`
   of `model/state.js`: the managers' password typed on this browser within `MANAGER_UNLOCK_DAYS` (30), checked by
   `isManagerPassword()` of `site/domain/manager.js`, only its verifier kept (`github-pr-dashboard:manager`); a button at
   the bottom of the page closes it again. `teamReview()` of `site/domain/review.js` works it out over the

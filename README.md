@@ -285,7 +285,7 @@ pour un visiteur comme pour un robot.
 - La Performance annuelle s'ouvre avec un mot de passe à part, celui des managers (`MANAGER_PASSWORD`, dans le `.env` et
   les secrets de l'environnement `github-pages`) : les stats ne portent qu'un condensé de la clé qui en est dérivée
   (PBKDF2-SHA256, 600 000 itérations, avec son propre sel), et le navigateur ne garde que ce condensé, 30 jours. Sans
-  `MANAGER_PASSWORD`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
+  `MANAGER_PASSWORD`, ou avec `PERFORMANCE_PAGE=false`, ni page ni lien. Il cache la page, pas les données : quiconque a le mot de passe du tableau de
   bord lit les mêmes PR.
 - Une fois le mot de passe accepté, la page demande au navigateur de l'enregistrer sous le nom « Stats PR » (Chrome
   et Edge ; les autres navigateurs le proposent selon leurs propres règles). Le gestionnaire de mots de passe le
@@ -459,6 +459,9 @@ Prérequis :
      sans elle, pas de Rétrospective.
    - `MANAGER_PASSWORD` (facultatif) : le mot de passe des managers, qui ouvre la Performance annuelle ; sans lui, pas de
      Performance annuelle.
+   - `PERFORMANCE_PAGE` (facultatif, une variable et non un secret, dans le même environnement) : un booléen, `true` par
+     défaut ; `false` masque la Performance annuelle et son lien, même avec `MANAGER_PASSWORD`
+     (`gh variable set PERFORMANCE_PAGE --env github-pages --body false`).
 2. Pages activé avec la source **GitHub Actions** (Settings → Pages).
 
 Les tests (`npm test`, sur des données inventées), la vérification de syntaxe (`npm run check`) et celle des types
@@ -467,5 +470,5 @@ protection de `main` exige qu'ils passent.
 
 Variables d'environnement : `ORG` et `DASHBOARD_PASSWORD` (obligatoires), `REPO_CATEGORIES`, `BOT_USERS`,
 `REQUIRED_APPROVALS`, `SQUADS`, `DISPATCH_TOKEN` (avec `DISPATCH_REPOSITORY`, `owner/repo`, hors CI), `FULL_SYNC_PASSWORD`,
-`RETRO_KEY`, `MANAGER_PASSWORD`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
+`RETRO_KEY`, `MANAGER_PASSWORD`, `PERFORMANCE_PAGE`, `SNAPSHOT_PATH`, `STATS_PATH` et `PUBLISHED_STATS_URL` (facultatives ; la dernière indique où relire
 l'historique des badges, par défaut l'adresse GitHub Pages du dépôt en CI).

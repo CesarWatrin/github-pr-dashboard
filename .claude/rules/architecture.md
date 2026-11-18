@@ -66,7 +66,8 @@ deploy to: no workflow of another branch can read them.
 | `DISPATCH_TOKEN` | `.env`, secret | Fine-grained token, this repository only, Actions read and write: the sync button of the page |
 | `DISPATCH_REPOSITORY` | `.env` | `owner/repo` of the dashboard, for `DISPATCH_TOKEN` outside CI |
 | `FULL_SYNC_PASSWORD` | `.env`, secret | Password of the full sync started from the page, apart from `DASHBOARD_PASSWORD` (optional: without it, no password asked) |
-| `MANAGER_PASSWORD` | `.env`, secret | Password of the managers, apart from `DASHBOARD_PASSWORD`: it opens the annual review (optional: without it, no review) |
+| `MANAGER_PASSWORD` | `.env`, secret | Password of the managers, apart from `DASHBOARD_PASSWORD`: it opens the annual performance (optional: without it, no such page) |
+| `PERFORMANCE_PAGE` | `.env`, variable | Boolean: `false` hides the annual performance and its link, even with `MANAGER_PASSWORD`; `true` by default |
 | `RETRO_KEY` | `.env`, secret | Key of the year in review, 32 random bytes in base64url: its link carries it (optional: without it, no year in review) |
 | `FULL_SYNC` / `--full` | workflow input / CLI | Full sync instead of an incremental one; the input needs a valid `FULL_SYNC_PROOF` once `FULL_SYNC_PASSWORD` is set, `--full` never does |
 | `FULL_SYNC_PROOF` | workflow input `proof` | Proof of the full sync password, signed by the page: `at.hex(HMAC-SHA256(key, "full-sync:" + repository + ":" + at))`, good for 2 hours |
