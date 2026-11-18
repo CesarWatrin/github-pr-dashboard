@@ -9,7 +9,7 @@ import { el } from '../../ui/dom.js'
 import { effortBar } from '../../ui/effort.js'
 import { personLink } from '../../ui/links.js'
 import { monthChart, weekChart } from './charts.js'
-import { adviceOf, GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
+import { GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
 /** @typedef {import('../../domain/review.js').TeamReview} TeamReview */
@@ -99,7 +99,6 @@ export function dossier(person, review) {
       { className: `review-verdict is-${group}` },
       el('span', { className: 'review-pill', textContent: GROUPS.find((item) => item.key === group)?.label ?? '' }),
       el('p', { className: 'review-overall' }, el('strong', { textContent: String(person.overall) }), el('span', { textContent: ' / 100' })),
-      el('p', { className: 'review-advice', textContent: adviceOf(person) }),
     ),
   )
 

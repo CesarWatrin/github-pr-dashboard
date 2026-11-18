@@ -21,28 +21,6 @@ export const GROUPS = [
 /** @param {ReviewedPerson} person */
 export const groupOf = (person) => /** @type {Group} */ (person.squad ? 'lead' : person.verdict)
 
-// What the manager should do, in a sentence.
-/** @param {ReviewedPerson} person */
-export function adviceOf(person) {
-  if (person.squad) {
-    return person.squad.mark >= 60
-      ? t('Squad performante : une récompense se justifie si le retour qualitatif suit.')
-      : person.squad.mark >= 40
-        ? t('Squad dans la moyenne : décision à prendre sur le qualitatif.')
-        : t('Squad en retrait : faire le point sur son organisation avant toute récompense.')
-  }
-  if (person.process) {
-    return t('Recadrer d’abord sur les merges sans review, la récompense ensuite.')
-  }
-
-  return {
-    priority: t('Prime ou augmentation en priorité.'),
-    reward: t('Prime ou augmentation.'),
-    steady: t('Maintien, avec un ou deux objectifs précis.'),
-    support: t('Entretien et plan de progrès avant toute récompense.'),
-  }[person.verdict]
-}
-
 // The profiles of the review, as the page names them: those who do mostly maintenance (TMA), some, or little.
 /** @type {Record<string, string>} */
 export const PROFILE_LABELS = { Build: t('hors TMA'), Mixte: t('TMA partielle'), TMA: t('TMA') }

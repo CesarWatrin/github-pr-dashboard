@@ -55,16 +55,6 @@ export const REVIEW = {
   'Chef de squad': 'Head of squad',
   'Jugés d’abord sur le résultat de leur squad, et sur ce que GitHub ne montre pas.':
     'Judged first on the result of their squad, and on what GitHub does not show.',
-  'Squad performante : une récompense se justifie si le retour qualitatif suit.':
-    'A squad that performs: a reward is warranted if the qualitative feedback agrees.',
-  'Squad dans la moyenne : décision à prendre sur le qualitatif.': 'An average squad: decide on the qualitative feedback.',
-  'Squad en retrait : faire le point sur son organisation avant toute récompense.':
-    'A squad behind: review its organization before any reward.',
-  'Recadrer d’abord sur les merges sans review, la récompense ensuite.': 'Address the merges without review first, the reward after.',
-  'Prime ou augmentation en priorité.': 'Bonus or raise, as a priority.',
-  'Prime ou augmentation.': 'Bonus or raise.',
-  'Maintien, avec un ou deux objectifs précis.': 'Keep as is, with one or two precise goals.',
-  'Entretien et plan de progrès avant toute récompense.': 'A talk and an improvement plan before any reward.',
   'De {from} à {to} : {people} personnes évaluées, {others} avec trop peu de recul. Tout vient de l’activité GitHub : PR, reviews et merges.':
     'From {from} to {to}: {people} people evaluated, {others} too new to judge. Everything comes from the activity on GitHub: PRs, reviews and merges.',
   '{months} mois évalués, {code} PR de code dont {merged} mergées, {reviewed} PR relues, {tma} de TMA.':

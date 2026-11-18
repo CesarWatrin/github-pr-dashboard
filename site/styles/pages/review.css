@@ -332,12 +332,6 @@
   font-size: 30px;
 }
 
-.review-advice {
-  max-width: 36ch;
-  margin: 0;
-  font-size: 13px;
-}
-
 .review-marks {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
