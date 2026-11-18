@@ -41,6 +41,9 @@ async function fetchAllItems(node, connection, toItem) {
 /** @type {(node: GithubCommits) => CheckState | null} */
 const checksOf = (node) => node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null
 
+/** @type {(node: GithubCommits) => string | null} */
+const lastCommitOf = (node) => node.commits.nodes[0]?.commit.committedDate ?? null
+
 /**
  * @param {GithubPullRequest} node
  * @returns {Promise<SnapshotPullRequest>}
@@ -65,6 +68,9 @@ async function toRecord(node) {
     comments: await fetchAllItems(node, 'comments', toComment),
     // State of the checks of the last commit: SUCCESS, FAILURE, ERROR, PENDING or EXPECTED, null without checks.
     checks: checksOf(node),
+    // When the last commit was made (made again by a rebase or an amend): the review comments from before it were
+    // answered.
+    lastCommitAt: lastCommitOf(node),
     // GitHub's verdict on the reviews the base branch requires (APPROVED, CHANGES_REQUESTED, REVIEW_REQUIRED, null
     // without such rules), the code owners still asked to review, and the people still asked to review, code owners
     // or not.
@@ -202,13 +208,13 @@ export async function fetchUpdatedSince(sinceIso) {
   }
 }
 
-// The state of the checks of the open pull requests, by repo#number. A check that ends does not move the updatedAt of
-// its pull request: the incremental sync, which reads the pull requests updated since the last one, would keep it
-// PENDING. One search of a few pages of 100, about a point each; past SEARCH_RESULT_LIMIT open pull requests, the most
+// The state of the checks of the open pull requests and when their last commit was made, by repo#number. A check that
+// ends does not move the updatedAt of its pull request: the incremental sync, which reads the pull requests updated
+// since the last one, would keep it PENDING; and a pull request read before the sync read its last commit gets it. One search of a few pages of 100, about a point each; past SEARCH_RESULT_LIMIT open pull requests, the most
 // recently updated only, the others keeping the state last read.
 export async function fetchOpenChecks() {
   const query = `org:${ORG} is:pr is:open sort:updated-desc`
-  /** @type {Map<string, CheckState | null>} */
+  /** @type {Map<string, OpenPullRequestState>} */
   const checks = new Map()
   /** @type {string | null} */
   let cursor = null
@@ -218,7 +224,7 @@ export async function fetchOpenChecks() {
     for (const node of data.search.nodes) {
       // The search may answer what is not a pull request, as an empty node.
       if (node?.repository) {
-        checks.set(keyOf({ repo: node.repository.name, number: node.number }), checksOf(node))
+        checks.set(keyOf({ repo: node.repository.name, number: node.number }), { checks: checksOf(node), lastCommitAt: lastCommitOf(node) })
       }
     }
     const { hasNextPage, endCursor } = data.search.pageInfo
@@ -229,8 +235,8 @@ export async function fetchOpenChecks() {
   }
 }
 
-// The checks of the open pull requests, or none when GitHub does not answer: they then keep the state last read, and
-// the rest of the sync goes on.
+// The checks and the last commit of the open pull requests, or none when GitHub does not answer: they then keep what
+// was last read, and the rest of the sync goes on.
 export async function readOpenChecks() {
   try {
     return await fetchOpenChecks()
@@ -241,18 +247,19 @@ export async function readOpenChecks() {
   }
 }
 
-// The pull requests, those still open with the state of their checks just read when the search had them.
+// The pull requests, those still open with the state of their checks and their last commit just read when the search
+// had them.
 /**
  * @param {SnapshotPullRequest[]} pullRequests
- * @param {Map<string, CheckState | null>} checks
+ * @param {Map<string, OpenPullRequestState>} states
  * @returns {SnapshotPullRequest[]}
  */
-export function withOpenChecks(pullRequests, checks) {
-  return pullRequests.map((pr) =>
-    pr.state === 'OPEN' && checks.has(keyOf(pr))
-      ? { ...pr, checks: /** @type {CheckState | null} */ (checks.get(keyOf(pr))) }
-      : pr,
-  )
+export function withOpenChecks(pullRequests, states) {
+  return pullRequests.map((pr) => {
+    const open = pr.state === 'OPEN' ? states.get(keyOf(pr)) : undefined
+
+    return open ? { ...pr, ...open } : pr
+  })
 }
 
 // The pull requests created between two days (UTC, included), for the backfill. The search answers at most 1000

@@ -56,7 +56,7 @@ export const UNBLOCK_STANCES = [
     since: t('changements demandés'),
     by: t('demandés par'),
     tag: t('changements demandés'),
-    hint: t('Changements demandés il y a plus de trois jours ouvrés, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.'),
+    hint: t('Changements demandés, ou remarques laissées en review sans commit depuis, il y a plus de trois jours ouvrés, sans nouvelle approbation depuis : à corriger, ou à relire de nouveau.'),
     empty: t('Aucune demande de changements qui traîne'),
   },
   {

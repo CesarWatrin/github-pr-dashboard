@@ -224,6 +224,9 @@ export function toPeriodRecord(pr, index, detailsSince = null, projects = null, 
     // An open pull request GitHub does not let merge yet, while code owners are still asked to review it.
     ...(pr.state === 'OPEN' && pr.reviewDecision !== 'APPROVED' && (pr.codeOwnerRequests?.length ?? 0) > 0 && { codeOwners: pr.codeOwnerRequests }),
     ...(requestedReviewers.length > 0 && { requestedReviewers }),
+    // When the last commit of an open pull request ready for review was made: the review comments from before it were
+    // answered (site/domain/open-pull-requests.js).
+    ...(pr.state === 'OPEN' && !pr.draft && pr.lastCommitAt && { lastCommitAt: minutes(pr.lastCommitAt) }),
     // The project of a code pull request, by its name only: the branches stay unpublished. The merge of the project
     // branch into a long-lived one says so: when it is merged, the project is in the code of the repository.
     ...(project && { project }),

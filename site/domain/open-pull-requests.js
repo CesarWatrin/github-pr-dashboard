@@ -2,12 +2,13 @@
 
 // The open pull requests of people of the kinds asked for (code only by default: the unblock page; releases and
 // integrations wait for their reviews too, for the « Mes PR » page), drafts aside, each with its kind, and where each
-// one stands after the latest decision of each reviewer, as GitHub reckons it: changes requested by someone (changes), else blocked by code owners who have not
-// reviewed it yet (owners), else approved by as many people as merging needs (approved), else approved by fewer
-// (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
-// since: when it got there, in minutes since the epoch (the latest of these decisions, the opening for the code owners,
-// the latest intervention, or the opening); by: who decided, or the code owners it waits for; lastAt: its latest review
-// or comment, else its opening; requestedReviewers: the people still asked to review it; counterparts: the pull
+// one stands after the latest decision of each reviewer, as GitHub reckons it: changes requested by someone (changes),
+// else remarks left in a review since its last commit (changes too: see remarksOf()), else blocked by code owners who
+// have not reviewed it yet (owners), else approved by as many people as merging needs (approved), else approved by
+// fewer (approving), else reviewed or commented without a decision (discussed), else waiting for a first look (waiting).
+// since: when it got there, in minutes since the epoch (the latest of these decisions or remarks, the opening for the
+// code owners, the latest intervention, or the opening); by: who decided or left the remarks, or the code owners it
+// waits for; lastAt: its latest review or comment, else its opening; requestedReviewers: the people still asked to review it; counterparts: the pull
 // requests of its branch in other repositories, as [repository, number] (see counterpartStates()).
 /**
  * @param {PullRequestRecord[]} records
@@ -26,7 +27,8 @@ export function openPullRequests(records, { requiredApprovals = 1, kinds = ['cod
       }
       /** @param {ReviewState} state */
       const decided = (state) => [...decisions].filter(([, decision]) => decision.state === state)
-      const requested = decided('CHANGES_REQUESTED')
+      const changes = decided('CHANGES_REQUESTED')
+      const requested = changes.length ? changes : remarksOf(pr, decisions)
       const approved = decided('APPROVED')
       const owners = !requested.length && (pr.codeOwners?.length ?? 0) > 0
       const deciders = requested.length ? requested : owners ? [] : approved
@@ -93,6 +95,29 @@ export function counterpartStates(records, { requiredApprovals = 1 } = {}) {
 
       return [{ repo, number, state }]
     })
+}
+
+// The reviewers who left remarks in a review of a pull request since its last commit, without deciding anything, with
+// the latest: the team asks for changes in review comments far more often than with « Request changes », and until a
+// commit answers them they wait on the author as much. A commit settles them, and so does an approval of the same
+// reviewer, whose later remarks are details then; a mere comment in the conversation is no review, and bots never
+// count (the sync leaves them out). None without the time of the last commit (a pull request not read again since the
+// sync reads it).
+/**
+ * @param {PullRequestRecord} pr
+ * @param {Map<string, unknown>} decisions the reviewers who approved or asked for changes
+ */
+function remarksOf(pr, decisions) {
+  const committedAt = pr.lastCommitAt
+  /** @type {Map<string, { state: ReviewState, at: number }>} */
+  const remarks = new Map()
+  for (const [login, at, state] of pr.interventions) {
+    if (committedAt !== undefined && state === 'COMMENTED' && at >= committedAt && !decisions.has(login)) {
+      remarks.set(login, { state, at })
+    }
+  }
+
+  return [...remarks]
 }
 
 // An open pull request, where it stands.

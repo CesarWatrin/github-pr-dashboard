@@ -82,7 +82,7 @@ export const PAGES = {
   'attend {side}': 'waiting for {side}',
   '{side} est prêt aussi': '{side} is ready too',
   '{side} est déjà mergé': '{side} is already merged',
-  'Des changements demandés, sans nouvelle approbation depuis : à corriger, ou à faire relire de nouveau': 'Changes requested, with no new approval since: to fix, or to have reviewed again',
+  'Des changements demandés, ou des remarques laissées en review sans commit depuis, sans nouvelle approbation : à corriger, ou à faire relire de nouveau': 'Changes requested, or remarks left in a review with no commit since, with no new approval: to fix, or to have reviewed again',
   'Aucune PR avec des changements demandés': 'No PR with changes requested',
   'Pas encore validées, et un code owner du dépôt ne les a pas encore relues : GitHub bloque le merge': 'Not approved yet, and a code owner of the repository has not reviewed them yet: GitHub blocks the merge',
   'Mes PR ouvertes': 'My open PRs',

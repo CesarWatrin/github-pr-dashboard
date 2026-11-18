@@ -44,7 +44,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   les dépôts front, back et mobile, à relire après coup.
 - **Mes PR** : la même chose vue par une personne, choisie une fois et retenue par le navigateur : les PR des autres
   dont GitHub lui demande encore la review (pas celles demandées à une équipe), puis les siennes, chacune dans une
-  seule liste et sans délai minimum : prêtes à merger, changements demandés, oubliées (sans review ni commentaire
+  seule liste et sans délai minimum : prêtes à merger, changements demandés (par « Request changes », ou par des
+  remarques laissées en review sans commit depuis, celles des bots exclues), oubliées (sans review ni commentaire
   depuis plus d'un mois, ce qui l'emporte sur le reste), bloquées par un code owner, et les autres, chacune avec où
   elle en est et qui elle attend ; enfin ses brouillons. Les PR de release et d'intégration y figurent aussi,
   étiquetées. Une PR prête à merger dit aussi où en est la PR de la même branche de l'autre côté (le back d'une PR
