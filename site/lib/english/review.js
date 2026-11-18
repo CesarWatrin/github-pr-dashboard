@@ -44,7 +44,7 @@ export const REVIEW = {
     'Delivers less than the median of devs {profile} ({share} of the median), a statistically sound gap.',
   'Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. La productivité ne se compare qu’entre devs de la même catégorie : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.':
     'Stack and maintenance. The stack (front, back, mobile, full-stack) reads as on the Team page. By the share of hotfixes in their code PRs, each person is TMA from 50%, partly maintenance from 30 to 50%, outside maintenance below. Productivity is only compared among devs of the same kind: a 5-line hotfix does not weigh like a 400-line feature.',
-  'Performance exceptionnelle': 'Exceptional performance',
+  'Bien au-delà des attentes': 'Well above expectations',
   'Haut niveau sur la livraison, la review et le poids dans l’équipe.': 'High marks on delivery, review and weight in the team.',
   'Au-dessus des attentes': 'Above expectations',
   'Au-dessus de l’équipe sur la plupart des axes.': 'Above the team on most counts.',
@@ -106,8 +106,8 @@ export const REVIEW = {
     'The four marks are ranks from 0 to 100. Productivity: what the person delivers a month, against devs of the same kind. Efficiency: time to merge, abandoned PRs, merges without review, failed checks, regularity. Collaboration: PRs reviewed a month, comments, people who depend on their reviews, responsiveness. Importance: their share of the team’s code, reviews and maintenance, the repositories that rest on them, their projects and AC, the PRs of others they merge.',
   'Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, le niveau ne dépasse pas « conforme aux attentes » tant que ce n’est pas corrigé.':
     'Overall mark: 35% productivity, 25% collaboration, 25% importance, 15% efficiency. For a head of squad, productivity only counts for 15%, efficiency for 10%, and the result of their squad for 25%. Beyond 25% of PRs merged without review, the level goes no higher than “meets expectations” until it is corrected.',
-  'Niveau : performance exceptionnelle à partir de 72, au-dessus des attentes à partir de 58, conforme aux attentes à partir de 42, en dessous des attentes sous 42.':
-    'Level: exceptional performance from 72, above expectations from 58, meets expectations from 42, below expectations under 42.',
+  'Niveau : bien au-delà des attentes à partir de 72, au-dessus des attentes à partir de 58, conforme aux attentes à partir de 42, en dessous des attentes sous 42.':
+    'Level: well above expectations from 72, above expectations from 58, meets expectations from 42, below expectations under 42.',
   'Limites. GitHub ne voit ni la difficulté d’un sujet, ni l’aide donnée à l’oral, ni les spécifications, l’astreinte ou les réunions. Cette page objective et prépare les entretiens, elle ne remplace pas l’avis des chefs de squad.':
     'Limits. GitHub sees neither how hard a topic is, nor help given in person, nor specifications, on-call duty or meetings. This page grounds and prepares the reviews; it does not replace the opinion of the heads of squad.',
   'Les chiffres viennent des PR que toute l’équipe peut lire sur le dashboard : le mot de passe des managers cache la page, pas les données.':

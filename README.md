@@ -234,7 +234,7 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
 - **Performance annuelle**, réservée aux managers : son lien, la dernière des pages de la barre latérale, porte un cadenas, fermé tant
   que le mot de passe des managers (`MANAGER_PASSWORD`) n'a pas été saisi sur l'appareil, ouvert pendant les 30 jours où
   il reste valable. La page reprend chaque développeur encore dans l'équipe sur les 12 derniers mois complets. En haut,
-  les niveaux de fin d'année (performance exceptionnelle, au-dessus des attentes, conforme aux attentes, en dessous des
+  les niveaux de fin d'année (bien au-delà des attentes, au-dessus des attentes, conforme aux attentes, en dessous des
   attentes ; les chefs de squad à
   part, jugés aussi sur le résultat de leur squad ; ceux qui ont trop peu de recul, sans niveau), puis si les
   écarts entre personnes sont réels, le classement et les squads. Un clic sur un nom ouvre son dossier dans une
