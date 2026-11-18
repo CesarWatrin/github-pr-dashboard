@@ -205,6 +205,7 @@ export const PAGES = {
   'Déploiements': 'Deployments',
   'Arrivées': 'Arrivals',
   'Bilan copié': 'Report copied',
+  Copié: 'Copied',
   'Copie impossible dans ce navigateur': 'Copying is not possible in this browser',
   'Les chiffres du mois : {name}': 'The month’s figures: {name}',
   'la médiane de ses {count} derniers mois complets': 'the median of their last {count} whole months',

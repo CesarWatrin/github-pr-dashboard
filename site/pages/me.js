@@ -12,6 +12,7 @@ import { notificationsOn, notificationsSupported, notifyNewItems } from '../serv
 import { $, el } from '../ui/dom.js'
 import { personLink, pullRequestLink } from '../ui/links.js'
 import { listItem, renderList } from '../ui/list.js'
+import { setupListCopies } from '../ui/list-copy.js'
 import {
   approvers,
   FORGOTTEN,
@@ -244,6 +245,7 @@ export function renderMe(mode) {
     $(`[data-me-title="${key}"]`).textContent = queue ? `${list.label} (${formatNumber(queue[key].length)})` : list.label
     $(`[data-me-sub="${key}"]`).textContent = typeof list.hint === 'function' ? list.hint(required) : list.hint
     renderList($(`[data-me="${key}"]`), queue ? queue[key].map(ME_ITEMS[key]) : [], queue ? list.empty : t('Choisir une personne en haut de la page'))
+    $(`[data-me-copy="${key}"]`).hidden = !queue?.[key].length
   }
   // What its urgent lists hold, each pull request in one list only: what the tab, the red badges and the notifications
   // count. And how many pull requests of the person's own they hold, for the grey badge.
@@ -278,8 +280,10 @@ async function toggleNotifications() {
   renderNotifyToggle()
 }
 
-// Listens to the person picker and the notifications toggle, and to the permission of the browser.
+// Listens to the person picker, the copy button of each list and the notifications toggle, and to the permission of
+// the browser.
 export function setupMe() {
+  setupListCopies('[data-me-copy]')
   $('[data-me-picker]').addEventListener('change', (event) => {
     state.me = /** @type {HTMLSelectElement} */ (event.target).value
     storeMe()
