@@ -1,4 +1,4 @@
-// Columns over time buckets: series side by side, partial buckets lighter.
+// Columns over time buckets: series side by side, partial buckets lighter; a bucket can be picked, behind a band.
 
 import { compactFormat, formatDecimal, formatNumber } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
@@ -21,10 +21,23 @@ import { measureText } from './measure.js'
  * @param {boolean} [options.decimals]
  * @param {(value: number) => string} [options.format]
  * @param {(point: Point) => { label: string, value: string }[]} [options.extraRows] more rows for the tooltip of a bucket
+ * @param {string | null} [options.picked] the key of the bucket picked, behind a band
+ * @param {(point: Point) => void} [options.onPick] what picking a bucket does (a click, Enter or Space), the band moving
+ *   to it; without it, none can be picked
  */
 export function columnChart(
   container,
-  { points, bucket, series, ariaLabel, decimals = false, format = decimals ? formatDecimal : formatNumber, extraRows = () => [] },
+  {
+    points,
+    bucket,
+    series,
+    ariaLabel,
+    decimals = false,
+    format = decimals ? formatDecimal : formatNumber,
+    extraRows = () => [],
+    picked = null,
+    onPick = null,
+  },
 ) {
   const width = container.clientWidth
   if (width === 0) {
@@ -66,6 +79,16 @@ export function columnChart(
     root.append(label)
   }
 
+  // The band behind the bucket picked, moved to the one picked next.
+  const band = svg('rect', { class: 'pick-band', y: margin.top, width: slot, height: innerHeight, rx: 6 })
+  /** @param {number} index */
+  const placeBand = (index) => {
+    band.setAttribute('x', String(margin.left + slot * index))
+    band.toggleAttribute('hidden', index < 0)
+  }
+  placeBand(points.findIndex((point) => point.key === picked))
+  root.append(band)
+
   // A single series labels its peak and its latest value; grouped series rely on the legend and tooltip.
   const labelled = new Set()
   if (series.length === 1) {
@@ -105,10 +128,10 @@ export function columnChart(
   })
   root.append(svg('line', { class: 'baseline', x1: margin.left, x2: width - margin.right, y1: baselineY, y2: baselineY }))
 
-  points.forEach((point, index) => {
+  const hits = points.map((point, index) => {
     const title = bucketTitle(point.key, bucket)
     const hit = svg('rect', {
-      class: 'hit',
+      class: onPick ? 'hit is-pickable' : 'hit',
       x: margin.left + slot * index,
       y: margin.top,
       width: slot,
@@ -138,7 +161,25 @@ export function columnChart(
         hideTooltip()
       },
     )
+    if (onPick) {
+      hit.setAttribute('role', 'button')
+      hit.setAttribute('aria-pressed', String(point.key === picked))
+      const pick = () => {
+        placeBand(index)
+        hits.forEach((other, otherIndex) => other.setAttribute('aria-pressed', String(otherIndex === index)))
+        onPick(point)
+      }
+      hit.addEventListener('click', pick)
+      hit.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          pick()
+        }
+      })
+    }
     root.append(hit)
+
+    return hit
   })
 
   container.replaceChildren(root)

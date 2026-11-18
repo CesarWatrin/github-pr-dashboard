@@ -74,7 +74,7 @@ paths:
   - A text column needs a `format`: the default one formats numbers.
   - Every column whose meaning is not obvious has a `hint`: the legend under the table is built from these.
 - **Charts**: `columnChart()` over time buckets (series side by side, partial buckets lighter, tooltip on hover, an
-  optional `format` for durations), `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows ×
+  optional `format` for durations, a bucket to pick with `onPick`), `barChart()` for rankings, `heatmapChart()` for a grid of intensities (rows ×
   columns, `color-mix` on `--series-1`; on cells too narrow for its tilted column labels side by side, one in two or
   three keeps its label, the last one always: `TILTED_LABEL_SPACING`), `shareChart()` for bars cut into shares that fill the width, `stackedChart()` for columns over time buckets cut
   into the shares of their series (100 %, the first series from the axis, the share written inside a part tall and wide
@@ -222,7 +222,10 @@ paths:
   it, from their arrival, by `personEffortSeries()` of `model/effort.js`), a `columnChart()` of all of them beside
   those of a project, of the TMA and of an AC (`REPORT_CHART_SERIES` of `pages/report/chart.js`, the colors of
   `EFFORT_SERIES`, the whole in `--text-muted`), its card hidden for the team and drawn from `renderCharts()` too
-  (`renderReportCharts()`); then their figures of the badges, whether they led the team on each (`personBadges()`), their busiest repositories
+  (`renderReportCharts()`); a month of it is picked (`picked` and `onPick` of `columnChart()`: a click, Enter or Space,
+  a band behind it), the month shown until another is, and its projects show under it, each with the code pull
+  requests the chart counts of it that month (`personMonthProjects()`, `projectsOfRecords()` of `model/projects.js`,
+  their life over the whole data); then their figures of the badges, whether they led the team on each (`personBadges()`), their busiest repositories
   (`personRepositories()`), who reviewed them and whom they reviewed (`personDuos()`, from the `reviewPairs` of the
   team, people still in the team only) and their projects of the month, in place of the champions, repositories and
   arrivals of the team (`pages/report/lists.js`). `reportContent()` works out what the report says, once for the page

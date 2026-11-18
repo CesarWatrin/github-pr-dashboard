@@ -2,7 +2,7 @@
 // domain/projects.js), worked out once per stats, range, squad and repositories, the share of the team their authors
 // are, and what they add up to; the repositories of the projects of the period, for the repository filter; and what the
 // other pages read of them: the totals of the overview and of the period compared, the chart of the overview, the
-// projects of each person and of each squad, and the project of a pull request.
+// projects of each person and of each squad, of some pull requests, and the project of a pull request.
 
 import { projectRows, projectsOf, projectSummary } from '../domain/projects.js'
 import { projectSeries } from '../domain/projects/series.js'
@@ -220,13 +220,50 @@ export function projectOf(key) {
   if (row) {
     return { row, rows, whole: false }
   }
-  const stats = loadedStats()
-  const whole = projectRows(stats.pullRequests, { start: Date.parse(stats.windowStart), end: Date.parse(stats.generatedAt), bucket: 'month' }, { now: Date.parse(stats.generatedAt) }).map(
-    (other) => ({ ...other, people: other.authors.length, teamShare: null }),
-  )
+  const whole = wholeProjects()
   const found = whole.find((other) => other.key === key)
 
   return found ? { row: found, rows: whole, whole: true } : null
+}
+
+// Every project of the data, over the whole of it, worked out once per stats: a project the period misses.
+/** @type {WeakMap<Stats, ProjectPeriod[]>} */
+const wholeRows = new WeakMap()
+/** @returns {ProjectPeriod[]} */
+function wholeProjects() {
+  const stats = loadedStats()
+  if (!wholeRows.has(stats)) {
+    const range = { start: Date.parse(stats.windowStart), end: Date.parse(stats.generatedAt), bucket: /** @type {Bucket} */ ('month') }
+    wholeRows.set(
+      stats,
+      projectRows(stats.pullRequests, range, { now: range.end }).map((other) => ({ ...other, people: other.authors.length, teamShare: null })),
+    )
+  }
+
+  return /** @type {ProjectPeriod[]} */ (wholeRows.get(stats))
+}
+
+// The projects of some pull requests (a person's over a month: their report), each with how many code pull requests of
+// them it has, counted as « Où va l’effort » counts them (projectKeyOf()), the busiest first, its life over the whole data.
+/** @type {(records: PullRequestRecord[]) => ProjectShare[]} */
+export function projectsOfRecords(records) {
+  /** @type {Map<string, number>} */
+  const counts = new Map()
+  for (const pr of records) {
+    const key = projectKeyOf(pr)
+    if (key !== null && pr.kind === 'code' && !pr.bot) {
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+  }
+  const rows = new Map(wholeProjects().map((row) => [row.key, row]))
+
+  return [...counts]
+    .flatMap(([key, code]) => {
+      const row = rows.get(key)
+
+      return row ? [{ row, code }] : []
+    })
+    .sort((a, b) => b.code - a.code || a.row.start - b.row.start)
 }
 
 // Whether the stats know any project at all (projectsOf(): one with a few code pull requests), whatever the period:

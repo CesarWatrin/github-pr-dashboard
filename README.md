@@ -72,7 +72,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   ses reviews des PR des autres (PR relues, commentaires, approbations, changements demandés, merges), les projets et
   AC où la personne a ouvert une PR de code dans le mois, chaque mois comparé à ses propres mois depuis son arrivée,
   jamais à d'autres personnes ; ses PR de code mois par mois, du mois choisi et des 12 d'avant depuis son arrivée, en
-  colonnes à côté de celles de projet, de TMA et d'AC (chacune comptée une fois, comme sur « Où va l'effort ») ; puis
+  colonnes à côté de celles de projet, de TMA et d'AC (chacune comptée une fois, comme sur « Où va l'effort »), et
+  dessous ses projets du mois cliqué (le mois choisi d'abord), chacun avec ses PR de code ce mois-là ; puis
   ses chiffres des badges du mois (en tête de l'équipe ou non), ses dépôts les plus
   actifs, ses binômes de review et ses projets du mois. L'adresse dit le mois et la personne. « Copier le bilan » le
   copie en texte, prêt à coller dans Google Chat ou Slack : titres en gras, une ligne par chiffre avec les valeurs de la
