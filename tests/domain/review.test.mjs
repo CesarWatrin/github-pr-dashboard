@@ -172,15 +172,15 @@ describe('the overall mark and the recommendation', () => {
   const squad = (mark) => /** @type {SquadResult} */ (/** @type {unknown} */ ({ mark }))
 
   test('productivity weighs most, then collaboration and importance, then efficiency', () => {
-    assert.deepEqual(overallOf(person({ productivity: 100, efficiency: 100, collaboration: 100, importance: 100 }), null), { overall: 100, verdict: 'priority', process: false })
-    assert.equal(overallOf(person({ productivity: 60, efficiency: 60, collaboration: 60, importance: 60 }), null).verdict, 'reward')
-    assert.equal(overallOf(person({ productivity: 50, efficiency: 50, collaboration: 50, importance: 50 }), null).verdict, 'steady')
-    assert.equal(overallOf(person({ productivity: 10, efficiency: 50, collaboration: 30, importance: 30 }), null).verdict, 'support')
+    assert.deepEqual(overallOf(person({ productivity: 100, efficiency: 100, collaboration: 100, importance: 100 }), null), { overall: 100, verdict: 'exceptional', process: false })
+    assert.equal(overallOf(person({ productivity: 60, efficiency: 60, collaboration: 60, importance: 60 }), null).verdict, 'above')
+    assert.equal(overallOf(person({ productivity: 50, efficiency: 50, collaboration: 50, importance: 50 }), null).verdict, 'meets')
+    assert.equal(overallOf(person({ productivity: 10, efficiency: 50, collaboration: 30, importance: 30 }), null).verdict, 'below')
   })
 
-  test('too many merges without review hold any reward back', () => {
+  test('too many merges without review cap the level at meeting expectations', () => {
     const result = overallOf(person({ productivity: 100, efficiency: 100, collaboration: 100, importance: 100 }, { unreviewedShare: 0.3 }), null)
-    assert.deepEqual(result, { overall: 100, verdict: 'steady', process: true })
+    assert.deepEqual(result, { overall: 100, verdict: 'meets', process: true })
   })
 
   test('a head of squad is judged on their squad for a quarter, and less on their own code', () => {

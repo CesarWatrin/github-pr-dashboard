@@ -6,15 +6,15 @@ import { displayName } from '../../model/people.js'
 import { stackType } from '../../model/repositories.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
-/** @typedef {'priority' | 'reward' | 'steady' | 'support' | 'lead'} Group */
+/** @typedef {'exceptional' | 'above' | 'meets' | 'below' | 'lead'} Group */
 
 // The groups of the board, in their order: the recommendations, then the heads of squad, judged apart.
 /** @type {{ key: Group, label: string, hint: string }[]} */
 export const GROUPS = [
-  { key: 'priority', label: t('Performance exceptionnelle'), hint: t('Haut niveau sur la livraison, la review et le poids dans l’équipe.') },
-  { key: 'reward', label: t('Au-dessus des attentes'), hint: t('Au-dessus de l’équipe sur la plupart des axes.') },
-  { key: 'steady', label: t('Conforme aux attentes'), hint: t('Une contribution correcte sans écart marquant, ou un point de process à corriger.') },
-  { key: 'support', label: t('En dessous des attentes'), hint: t('En retrait sur plusieurs axes, ou une présence à expliquer.') },
+  { key: 'exceptional', label: t('Performance exceptionnelle'), hint: t('Haut niveau sur la livraison, la review et le poids dans l’équipe.') },
+  { key: 'above', label: t('Au-dessus des attentes'), hint: t('Au-dessus de l’équipe sur la plupart des axes.') },
+  { key: 'meets', label: t('Conforme aux attentes'), hint: t('Une contribution correcte sans écart marquant, ou un point de process à corriger.') },
+  { key: 'below', label: t('En dessous des attentes'), hint: t('En retrait sur plusieurs axes, ou une présence à expliquer.') },
   { key: 'lead', label: t('Chef de squad'), hint: t('Jugés d’abord sur le résultat de leur squad, et sur ce que GitHub ne montre pas.') },
 ]
 

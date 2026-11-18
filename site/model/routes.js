@@ -53,7 +53,7 @@ export const ROUTES = {
   review: {
     hash: '#/performance',
     title: t('Performance annuelle'),
-    subtitle: t('Chaque développeur sur les 12 derniers mois complets, et la recommandation de fin d’année'),
+    subtitle: t('Chaque développeur sur les 12 derniers mois complets, et son niveau de l’année'),
     filters: false,
   },
   method: { hash: '#/methode', title: t('Méthode'), subtitle: t('Les règles communes : chaque colonne est expliquée sous son tableau'), filters: false },

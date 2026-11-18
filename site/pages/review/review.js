@@ -27,7 +27,7 @@ const COLUMNS = [
   { key: 'name', label: t('Personne'), text: true, sort: (person) => displayName(person.login).toLowerCase(), cell: (person) => dossierButton(person, 'review-name') },
   {
     key: 'group',
-    label: t('Recommandation'),
+    label: t('Niveau'),
     text: true,
     sort: (person) => GROUPS.findIndex((group) => group.key === groupOf(person)),
     cell: (person) => el('span', { className: `review-pill is-${groupOf(person)}`, textContent: GROUPS.find((group) => group.key === groupOf(person))?.label ?? '' }),
@@ -159,7 +159,7 @@ function renderBoard(review) {
             'div',
             { className: 'review-lane is-short' },
             el('h3', {}, el('span', { textContent: t('Trop peu de recul') }), el('span', { textContent: String(review.others.length) })),
-            el('p', { textContent: t('Arrivée récente ou activité de code marginale : pas de recommandation.') }),
+            el('p', { textContent: t('Arrivée récente ou activité de code marginale : pas de niveau.') }),
             el(
               'div',
               { className: 'review-chips' },
@@ -309,7 +309,7 @@ function renderMethod() {
     t('Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous des devs comparables veut dire que tout l’intervalle l’est : l’écart ne tient pas à un ou deux mois atypiques.'),
     t('Heures ouvrées. Chaque délai ne compte que les heures de 9 h à 18 h, du lundi au vendredi, heure de Paris. Une journée vaut 9 heures : « 2,5 j » veut dire deux journées et demie de travail, pas de calendrier. Les jours actifs comptent les jours ouvrés, fériés retirés, où la personne a fait au moins une action sur GitHub : un plancher, une journée de réunions ou de spécifications n’y laisse pas de trace.'),
     t('Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, face aux devs de sa catégorie. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.'),
-    t('Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, aucune récompense n’est recommandée tant que ce n’est pas corrigé.'),
+    t('Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, le niveau ne dépasse pas « conforme aux attentes » tant que ce n’est pas corrigé.'),
     t('Niveau : performance exceptionnelle à partir de 72, au-dessus des attentes à partir de 58, conforme aux attentes à partir de 42, en dessous des attentes sous 42.'),
     t('Limites. GitHub ne voit ni la difficulté d’un sujet, ni l’aide donnée à l’oral, ni les spécifications, l’astreinte ou les réunions. Cette page objective et prépare les entretiens, elle ne remplace pas l’avis des chefs de squad.'),
     t('Les chiffres viennent des PR que toute l’équipe peut lire sur le dashboard : le mot de passe des managers cache la page, pas les données.'),
