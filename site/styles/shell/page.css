@@ -53,6 +53,25 @@ h3 {
   font-size: 13px;
 }
 
+/* A filter of the whole page, above its cards: on the right, what it applies to before it. */
+.page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 16px;
+}
+
+.page-toolbar-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.page-toolbar .repo-filter {
+  margin-left: 0;
+}
+
 .card-toolbar {
   display: flex;
   flex-wrap: wrap;

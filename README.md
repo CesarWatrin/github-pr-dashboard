@@ -159,7 +159,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   back n'a pas à relire un dev front. Dans la matrice, les relectures qui manquent ressortent en rouge, même sans
   recherche : un 0 rouge, ou un contour rouge quand il y en a quelques-unes, avec au survol ce qui était attendu ; avec
   une recherche, la matrice garde tout le monde, met en avant la personne cherchée et marque d'un 0 rouge chaque
-  personne qu'elle ne relit pas ou qui ne la relit pas.
+  personne qu'elle ne relit pas ou qui ne la relit pas, quand une relecture était plausible (stacks compatibles et
+  dépôts en commun).
 - **Cartographie** : l'équipe en deux réseaux disposés par des forces, à la façon de react-force-graph, sur la
   période et la squad choisies. Le réseau des reviews relie deux personnes qui relisent les PR de code l'une de
   l'autre : les groupes, les silos et les ponts se forment seuls. Qui écrit où relie chaque personne aux dépôts où

@@ -1283,11 +1283,14 @@
 
           <!-- Collaboration -->
           <div class="route" data-route="collaboration" hidden>
+            <!-- The repository filter of the whole page, above its cards: the matrix, the pairs and circles, the reviewers
+                 of each author. -->
+            <div class="page-toolbar">
+              <p class="page-toolbar-note">Le filtre de dépôts s’applique à toute la page.</p>
+              <details class="repo-filter" data-repo-filter="collaboration"></details>
+            </div>
             <section class="card" aria-labelledby="collaboration-matrix-title" data-collaboration-matrix-card>
-              <div class="card-toolbar">
-                <h2 id="collaboration-matrix-title">Qui relit qui</h2>
-                <details class="repo-filter" data-repo-filter="collaboration"></details>
-              </div>
+              <h2 id="collaboration-matrix-title">Qui relit qui</h2>
               <p class="card-sub" data-collaboration-matrix-sub></p>
               <div class="heatmap" data-collaboration-matrix></div>
               <ol class="pairs" data-collaboration-pairs hidden></ol>
@@ -1295,8 +1298,7 @@
                 Pour repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes. Les
                 personnes qui pèsent moins de 2 % des relectures de la période ont trop peu de données pour une ligne
                 ou une colonne : elles sont regroupées dans « Peu de relectures » (« Autres » quand la largeur en
-                écarte aussi d’autres), et une recherche les fait apparaître. Le filtre de dépôts s’applique à toute
-                la page.
+                écarte aussi d’autres), et une recherche les fait apparaître.
               </p>
               <details class="chart-data">
                 <summary>Voir les données de la matrice</summary>

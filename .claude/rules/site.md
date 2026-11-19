@@ -154,8 +154,9 @@ paths:
   pace (`expectedAt()`, by the repositories they review and write in). The search filters every list and circle, and the
   matrix keeps everyone and lights up the people found (`found` of `heatmapChart()`). The matrix marks in red (`alert`)
   the reviews missing between two people (`missingReviews()`), even without a search: a red zero, or a cell ringed in red
-  when there are a few, what was expected in the tooltip; with a search, any zero between the people found and the
-  others too. One's own cell stays blank. A review is only expected between people whose stacks match (`compatible` of
+  when there are a few, what was expected in the tooltip; with a search, a zero between the people found and the others
+  too, where a review was likely (at least one expected by `reviewExpectations()`: stacks that match, repositories
+  shared). One's own cell stays blank. A review is only expected between people whose stacks match (`compatible` of
   `reviewExpectations()`: the same, or one of them full-stack), for the missing reviews and every suggestion. The authors table
   gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
   (`firstReviewOf()`).
