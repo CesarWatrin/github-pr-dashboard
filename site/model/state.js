@@ -31,6 +31,7 @@ export const state = {
   periodCache: null,
   ciCache: null,
   networkCache: null,
+  circlesCache: null,
   // The findings of the analysis page, worked out once per period and data, when that page shows.
   analysisCache: null,
   query: '',

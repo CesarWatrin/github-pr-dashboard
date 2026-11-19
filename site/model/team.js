@@ -1,6 +1,7 @@
 // Each person's figures over the period (team page, person dialog), who reviews whom, and what their hotfixes add up to.
 
-import { median } from '../domain/math.js'
+import { median, percentile } from '../domain/math.js'
+import { reviewCircles } from '../domain/review-circles.js'
 import { reviewNetwork } from '../domain/team.js'
 import { t } from '../lib/i18n.js'
 import { sumOf } from '../lib/math.js'
@@ -25,6 +26,32 @@ export function currentNetwork() {
   }
 
   return state.networkCache.network
+}
+
+// The pairs and circles of review of the period over the repositories selected on the page (reviewCircles()), worked
+// out once per network, with how long each author's code pull requests waited for a first review, in working hours.
+export function currentCircles() {
+  const network = currentNetwork()
+  if (state.circlesCache?.network !== network) {
+    /** @type {Map<string, number[]>} */
+    const waits = new Map(
+      currentPeriod()
+        .authors.filter((person) => isCurrent(person.login))
+        .map((person) => [person.login, selectedEntries(person, 'collaboration').flatMap(([, stats]) => stats.timesToFirstReviewHours)]),
+    )
+    state.circlesCache = { network, waits, circles: reviewCircles(network.pairs, waits) }
+  }
+
+  return state.circlesCache
+}
+
+// How long an author's code pull requests waited for a first review: the median, and the ninth decile, which only the
+// slowest tenth passes.
+/** @param {string} login */
+export function firstReviewOf(login) {
+  const hours = currentCircles().waits.get(login) ?? []
+
+  return { firstReview: percentile(hours, 0.5), firstReviewSlowest: percentile(hours, 0.9) }
 }
 
 // Everyone who wrote or reviewed code over the period in the repositories selected on the page, most code pull requests

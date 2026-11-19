@@ -1,0 +1,124 @@
+/* The pairs and circles of review (pages/collaboration/circles.js): the busiest pairs as bars cut in two, what each
+   reviewed of the other; the circles as small cards, a circle that waits marked. */
+.circles-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.circle-pairs,
+.circles {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.circle-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.circle-pair-names {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Long names shorten rather than run into each other. */
+.circle-pair-names > .person-link {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.circle-pair-names .person-link-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.circle-pair-arrows {
+  flex: none;
+  color: var(--text-muted);
+}
+
+
+
+.circle-pair-track {
+  display: block;
+  height: 10px;
+}
+
+.circle-pair-bar {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.circle-pair-first {
+  background: var(--series-1);
+}
+
+.circle-pair-second {
+  background: var(--series-3);
+}
+
+.circle-pair-counts {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.circle {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.circle.is-waiting {
+  border-color: var(--status-serious);
+  background: color-mix(in srgb, var(--status-serious) 8%, transparent);
+}
+
+.circle-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.circle-flag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--status-serious) 22%, transparent);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.circle-names,
+.circle-figure {
+  margin: 0;
+  font-size: 13px;
+}
+
+.circle-figure {
+  color: var(--text-secondary);
+}
+
+.circle-alert {
+  color: var(--text-primary);
+  font-weight: 600;
+}

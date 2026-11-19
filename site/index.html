@@ -56,6 +56,7 @@
     <link rel="stylesheet" href="styles/pages/review.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/force-graph.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/pages/cartography.css?v=__BUILD__" />
+    <link rel="stylesheet" href="styles/pages/circles.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/bus-factor.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/badges.css?v=__BUILD__" />
     <link rel="stylesheet" href="styles/ui/card-dialog.css?v=__BUILD__" />
@@ -101,6 +102,7 @@
         "./domain/period/sizes.js": "./domain/period/sizes.js?v=__BUILD__",
         "./domain/projects.js": "./domain/projects.js?v=__BUILD__",
         "./domain/projects/series.js": "./domain/projects/series.js?v=__BUILD__",
+        "./domain/review-circles.js": "./domain/review-circles.js?v=__BUILD__",
         "./domain/review.js": "./domain/review.js?v=__BUILD__",
         "./domain/review/calendar.js": "./domain/review/calendar.js?v=__BUILD__",
         "./domain/review/figures.js": "./domain/review/figures.js?v=__BUILD__",
@@ -159,6 +161,7 @@
         "./pages/cartography/nodes.js": "./pages/cartography/nodes.js?v=__BUILD__",
         "./pages/cartography/replay.js": "./pages/cartography/replay.js?v=__BUILD__",
         "./pages/collaboration.js": "./pages/collaboration.js?v=__BUILD__",
+        "./pages/collaboration/circles.js": "./pages/collaboration/circles.js?v=__BUILD__",
         "./pages/cycle.js": "./pages/cycle.js?v=__BUILD__",
         "./pages/devops.js": "./pages/devops.js?v=__BUILD__",
         "./pages/effort.js": "./pages/effort.js?v=__BUILD__",
@@ -275,6 +278,7 @@
     <link rel="modulepreload" href="domain/period/sizes.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/projects.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/projects/series.js?v=__BUILD__" />
+    <link rel="modulepreload" href="domain/review-circles.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/review.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/review/calendar.js?v=__BUILD__" />
     <link rel="modulepreload" href="domain/review/figures.js?v=__BUILD__" />
@@ -327,6 +331,7 @@
     <link rel="modulepreload" href="pages/cartography/nodes.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/cartography/replay.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/collaboration.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/collaboration/circles.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/cycle.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/devops.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/effort.js?v=__BUILD__" />
@@ -1297,6 +1302,27 @@
                 <summary>Voir les données de la matrice</summary>
                 <div class="table-wrap" data-collaboration-table></div>
               </details>
+            </section>
+
+            <section class="card" aria-labelledby="circles-title">
+              <h2 id="circles-title">Binômes et cercles de relecture</h2>
+              <p class="card-sub">Qui se relit entre soi, et qui attend sa première review</p>
+              <div class="tiles" data-circles-tiles></div>
+              <div class="circles-columns">
+                <div>
+                  <h3 class="tile-group">Les binômes les plus fréquents</h3>
+                  <p class="card-note">
+                    Ce que chacun a relu des PR de l’autre, la personne qui relit le plus en premier : en bleu ce qu’elle a relu,
+                    en vert ce que l’autre lui a rendu.
+                  </p>
+                  <ol class="circle-pairs" data-circle-pairs></ol>
+                </div>
+                <div>
+                  <h3 class="tile-group">Les cercles</h3>
+                  <ul class="circles" data-circles></ul>
+                </div>
+              </div>
+              <p class="card-note" data-circles-note></p>
             </section>
 
             <section class="card" aria-labelledby="collaboration-authors-title">

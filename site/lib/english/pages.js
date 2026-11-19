@@ -699,4 +699,33 @@ export const PAGES = {
   'Part de chaque type de travail dans les PR de code de chaque personne, {period}':
     'Share of each kind of work in the code PRs of each person, {period}',
   'Où va son effort': 'Where their effort goes',
+  // The pairs and circles of review (collaboration page).
+  'Binômes et cercles de relecture': 'Pairs and circles of review',
+  'Qui se relit entre soi, et qui attend sa première review': 'Who reviews among themselves, and who waits for a first review',
+  'Les binômes les plus fréquents': 'The busiest pairs',
+  'Ce que chacun a relu des PR de l’autre, la personne qui relit le plus en premier : en bleu ce qu’elle a relu, en vert ce que l’autre lui a rendu.':
+    'What each reviewed of the other’s PRs, the one who reviews the most first: in blue what they reviewed, in green what the other gave back.',
+  'Les cercles': 'The circles',
+  'Reviews rendues': 'Reviews returned',
+  'Part des {count} premiers binômes': 'Share of the {count} busiest pairs',
+  'Relecteurs pour {share} des reviews': 'Reviewers for {share} of the reviews',
+  'Groupes qui attendent': 'Groups waiting',
+  '{first} a relu {firstCount} de {second}, {second} {secondCount} de {first}': '{first} reviewed {firstCount} of {second}, {second} {secondCount} of {first}',
+  Attend: 'Waiting',
+  'Hors des cercles : ses PR sont relues par des personnes qui relisent surtout ailleurs.': 'Outside the circles: their PRs are reviewed by people who mostly review elsewhere.',
+  '{share} des reviews de leurs PR viennent du cercle.': '{share} of the reviews of their PRs come from the circle.',
+  '1re review : {median} en médiane, {slowest} pour les plus lentes.': 'First review: {median} as a median, {slowest} for the slowest.',
+  'Pas encore de review sur la période.': 'No review yet over the period.',
+  'Leurs PR les plus lentes attendent {factor} fois plus que celles du reste de l’équipe.': 'Their slowest PRs wait {factor} times longer than those of the rest of the team.',
+  'Aucune review sur la période.': 'No review over the period.',
+  'Pas assez de reviews pour former des cercles.': 'Not enough reviews to make circles.',
+  'Hors des cercles, sans attente anormale : {people}.': 'Outside the circles, without an unusual wait: {people}.',
+  'Un cercle réunit des personnes qui se relisent nettement plus entre elles qu’avec les autres. Un groupe attend quand ses PR les plus lentes (1 sur 10) attendent leur première review plus de {factor} fois plus longtemps que celles du reste de l’équipe. Reviews rendues : la part des reviews retournées dans l’autre sens au sein de chaque binôme. Les filtres de la page s’appliquent, la squad et les dépôts compris.':
+    'A circle brings together people who review each other clearly more than they review the others. A group waits when its slowest PRs (1 in 10) wait for their first review more than {factor} times longer than those of the rest of the team. Reviews returned: the share of the reviews given back the other way within each pair. The filters of the page apply, the squad and the repositories included.',
+  'Attente de la 1re review': 'Wait for the first review',
+  'Temps médian, en heures ouvrées, entre l’ouverture d’une PR de l’auteur et la première review ou le premier commentaire d’une autre personne.':
+    'Median time, in working hours, between the opening of a PR of the author and the first review or comment of someone else.',
+  'Les plus lentes': 'The slowest',
+  'L’attente de la première review que dépassent seulement les 10 % de ses PR les plus lentes : là où l’auteur reste bloqué.':
+    'The wait for a first review that only the slowest 10% of their PRs exceed: where the author stays stuck.',
 }

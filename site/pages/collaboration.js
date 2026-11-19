@@ -1,6 +1,7 @@
-// Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen).
+// Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen), the pairs and circles of
+// review (collaboration/circles.js), and the reviewers of each author.
 
-import { elides, formatNumber, formatShare, plural } from '../lib/format.js'
+import { elides, formatDuration, formatNumber, formatShare, plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { matchesQuery, periodTitle } from '../model/selection.js'
@@ -11,6 +12,7 @@ import { heatmapChart } from '../ui/charts/heatmap-chart.js'
 import { $, el } from '../ui/dom.js'
 import { avatar, personLink } from '../ui/links.js'
 import { renderList } from '../ui/list.js'
+import { renderCircles } from './collaboration/circles.js'
 
 // The review matrix gives a row or a column to the authors and reviewers who weigh at least MATRIX_MIN_SHARE of the
 // reviews of the period (stated in the card note of index.html), as many as its width holds with cells wide enough for
@@ -52,6 +54,18 @@ export const COLLABORATION_COLUMNS = [
     kind: 'bar',
     format: (row) => formatShare(row.topReviewerShare),
     hint: t('Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.'),
+  },
+  {
+    key: 'firstReview',
+    label: t('Attente de la 1re review'),
+    format: (row) => formatDuration(row.firstReview),
+    hint: t('Temps médian, en heures ouvrées, entre l’ouverture d’une PR de l’auteur et la première review ou le premier commentaire d’une autre personne.'),
+  },
+  {
+    key: 'firstReviewSlowest',
+    label: t('Les plus lentes'),
+    format: (row) => formatDuration(row.firstReviewSlowest),
+    hint: t('L’attente de la première review que dépassent seulement les 10 % de ses PR les plus lentes : là où l’auteur reste bloqué.'),
   },
 ]
 
@@ -113,6 +127,7 @@ const withNodes = (text, nodes) =>
     .map((part) => (typeof part === 'string' ? document.createTextNode(part) : part))
 
 export function renderCollaboration() {
+  renderCircles()
   const card = $('[data-collaboration-matrix-card]')
   if (!state.stats || card.clientWidth === 0) {
     return

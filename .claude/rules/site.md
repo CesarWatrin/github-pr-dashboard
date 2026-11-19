@@ -129,6 +129,17 @@ paths:
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
   carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
   `squadLead()`) shows on its card and dialog, its avatar first and ringed (`avatarStack()` of `ui/people.js`).
+- **Pairs and circles of review** (collaboration page, `pages/collaboration/circles.js`, drawn with the matrix by
+  `renderCollaboration()`): `reviewCircles()` of `site/domain/review-circles.js` over the review network of the page
+  (`currentCircles()` of `model/team.js`: the period, the squad, the repository filter of the page, people still in the
+  team), with each author's waits for a first review (`timesToFirstReviewHours` of the period). Tiles: the reviews
+  returned within each pair, the share of the `TOP_PAIRS` busiest pairs, the reviewers for `COVERAGE` of the reviews, the
+  groups waiting. The busiest pairs both ways (a bar cut in two, blue what the first reviewed of the second, green the
+  return). The circles: label propagation over the strong ties only (`STRONG_TIE` times the average, each weighed by how
+  busy both people are), each with the share of the reviews of its pull requests from inside and its first review
+  (median, ninth decile); `waiting` when that ninth decile passes `WAITING_FACTOR` times the rest of the team's, with
+  `MIN_WAITS` first reviews at least. People alone in no circle are listed together, unless they wait. The authors table
+  gains the wait for a first review, median and slowest tenth (`firstReviewOf()`).
 - **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the
   squad picked, from `site/model/cartography.js`: `reviewMap()` (a link per pair of people, how many code pull requests
   each way, from `reviewNetwork()`) and `repositoryMap()` (a link per person and repository of their code pull

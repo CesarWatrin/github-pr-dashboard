@@ -44,6 +44,8 @@ interface State {
   periodCache: { stats: Stats; key: string; period: PeriodStats } | null
   ciCache: { stats: Stats; key: string; ci: CiStats } | null
   networkCache: { period: PeriodStats; selection: Set<string> | null; network: ReviewNetwork } | null
+  // The pairs and circles of review of that network, with each author's waits for a first review.
+  circlesCache: { network: ReviewNetwork; circles: import('../site/domain/review-circles.js').ReviewCircles; waits: Map<string, number[]> } | null
   analysisCache: { stats: Stats; key: string; analysis: Analysis } | null
   query: string
   // The person picked for the reviews over time (the address holds it), null for the busiest reviewer of the period.
