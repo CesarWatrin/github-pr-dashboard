@@ -7,7 +7,7 @@ import { displayName, isCurrent, SENIORITY_LEGEND } from '../model/people.js'
 import { projectRepoCounts, shownProjects } from '../model/projects.js'
 import { withCategory } from '../model/repositories.js'
 import { currentCi, currentPeriod } from '../model/selection.js'
-import { currentNetwork } from '../model/team.js'
+import { currentNetwork, firstReviewOf } from '../model/team.js'
 import { AUTHOR_COLUMNS } from '../pages/authors.js'
 import { COLLABORATION_COLUMNS, renderCollaboration } from '../pages/collaboration.js'
 import { CYCLE_COLUMNS, cycleRows, renderCycleCharts, renderCycleTiles } from '../pages/cycle.js'
@@ -68,7 +68,7 @@ export function registerTables() {
     },
     collaboration: {
       columns: COLLABORATION_COLUMNS,
-      rows: () => currentNetwork().authors,
+      rows: () => currentNetwork().authors.map((row) => ({ ...row, ...firstReviewOf(row.login) })),
       searchTexts: (row) => [row.login, displayName(row.login), ...(row.topReviewer ? [row.topReviewer, displayName(row.topReviewer)] : [])],
       // The filter lists the repositories of the authors, and applies to the whole page.
       source: 'authors',

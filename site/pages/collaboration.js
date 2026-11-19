@@ -1,16 +1,18 @@
-// Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen).
+// Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen), the pairs and circles of
+// review (collaboration/circles.js), and the reviewers of each author.
 
-import { elides, formatNumber, formatShare, plural } from '../lib/format.js'
+import { elides, formatDecimal, formatDuration, formatNumber, formatShare, plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { matchesQuery, periodTitle } from '../model/selection.js'
 import { state } from '../model/state.js'
-import { currentNetwork } from '../model/team.js'
+import { currentCircles, currentNetwork } from '../model/team.js'
 import { dataTable } from '../ui/charts/data-table.js'
 import { heatmapChart } from '../ui/charts/heatmap-chart.js'
 import { $, el } from '../ui/dom.js'
 import { avatar, personLink } from '../ui/links.js'
 import { renderList } from '../ui/list.js'
+import { renderCircles } from './collaboration/circles.js'
 
 // The review matrix gives a row or a column to the authors and reviewers who weigh at least MATRIX_MIN_SHARE of the
 // reviews of the period (stated in the card note of index.html), as many as its width holds with cells wide enough for
@@ -36,6 +38,18 @@ export const COLLABORATION_COLUMNS = [
     hint: t('Personnes différentes intervenues sur ces PR relues. Peu de relecteurs : le code de la personne circule peu.'),
   },
   {
+    key: 'effectiveReviewers',
+    label: t('Relecteurs effectifs'),
+    format: (row) => (typeof row.effectiveReviewers === 'number' ? formatDecimal(Math.round(row.effectiveReviewers * 10) / 10) : '–'),
+    hint: t('Par combien de personnes l’auteur est relu en pratique : dix relecteurs qui se partagent ses reviews à égalité en font dix, deux qui en font neuf sur dix à peine plus de deux. À partir de 20 reviews.'),
+  },
+  {
+    key: 'mainReviewersShare',
+    label: t('Part des 3 principaux'),
+    format: (row) => formatShare(row.mainReviewersShare),
+    hint: t('Part des reviews de ses PR faites par ses trois principaux relecteurs.'),
+  },
+  {
     key: 'topReviewer',
     label: t('Relecteur principal'),
     kind: 'text',
@@ -52,6 +66,18 @@ export const COLLABORATION_COLUMNS = [
     kind: 'bar',
     format: (row) => formatShare(row.topReviewerShare),
     hint: t('Part des PR relues de l’auteur sur lesquelles le relecteur principal est intervenu. Proche de 100 % : un binôme figé, et un savoir qui ne circule qu’entre deux personnes.'),
+  },
+  {
+    key: 'firstReview',
+    label: t('Attente de la 1re review'),
+    format: (row) => formatDuration(row.firstReview),
+    hint: t('Temps médian, en heures ouvrées, entre l’ouverture d’une PR de l’auteur et la première review ou le premier commentaire d’une autre personne.'),
+  },
+  {
+    key: 'firstReviewSlowest',
+    label: t('Les plus lentes'),
+    format: (row) => formatDuration(row.firstReviewSlowest),
+    hint: t('L’attente de la première review que dépassent seulement les 10 % de ses PR les plus lentes : là où l’auteur reste bloqué.'),
   },
 ]
 
@@ -80,10 +106,12 @@ function matrixPeople(network, limit) {
       person.found ||= found(pair[own]) || found(pair[other])
       total += pair.prs
     }
+    // The people the search finds, however few their reviews, and first, so that the width never leaves them out; then
+    // the others as without a search: those they never review nor are reviewed by show too, their zero in red.
+    const searched = (login) => Boolean(state.query) && found(login)
     const sorted = [...people]
-      .filter(([, person]) => person.found)
-      .sort((a, b) => b[1].prs - a[1].prs || a[0].localeCompare(b[0]))
-    const busy = state.query ? sorted.length : sorted.filter(([, person]) => person.prs >= total * MATRIX_MIN_SHARE).length
+      .sort((a, b) => Number(searched(b[0])) - Number(searched(a[0])) || b[1].prs - a[1].prs || a[0].localeCompare(b[0]))
+    const busy = sorted.filter(([login, person]) => searched(login) || person.prs >= total * MATRIX_MIN_SHARE).length
 
     const split = keepBusiest(sorted.map(([login]) => login), limit, Math.max(1, busy))
 
@@ -113,6 +141,7 @@ const withNodes = (text, nodes) =>
     .map((part) => (typeof part === 'string' ? document.createTextNode(part) : part))
 
 export function renderCollaboration() {
+  renderCircles()
   const card = $('[data-collaboration-matrix-card]')
   if (!state.stats || card.clientWidth === 0) {
     return
@@ -156,11 +185,22 @@ export function renderCollaboration() {
             count: formatNumber(side.others.length),
             share: minShare,
           })
+    const missingOf = new Map(currentCircles().missing.map((gap) => [`${gap.reviewer}\n${gap.author}`, gap]))
     heatmapChart(matrix, {
       rows: entries(authors),
       columns: entries(reviewers),
       value,
       ariaLabel: t('PR relues par auteur et par relecteur, {period}', { period: periodTitle() }),
+      // A search lights up the rows and columns of the people it finds, and dims the others.
+      found: state.query ? (key) => key !== OTHERS && matchesQuery(key, displayName(key)) : null,
+      // In red: the reviews missing between two people (missingReviews(), chance making the gap unlikely), a zero or a
+      // cell ringed; and with a search, any zero between the people found and the others. One's own cell stays blank.
+      alert: (row, column) =>
+        row.key !== column.key &&
+        row.key !== OTHERS &&
+        column.key !== OTHERS &&
+        (missingOf.has(`${column.key}\n${row.key}`) ||
+          (Boolean(state.query) && value(row, column) === 0 && (matchesQuery(row.key, displayName(row.key)) || matchesQuery(column.key, displayName(column.key))))),
       tooltip: (row, column, prs) => {
         const author = personName(row.key, authors.others.length)
         const reviewer = personName(column.key, reviewers.others.length)
@@ -171,13 +211,19 @@ export function renderCollaboration() {
           column.key === OTHERS && groupedNote(reviewers, t('En colonne')),
         ]
 
+        const gap = missingOf.get(`${column.key}\n${row.key}`)
+        const expected = gap ? [{ value: formatNumber(Math.round(gap.expected)), label: t('attendues à son rythme, dans les dépôts où la personne relit') }] : []
+        if (prs === 0) {
+          return { title: t('{reviewer} n’a relu aucune PR {of} sur la période', { reviewer, of: ofName(author) }), rows: expected }
+        }
+
         return {
           title: t(prs > 1 ? '{count} PR {of} relues par {reviewer}' : '{count} PR {of} relue par {reviewer}', {
             count: formatNumber(prs),
             of: ofName(author),
             reviewer,
           }),
-          rows: reviewed ? [{ value: formatShare(prs / reviewed), label: t('des PR relues {of}', { of: ofName(author) }) }] : [],
+          rows: [...(reviewed ? [{ value: formatShare(prs / reviewed), label: t('des PR relues {of}', { of: ofName(author) }) }] : []), ...expected],
           note: notes.filter(Boolean).join(' ') || null,
         }
       },

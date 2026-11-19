@@ -139,8 +139,27 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   la part moyenne de chacune dans le temps d'une PR, par type de dépôt et par taille, leur évolution et le détail par
   dépôt, avec un filtre de dépôts pour toute la page.
 - **Collaboration** : qui relit qui, en matrice auteurs × relecteurs (les personnes sous 2 % des relectures
-  regroupées ; les binômes les plus fréquents sur un écran étroit), et pour chaque auteur le nombre de relecteurs distincts et la dépendance à son relecteur principal, pour
-  repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes ; filtrable par dépôt.
+  regroupées ; les binômes les plus fréquents sur un écran étroit) ; les binômes et cercles de relecture : la part des
+  reviews rendues dans l'autre sens, la part des 8 binômes les plus fréquents, le nombre de relecteurs qui font 80 %
+  des reviews, ces binômes dans les deux sens (12, tous les autres dépliables), et les cercles de personnes qui se
+  relisent nettement plus entre elles qu'avec les autres, avec leur stack, chacun avec la part des reviews de ses PR
+  faite de l'intérieur et l'attente de sa première review, un groupe qui attend plus de deux fois plus longtemps que le
+  reste de l'équipe (sur ses PR les plus lentes, 1 sur 10) signalé ; les binômes à sens unique (l'un relit beaucoup
+  l'autre, qui lui rend au plus un quart) ; les relectures qui manquent (qui relit bien moins quelqu'un que s'il relisait
+  au hasard les PR des dépôts où il relit, un écart que le hasard explique moins d'une fois sur vingt) ; les personnes
+  qui relisent peu (au plus 60 % de la médiane des devs de leur stack), avec qui elles pourraient relire davantage à ce
+  rythme, selon les dépôts où elles écrivent et relisent ; les personnes relues par peu de monde, en relecteurs effectifs face à la
+  médiane des devs de leur stack, avec leurs trois principaux relecteurs ; et, pour elles comme pour les groupes qui
+  attendent, qui pourrait relire davantage leurs PR selon son appétence : des relecteurs qui relisent déjà leurs dépôts
+  mais les relisent peu, les moins chargés d'abord ; et pour chaque auteur le nombre de relecteurs
+  distincts et effectifs, la part de ses trois principaux relecteurs, la dépendance au premier et l'attente de sa
+  première review (médiane et PR les plus lentes), pour repérer les binômes figés, le savoir qui circule peu et les
+  groupes bloqués, pas pour classer des personnes ; filtrable par dépôt, front ou back compris, et par la recherche.
+  Une relecture n'est attendue qu'entre deux personnes de stacks compatibles (la même, ou l'une full-stack) : un dev
+  back n'a pas à relire un dev front. Dans la matrice, les relectures qui manquent ressortent en rouge, même sans
+  recherche : un 0 rouge, ou un contour rouge quand il y en a quelques-unes, avec au survol ce qui était attendu ; avec
+  une recherche, la matrice garde tout le monde, met en avant la personne cherchée et marque d'un 0 rouge chaque
+  personne qu'elle ne relit pas ou qui ne la relit pas.
 - **Cartographie** : l'équipe en deux réseaux disposés par des forces, à la façon de react-force-graph, sur la
   période et la squad choisies. Le réseau des reviews relie deux personnes qui relisent les PR de code l'une de
   l'autre : les groupes, les silos et les ponts se forment seuls. Qui écrit où relie chaque personne aux dépôts où

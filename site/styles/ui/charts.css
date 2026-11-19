@@ -276,3 +276,26 @@
   white-space: nowrap;
 }
 
+
+/* A search on a heatmap: what it does not find steps back. */
+.heat-group.is-dimmed,
+.axis-label.is-dimmed {
+  opacity: 0.25;
+}
+
+/* A review missing between two people, or with a search nothing between the person found and another one: a red zero,
+   or a cell ringed in red. */
+.heat-cell.is-alert {
+  stroke: var(--diff-deleted);
+  stroke-width: 1.5;
+}
+
+.heat-cell.is-zero {
+  fill: color-mix(in srgb, var(--diff-deleted) 16%, var(--surface));
+  stroke: color-mix(in srgb, var(--diff-deleted) 45%, transparent);
+}
+
+.heat-label.is-zero {
+  fill: var(--diff-deleted);
+  font-weight: 700;
+}

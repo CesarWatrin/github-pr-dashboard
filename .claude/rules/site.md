@@ -129,6 +129,36 @@ paths:
   `reviewPairs` of the organization (`heatmapChart()`, thousands short on a phone). The cards and dialogs of people
   carry their squads (`squadTags()`, a star on the tag of the head). The head of a squad (`lead`, « Chef de squad »,
   `squadLead()`) shows on its card and dialog, its avatar first and ringed (`avatarStack()` of `ui/people.js`).
+- **Pairs and circles of review** (collaboration page, `pages/collaboration/circles.js`, drawn with the matrix by
+  `renderCollaboration()`): `reviewCircles()` of `site/domain/review-circles.js` over the review network of the page
+  (`currentCircles()` of `model/team.js`: the period, the squad, the repository filter of the page, people still in the
+  team), with each author's waits for a first review (`timesToFirstReviewHours` of the period). Tiles: the reviews
+  returned within each pair, the share of the `TOP_PAIRS` busiest pairs, the reviewers for `COVERAGE` of the reviews, the
+  groups waiting. The busiest pairs both ways (a bar cut in two, blue what the first reviewed of the second, green the
+  return). The circles: label propagation over the strong ties only (`STRONG_TIE` times the average, each weighed by how
+  busy both people are), each with the share of the reviews of its pull requests from inside and its first review
+  (median, ninth decile); `waiting` when that ninth decile passes `WAITING_FACTOR` times the rest of the team's, with
+  `MIN_WAITS` first reviews at least; each circle shows the stacks of its people (a circle of front developers reads as
+  one). People alone in no circle are listed together, unless they wait. The pairs show `SHOWN_PAIRS`, every other one
+  folded. One-sided pairs (`ONE_SIDED_MIN`, `ONE_SIDED_SHARE`). Missing reviews (`missingReviews()`: what a reviewer would
+  review of an author if they spread their reviews over each repository they review as the team's are, `MISSING_SHARE`
+  of it at most, and so few that chance makes it unlikely, `MISSING_CHANCE` by `chanceOfAtMost()`, a Poisson law: the test
+  follows the period). People reviewed by few (`reviewSpread()`: effective reviewers, one over
+  the sum of the squared shares, set against the median of their stack, narrow under `NARROW_SHARE` of it, with their
+  `MAIN_REVIEWERS`): the wait does not show it, someone who asks the same people directly never waits. Under each of
+  them, and in each circle that waits, who could review their pull requests more (`suggestReviewers()` over
+  `reviewExpectations()`: those who review their repositories but them at most `SUGGEST_SHARE` of what they would,
+  unlikely by chance (`SUGGEST_CHANCE`), the
+  widest gap first, weighed down for the busiest). The people who review little (`quietReviewers()`: at most
+  `QUIET_SHARE` of the median of their stack, those who never review included), with whom they could review more at that
+  pace (`expectedAt()`, by the repositories they review and write in). The search filters every list and circle, and the
+  matrix keeps everyone and lights up the people found (`found` of `heatmapChart()`). The matrix marks in red (`alert`)
+  the reviews missing between two people (`missingReviews()`), even without a search: a red zero, or a cell ringed in red
+  when there are a few, what was expected in the tooltip; with a search, any zero between the people found and the
+  others too. One's own cell stays blank. A review is only expected between people whose stacks match (`compatible` of
+  `reviewExpectations()`: the same, or one of them full-stack), for the missing reviews and every suggestion. The authors table
+  gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
+  (`firstReviewOf()`).
 - **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the
   squad picked, from `site/model/cartography.js`: `reviewMap()` (a link per pair of people, how many code pull requests
   each way, from `reviewNetwork()`) and `repositoryMap()` (a link per person and repository of their code pull
