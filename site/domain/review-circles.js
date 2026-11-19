@@ -12,16 +12,18 @@ export const TOP_PAIRS = 8
 export const ONE_SIDED_MIN = 20
 export const ONE_SIDED_SHARE = 0.25
 // Reviews are missing between two people when one reviews at most MISSING_SHARE of what they would if they reviewed the
-// pull requests of each repository as the team writes them, with at least MISSING_MIN expected.
+// pull requests of each repository as the team writes them, and so few that chance makes it unlikely: at most
+// MISSING_CHANCE (a Poisson law of the expected count). The test follows the period: 0 reviews out of 7 expected over a
+// month say something, 0 out of 2 do not.
 export const MISSING_SHARE = 0.4
-export const MISSING_MIN = 15
+export const MISSING_CHANCE = 0.05
 // The main reviewers of an author, and the reviews an author needs for their spread to say something.
 export const MAIN_REVIEWERS = 3
-// Reviewers suggested for someone: up to SUGGESTIONS of those who review at most SUGGEST_SHARE of what they would, with
-// SUGGEST_MIN expected at least.
+// Reviewers suggested for someone: up to SUGGESTIONS of those who review at most SUGGEST_SHARE of what they would, chance
+// making it unlikely (SUGGEST_CHANCE).
 export const SUGGESTIONS = 3
 export const SUGGEST_SHARE = 0.5
-export const SUGGEST_MIN = 5
+export const SUGGEST_CHANCE = 0.1
 export const SPREAD_MIN = 20
 // An author is reviewed by few people when their effective reviewers are at most this share of the median of their
 // group (their stack): front developers, fewer, are reviewed by fewer people than back ones.
@@ -266,8 +268,24 @@ export function reviewExpectations(pairs) {
 
 /** @typedef {ReturnType<typeof reviewExpectations>} ReviewExpectations */
 
-// The reviews missing between two people: those of a reviewer reviewed at most MISSING_SHARE of what they would, with at
-// least MISSING_MIN expected; the widest gaps first.
+// The chance of seeing at most `count` events when `expected` are expected at random (the Poisson law).
+/**
+ * @param {number} count
+ * @param {number} expected
+ */
+export function chanceOfAtMost(count, expected) {
+  let term = Math.exp(-expected)
+  let total = 0
+  for (let index = 0; index <= count; index++) {
+    total += term
+    term *= expected / (index + 1)
+  }
+
+  return Math.min(1, total)
+}
+
+// The reviews missing between two people: those of a reviewer reviewed at most MISSING_SHARE of what they would, too
+// few for chance (MISSING_CHANCE); the widest gaps first.
 /** @param {ReviewExpectations} expectations */
 export function missingReviews({ reviewers, authors, expected, actual }) {
   const missing = []
@@ -278,7 +296,7 @@ export function missingReviews({ reviewers, authors, expected, actual }) {
       }
       const wanted = expected(reviewer, author)
       const done = actual(reviewer, author)
-      if (wanted >= MISSING_MIN && done <= MISSING_SHARE * wanted) {
+      if (done <= MISSING_SHARE * wanted && chanceOfAtMost(done, wanted) <= MISSING_CHANCE) {
         missing.push({ reviewer, author, actual: done, expected: wanted })
       }
     }
@@ -288,7 +306,7 @@ export function missingReviews({ reviewers, authors, expected, actual }) {
 }
 
 // Who could review some people more, by their appetite: the reviewers who already review the repositories they write
-// in, yet review them at most SUGGEST_SHARE of what they would, with SUGGEST_MIN expected at least; the widest gap first,
+// in, yet review them at most SUGGEST_SHARE of what they would, too few for chance (SUGGEST_CHANCE); the widest gap first,
 // weighed down for the busiest reviewers (by the square root of their load against the median one), so that the work
 // spreads rather than piling up on the same few. Up to SUGGESTIONS of them.
 /**
@@ -306,7 +324,7 @@ export function suggestReviewers({ reviewers, expected, actual, load, medianLoad
 
       return { reviewer, actual: done, expected: wanted, score: (wanted - done) / Math.sqrt(Math.max(load(reviewer), 1) / Math.max(medianLoad, 1)) }
     })
-    .filter(({ actual: done, expected: wanted }) => wanted >= SUGGEST_MIN && done <= SUGGEST_SHARE * wanted)
+    .filter(({ actual: done, expected: wanted }) => done <= SUGGEST_SHARE * wanted && chanceOfAtMost(done, wanted) <= SUGGEST_CHANCE)
     .sort((a, b) => b.score - a.score || a.reviewer.localeCompare(b.reviewer))
     .slice(0, SUGGESTIONS)
 }

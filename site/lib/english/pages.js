@@ -732,8 +732,8 @@ export const PAGES = {
   'À sens unique': 'One-sided',
   'L’un relit beaucoup l’autre, qui lui rend peu : au plus un quart, à partir de 20 relectures.': 'One reviews the other a lot and gets little back: a quarter at most, from 20 reviews.',
   'Relectures qui manquent': 'Missing reviews',
-  'Qui relit bien moins quelqu’un que s’il relisait au hasard les PR des dépôts où il relit : au plus 40 % de l’attendu, à partir de 15 relectures attendues.':
-    'Who reviews someone far less than if they reviewed the PRs of the repositories they review at random: 40% of the expected at most, from 15 expected reviews.',
+  'Qui relit bien moins quelqu’un que s’il relisait au hasard les PR des dépôts où il relit : au plus 40 % de l’attendu, un écart que le hasard explique moins d’une fois sur vingt.':
+    'Who reviews someone far less than if they reviewed the PRs of the repositories they review at random: 40% of the expected at most, a gap chance explains less than one time in twenty.',
   'Relus par peu de personnes': 'Reviewed by few people',
   'Aucun binôme à sens unique sur la période.': 'No one-sided pair over the period.',
   'relues : {actual}, attendues : {expected}': 'reviewed: {actual}, expected: {expected}',

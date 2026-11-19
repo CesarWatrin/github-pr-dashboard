@@ -6,6 +6,7 @@ import { COVERAGE, MAIN_REVIEWERS, NARROW_SHARE, suggestReviewers, TOP_PAIRS, WA
 import { formatDecimal, formatDuration, formatNumber, formatShare, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { displayName } from '../../model/people.js'
+import { matchesQuery } from '../../model/selection.js'
 import { state } from '../../model/state.js'
 import { currentCircles } from '../../model/team.js'
 import { $, el } from '../../ui/dom.js'
@@ -150,8 +151,15 @@ export function renderCircles() {
     return
   }
   const { circles, missing, spread, stackOf, expectations } = currentCircles()
-  const groups = circles.circles.filter((circle) => circle.members.length > 1 || circle.waiting)
-  const outside = circles.circles.filter((circle) => circle.members.length === 1 && !circle.waiting).map((circle) => circle.members[0])
+  // The search keeps what one of the people it finds takes part in; the tiles stay those of the whole selection.
+  /** @param {string[]} logins */
+  const found = (...logins) => logins.some((login) => matchesQuery(login, displayName(login)))
+  const none = state.query ? t('Aucun résultat') : null
+  const pairs = circles.pairs.filter((pair) => found(pair.first, pair.second))
+  const oneSided = circles.oneSided.filter((pair) => found(pair.first, pair.second))
+  const gaps = missing.filter((gap) => found(gap.reviewer, gap.author))
+  const groups = circles.circles.filter((circle) => (circle.members.length > 1 || circle.waiting) && found(...circle.members))
+  const outside = circles.circles.filter((circle) => circle.members.length === 1 && !circle.waiting).map((circle) => circle.members[0]).filter((login) => found(login))
   renderTiles(
     $('[data-circles-tiles]'),
     CIRCLE_TILES,
@@ -165,21 +173,21 @@ export function renderCircles() {
   )
   const busiest = circles.pairs[0] ? circles.pairs[0].firstReviews + circles.pairs[0].secondReviews : 1
   $('[data-circle-pairs]').replaceChildren(
-    ...(circles.pairs.length
-      ? circles.pairs.slice(0, SHOWN_PAIRS).map((pair) => pairLine(pair, busiest))
-      : [el('li', { className: 'muted', textContent: t('Aucune review sur la période.') })]),
+    ...(pairs.length
+      ? pairs.slice(0, SHOWN_PAIRS).map((pair) => pairLine(pair, busiest))
+      : [el('li', { className: 'muted', textContent: none ?? t('Aucune review sur la période.') })]),
   )
   // Every other pair, folded: whoever is looked for is somewhere.
-  $('[data-circle-more]').hidden = circles.pairs.length <= SHOWN_PAIRS
-  $('[data-circle-pairs-all]').replaceChildren(...circles.pairs.slice(SHOWN_PAIRS).map((pair) => pairLine(pair, busiest)))
+  $('[data-circle-more]').hidden = pairs.length <= SHOWN_PAIRS
+  $('[data-circle-pairs-all]').replaceChildren(...pairs.slice(SHOWN_PAIRS).map((pair) => pairLine(pair, busiest)))
   $('[data-circle-one-sided]').replaceChildren(
-    ...(circles.oneSided.length
-      ? circles.oneSided.slice(0, SHOWN_ENTRIES).map((pair) => pairLine(pair, busiest))
-      : [el('li', { className: 'muted', textContent: t('Aucun binôme à sens unique sur la période.') })]),
+    ...(oneSided.length
+      ? oneSided.slice(0, SHOWN_ENTRIES).map((pair) => pairLine(pair, busiest))
+      : [el('li', { className: 'muted', textContent: none ?? t('Aucun binôme à sens unique sur la période.') })]),
   )
   $('[data-circle-missing]').replaceChildren(
-    ...(missing.length
-      ? missing.slice(0, SHOWN_ENTRIES).map((gap) =>
+    ...(gaps.length
+      ? gaps.slice(0, SHOWN_ENTRIES).map((gap) =>
           el(
             'li',
             { className: 'circle-gap' },
@@ -187,9 +195,9 @@ export function renderCircles() {
             el('span', { className: 'circle-gap-figure', textContent: t('relues : {actual}, attendues : {expected}', { actual: formatNumber(gap.actual), expected: formatNumber(Math.round(gap.expected)) }) }),
           ),
         )
-      : [el('li', { className: 'muted', textContent: t('Aucune relecture qui manque nettement sur la période.') })]),
+      : [el('li', { className: 'muted', textContent: none ?? t('Aucune relecture qui manque nettement sur la période.') })]),
   )
-  const narrow = spread.filter((row) => row.narrow)
+  const narrow = spread.filter((row) => row.narrow && found(row.author, ...row.main.map((main) => main.login)))
   $('[data-circle-spread-note]').textContent = t(
     'Par combien de personnes chacun est relu en pratique, face à la médiane des devs de sa stack : à partir de {share} de moins, avec ses {count} principaux relecteurs. Le temps d’attente ne le montre pas : on peut relancer les mêmes personnes en direct et ne jamais attendre.',
     { share: formatShare(1 - NARROW_SHARE), count: MAIN_REVIEWERS },
@@ -219,10 +227,12 @@ export function renderCircles() {
             ...suggestionsLine(expectations, [row.author], t('Pourraient relire davantage ses PR :')),
           ),
         )
-      : [el('li', { className: 'muted', textContent: t('Personne n’est relu par nettement moins de monde que les devs de sa stack.') })]),
+      : [el('li', { className: 'muted', textContent: none ?? t('Personne n’est relu par nettement moins de monde que les devs de sa stack.') })]),
   )
   $('[data-circles]').replaceChildren(
-    ...(groups.length ? groups.map((circle) => circleItem(circle, stackOf, expectations)) : [el('li', { className: 'muted', textContent: t('Pas assez de reviews pour former des cercles.') })]),
+    ...(groups.length || outside.length
+      ? groups.map((circle) => circleItem(circle, stackOf, expectations))
+      : [el('li', { className: 'muted', textContent: none ?? t('Pas assez de reviews pour former des cercles.') })]),
     ...(outside.length
       ? [
           el(

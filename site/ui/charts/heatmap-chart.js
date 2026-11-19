@@ -11,10 +11,12 @@ import { measureText, truncateText } from './measure.js'
 // flagged grouped when they add up several entries: these stay out of the color scale, which they would flatten.
 // value(row, column) is a count, tooltip(row, column, value) the content of the tooltip of a cell. Labels of columns
 // too wide for their cell are tilted; on cells too narrow for tilted labels side by side (a phone), only one column in
-// two or three keeps its label, the last one always, as the other charts thin their axis out.
+// two or three keeps its label, the last one always, as the other charts thin their axis out. found(key), when given (a
+// search), lights up the rows and columns it finds and the cells they cross, and dims the rest; zero(row, column), when
+// given, shows an empty cell as a zero that stands out.
 const TILTED_LABEL_SPACING = 18
 
-export function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, format = formatNumber }) {
+export function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, format = formatNumber, found = null, zero = null }) {
   const width = container.clientWidth
   if (width === 0) {
     return
@@ -55,20 +57,27 @@ export function heatmapChart(container, { rows, columns, value, ariaLabel, toolt
       ? svg('text', { class: 'axis-label', x, y: header - 8, transform: `rotate(-45 ${x} ${header - 8})` })
       : svg('text', { class: 'axis-label', x, y: header - 8, 'text-anchor': 'middle' })
     label.textContent = columnLabels[index]
+    if (found && !found(column.key)) {
+      label.classList.add('is-dimmed')
+    }
     root.append(label)
   })
   rows.forEach((row, rowIndex) => {
     const y = header + cell * rowIndex
     const label = svg('text', { class: 'axis-label', x: labelWidth - 10, y: y + cell / 2, 'text-anchor': 'end', 'dominant-baseline': 'middle' })
     label.textContent = rowLabels[rowIndex]
+    if (found && !found(row.key)) {
+      label.classList.add('is-dimmed')
+    }
     root.append(label)
     columns.forEach((column, columnIndex) => {
       const amount = values[rowIndex][columnIndex]
       const x = labelWidth + cell * columnIndex
-      const group = svg('g', { class: 'heat-group' })
+      const group = svg('g', { class: found && !found(row.key) && !found(column.key) ? 'heat-group is-dimmed' : 'heat-group' })
       group.style.setProperty('--delay', `${Math.round(((rowIndex + columnIndex) / (rows.length + columns.length)) * STAGGER_SPREAD_MS)}ms`)
       const share = Math.min(1, amount / max)
-      const rect = svg('rect', { class: amount ? 'heat-cell' : 'heat-cell is-empty', x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4 })
+      const alarming = !amount && Boolean(zero?.(row, column))
+      const rect = svg('rect', { class: amount ? 'heat-cell' : alarming ? 'heat-cell is-zero' : 'heat-cell is-empty', x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4 })
       if (amount) {
         rect.style.fill = `color-mix(in srgb, var(--series-1) ${Math.round(18 + 82 * share)}%, var(--surface))`
       }
@@ -82,6 +91,11 @@ export function heatmapChart(container, { rows, columns, value, ariaLabel, toolt
           'dominant-baseline': 'central',
         })
         text.textContent = format(amount)
+        group.append(text)
+      }
+      if (alarming && cell >= 22) {
+        const text = svg('text', { class: 'heat-label is-zero', x: x + cell / 2, y: y + cell / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central' })
+        text.textContent = format(0)
         group.append(text)
       }
       root.append(group)

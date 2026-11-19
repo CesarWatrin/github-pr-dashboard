@@ -276,3 +276,20 @@
   white-space: nowrap;
 }
 
+
+/* A search on a heatmap: what it does not find steps back. */
+.heat-group.is-dimmed,
+.axis-label.is-dimmed {
+  opacity: 0.25;
+}
+
+/* A zero a search looks for: nothing between the person found and another one. */
+.heat-cell.is-zero {
+  fill: color-mix(in srgb, var(--diff-deleted) 16%, var(--surface));
+  stroke: color-mix(in srgb, var(--diff-deleted) 45%, transparent);
+}
+
+.heat-label.is-zero {
+  fill: var(--diff-deleted);
+  font-weight: 700;
+}

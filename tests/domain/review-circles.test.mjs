@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { missingReviews, reviewCircles, reviewExpectations, reviewSpread, suggestReviewers } from '../../site/domain/review-circles.js'
+import { chanceOfAtMost, missingReviews, reviewCircles, reviewExpectations, reviewSpread, suggestReviewers } from '../../site/domain/review-circles.js'
 
 /** @type {(reviewer: string, author: string, prs: number) => { author: string, reviewer: string, prs: number }} */
 const pair = (reviewer, author, prs) => ({ author, reviewer, prs })
@@ -127,6 +127,16 @@ describe('missing reviews', () => {
     assert.deepEqual(suggestReviewers(expectations, ['cid']).map(({ reviewer, actual, expected }) => ({ reviewer, actual, expected })), [{ reviewer: 'ann', actual: 0, expected: 15 }])
     // ben and cid already review each other: nobody to suggest for ben; dan and eve never review web.
     assert.deepEqual(suggestReviewers(expectations, ['ben']), [])
+  })
+
+  test('a gap only counts when chance makes it unlikely: it follows how much is expected', () => {
+    // None out of 7 expected happens by chance less than once in a thousand; none out of 2, one time in seven.
+    assert.ok(chanceOfAtMost(0, 7) < 0.001)
+    assert.ok(Math.abs(chanceOfAtMost(0, 2) - Math.exp(-2)) < 1e-12)
+    assert.ok(Math.abs(chanceOfAtMost(1, 2) - 3 * Math.exp(-2)) < 1e-12)
+    // A month of the same team, ten times fewer reviews: ann reviews none of the 1.5 of cid’s expected, too few to say.
+    const month = PER_REPO.map((entry) => ({ ...entry, repos: Object.fromEntries(Object.entries(entry.repos).map(([repo, count]) => [repo, count / 10])) }))
+    assert.deepEqual(missingReviews(reviewExpectations(month)), [])
   })
 
   test('nobody is said to miss the pull requests of a repository they never review', () => {

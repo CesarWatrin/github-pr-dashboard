@@ -142,11 +142,13 @@ paths:
   one). People alone in no circle are listed together, unless they wait. The pairs show `SHOWN_PAIRS`, every other one
   folded. One-sided pairs (`ONE_SIDED_MIN`, `ONE_SIDED_SHARE`). Missing reviews (`missingReviews()`: what a reviewer would
   review of an author if they spread their reviews over each repository they review as the team's are, `MISSING_SHARE`
-  of it at most, `MISSING_MIN` expected at least). People reviewed by few (`reviewSpread()`: effective reviewers, one over
+  of it at most, and so few that chance makes it unlikely, `MISSING_CHANCE` by `chanceOfAtMost()`, a Poisson law: the test
+  follows the period). People reviewed by few (`reviewSpread()`: effective reviewers, one over
   the sum of the squared shares, set against the median of their stack, narrow under `NARROW_SHARE` of it, with their
   `MAIN_REVIEWERS`): the wait does not show it, someone who asks the same people directly never waits. Under each of
   them, and in each circle that waits, who could review their pull requests more (`suggestReviewers()` over
-  `reviewExpectations()`: those who review their repositories but them at most `SUGGEST_SHARE` of what they would, the
+  `reviewExpectations()`: those who review their repositories but them at most `SUGGEST_SHARE` of what they would,
+  unlikely by chance (`SUGGEST_CHANCE`), the
   widest gap first, weighed down for the busiest). The authors table
   gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
   (`firstReviewOf()`).

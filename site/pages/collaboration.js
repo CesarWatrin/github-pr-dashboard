@@ -106,10 +106,12 @@ function matrixPeople(network, limit) {
       person.found ||= found(pair[own]) || found(pair[other])
       total += pair.prs
     }
+    // The people the search finds, however few their reviews, and first, so that the width never leaves them out; then
+    // the others as without a search: those they never review nor are reviewed by show too, their zero in red.
+    const searched = (login) => Boolean(state.query) && found(login)
     const sorted = [...people]
-      .filter(([, person]) => person.found)
-      .sort((a, b) => b[1].prs - a[1].prs || a[0].localeCompare(b[0]))
-    const busy = state.query ? sorted.length : sorted.filter(([, person]) => person.prs >= total * MATRIX_MIN_SHARE).length
+      .sort((a, b) => Number(searched(b[0])) - Number(searched(a[0])) || b[1].prs - a[1].prs || a[0].localeCompare(b[0]))
+    const busy = sorted.filter(([login, person]) => searched(login) || person.prs >= total * MATRIX_MIN_SHARE).length
 
     const split = keepBusiest(sorted.map(([login]) => login), limit, Math.max(1, busy))
 
@@ -188,6 +190,14 @@ export function renderCollaboration() {
       columns: entries(reviewers),
       value,
       ariaLabel: t('PR relues par auteur et par relecteur, {period}', { period: periodTitle() }),
+      // A search lights up the rows and columns of the people it finds, and dims the others.
+      found: state.query ? (key) => key !== OTHERS && matchesQuery(key, displayName(key)) : null,
+      // Nothing between the people found and the others is what a search looks for: a zero, in red; one's own cell stays
+      // blank.
+      zero: state.query
+        ? (row, column) =>
+            row.key !== column.key && row.key !== OTHERS && column.key !== OTHERS && (matchesQuery(row.key, displayName(row.key)) || matchesQuery(column.key, displayName(column.key)))
+        : null,
       tooltip: (row, column, prs) => {
         const author = personName(row.key, authors.others.length)
         const reviewer = personName(column.key, reviewers.others.length)
