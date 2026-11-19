@@ -208,6 +208,10 @@ export function renderCollaboration() {
           column.key === OTHERS && groupedNote(reviewers, t('En colonne')),
         ]
 
+        if (prs === 0) {
+          return { title: t('{reviewer} n’a relu aucune PR {of} sur la période', { reviewer, of: ofName(author) }), rows: [] }
+        }
+
         return {
           title: t(prs > 1 ? '{count} PR {of} relues par {reviewer}' : '{count} PR {of} relue par {reviewer}', {
             count: formatNumber(prs),

@@ -1,7 +1,7 @@
 // Each person's figures over the period (team page, person dialog), who reviews whom, and what their hotfixes add up to.
 
 import { median, percentile } from '../domain/math.js'
-import { missingReviews, reviewCircles, reviewExpectations, reviewSpread } from '../domain/review-circles.js'
+import { missingReviews, quietReviewers, reviewCircles, reviewExpectations, reviewSpread } from '../domain/review-circles.js'
 import { reviewNetwork } from '../domain/team.js'
 import { t } from '../lib/i18n.js'
 import { sumOf } from '../lib/math.js'
@@ -58,6 +58,7 @@ export function currentCircles() {
       circles: reviewCircles(network.pairs, waits),
       missing: missingReviews(expectations),
       expectations,
+      quiet: quietReviewers(expectations, stackLabel),
       spread,
       spreadOf: new Map(spread.map((row) => [row.author, row])),
       stackOf: stackLabel,

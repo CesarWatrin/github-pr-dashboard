@@ -752,4 +752,11 @@ export const PAGES = {
   'Pourraient relire davantage leurs PR :': 'Could review their PRs more:',
   'Pourraient relire davantage ses PR :': 'Could review their PRs more:',
   '{name} ({actual} sur {expected})': '{name} ({actual} of {expected})',
+  '{reviewer} n’a relu aucune PR {of} sur la période': '{reviewer} reviewed none of the PRs {of} over the period',
+  'Relisent peu': 'Review little',
+  'Qui fait au plus {share} des reviews de la médiane des devs de sa stack, et dont la relecture profiterait à qui : ce que la personne relirait de ses collègues à ce rythme, selon les dépôts où elle écrit et relit, face à ce qu’elle relit.':
+    'Who does {share} at most of the reviews of the median dev of their stack, and whom their reviews would help: what they would review of their colleagues at that pace, by the repositories they write and review in, against what they review.',
+  '{reviews} reviews, médiane {stack} : {median}': '{reviews} reviews, {stack} median: {median}',
+  'Pourrait relire davantage :': 'Could review more:',
+  'Personne ne relit nettement moins que les devs de sa stack.': 'Nobody reviews clearly less than the devs of their stack.',
 }

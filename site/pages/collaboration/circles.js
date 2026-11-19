@@ -2,7 +2,7 @@
 // are returned, how much the busiest pairs take, how many reviewers do most of them; the busiest pairs, both ways; the
 // circles of people who mostly review each other, and those whose pull requests wait for a first review.
 
-import { COVERAGE, MAIN_REVIEWERS, NARROW_SHARE, suggestReviewers, TOP_PAIRS, WAITING_FACTOR } from '../../domain/review-circles.js'
+import { COVERAGE, MAIN_REVIEWERS, NARROW_SHARE, QUIET_SHARE, suggestReviewers, TOP_PAIRS, WAITING_FACTOR } from '../../domain/review-circles.js'
 import { formatDecimal, formatDuration, formatNumber, formatShare, plural } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { displayName } from '../../model/people.js'
@@ -150,7 +150,7 @@ export function renderCircles() {
   if (!state.stats) {
     return
   }
-  const { circles, missing, spread, stackOf, expectations } = currentCircles()
+  const { circles, missing, spread, stackOf, expectations, quiet } = currentCircles()
   // The search keeps what one of the people it finds takes part in; the tiles stay those of the whole selection.
   /** @param {string[]} logins */
   const found = (...logins) => logins.some((login) => matchesQuery(login, displayName(login)))
@@ -196,6 +196,47 @@ export function renderCircles() {
           ),
         )
       : [el('li', { className: 'muted', textContent: none ?? t('Aucune relecture qui manque nettement sur la période.') })]),
+  )
+  const quietShown = quiet.filter((row) => found(row.reviewer, ...row.suggestions.map((suggestion) => suggestion.author)))
+  $('[data-circle-quiet-note]').textContent = t(
+    'Qui fait au plus {share} des reviews de la médiane des devs de sa stack, et dont la relecture profiterait à qui : ce que la personne relirait de ses collègues à ce rythme, selon les dépôts où elle écrit et relit, face à ce qu’elle relit.',
+    { share: formatShare(QUIET_SHARE) },
+  )
+  $('[data-circle-quiet]').replaceChildren(
+    ...(quietShown.length
+      ? quietShown.slice(0, SHOWN_ENTRIES).map((row) =>
+          el(
+            'li',
+            { className: 'circle-gap' },
+            el('span', { className: 'circle-pair-names' }, personLink(row.reviewer), ...(row.group ? [el('span', { className: 'circle-stack', textContent: row.group })] : [])),
+            el('span', {
+              className: 'circle-gap-figure',
+              textContent: t('{reviews} reviews, médiane {stack} : {median}', {
+                reviews: formatNumber(row.reviews),
+                stack: row.group || t('de l’équipe'),
+                median: formatNumber(Math.round(row.groupMedian)),
+              }),
+            }),
+            ...(row.suggestions.length
+              ? [
+                  el(
+                    'p',
+                    { className: 'circle-suggestions' },
+                    el('span', { textContent: t('Pourrait relire davantage :') }),
+                    ...row.suggestions.map((suggestion) =>
+                      el(
+                        'span',
+                        { className: 'circle-main', title: t('relues : {actual}, attendues : {expected}', { actual: formatNumber(suggestion.actual), expected: formatNumber(Math.round(suggestion.expected)) }) },
+                        avatar(suggestion.author),
+                        t('{name} ({actual} sur {expected})', { name: displayName(suggestion.author), actual: formatNumber(suggestion.actual), expected: formatNumber(Math.round(suggestion.expected)) }),
+                      ),
+                    ),
+                  ),
+                ]
+              : []),
+          ),
+        )
+      : [el('li', { className: 'muted', textContent: none ?? t('Personne ne relit nettement moins que les devs de sa stack.') })]),
   )
   const narrow = spread.filter((row) => row.narrow && found(row.author, ...row.main.map((main) => main.login)))
   $('[data-circle-spread-note]').textContent = t(

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { chanceOfAtMost, missingReviews, reviewCircles, reviewExpectations, reviewSpread, suggestReviewers } from '../../site/domain/review-circles.js'
+import { chanceOfAtMost, missingReviews, quietReviewers, reviewCircles, reviewExpectations, reviewSpread, suggestReviewers } from '../../site/domain/review-circles.js'
 
 /** @type {(reviewer: string, author: string, prs: number) => { author: string, reviewer: string, prs: number }} */
 const pair = (reviewer, author, prs) => ({ author, reviewer, prs })
@@ -186,5 +186,41 @@ describe('how widely each author is reviewed', () => {
     )
     // Together, ann is far under the median of everyone.
     assert.equal(reviewSpread(extra)[0].narrow, true)
+  })
+})
+
+describe('the people who review little', () => {
+  /** @type {(reviewer: string, author: string, repos: Record<string, number>) => { author: string, reviewer: string, repos: Record<string, number> }} */
+  const perRepo = (reviewer, author, repos) => ({ author, reviewer, repos })
+  // In web, ann, ben and cid review a lot; dan writes there but only gave 2 reviews; eve writes there and never reviews.
+  const PER_REPO = [
+    perRepo('ann', 'ben', { web: 30 }),
+    perRepo('ann', 'eve', { web: 10 }),
+    perRepo('ben', 'cid', { web: 30 }),
+    perRepo('ben', 'dan', { web: 10 }),
+    perRepo('cid', 'ann', { web: 30 }),
+    perRepo('cid', 'eve', { web: 10 }),
+    perRepo('dan', 'ann', { web: 2 }),
+  ]
+
+  test('those far under the median of their group, those who never review first, with whom they could review more', () => {
+    const quiet = quietReviewers(reviewExpectations(PER_REPO))
+    assert.deepEqual(
+      quiet.map(({ reviewer, reviews }) => [reviewer, reviews]),
+      [
+        ['eve', 0],
+        ['dan', 2],
+      ],
+    )
+    // At the pace of the median reviewer, eve would review ann, ben and cid, whom she never reviews.
+    assert.deepEqual(quiet[0].suggestions.map(({ author }) => author).sort(), ['ann', 'ben', 'cid'])
+  })
+
+  test('each against their own group', () => {
+    // dan alone in his group is its median: he reviews as much as it does.
+    assert.deepEqual(
+      quietReviewers(reviewExpectations(PER_REPO), (login) => (login === 'dan' ? 'mobile' : 'web')).map(({ reviewer }) => reviewer),
+      ['eve'],
+    )
   })
 })

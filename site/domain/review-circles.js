@@ -24,6 +24,9 @@ export const MAIN_REVIEWERS = 3
 export const SUGGESTIONS = 3
 export const SUGGEST_SHARE = 0.5
 export const SUGGEST_CHANCE = 0.1
+// Someone reviews little when they give at most QUIET_SHARE of the reviews of the median reviewer of their group (their
+// stack); for them, up to SUGGESTIONS authors they could review more.
+export const QUIET_SHARE = 0.6
 export const SPREAD_MIN = 20
 // An author is reviewed by few people when their effective reviewers are at most this share of the median of their
 // group (their stack): front developers, fewer, are reviewed by fewer people than back ones.
@@ -255,11 +258,34 @@ export function reviewExpectations(pairs) {
   }
   /** @type {(reviewer: string) => number} */
   const load = (reviewer) => [...(given.get(reviewer)?.values() ?? [])].reduce((sum, count) => sum + count, 0)
+  // What a person would review of an author if they gave `reviews` reviews, spread over the repositories they know: those
+  // they review, and those they write in, for someone who reviews little tells little by their reviews alone.
+  /** @type {(person: string, author: string, reviews: number) => number} */
+  const expectedAt = (person, author, reviews) => {
+    /** @type {Map<string, number>} */
+    const known = new Map()
+    for (const map of [given.get(person), received.get(person)]) {
+      for (const [repo, count] of map ?? []) {
+        known.set(repo, (known.get(repo) ?? 0) + count)
+      }
+    }
+    const knownTotal = [...known.values()].reduce((sum, count) => sum + count, 0)
+    let count = 0
+    for (const [repo, weight] of known) {
+      const others = (totals.get(repo) ?? 0) - (received.get(person)?.get(repo) ?? 0)
+      count += others > 0 && knownTotal > 0 ? (reviews * (weight / knownTotal) * (received.get(author)?.get(repo) ?? 0)) / others : 0
+    }
+
+    return count
+  }
 
   return {
     reviewers: [...given.keys()],
     authors: [...received.keys()],
+    // Everyone who reviewed or was reviewed: someone who wrote code and never reviewed counts too.
+    people: [...new Set([...given.keys(), ...received.keys()])],
     expected,
+    expectedAt,
     actual: (/** @type {string} */ reviewer, /** @type {string} */ author) => actual.get(`${reviewer}\n${author}`) ?? 0,
     load,
     medianLoad: percentile([...given.keys()].map(load), 0.5) ?? 1,
@@ -327,6 +353,38 @@ export function suggestReviewers({ reviewers, expected, actual, load, medianLoad
     .filter(({ actual: done, expected: wanted }) => done <= SUGGEST_SHARE * wanted && chanceOfAtMost(done, wanted) <= SUGGEST_CHANCE)
     .sort((a, b) => b.score - a.score || a.reviewer.localeCompare(b.reviewer))
     .slice(0, SUGGESTIONS)
+}
+
+// The people who review little: at most QUIET_SHARE of the reviews of the median reviewer of their group (groupOf: their
+// stack), those who never review included; for each, the authors they could review more if they reviewed as much as that
+// median, by their appetite (expectedAt()): the widest gaps first.
+/**
+ * @param {ReviewExpectations} expectations
+ * @param {(login: string) => string} [groupOf]
+ */
+export function quietReviewers({ people, authors, actual, load, expectedAt }, groupOf = () => '') {
+  /** @type {Map<string, number[]>} */
+  const loads = new Map()
+  for (const person of people) {
+    const group = groupOf(person)
+    loads.set(group, [...(loads.get(group) ?? []), load(person)])
+  }
+
+  return people
+    .map((person) => {
+      const group = groupOf(person)
+      const median = percentile(loads.get(group) ?? [], 0.5) ?? 0
+      const suggestions = authors
+        .filter((author) => author !== person)
+        .map((author) => ({ author, actual: actual(person, author), expected: expectedAt(person, author, median) }))
+        .filter(({ actual: done, expected: wanted }) => wanted - done >= 1)
+        .sort((a, b) => b.expected - b.actual - (a.expected - a.actual) || a.author.localeCompare(b.author))
+        .slice(0, SUGGESTIONS)
+
+      return { reviewer: person, group, reviews: load(person), groupMedian: median, suggestions }
+    })
+    .filter(({ reviews, groupMedian }) => groupMedian > 0 && reviews <= QUIET_SHARE * groupMedian)
+    .sort((a, b) => a.reviews / a.groupMedian - b.reviews / b.groupMedian || a.reviewer.localeCompare(b.reviewer))
 }
 
 // How widely each author is reviewed: the effective number of their reviewers (one over the sum of the squared shares of

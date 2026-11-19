@@ -51,6 +51,7 @@ interface State {
     waits: Map<string, number[]>
     missing: ReturnType<typeof import('../site/domain/review-circles.js').missingReviews>
     expectations: import('../site/domain/review-circles.js').ReviewExpectations
+    quiet: ReturnType<typeof import('../site/domain/review-circles.js').quietReviewers>
     spread: ReturnType<typeof import('../site/domain/review-circles.js').reviewSpread>
     spreadOf: Map<string, ReturnType<typeof import('../site/domain/review-circles.js').reviewSpread>[number]>
     stackOf: (login: string) => string

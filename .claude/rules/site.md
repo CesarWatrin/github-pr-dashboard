@@ -149,7 +149,11 @@ paths:
   them, and in each circle that waits, who could review their pull requests more (`suggestReviewers()` over
   `reviewExpectations()`: those who review their repositories but them at most `SUGGEST_SHARE` of what they would,
   unlikely by chance (`SUGGEST_CHANCE`), the
-  widest gap first, weighed down for the busiest). The authors table
+  widest gap first, weighed down for the busiest). The people who review little (`quietReviewers()`: at most
+  `QUIET_SHARE` of the median of their stack, those who never review included), with whom they could review more at that
+  pace (`expectedAt()`, by the repositories they review and write in). The search filters every list and circle, and the
+  matrix keeps everyone, lights up the people found (`found` of `heatmapChart()`) and shows a red zero, with its
+  sentence, between them and the others (`zero`), one's own cell blank. The authors table
   gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
   (`firstReviewOf()`).
 - **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the

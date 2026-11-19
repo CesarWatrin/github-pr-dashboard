@@ -99,8 +99,9 @@ export function heatmapChart(container, { rows, columns, value, ariaLabel, toolt
         group.append(text)
       }
       root.append(group)
-      // Only the cells with a value take the keyboard focus: an empty grid would take dozens of tab stops.
-      if (amount) {
+      // Only the cells with a value take the keyboard focus, and the zeros that stand out: an empty grid would take dozens
+      // of tab stops.
+      if (amount || alarming) {
         const content = tooltip(row, column, amount)
         group.setAttribute('tabindex', 0)
         group.setAttribute('aria-label', content.title)
