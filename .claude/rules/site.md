@@ -154,8 +154,9 @@ paths:
   pace (`expectedAt()`, by the repositories they review and write in). The search filters every list and circle, and the
   matrix keeps everyone and lights up the people found (`found` of `heatmapChart()`). The matrix marks in red (`alert`)
   the reviews missing between two people (`missingReviews()`), even without a search: a red zero, or a cell ringed in red
-  when there are a few, what was expected in the tooltip; with a search, any zero between the people found and the
-  others too. One's own cell stays blank. A review is only expected between people whose stacks match (`compatible` of
+  when there are a few, what was expected in the tooltip; with a search, a zero between the people found and the others
+  too, where a review was likely (at least one expected by `reviewExpectations()`: stacks that match, repositories
+  shared). One's own cell stays blank. A review is only expected between people whose stacks match (`compatible` of
   `reviewExpectations()`: the same, or one of them full-stack), for the missing reviews and every suggestion. The authors table
   gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
   (`firstReviewOf()`).
@@ -347,8 +348,8 @@ paths:
   repositories of the projects of the period whatever those picked (`projectRepoCounts()`, through the `repos` of its
   entry) and applies to the whole page. The search finds a project by its name, its repositories and its authors
   (`projectSearchTexts()`), and its field says so on this page (`searchLabel` of the route); it applies to the timeline,
-  the cards and the table. The status filter (`[data-status-filter]`, the look of the repository filter, beside it in
-  the toolbar of the first card: a checkbox per status of `STATUS_ORDER`, with its count of projects of the period)
+  the cards and the table. The status filter (`[data-status-filter]`, the look of the repository filter, beside it
+  among the filters: a checkbox per status of `STATUS_ORDER`, with its count of projects of the period)
   keeps the whole page to the statuses picked (`state.projectStatuses`, null for all of them; `shownProjects()` of
   `model/projects.js`, its tiles worked out again over them), the timeline and the cards as the projects started.
   Without any project in the stats (`anyProject()`), the page says how one is found.
@@ -499,7 +500,10 @@ paths:
   growing past 1280 px; opened from the keyboard, the focus goes to the current page, else to the drawer itself. In
   the drawer the sync menu spans the width of the buttons. Beside the page as in the drawer, a window too short for
   the whole sidebar scrolls the list of pages only (`.nav`), the brand and the actions staying in place.
-  From 1536 px the filters (`[data-filters]`) move from the top of
+  The filters (`[data-filters]`) also hold the filters of a page that apply to the whole of it, shown on that page only
+  (`data-filter-route`, `renderRoute()`): the repository filters of the cycle, collaboration, team, repositories and
+  projects pages, and the status filter of the projects; a filter of a single table stays in its card (authors,
+  reviewers). From 1536 px the filters (`[data-filters]`) move from the top of
   the page to a sticky column on its right, under the name « Filtres », the period shown tinted like the current page
   of the sidebar; the column stays on the pages without filters so that the content keeps its width;
   beside it the content is as wide as beside the sidebar at 1280 px, so whatever fits there fits there too. From 1280

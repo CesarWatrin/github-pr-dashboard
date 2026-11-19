@@ -115,8 +115,8 @@ export const FRAME = {
   'Par dépôt': 'By repository',
   'Dépôts avec des PR de code ouvertes sur la période': 'Repositories with code PRs opened over the period',
   'Qui relit qui': 'Who reviews whom',
-  'Pour repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes. Les personnes qui pèsent moins de 2 % des relectures de la période ont trop peu de données pour une ligne ou une colonne : elles sont regroupées dans « Peu de relectures » (« Autres » quand la largeur en écarte aussi d’autres), et une recherche les fait apparaître. Le filtre de dépôts s’applique à toute la page.':
-    'To spot fixed pairs and knowledge that circulates little, not to rank people. People who weigh less than 2% of the reviews of the period have too little data for a row or a column: they are grouped under “Few reviews” (“Others” when the width also leaves others out), and a search brings them back. The repository filter applies to the whole page.',
+  'Pour repérer les binômes figés et le savoir qui circule peu, pas pour classer des personnes. Les personnes qui pèsent moins de 2 % des relectures de la période ont trop peu de données pour une ligne ou une colonne : elles sont regroupées dans « Peu de relectures » (« Autres » quand la largeur en écarte aussi d’autres), et une recherche les fait apparaître.':
+    'To spot fixed pairs and knowledge that circulates little, not to rank people. People who weigh less than 2% of the reviews of the period have too little data for a row or a column: they are grouped under “Few reviews” (“Others” when the width also leaves others out), and a search brings them back.',
   'Voir les données de la matrice': 'See the matrix data',
   'Relecteurs de chaque auteur': 'Reviewers of each author',
   'Combien de personnes relisent le code de chaque auteur, et la part du relecteur principal':

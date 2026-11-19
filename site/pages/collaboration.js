@@ -185,7 +185,11 @@ export function renderCollaboration() {
             count: formatNumber(side.others.length),
             share: minShare,
           })
-    const missingOf = new Map(currentCircles().missing.map((gap) => [`${gap.reviewer}\n${gap.author}`, gap]))
+    const { missing, expectations } = currentCircles()
+    const missingOf = new Map(missing.map((gap) => [`${gap.reviewer}\n${gap.author}`, gap]))
+    // With a search, a zero only stands out where a review was likely: people whose stacks match, who share
+    // repositories (reviewExpectations(): at least one review expected).
+    const likely = (row, column) => expectations.expected(column.key, row.key) >= 1
     heatmapChart(matrix, {
       rows: entries(authors),
       columns: entries(reviewers),
@@ -194,13 +198,17 @@ export function renderCollaboration() {
       // A search lights up the rows and columns of the people it finds, and dims the others.
       found: state.query ? (key) => key !== OTHERS && matchesQuery(key, displayName(key)) : null,
       // In red: the reviews missing between two people (missingReviews(), chance making the gap unlikely), a zero or a
-      // cell ringed; and with a search, any zero between the people found and the others. One's own cell stays blank.
+      // cell ringed; and with a search, a zero between the people found and the others where a review was likely, never
+      // between a front and a back developer. One's own cell stays blank.
       alert: (row, column) =>
         row.key !== column.key &&
         row.key !== OTHERS &&
         column.key !== OTHERS &&
         (missingOf.has(`${column.key}\n${row.key}`) ||
-          (Boolean(state.query) && value(row, column) === 0 && (matchesQuery(row.key, displayName(row.key)) || matchesQuery(column.key, displayName(column.key))))),
+          (Boolean(state.query) &&
+            value(row, column) === 0 &&
+            likely(row, column) &&
+            (matchesQuery(row.key, displayName(row.key)) || matchesQuery(column.key, displayName(column.key))))),
       tooltip: (row, column, prs) => {
         const author = personName(row.key, authors.others.length)
         const reviewer = personName(column.key, reviewers.others.length)
@@ -212,7 +220,8 @@ export function renderCollaboration() {
         ]
 
         const gap = missingOf.get(`${column.key}\n${row.key}`)
-        const expected = gap ? [{ value: formatNumber(Math.round(gap.expected)), label: t('attendues à son rythme, dans les dépôts où la personne relit') }] : []
+        const wanted = gap?.expected ?? (prs === 0 && row.key !== OTHERS && column.key !== OTHERS ? expectations.expected(column.key, row.key) : 0)
+        const expected = wanted >= 1 ? [{ value: formatNumber(Math.round(wanted)), label: t('attendues à son rythme, dans les dépôts où la personne relit') }] : []
         if (prs === 0) {
           return { title: t('{reviewer} n’a relu aucune PR {of} sur la période', { reviewer, of: ofName(author) }), rows: expected }
         }

@@ -37,6 +37,10 @@ export function renderRoute() {
   search.placeholder = searchLabel
   search.setAttribute('aria-label', searchLabel)
   $('[data-compare-field]').hidden = !COMPARED_ROUTES.has(route)
+  // A filter of one page among the filters of the frame, such as the repositories of the collaboration page.
+  for (const filter of $$('[data-filter-route]')) {
+    filter.hidden = filter.dataset.filterRoute !== route
+  }
   renderTitle()
   // A squad scopes the pages with filters only: going to or from one without them draws everything again.
   if (state.stats && squadKey() !== state.renderedSquad) {

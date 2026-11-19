@@ -626,8 +626,8 @@ for (const language of ['fr', 'en']) {
         const routes = Object.keys(ROUTES)
         // The filters of the frame, changed from every page in turn; those of a page (its repositories, the statuses of
         // the projects), from their page.
-        const scoped = await page.evaluate(`[...document.querySelectorAll('[data-route] [data-repo-filter], [data-route] [data-status-filter]')].map((filter) => ({
-          route: filter.closest('[data-route]').dataset.route,
+        const scoped = await page.evaluate(`[...document.querySelectorAll('[data-route] [data-repo-filter], [data-route] [data-status-filter], [data-filter-route]')].map((filter) => ({
+          route: filter.closest('[data-route]')?.dataset.route ?? filter.dataset.filterRoute,
           selector: filter.dataset.repoFilter ? '[data-repo-filter="' + filter.dataset.repoFilter + '"]' : '[data-status-filter]',
         }))`)
         assert.ok(scoped.length >= 2, 'the filters of the pages are found')

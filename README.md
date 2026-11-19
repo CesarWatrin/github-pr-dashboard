@@ -15,7 +15,9 @@ Le dashboard est découpé en pages, dans une barre latérale. Sous 1280 px, une
 la synchro, et son bouton menu ouvre la barre latérale par-dessus la page, sans défilement horizontal. La période et
 la recherche s'appliquent à toutes : sur les grands écrans (1536 px et plus), elles quittent le haut de la page pour
 une colonne à droite, qui reste à portée quand la page défile ; de 1280 à 1535 px, elles restent collées en haut de
-la fenêtre. Dès que la page a défilé d'un écran, un bouton rond en bas à droite remonte en haut. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
+la fenêtre. Les filtres d'une page qui valent pour toute la page les rejoignent, sur cette page seulement : les dépôts
+du cycle de vie, de la collaboration, de l'équipe, des dépôts et des projets, et les statuts des projets ; le filtre
+d'un seul tableau reste dans sa carte. Dès que la page a défilé d'un écran, un bouton rond en bas à droite remonte en haut. Quand des squads sont déclarées (`SQUADS`), un choix de squad s'y ajoute : les pages ne comptent plus que
 les PR ouvertes par ses membres, et ce qui s'y passe (qui les relit, leurs délais, leurs mises en prod). La CI reste
 celle de toute l'organisation, une exécution ne se rattachant à aucune squad, et le compteur du jour, qui ne se
 découpe pas par squad, disparaît. Le bilan du mois, le palmarès et « Mes PR » ne se filtrent jamais. Sur la vue d'ensemble, le cycle de vie, les AC,
@@ -159,7 +161,8 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   back n'a pas à relire un dev front. Dans la matrice, les relectures qui manquent ressortent en rouge, même sans
   recherche : un 0 rouge, ou un contour rouge quand il y en a quelques-unes, avec au survol ce qui était attendu ; avec
   une recherche, la matrice garde tout le monde, met en avant la personne cherchée et marque d'un 0 rouge chaque
-  personne qu'elle ne relit pas ou qui ne la relit pas.
+  personne qu'elle ne relit pas ou qui ne la relit pas, quand une relecture était plausible (stacks compatibles et
+  dépôts en commun).
 - **Cartographie** : l'équipe en deux réseaux disposés par des forces, à la façon de react-force-graph, sur la
   période et la squad choisies. Le réseau des reviews relie deux personnes qui relisent les PR de code l'une de
   l'autre : les groupes, les silos et les ponts se forment seuls. Qui écrit où relie chaque personne aux dépôts où

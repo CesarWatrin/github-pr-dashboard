@@ -287,6 +287,16 @@ select.search {
     right: 0;
     left: auto;
   }
+
+  /* A page's repository filter, as wide as the other filters of the column. */
+  .filters .repo-filter summary {
+    max-width: none;
+  }
+}
+
+/* A page's repository filter among the filters of the frame (the collaboration page's). */
+.filters .repo-filter {
+  margin-left: 0;
 }
 
 /* What the tiles compare to: as wide as its longest option at the top of the page. So is the squad picker, tinted
