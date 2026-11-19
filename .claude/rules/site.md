@@ -138,8 +138,18 @@ paths:
   return). The circles: label propagation over the strong ties only (`STRONG_TIE` times the average, each weighed by how
   busy both people are), each with the share of the reviews of its pull requests from inside and its first review
   (median, ninth decile); `waiting` when that ninth decile passes `WAITING_FACTOR` times the rest of the team's, with
-  `MIN_WAITS` first reviews at least. People alone in no circle are listed together, unless they wait. The authors table
-  gains the wait for a first review, median and slowest tenth (`firstReviewOf()`).
+  `MIN_WAITS` first reviews at least; each circle shows the stacks of its people (a circle of front developers reads as
+  one). People alone in no circle are listed together, unless they wait. The pairs show `SHOWN_PAIRS`, every other one
+  folded. One-sided pairs (`ONE_SIDED_MIN`, `ONE_SIDED_SHARE`). Missing reviews (`missingReviews()`: what a reviewer would
+  review of an author if they spread their reviews over each repository they review as the team's are, `MISSING_SHARE`
+  of it at most, `MISSING_MIN` expected at least). People reviewed by few (`reviewSpread()`: effective reviewers, one over
+  the sum of the squared shares, set against the median of their stack, narrow under `NARROW_SHARE` of it, with their
+  `MAIN_REVIEWERS`): the wait does not show it, someone who asks the same people directly never waits. Under each of
+  them, and in each circle that waits, who could review their pull requests more (`suggestReviewers()` over
+  `reviewExpectations()`: those who review their repositories but them at most `SUGGEST_SHARE` of what they would, the
+  widest gap first, weighed down for the busiest). The authors table
+  gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
+  (`firstReviewOf()`).
 - **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the
   squad picked, from `site/model/cartography.js`: `reviewMap()` (a link per pair of people, how many code pull requests
   each way, from `reviewNetwork()`) and `repositoryMap()` (a link per person and repository of their code pull

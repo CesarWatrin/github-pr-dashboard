@@ -1,7 +1,7 @@
 // Collaboration: who reviews whom (the matrix, or its most frequent pairs on a narrow screen), the pairs and circles of
 // review (collaboration/circles.js), and the reviewers of each author.
 
-import { elides, formatDuration, formatNumber, formatShare, plural } from '../lib/format.js'
+import { elides, formatDecimal, formatDuration, formatNumber, formatShare, plural } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { matchesQuery, periodTitle } from '../model/selection.js'
@@ -36,6 +36,18 @@ export const COLLABORATION_COLUMNS = [
     key: 'reviewers',
     label: t('Relecteurs distincts'),
     hint: t('Personnes différentes intervenues sur ces PR relues. Peu de relecteurs : le code de la personne circule peu.'),
+  },
+  {
+    key: 'effectiveReviewers',
+    label: t('Relecteurs effectifs'),
+    format: (row) => (typeof row.effectiveReviewers === 'number' ? formatDecimal(Math.round(row.effectiveReviewers * 10) / 10) : '–'),
+    hint: t('Par combien de personnes l’auteur est relu en pratique : dix relecteurs qui se partagent ses reviews à égalité en font dix, deux qui en font neuf sur dix à peine plus de deux. À partir de 20 reviews.'),
+  },
+  {
+    key: 'mainReviewersShare',
+    label: t('Part des 3 principaux'),
+    format: (row) => formatShare(row.mainReviewersShare),
+    hint: t('Part des reviews de ses PR faites par ses trois principaux relecteurs.'),
   },
   {
     key: 'topReviewer',

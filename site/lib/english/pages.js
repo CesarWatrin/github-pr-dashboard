@@ -728,4 +728,28 @@ export const PAGES = {
   'Les plus lentes': 'The slowest',
   'L’attente de la première review que dépassent seulement les 10 % de ses PR les plus lentes : là où l’auteur reste bloqué.':
     'The wait for a first review that only the slowest 10% of their PRs exceed: where the author stays stuck.',
+  'Voir tous les binômes': 'See every pair',
+  'À sens unique': 'One-sided',
+  'L’un relit beaucoup l’autre, qui lui rend peu : au plus un quart, à partir de 20 relectures.': 'One reviews the other a lot and gets little back: a quarter at most, from 20 reviews.',
+  'Relectures qui manquent': 'Missing reviews',
+  'Qui relit bien moins quelqu’un que s’il relisait au hasard les PR des dépôts où il relit : au plus 40 % de l’attendu, à partir de 15 relectures attendues.':
+    'Who reviews someone far less than if they reviewed the PRs of the repositories they review at random: 40% of the expected at most, from 15 expected reviews.',
+  'Relus par peu de personnes': 'Reviewed by few people',
+  'Aucun binôme à sens unique sur la période.': 'No one-sided pair over the period.',
+  'relues : {actual}, attendues : {expected}': 'reviewed: {actual}, expected: {expected}',
+  'Aucune relecture qui manque nettement sur la période.': 'No clearly missing review over the period.',
+  'Par combien de personnes chacun est relu en pratique, face à la médiane des devs de sa stack : à partir de {share} de moins, avec ses {count} principaux relecteurs. Le temps d’attente ne le montre pas : on peut relancer les mêmes personnes en direct et ne jamais attendre.':
+    'By how many people each one is reviewed in practice, against the median of the devs of their stack: from {share} fewer, with their {count} main reviewers. The wait does not show it: one can ping the same people directly and never wait.',
+  '{effective} relecteurs effectifs, médiane {stack} : {median}': '{effective} effective reviewers, {stack} median: {median}',
+  'de l’équipe': 'of the team',
+  '{share} par': '{share} by',
+  'Personne n’est relu par nettement moins de monde que les devs de sa stack.': 'Nobody is reviewed by clearly fewer people than the devs of their stack.',
+  'Relecteurs effectifs': 'Effective reviewers',
+  'Par combien de personnes l’auteur est relu en pratique : dix relecteurs qui se partagent ses reviews à égalité en font dix, deux qui en font neuf sur dix à peine plus de deux. À partir de 20 reviews.':
+    'By how many people the author is reviewed in practice: ten reviewers sharing their reviews evenly make ten, two doing nine in ten of them hardly more than two. From 20 reviews.',
+  'Part des 3 principaux': 'Share of the main 3',
+  'Part des reviews de ses PR faites par ses trois principaux relecteurs.': 'Share of the reviews of their PRs done by their three main reviewers.',
+  'Pourraient relire davantage leurs PR :': 'Could review their PRs more:',
+  'Pourraient relire davantage ses PR :': 'Could review their PRs more:',
+  '{name} ({actual} sur {expected})': '{name} ({actual} of {expected})',
 }

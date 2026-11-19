@@ -1,11 +1,11 @@
 // Each person's figures over the period (team page, person dialog), who reviews whom, and what their hotfixes add up to.
 
 import { median, percentile } from '../domain/math.js'
-import { reviewCircles } from '../domain/review-circles.js'
+import { missingReviews, reviewCircles, reviewExpectations, reviewSpread } from '../domain/review-circles.js'
 import { reviewNetwork } from '../domain/team.js'
 import { t } from '../lib/i18n.js'
 import { sumOf } from '../lib/math.js'
-import { authorRows, reviewerRows, selectedEntries } from './contributors.js'
+import { authorRows, inSelection, reviewerRows, selectedEntries } from './contributors.js'
 import { displayName, isCurrent, withoutFormer } from './people.js'
 import { stackOf, stackType } from './repositories.js'
 import { currentPeriod } from './selection.js'
@@ -39,19 +39,48 @@ export function currentCircles() {
         .authors.filter((person) => isCurrent(person.login))
         .map((person) => [person.login, selectedEntries(person, 'collaboration').flatMap(([, stats]) => stats.timesToFirstReviewHours)]),
     )
-    state.circlesCache = { network, waits, circles: reviewCircles(network.pairs, waits) }
+    const selection = state.repos.collaboration
+    // Who reviewed whom per repository, over the repositories selected, for the reviews missing between two people.
+    const perRepository = withoutFormer(currentPeriod()).reviewPairs.map(({ author, reviewer, repos }) => ({
+      author,
+      reviewer,
+      repos: Object.fromEntries(Object.entries(repos).filter(([repo]) => inSelection(selection, repo))),
+    }))
+    // Each person by their stack, as the team page says it: a front developer is set against the front ones.
+    const stackFor = stacksOf(currentPeriod())
+    /** @param {string} login */
+    const stackLabel = (login) => stackType(stackFor(login).counts)?.label ?? ''
+    const spread = reviewSpread(network.pairs, stackLabel)
+    const expectations = reviewExpectations(perRepository)
+    state.circlesCache = {
+      network,
+      waits,
+      circles: reviewCircles(network.pairs, waits),
+      missing: missingReviews(expectations),
+      expectations,
+      spread,
+      spreadOf: new Map(spread.map((row) => [row.author, row])),
+      stackOf: stackLabel,
+    }
   }
 
   return state.circlesCache
 }
 
 // How long an author's code pull requests waited for a first review: the median, and the ninth decile, which only the
-// slowest tenth passes.
+// slowest tenth passes; and how widely they are reviewed (reviewSpread()).
 /** @param {string} login */
 export function firstReviewOf(login) {
   const hours = currentCircles().waits.get(login) ?? []
 
-  return { firstReview: percentile(hours, 0.5), firstReviewSlowest: percentile(hours, 0.9) }
+  const spread = currentCircles().spreadOf.get(login)
+
+  return {
+    firstReview: percentile(hours, 0.5),
+    firstReviewSlowest: percentile(hours, 0.9),
+    effectiveReviewers: spread?.effective ?? null,
+    mainReviewersShare: spread?.mainShare ?? null,
+  }
 }
 
 // Everyone who wrote or reviewed code over the period in the repositories selected on the page, most code pull requests

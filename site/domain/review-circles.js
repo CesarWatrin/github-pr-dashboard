@@ -7,6 +7,25 @@ import { percentile } from './math.js'
 
 // How many pairs make the « busiest pairs ».
 export const TOP_PAIRS = 8
+// A pair is one-sided when one reviews the other at least ONE_SIDED_MIN times, and gets back at most ONE_SIDED_SHARE of
+// it.
+export const ONE_SIDED_MIN = 20
+export const ONE_SIDED_SHARE = 0.25
+// Reviews are missing between two people when one reviews at most MISSING_SHARE of what they would if they reviewed the
+// pull requests of each repository as the team writes them, with at least MISSING_MIN expected.
+export const MISSING_SHARE = 0.4
+export const MISSING_MIN = 15
+// The main reviewers of an author, and the reviews an author needs for their spread to say something.
+export const MAIN_REVIEWERS = 3
+// Reviewers suggested for someone: up to SUGGESTIONS of those who review at most SUGGEST_SHARE of what they would, with
+// SUGGEST_MIN expected at least.
+export const SUGGESTIONS = 3
+export const SUGGEST_SHARE = 0.5
+export const SUGGEST_MIN = 5
+export const SPREAD_MIN = 20
+// An author is reviewed by few people when their effective reviewers are at most this share of the median of their
+// group (their stack): front developers, fewer, are reviewed by fewer people than back ones.
+export const NARROW_SHARE = 0.8
 // The share of the reviews the fewest reviewers are counted for.
 export const COVERAGE = 0.8
 // A person takes part in the circles from this many reviews, given and received: fewer tell nothing of whom they read.
@@ -90,6 +109,10 @@ export function reviewCircles(pairs, firstReviews) {
     total,
     reciprocity: total ? returned / total : null,
     pairs: twoWays,
+    // Pairs where one reviews the other a lot and gets little back, the busiest first.
+    oneSided: twoWays
+      .filter((pair) => pair.firstReviews >= ONE_SIDED_MIN && pair.secondReviews <= ONE_SIDED_SHARE * pair.firstReviews)
+      .sort((a, b) => b.firstReviews - a.firstReviews || a.first.localeCompare(b.first)),
     topPairsShare: total ? busiest / total : null,
     reviewersForCoverage,
     reviewers: given.size,
@@ -181,6 +204,155 @@ function circlesOf({ activity, reviews, firstReviews }) {
     .sort((a, b) => b.members.length - a.members.length || b.received - a.received || a.members[0].localeCompare(b.members[0]))
 
   return { circles, team }
+}
+
+// What each reviewer would review of each author: if, in each repository they review, they spread their reviews over
+// the pull requests of the others as these are reviewed. Per repository, so that someone who only reviews the back is
+// not expected to review the front. Against what they did review, and how many reviews they give, their load.
+/**
+ * @param {{ author: string, reviewer: string, repos: Record<string, number> }[]} pairs who reviewed whom, per repository
+ */
+export function reviewExpectations(pairs) {
+  /** @type {Map<string, Map<string, number>>} */
+  const given = new Map()
+  /** @type {Map<string, Map<string, number>>} */
+  const received = new Map()
+  /** @type {Map<string, number>} */
+  const totals = new Map()
+  /** @type {Map<string, number>} */
+  const actual = new Map()
+  /** @type {(map: Map<string, Map<string, number>>, login: string, repo: string, count: number) => void} */
+  const add = (map, login, repo, count) => {
+    if (!map.has(login)) {
+      map.set(login, new Map())
+    }
+    const own = /** @type {Map<string, number>} */ (map.get(login))
+    own.set(repo, (own.get(repo) ?? 0) + count)
+  }
+  for (const { author, reviewer, repos } of pairs) {
+    if (author === reviewer) {
+      continue
+    }
+    for (const [repo, count] of Object.entries(repos)) {
+      add(given, reviewer, repo, count)
+      add(received, author, repo, count)
+      totals.set(repo, (totals.get(repo) ?? 0) + count)
+      actual.set(`${reviewer}\n${author}`, (actual.get(`${reviewer}\n${author}`) ?? 0) + count)
+    }
+  }
+  /** @type {(reviewer: string, author: string) => number} */
+  const expected = (reviewer, author) => {
+    let count = 0
+    for (const [repo, reviews] of given.get(reviewer) ?? []) {
+      // The reviews of the repository the reviewer could have given: all but those of their own pull requests.
+      const others = (totals.get(repo) ?? 0) - (received.get(reviewer)?.get(repo) ?? 0)
+      count += others > 0 ? (reviews * (received.get(author)?.get(repo) ?? 0)) / others : 0
+    }
+
+    return count
+  }
+  /** @type {(reviewer: string) => number} */
+  const load = (reviewer) => [...(given.get(reviewer)?.values() ?? [])].reduce((sum, count) => sum + count, 0)
+
+  return {
+    reviewers: [...given.keys()],
+    authors: [...received.keys()],
+    expected,
+    actual: (/** @type {string} */ reviewer, /** @type {string} */ author) => actual.get(`${reviewer}\n${author}`) ?? 0,
+    load,
+    medianLoad: percentile([...given.keys()].map(load), 0.5) ?? 1,
+  }
+}
+
+/** @typedef {ReturnType<typeof reviewExpectations>} ReviewExpectations */
+
+// The reviews missing between two people: those of a reviewer reviewed at most MISSING_SHARE of what they would, with at
+// least MISSING_MIN expected; the widest gaps first.
+/** @param {ReviewExpectations} expectations */
+export function missingReviews({ reviewers, authors, expected, actual }) {
+  const missing = []
+  for (const reviewer of reviewers) {
+    for (const author of authors) {
+      if (author === reviewer) {
+        continue
+      }
+      const wanted = expected(reviewer, author)
+      const done = actual(reviewer, author)
+      if (wanted >= MISSING_MIN && done <= MISSING_SHARE * wanted) {
+        missing.push({ reviewer, author, actual: done, expected: wanted })
+      }
+    }
+  }
+
+  return missing.sort((a, b) => b.expected - b.actual - (a.expected - a.actual) || a.reviewer.localeCompare(b.reviewer))
+}
+
+// Who could review some people more, by their appetite: the reviewers who already review the repositories they write
+// in, yet review them at most SUGGEST_SHARE of what they would, with SUGGEST_MIN expected at least; the widest gap first,
+// weighed down for the busiest reviewers (by the square root of their load against the median one), so that the work
+// spreads rather than piling up on the same few. Up to SUGGESTIONS of them.
+/**
+ * @param {ReviewExpectations} expectations
+ * @param {string[]} people the authors to find reviewers for, together
+ */
+export function suggestReviewers({ reviewers, expected, actual, load, medianLoad }, people) {
+  const own = new Set(people)
+
+  return reviewers
+    .filter((reviewer) => !own.has(reviewer))
+    .map((reviewer) => {
+      const wanted = people.reduce((sum, author) => sum + expected(reviewer, author), 0)
+      const done = people.reduce((sum, author) => sum + actual(reviewer, author), 0)
+
+      return { reviewer, actual: done, expected: wanted, score: (wanted - done) / Math.sqrt(Math.max(load(reviewer), 1) / Math.max(medianLoad, 1)) }
+    })
+    .filter(({ actual: done, expected: wanted }) => wanted >= SUGGEST_MIN && done <= SUGGEST_SHARE * wanted)
+    .sort((a, b) => b.score - a.score || a.reviewer.localeCompare(b.reviewer))
+    .slice(0, SUGGESTIONS)
+}
+
+// How widely each author is reviewed: the effective number of their reviewers (one over the sum of the squared shares of
+// their reviews: ten reviewers who share them evenly make ten, two who do nine tenths of them hardly more than two),
+// and their MAIN_REVIEWERS main reviewers with their share; the least spread first, among the authors with at least
+// SPREAD_MIN reviews. How long they wait tells nothing of it: someone who asks the same people in private does not wait.
+// Each author is set against the median of their group (groupOf: their stack, say), narrow when at most NARROW_SHARE of
+// it; the least spread for their group first.
+/**
+ * @param {Pair[]} pairs
+ * @param {(login: string) => string} [groupOf]
+ */
+export function reviewSpread(pairs, groupOf = () => '') {
+  /** @type {Map<string, { reviewer: string, prs: number }[]>} */
+  const byAuthor = new Map()
+  for (const { author, reviewer, prs } of pairs) {
+    if (author !== reviewer && prs > 0) {
+      byAuthor.set(author, [...(byAuthor.get(author) ?? []), { reviewer, prs }])
+    }
+  }
+
+  return [...byAuthor]
+    .map(([author, reviewers]) => {
+      const received = reviewers.reduce((sum, { prs }) => sum + prs, 0)
+      const sorted = reviewers.sort((a, b) => b.prs - a.prs || a.reviewer.localeCompare(b.reviewer))
+      const main = sorted.slice(0, MAIN_REVIEWERS).map(({ reviewer, prs }) => ({ login: reviewer, share: prs / received }))
+
+      return {
+        author,
+        received,
+        reviewers: reviewers.length,
+        effective: 1 / reviewers.reduce((sum, { prs }) => sum + (prs / received) ** 2, 0),
+        mainShare: main.reduce((sum, { share }) => sum + share, 0),
+        main,
+      }
+    })
+    .filter((spread) => spread.received >= SPREAD_MIN)
+    .map((spread, _index, all) => {
+      const group = groupOf(spread.author)
+      const median = /** @type {number} */ (percentile(all.filter((other) => groupOf(other.author) === group).map((other) => other.effective), 0.5))
+
+      return { ...spread, group, groupMedian: median, vsGroup: spread.effective / median, narrow: spread.effective <= NARROW_SHARE * median }
+    })
+    .sort((a, b) => a.vsGroup - b.vsGroup || a.author.localeCompare(b.author))
 }
 
 /** @typedef {ReturnType<typeof reviewCircles>} ReviewCircles */

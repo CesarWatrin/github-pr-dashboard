@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { reviewCircles } from '../../site/domain/review-circles.js'
+import { missingReviews, reviewCircles, reviewExpectations, reviewSpread, suggestReviewers } from '../../site/domain/review-circles.js'
 
 /** @type {(reviewer: string, author: string, prs: number) => { author: string, reviewer: string, prs: number }} */
 const pair = (reviewer, author, prs) => ({ author, reviewer, prs })
@@ -91,5 +91,90 @@ describe('circles of review', () => {
   test('too few first reviews say nothing', () => {
     const few = reviewCircles(PAIRS, new Map([...WAITS, ['eve', waits(40, 3)]]))
     assert.equal(few.circles.find((circle) => circle.members[0] === 'eve')?.waiting, false)
+  })
+})
+
+describe('one-sided pairs', () => {
+  test('one reviews the other a lot and gets little back', () => {
+    const { oneSided } = reviewCircles([pair('ann', 'ben', 30), pair('ben', 'ann', 3), pair('cid', 'dan', 25), pair('dan', 'cid', 20), pair('eve', 'fay', 10)], new Map())
+    // cid and dan give back; eve reviews fay too little to say.
+    assert.deepEqual(oneSided, [{ first: 'ann', second: 'ben', firstReviews: 30, secondReviews: 3 }])
+  })
+})
+
+describe('missing reviews', () => {
+  /** @type {(reviewer: string, author: string, repos: Record<string, number>) => { author: string, reviewer: string, repos: Record<string, number> }} */
+  const perRepo = (reviewer, author, repos) => ({ author, reviewer, repos })
+  // In web, ann only reviews ben, while ben and cid review everyone; in api, dan and eve review each other only.
+  const PER_REPO = [
+    perRepo('ann', 'ben', { web: 60 }),
+    perRepo('ben', 'ann', { web: 30 }),
+    perRepo('ben', 'cid', { web: 30 }),
+    perRepo('cid', 'ann', { web: 30 }),
+    perRepo('cid', 'ben', { web: 30 }),
+    perRepo('dan', 'eve', { api: 30 }),
+    perRepo('eve', 'dan', { api: 30 }),
+  ]
+
+  test('a reviewer who never reads someone they would read as often as the others', () => {
+    // ann gives 60 of the 120 reviews of web on others’ pull requests, cid’s pull requests get 30 of those 120: 15
+    // expected, none done.
+    assert.deepEqual(missingReviews(reviewExpectations(PER_REPO)), [{ reviewer: 'ann', author: 'cid', actual: 0, expected: 15 }])
+  })
+
+  test('who could review someone more: those who review their repositories, but them far less', () => {
+    const expectations = reviewExpectations(PER_REPO)
+    assert.deepEqual(suggestReviewers(expectations, ['cid']).map(({ reviewer, actual, expected }) => ({ reviewer, actual, expected })), [{ reviewer: 'ann', actual: 0, expected: 15 }])
+    // ben and cid already review each other: nobody to suggest for ben; dan and eve never review web.
+    assert.deepEqual(suggestReviewers(expectations, ['ben']), [])
+  })
+
+  test('nobody is said to miss the pull requests of a repository they never review', () => {
+    assert.ok(missingReviews(reviewExpectations(PER_REPO)).every(({ reviewer, author }) => !(reviewer === 'dan' && ['ann', 'ben', 'cid'].includes(author))))
+  })
+})
+
+describe('how widely each author is reviewed', () => {
+  const SPREAD = [
+    // ann: two reviewers, one does nine tenths.
+    pair('ben', 'ann', 27),
+    pair('cid', 'ann', 3),
+    // ben: four reviewers, evenly.
+    pair('ann', 'ben', 10),
+    pair('cid', 'ben', 10),
+    pair('dan', 'ben', 10),
+    pair('eve', 'ben', 10),
+    // cid: too few reviews to say.
+    pair('ann', 'cid', 5),
+  ]
+
+  test('the effective number of reviewers, the main ones and their share, the least spread first', () => {
+    const [ann, ben] = reviewSpread(SPREAD)
+    assert.equal(ann.author, 'ann')
+    assert.equal(Math.round(ann.effective * 100) / 100, 1.22)
+    assert.deepEqual(ann.main, [{ login: 'ben', share: 0.9 }, { login: 'cid', share: 0.1 }])
+    assert.equal(ann.mainShare, 1)
+    assert.equal(ben.effective, 4)
+    assert.equal(ben.mainShare, 0.75)
+  })
+
+  test('an author with too few reviews is left out', () => {
+    assert.deepEqual(reviewSpread(SPREAD).map((spread) => spread.author), ['ann', 'ben'])
+  })
+
+  test('each author against the median of their group: few reviewers are only narrow for those who have many', () => {
+    const extra = [...SPREAD, pair('ann', 'dan', 10), pair('ben', 'dan', 10), pair('cid', 'dan', 10), pair('eve', 'dan', 10)]
+    // ann alone in her group is its median; ben (4) and dan (4) are each other’s.
+    const spread = reviewSpread(extra, (login) => (login === 'ann' ? 'front' : 'back'))
+    assert.deepEqual(
+      spread.map(({ author, groupMedian, narrow }) => [author, Math.round(groupMedian * 100) / 100, narrow]),
+      [
+        ['ann', 1.22, false],
+        ['ben', 4, false],
+        ['dan', 4, false],
+      ],
+    )
+    // Together, ann is far under the median of everyone.
+    assert.equal(reviewSpread(extra)[0].narrow, true)
   })
 })
