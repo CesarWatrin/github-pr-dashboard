@@ -711,6 +711,14 @@
           <select class="search squad-filter" name="squad" aria-label="Squad" data-squad-filter hidden>
             <option value="">Toutes les squads</option>
           </select>
+          <!-- The filters of one page that apply to the whole of it: among the filters, on that page only
+               (data-filter-route, shell/router.js). A filter of a single table stays in its card. -->
+          <details class="repo-filter" data-repo-filter="cycle" data-filter-route="cycle" hidden></details>
+          <details class="repo-filter" data-repo-filter="collaboration" data-filter-route="collaboration" hidden></details>
+          <details class="repo-filter" data-repo-filter="team" data-filter-route="team" hidden></details>
+          <details class="repo-filter" data-repo-filter="repositories" data-filter-route="repositories" hidden></details>
+          <details class="repo-filter status-filter" data-status-filter data-filter-route="projects" hidden></details>
+          <details class="repo-filter" data-repo-filter="projects" data-filter-route="projects" hidden></details>
           <input
             class="search"
             type="search"
@@ -1226,10 +1234,7 @@
           <!-- Cycle de vie -->
           <div class="route" data-route="cycle" hidden>
             <section class="card" aria-labelledby="cycle-title">
-              <div class="card-toolbar">
-                <h2 id="cycle-title" data-cycle-title>Sur la période</h2>
-                <details class="repo-filter" data-repo-filter="cycle"></details>
-              </div>
+              <h2 id="cycle-title" data-cycle-title>Sur la période</h2>
               <h3 class="tile-group">Chaque étape, en médiane</h3>
               <div class="tiles" data-cycle-stage-tiles></div>
               <h3 class="tile-group">De bout en bout</h3>
@@ -1283,12 +1288,6 @@
 
           <!-- Collaboration -->
           <div class="route" data-route="collaboration" hidden>
-            <!-- The repository filter of the whole page, above its cards: the matrix, the pairs and circles, the reviewers
-                 of each author. -->
-            <div class="page-toolbar">
-              <p class="page-toolbar-note">Le filtre de dépôts s’applique à toute la page.</p>
-              <details class="repo-filter" data-repo-filter="collaboration"></details>
-            </div>
             <section class="card" aria-labelledby="collaboration-matrix-title" data-collaboration-matrix-card>
               <h2 id="collaboration-matrix-title">Qui relit qui</h2>
               <p class="card-sub" data-collaboration-matrix-sub></p>
@@ -1439,9 +1438,6 @@
 
           <!-- Équipe -->
           <div class="route" data-route="team" hidden>
-            <div class="team-toolbar">
-              <details class="repo-filter" data-repo-filter="team"></details>
-            </div>
             <div class="person-cards" data-team></div>
             <section class="card" aria-labelledby="team-former-title" data-team-former-card hidden>
               <h2 id="team-former-title">Anciens collaborateurs</h2>
@@ -1562,9 +1558,6 @@
 
           <!-- Dépôts -->
           <div class="route" data-route="repositories" hidden>
-            <div class="team-toolbar">
-              <details class="repo-filter" data-repo-filter="repositories"></details>
-            </div>
             <section class="card" aria-labelledby="repositories-fragile-title" data-repositories-fragile-card hidden>
               <h2 id="repositories-fragile-title">Dépôts portés par une seule personne</h2>
               <p class="card-sub" data-repositories-fragile-sub></p>
@@ -1702,13 +1695,7 @@
             </section>
             <div class="projects-content" data-projects-content>
               <section class="card" aria-labelledby="projects-title">
-                <div class="card-toolbar">
-                  <h2 id="projects-title">Les projets de la période</h2>
-                  <div class="card-toolbar-actions">
-                    <details class="repo-filter status-filter" data-status-filter></details>
-                    <details class="repo-filter" data-repo-filter="projects"></details>
-                  </div>
-                </div>
+                <h2 id="projects-title">Les projets de la période</h2>
                 <p class="card-sub" data-projects-sub></p>
                 <div class="tiles" data-project-tiles></div>
                 <h3 class="tile-group">Calendrier</h3>

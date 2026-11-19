@@ -23,11 +23,7 @@
   font-size: 13px;
 }
 
-/* Team page: the repository filter, then one card per person, as many columns as fit. */
-.team-toolbar {
-  display: flex;
-}
-
+/* Team page: one card per person, as many columns as fit. */
 .person-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
