@@ -12,11 +12,11 @@ import { measureText, truncateText } from './measure.js'
 // value(row, column) is a count, tooltip(row, column, value) the content of the tooltip of a cell. Labels of columns
 // too wide for their cell are tilted; on cells too narrow for tilted labels side by side (a phone), only one column in
 // two or three keeps its label, the last one always, as the other charts thin their axis out. found(key), when given (a
-// search), lights up the rows and columns it finds and the cells they cross, and dims the rest; zero(row, column), when
-// given, shows an empty cell as a zero that stands out.
+// search), lights up the rows and columns it finds and the cells they cross, and dims the rest; alert(row, column), when
+// given, marks the cells that stand out: an empty one as a red zero, another ringed in red.
 const TILTED_LABEL_SPACING = 18
 
-export function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, format = formatNumber, found = null, zero = null }) {
+export function heatmapChart(container, { rows, columns, value, ariaLabel, tooltip, format = formatNumber, found = null, alert = null }) {
   const width = container.clientWidth
   if (width === 0) {
     return
@@ -76,8 +76,16 @@ export function heatmapChart(container, { rows, columns, value, ariaLabel, toolt
       const group = svg('g', { class: found && !found(row.key) && !found(column.key) ? 'heat-group is-dimmed' : 'heat-group' })
       group.style.setProperty('--delay', `${Math.round(((rowIndex + columnIndex) / (rows.length + columns.length)) * STAGGER_SPREAD_MS)}ms`)
       const share = Math.min(1, amount / max)
-      const alarming = !amount && Boolean(zero?.(row, column))
-      const rect = svg('rect', { class: amount ? 'heat-cell' : alarming ? 'heat-cell is-zero' : 'heat-cell is-empty', x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4 })
+      const alerted = Boolean(alert?.(row, column))
+      const alarming = !amount && alerted
+      const rect = svg('rect', {
+        class: amount ? (alerted ? 'heat-cell is-alert' : 'heat-cell') : alarming ? 'heat-cell is-zero' : 'heat-cell is-empty',
+        x: x + 1,
+        y: y + 1,
+        width: cell - 2,
+        height: cell - 2,
+        rx: 4,
+      })
       if (amount) {
         rect.style.fill = `color-mix(in srgb, var(--series-1) ${Math.round(18 + 82 * share)}%, var(--surface))`
       }

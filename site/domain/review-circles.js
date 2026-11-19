@@ -213,11 +213,14 @@ function circlesOf({ activity, reviews, firstReviews }) {
 
 // What each reviewer would review of each author: if, in each repository they review, they spread their reviews over
 // the pull requests of the others as these are reviewed. Per repository, so that someone who only reviews the back is
-// not expected to review the front. Against what they did review, and how many reviews they give, their load.
+// not expected to review the front; and only between people whose work matches (compatible: their stacks, say), a back
+// developer never being expected to review a front one who happens to write in the same repository. Against what they
+// did review, and how many reviews they give, their load.
 /**
  * @param {{ author: string, reviewer: string, repos: Record<string, number> }[]} pairs who reviewed whom, per repository
+ * @param {(reviewer: string, author: string) => boolean} [compatible]
  */
-export function reviewExpectations(pairs) {
+export function reviewExpectations(pairs, compatible = () => true) {
   /** @type {Map<string, Map<string, number>>} */
   const given = new Map()
   /** @type {Map<string, Map<string, number>>} */
@@ -247,6 +250,9 @@ export function reviewExpectations(pairs) {
   }
   /** @type {(reviewer: string, author: string) => number} */
   const expected = (reviewer, author) => {
+    if (!compatible(reviewer, author)) {
+      return 0
+    }
     let count = 0
     for (const [repo, reviews] of given.get(reviewer) ?? []) {
       // The reviews of the repository the reviewer could have given: all but those of their own pull requests.
@@ -262,6 +268,9 @@ export function reviewExpectations(pairs) {
   // they review, and those they write in, for someone who reviews little tells little by their reviews alone.
   /** @type {(person: string, author: string, reviews: number) => number} */
   const expectedAt = (person, author, reviews) => {
+    if (!compatible(person, author)) {
+      return 0
+    }
     /** @type {Map<string, number>} */
     const known = new Map()
     for (const map of [given.get(person), received.get(person)]) {

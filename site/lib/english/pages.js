@@ -759,4 +759,5 @@ export const PAGES = {
   '{reviews} reviews, médiane {stack} : {median}': '{reviews} reviews, {stack} median: {median}',
   'Pourrait relire davantage :': 'Could review more:',
   'Personne ne relit nettement moins que les devs de sa stack.': 'Nobody reviews clearly less than the devs of their stack.',
+  'attendues à son rythme, dans les dépôts où la personne relit': 'expected at their pace, in the repositories they review',
 }

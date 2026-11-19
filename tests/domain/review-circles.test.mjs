@@ -139,6 +139,14 @@ describe('missing reviews', () => {
     assert.deepEqual(missingReviews(reviewExpectations(month)), [])
   })
 
+  test('nothing is expected between people whose work does not match', () => {
+    // ann (front, say) is not expected to review cid (back), though both are in web.
+    const apart = reviewExpectations(PER_REPO, (reviewer, author) => !(reviewer === 'ann' && author === 'cid'))
+    assert.equal(apart.expected('ann', 'cid'), 0)
+    assert.deepEqual(missingReviews(apart), [])
+    assert.deepEqual(suggestReviewers(apart, ['cid']), [])
+  })
+
   test('nobody is said to miss the pull requests of a repository they never review', () => {
     assert.ok(missingReviews(reviewExpectations(PER_REPO)).every(({ reviewer, author }) => !(reviewer === 'dan' && ['ann', 'ben', 'cid'].includes(author))))
   })

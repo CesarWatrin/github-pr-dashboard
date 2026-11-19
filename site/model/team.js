@@ -51,7 +51,14 @@ export function currentCircles() {
     /** @param {string} login */
     const stackLabel = (login) => stackType(stackFor(login).counts)?.label ?? ''
     const spread = reviewSpread(network.pairs, stackLabel)
-    const expectations = reviewExpectations(perRepository)
+    // A review is only expected between people whose stacks match: the same, or one of them full-stack.
+    /** @type {(reviewer: string, author: string) => boolean} */
+    const compatible = (reviewer, author) => {
+      const [a, b] = [stackLabel(reviewer), stackLabel(author)]
+
+      return !a || !b || a === b || a === 'full-stack' || b === 'full-stack'
+    }
+    const expectations = reviewExpectations(perRepository, compatible)
     state.circlesCache = {
       network,
       waits,

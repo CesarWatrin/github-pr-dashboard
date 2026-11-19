@@ -152,8 +152,11 @@ paths:
   widest gap first, weighed down for the busiest). The people who review little (`quietReviewers()`: at most
   `QUIET_SHARE` of the median of their stack, those who never review included), with whom they could review more at that
   pace (`expectedAt()`, by the repositories they review and write in). The search filters every list and circle, and the
-  matrix keeps everyone, lights up the people found (`found` of `heatmapChart()`) and shows a red zero, with its
-  sentence, between them and the others (`zero`), one's own cell blank. The authors table
+  matrix keeps everyone and lights up the people found (`found` of `heatmapChart()`). The matrix marks in red (`alert`)
+  the reviews missing between two people (`missingReviews()`), even without a search: a red zero, or a cell ringed in red
+  when there are a few, what was expected in the tooltip; with a search, any zero between the people found and the
+  others too. One's own cell stays blank. A review is only expected between people whose stacks match (`compatible` of
+  `reviewExpectations()`: the same, or one of them full-stack), for the missing reviews and every suggestion. The authors table
   gains the effective reviewers, the share of the main three and the wait for a first review, median and slowest tenth
   (`firstReviewOf()`).
 - **Map page** (`renderCartography()`, « Cartographie », drawn when it shows): two networks of the period and the

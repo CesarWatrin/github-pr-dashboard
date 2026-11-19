@@ -6,7 +6,7 @@ import { t } from '../lib/i18n.js'
 import { displayName } from '../model/people.js'
 import { matchesQuery, periodTitle } from '../model/selection.js'
 import { state } from '../model/state.js'
-import { currentNetwork } from '../model/team.js'
+import { currentCircles, currentNetwork } from '../model/team.js'
 import { dataTable } from '../ui/charts/data-table.js'
 import { heatmapChart } from '../ui/charts/heatmap-chart.js'
 import { $, el } from '../ui/dom.js'
@@ -185,6 +185,7 @@ export function renderCollaboration() {
             count: formatNumber(side.others.length),
             share: minShare,
           })
+    const missingOf = new Map(currentCircles().missing.map((gap) => [`${gap.reviewer}\n${gap.author}`, gap]))
     heatmapChart(matrix, {
       rows: entries(authors),
       columns: entries(reviewers),
@@ -192,12 +193,14 @@ export function renderCollaboration() {
       ariaLabel: t('PR relues par auteur et par relecteur, {period}', { period: periodTitle() }),
       // A search lights up the rows and columns of the people it finds, and dims the others.
       found: state.query ? (key) => key !== OTHERS && matchesQuery(key, displayName(key)) : null,
-      // Nothing between the people found and the others is what a search looks for: a zero, in red; one's own cell stays
-      // blank.
-      zero: state.query
-        ? (row, column) =>
-            row.key !== column.key && row.key !== OTHERS && column.key !== OTHERS && (matchesQuery(row.key, displayName(row.key)) || matchesQuery(column.key, displayName(column.key)))
-        : null,
+      // In red: the reviews missing between two people (missingReviews(), chance making the gap unlikely), a zero or a
+      // cell ringed; and with a search, any zero between the people found and the others. One's own cell stays blank.
+      alert: (row, column) =>
+        row.key !== column.key &&
+        row.key !== OTHERS &&
+        column.key !== OTHERS &&
+        (missingOf.has(`${column.key}\n${row.key}`) ||
+          (Boolean(state.query) && value(row, column) === 0 && (matchesQuery(row.key, displayName(row.key)) || matchesQuery(column.key, displayName(column.key))))),
       tooltip: (row, column, prs) => {
         const author = personName(row.key, authors.others.length)
         const reviewer = personName(column.key, reviewers.others.length)
@@ -208,8 +211,10 @@ export function renderCollaboration() {
           column.key === OTHERS && groupedNote(reviewers, t('En colonne')),
         ]
 
+        const gap = missingOf.get(`${column.key}\n${row.key}`)
+        const expected = gap ? [{ value: formatNumber(Math.round(gap.expected)), label: t('attendues à son rythme, dans les dépôts où la personne relit') }] : []
         if (prs === 0) {
-          return { title: t('{reviewer} n’a relu aucune PR {of} sur la période', { reviewer, of: ofName(author) }), rows: [] }
+          return { title: t('{reviewer} n’a relu aucune PR {of} sur la période', { reviewer, of: ofName(author) }), rows: expected }
         }
 
         return {
@@ -218,7 +223,7 @@ export function renderCollaboration() {
             of: ofName(author),
             reviewer,
           }),
-          rows: reviewed ? [{ value: formatShare(prs / reviewed), label: t('des PR relues {of}', { of: ofName(author) }) }] : [],
+          rows: [...(reviewed ? [{ value: formatShare(prs / reviewed), label: t('des PR relues {of}', { of: ofName(author) }) }] : []), ...expected],
           note: notes.filter(Boolean).join(' ') || null,
         }
       },

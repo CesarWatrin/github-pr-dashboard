@@ -154,9 +154,12 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   mais les relisent peu, les moins chargés d'abord ; et pour chaque auteur le nombre de relecteurs
   distincts et effectifs, la part de ses trois principaux relecteurs, la dépendance au premier et l'attente de sa
   première review (médiane et PR les plus lentes), pour repérer les binômes figés, le savoir qui circule peu et les
-  groupes bloqués, pas pour classer des personnes ; filtrable par dépôt, front ou back compris, et par la recherche :
-  la matrice garde alors tout le monde, met en avant la personne cherchée et marque d'un 0 rouge, avec sa phrase au
-  survol, chaque personne qu'elle ne relit pas ou qui ne la relit pas.
+  groupes bloqués, pas pour classer des personnes ; filtrable par dépôt, front ou back compris, et par la recherche.
+  Une relecture n'est attendue qu'entre deux personnes de stacks compatibles (la même, ou l'une full-stack) : un dev
+  back n'a pas à relire un dev front. Dans la matrice, les relectures qui manquent ressortent en rouge, même sans
+  recherche : un 0 rouge, ou un contour rouge quand il y en a quelques-unes, avec au survol ce qui était attendu ; avec
+  une recherche, la matrice garde tout le monde, met en avant la personne cherchée et marque d'un 0 rouge chaque
+  personne qu'elle ne relit pas ou qui ne la relit pas.
 - **Cartographie** : l'équipe en deux réseaux disposés par des forces, à la façon de react-force-graph, sur la
   période et la squad choisies. Le réseau des reviews relie deux personnes qui relisent les PR de code l'une de
   l'autre : les groupes, les silos et les ponts se forment seuls. Qui écrit où relie chaque personne aux dépôts où
