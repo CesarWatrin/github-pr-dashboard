@@ -1828,11 +1828,16 @@
               </section>
               <section class="card" aria-labelledby="review-effort-title">
                 <div class="card-toolbar">
-                  <h2 id="review-effort-title">L’effort de chacun</h2>
-                  <div class="segmented" role="radiogroup" aria-label="Mesure des barres">
-                    <button type="button" role="radio" data-review-effort-measure="units">Unités par mois</button>
-                    <button type="button" role="radio" data-review-effort-measure="shares">Parts de l’effort</button>
-                  </div>
+                  <h2 id="review-effort-title">Chacun d’un coup d’œil</h2>
+                  <select class="search" aria-label="Ce que montrent les barres" data-review-effort-measure>
+                    <option value="units">Effort, en unités par mois</option>
+                    <option value="shares">Effort, en parts</option>
+                    <option value="productivity">Productivité</option>
+                    <option value="efficiency">Efficacité</option>
+                    <option value="collaboration">Collaboration</option>
+                    <option value="importance">Importance</option>
+                    <option value="overall">Note globale</option>
+                  </select>
                 </div>
                 <div class="review-effort" data-review-effort></div>
               </section>
