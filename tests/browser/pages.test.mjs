@@ -213,6 +213,8 @@ for (const language of ['fr', 'en']) {
         ['repositories', '.repo-link', '[data-person-dialog]'],
         ['unblock', 'a[aria-haspopup="dialog"]', '[data-pr-dialog]'],
         ['squads', '.squad-card button', '[data-person-dialog]'],
+        // The squad of a person, on their card, opens the dialog of the squad.
+        ['team', '.squad-tag', '[data-person-dialog]'],
         ['projects', '.project-card-head', '[data-person-dialog]'],
         ['projects', '.gantt-row', '[data-person-dialog]'],
         // A project named on another page opens its dialog too.

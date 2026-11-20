@@ -8,7 +8,7 @@ import { stackType, topTechnologies } from '../model/repositories.js'
 import { squadsOf } from '../model/squads.js'
 import { el } from './dom.js'
 import { technologyIcon } from './icons.js'
-import { avatarUrl } from './links.js'
+import { askToOpen, avatarUrl, OPEN_SQUAD } from './links.js'
 
 // The avatars of the people of a group still in the team, overlapping, as on a team photo, in the order given. The head
 // of a squad comes first, ringed. Beyond max, a « +N » stands for the others, named on hover with the rest.
@@ -65,15 +65,25 @@ export function formerText(login) {
   ]
 }
 
-// The squads a person belongs to, as tags on their card and dialog: nothing outside any squad, or without squads.
+// The squads a person belongs to, as tags on their card and dialog, each opening the dialog of its squad: nothing
+// outside any squad, or without squads.
 export function squadTags(login) {
   const squads = squadsOf().filter((squad) => squad.members.includes(login))
 
   // The head of a squad: a star on its tag, and the words on hover.
-  const tag = (squad) =>
-    squad.lead === login
-      ? el('span', { className: 'squad-tag is-lead', textContent: `★ ${squad.name}`, title: t('Chef de squad, {squad}', { squad: squad.name }) })
-      : el('span', { className: 'squad-tag', textContent: squad.name })
+  const tag = (squad) => {
+    const lead = squad.lead === login
+    const button = el('button', {
+      type: 'button',
+      className: lead ? 'squad-tag is-lead' : 'squad-tag',
+      textContent: lead ? `★ ${squad.name}` : squad.name,
+      title: lead ? t('Chef de squad, {squad}', { squad: squad.name }) : squad.name,
+    })
+    button.setAttribute('aria-haspopup', 'dialog')
+    button.addEventListener('click', () => askToOpen(button, OPEN_SQUAD, squad.name))
+
+    return button
+  }
 
   return squads.length ? [el('div', { className: 'squad-tags', title: t('Squads') }, ...squads.map(tag))] : []
 }

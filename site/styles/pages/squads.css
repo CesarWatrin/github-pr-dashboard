@@ -4,8 +4,11 @@
   gap: 16px;
 }
 
-/* The squads of a person, under their stack on their card and dialog: one tag each, a person may have two. */
+/* The squads of a person, under their stack on their card and dialog: one tag each, a person may have two, each opening
+   the dialog of its squad. On a card, they sit above the button that covers it. */
 .squad-tags {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -17,9 +20,16 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
   color: var(--text-primary);
+  font: inherit;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.squad-tag:hover,
+.squad-tag:focus-visible {
+  background: color-mix(in srgb, var(--series-1) 18%, var(--surface));
 }
 
 .squad-tag.is-lead {
