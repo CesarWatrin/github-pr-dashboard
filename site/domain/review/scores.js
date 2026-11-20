@@ -1,9 +1,10 @@
 // The four marks of each person of the annual review, from 0 to 100, as ranks among the people evaluated: productivity
-// (against those of a comparable work, comparisonOf()), efficiency, collaboration and importance; the overall mark, a head of squad also
+// (all their work together, hotfixWorthOf()), efficiency, collaboration and importance; the overall mark, a head of squad also
 // judged on the results of their squad; and the level that follows.
 
 import { median } from '../math.js'
-import { mean, rankShares } from './statistics.js'
+import { bootstrapInterval, mean, rankShares } from './statistics.js'
+import { seedOf } from './figures.js'
 
 // A reviewer someone depends on reviews at least this share of their code pull requests, among those with enough.
 export const DEPENDENCY_SHARE = 0.3
@@ -13,11 +14,34 @@ export const OWNER_SHARE = 0.4
 export const OWNER_MIN_CODE = 10
 // How many of the authors a person reviews the most count for how focused their reviews are.
 export const REVIEWED_MOST = 3
-// Whom productivity compares a person with: the people of the TMA among themselves, everyone else together. Those partly
-// in the TMA deliver code as the others do, in units of work, and are too few to rank among themselves.
-/** @typedef {'TMA' | 'code'} Comparison */
-/** @type {(profile: import('./figures.js').Profile) => Comparison} */
-export const comparisonOf = (profile) => (profile === 'TMA' ? 'TMA' : 'code')
+// What a hotfix is worth in units of work when nothing tells it: one, a pull request of 100 lines.
+export const DEFAULT_HOTFIX_WORTH = 1
+
+/** @typedef {import('./tallies.js').MonthTally} MonthTally */
+
+// What a hotfix is worth in units of work, so that everyone is judged on all their work together (projects, AC, TMA and
+// the rest): a month of the TMA as much as a month of building. The median units a month of the projects, the AC and the
+// rest of those outside the TMA, for the median hotfixes a month of those in it (profile TMA); DEFAULT_HOTFIX_WORTH
+// without either.
+/** @param {Pick<PersonFigures, 'profile' | 'workMean'>[]} people */
+export function hotfixWorthOf(people) {
+  const tma = people.filter((person) => person.profile === 'TMA')
+  const others = people.filter((person) => person.profile !== 'TMA')
+  const hotfixes = median(tma.map((person) => person.workMean.tma)) ?? 0
+  const units = median(others.map(({ workMean }) => workMean.projects + workMean.acs + workMean.rest)) ?? 0
+
+  return hotfixes && units ? units / hotfixes : DEFAULT_HOTFIX_WORTH
+}
+
+// What a person delivered each month they count, in units of work: their projects, AC and the rest, and their hotfixes
+// at what they are worth (hotfixWorthOf()); null before their arrival.
+/**
+ * @param {Pick<PersonFigures, 'series'>} person
+ * @param {number} hotfixWorth
+ */
+export const deliveredSeriesOf = (person, hotfixWorth) =>
+  person.series.map((month) => (month ? month.work.projects + month.work.acs + month.work.rest + hotfixWorth * month.work.tma : null))
+
 // A share of pull requests merged without any review from which the level stays at « meets expectations » at most.
 export const UNREVIEWED_LIMIT = 0.25
 // The overall marks from which a person's level is exceptional, above or meeting expectations; below them, under.
@@ -56,9 +80,28 @@ const weigh = (parts, item) => Math.round(100 * parts.reduce((total, [rank, weig
  * @param {{ tallies: ReturnType<typeof import('./tallies.js').reviewTallies>, current: Set<string> }} context
  */
 export function scorePeople(evaluated, { tallies, current }) {
+  // What a person delivers a month, all their work together.
+  const hotfixWorth = hotfixWorthOf(evaluated)
+  const delivery = evaluated.map((person) => {
+    const deliveredSeries = deliveredSeriesOf(person, hotfixWorth)
+    const delivered = deliveredSeries.flatMap((month) => (month === null ? [] : [month]))
+    const deliveredMean = mean(delivered)
+    const { projects, tma, acs, rest } = person.workMean
+
+    return {
+      deliveredSeries,
+      deliveredMean,
+      deliveredInterval: bootstrapInterval(delivered, { seed: seedOf(person.login) }),
+      // What each kind of work adds to it a month, in units.
+      deliveredParts: { projects, tma: hotfixWorth * tma, acs, rest },
+      // How much it changes from one month to the next, against its mean.
+      variation: deliveredMean ? Math.sqrt(mean(delivered.map((value) => (value - deliveredMean) ** 2))) / deliveredMean : 0,
+      deliveredPerDay: person.activeDays ? (deliveredMean * delivered.length) / person.activeDays : 0,
+    }
+  })
+  const totalDelivered = evaluated.reduce((total, person, index) => total + delivery[index].deliveredMean * person.months, 0) || 1
   // Where a person weighs in the team: whom they review, which repositories rest on them, their share of everything.
-  const totalUnits = evaluated.reduce((total, person) => total + person.unitsMean * person.months, 0) || 1
-  const people = evaluated.map((person) => {
+  const people = evaluated.map((person, index) => {
     const tally = /** @type {import('./tallies.js').PersonTally} */ (tallies.people.get(person.login))
     const dependents = Object.entries(tally.reviewedAuthors)
       .filter(([author, count]) => current.has(author) && (tallies.authorCode[author] ?? 0) >= DEPENDENCY_MIN_CODE && count / tallies.authorCode[author] >= DEPENDENCY_SHARE)
@@ -78,44 +121,28 @@ export function scorePeople(evaluated, { tallies, current }) {
 
     return {
       ...person,
+      ...delivery[index],
       dependents,
       owned,
       reviewedMost,
       reviewFocus: reviewedMost.reduce((total, author) => total + author.share, 0),
       breadth: Object.values(tally.repos).filter((count) => count >= 5).length,
-      codeShare: (person.unitsMean * person.months) / totalUnits,
+      codeShare: (delivery[index].deliveredMean * person.months) / totalDelivered,
       reviewShare: tallies.reviewPairs ? person.reviewed / tallies.reviewPairs : 0,
       hotfixTeamShare: tallies.hotfixes ? person.hotfixes / tallies.hotfixes : 0,
     }
   })
 
-  // Productivity, among those compared with them (comparisonOf()): what they deliver a month, then how many pull requests
-  // they merge.
-  /** @type {Map<string, { delivered: number, units: number, hotfixes: number, count: number }>} */
-  const profiles = new Map()
-  /** @type {Map<object, number>} */
-  const productivity = new Map()
-  /** @type {Map<object, 'above' | 'below' | 'within'>} */
-  const standing = new Map()
-  for (const comparison of new Set(people.map((person) => comparisonOf(person.profile)))) {
-    const group = people.filter((person) => comparisonOf(person.profile) === comparison)
-    const delivered = /** @type {number} */ (median(group.map((person) => person.deliveredMean)))
-    profiles.set(comparison, {
-      delivered,
-      units: /** @type {number} */ (median(group.map((person) => person.unitsMean))),
-      hotfixes: /** @type {number} */ (median(group.map((person) => person.hotfixesMean))),
-      count: group.length,
-    })
-    const parts = /** @type {[Map<object, number>, number][]} */ ([
-      [ranks(group, (person) => person.deliveredMean), 0.75],
-      [ranks(group, (person) => person.mergedMean), 0.25],
-    ])
-    for (const person of group) {
-      productivity.set(person, weigh(parts, person))
-      const [low, high] = person.deliveredInterval
-      standing.set(person, low > delivered ? 'above' : high < delivered ? 'below' : 'within')
-    }
-  }
+  // Productivity, against the whole team: what they deliver a month, all their work together, then how many pull
+  // requests they merge; above or below the team when the whole confidence interval is.
+  const deliveredMedian = /** @type {number} */ (median(people.map((person) => person.deliveredMean)))
+  const productivity = /** @type {[Map<object, number>, number][]} */ ([
+    [ranks(people, (person) => person.deliveredMean), 0.75],
+    [ranks(people, (person) => person.mergedMean), 0.25],
+  ])
+  /** @param {{ deliveredInterval: [number, number] }} person */
+  const standingOf = ({ deliveredInterval: [low, high] }) =>
+    /** @type {'above' | 'below' | 'within'} */ (low > deliveredMedian ? 'above' : high < deliveredMedian ? 'below' : 'within')
 
   const efficiency = /** @type {[Map<object, number>, number][]} */ ([
     [ranks(people, (person) => person.mergeHours, { lowerIsBetter: true }), 0.3],
@@ -141,14 +168,13 @@ export function scorePeople(evaluated, { tallies, current }) {
   ])
 
   return {
-    profiles: Object.fromEntries(profiles),
+    delivery: { median: deliveredMedian, hotfixWorth },
     people: people.map((person) => ({
       ...person,
-      comparison: comparisonOf(person.profile),
-      standing: /** @type {'above' | 'below' | 'within'} */ (standing.get(person)),
-      deliveredVsProfile: person.deliveredMean / (/** @type {{ delivered: number }} */ (profiles.get(comparisonOf(person.profile))).delivered || 1),
+      standing: standingOf(person),
+      deliveredVsTeam: person.deliveredMean / (deliveredMedian || 1),
       marks: {
-        productivity: /** @type {number} */ (productivity.get(person)),
+        productivity: weigh(productivity, person),
         efficiency: weigh(efficiency, person),
         collaboration: weigh(collaboration, person),
         importance: weigh(importance, person),
@@ -175,7 +201,7 @@ export function squadResults(squads, people) {
         name: squad.name,
         lead: squad.lead ?? null,
         members: members.length,
-        unitsPerMember: mean(members.map((person) => person.unitsMean)),
+        unitsPerMember: mean(members.map((person) => person.deliveredMean)),
         reviewsPerMember: mean(members.map((person) => person.reviewsMean)),
         mergeHours: median(members.flatMap((person) => (typeof person.mergeHours === 'number' ? [person.mergeHours] : []))),
         unreviewedShare: merged ? members.reduce((total, person) => total + person.unreviewedShare * person.merged, 0) / merged : 0,

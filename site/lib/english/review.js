@@ -18,8 +18,30 @@ export const REVIEW = {
   'Niveaux de l’année': 'Levels of the year',
   'Les écarts de productivité sont-ils réels ?': 'Are the gaps in productivity real?',
   'Vue d’ensemble': 'Overview',
-  'Un clic sur une colonne la trie. Les quatre notes vont de 0 à 100 : le rang de la personne dans l’équipe, 100 pour la meilleure (face aux devs de même catégorie pour la productivité).':
-    'Click a column to sort it. The four marks go from 0 to 100: the person’s rank in the team, 100 for the best (against devs of the same kind for productivity).',
+  'Chacun d’un coup d’œil': 'Everyone at a glance',
+  'Ce que montrent les barres': 'What the bars show',
+  'Effort, en unités par mois': 'Effort, in units a month',
+  'Effort, en parts': 'Effort, in shares',
+  'Note globale': 'Overall mark',
+  note: 'mark',
+  '{mark} : le rang de chacun dans l’équipe, de 0 à 100, la meilleure en haut. Elle pèse {what}. Le trait marque la médiane de l’équipe. Un clic sur un nom ouvre son dossier.':
+    '{mark}: each person’s rank in the team, from 0 to 100, the best at the top. It weighs {what}. The line marks the team median. Click a name to open their file.',
+  'ce que la personne livre par mois, tout son travail compris, puis ses PR mergées': 'what the person delivers a month, all their work included, then their merged PRs',
+  'délai de merge, PR abandonnées, merges sans review, checks en échec, régularité': 'time to merge, abandoned PRs, merges without review, failed checks, regularity',
+  'PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité': 'PRs reviewed a month, comments, people who depend on their reviews, responsiveness',
+  'sa part du code, des reviews et de la TMA, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge':
+    'their share of the code, the reviews and the maintenance, the repositories that rest on them, their projects and AC, the PRs of others they merge',
+  'les quatre notes pesées, et le résultat de sa squad pour un chef de squad': 'the four marks weighed, and the result of their squad for a head of squad',
+  'unités / mois': 'units / month',
+  'unités par mois': 'units a month',
+  '{count} unités par mois': '{count} units a month',
+  'médiane de l’équipe : {count}': 'team median: {count}',
+  'Ce que chaque type de travail pèse dans ce que chacun livre, du plus livré au moins livré ; au bout, ses unités par mois. Un clic sur un nom ouvre son dossier.':
+    'What each kind of work weighs in what each person delivers, from the most delivered to the least; at the end, their units a month. Click a name to open their file.',
+  'Unités livrées par mois sur l’année, tout le travail compris : une PR de projet, d’AC ou du reste selon sa taille, un hotfix pour {worth} unité. Le trait marque la médiane de l’équipe. Un clic sur un nom ouvre son dossier.':
+    'Units delivered a month over the year, all the work included: a PR of a project, an AC or the rest by its size, a hotfix for {worth} unit. The line marks the team median. Click a name to open their file.',
+  'Un clic sur une colonne la trie. Les quatre notes vont de 0 à 100 : le rang de la personne dans l’équipe, 100 pour la meilleure (sur tout son travail, projets, AC, TMA et le reste, pour la productivité).':
+    'Click a column to sort it. The four marks go from 0 to 100: the person’s rank in the team, 100 for the best (on all their work, projects, AC, maintenance and the rest, for productivity).',
   'Les squads': 'The squads',
   'Par membre évalué. Le résultat d’une squad compte pour un quart de la note de son chef.':
     'Per member evaluated. The result of a squad counts for a quarter of its head’s mark.',
@@ -31,20 +53,19 @@ export const REVIEW = {
   'Trop peu de recul': 'Too new to judge',
   'Arrivée récente ou activité de code marginale : pas de niveau.': 'Recent arrival or little code: no level.',
   'hors TMA': 'outside maintenance',
-  'qui ne sont pas en TMA': 'outside maintenance',
   'TMA partielle': 'partly maintenance',
-  'au-dessus des devs comparables': 'above comparable devs',
-  'en dessous des devs comparables': 'below comparable devs',
-  'dans la norme des devs comparables': 'in line with comparable devs',
-  '{delivered} par mois, médiane des devs {profile} : {median} · {standing}': '{delivered} a month, median of devs {profile}: {median} · {standing}',
-  'Livre nettement plus que la médiane des devs {profile} ({times} fois), un écart statistiquement solide.':
-    'Delivers clearly more than the median of devs {profile} ({times} times), a statistically sound gap.',
-  'Moins de hotfixes livrés que les autres devs TMA ({mine} par mois contre {profile}), un écart statistiquement solide.':
-    'Fewer hotfixes delivered than the other maintenance devs ({mine} a month against {profile}), a statistically sound gap.',
-  'Livre moins que la médiane des devs {profile} ({share} de la médiane), un écart statistiquement solide.':
-    'Delivers less than the median of devs {profile} ({share} of the median), a statistically sound gap.',
-  'Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. La productivité des devs TMA se compare entre eux, celle de tous les autres ensemble, TMA partielle comprise : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.':
-    'Stack and maintenance. The stack (front, back, mobile, full-stack) reads as on the Team page. By the share of hotfixes in their code PRs, each person is TMA from 50%, partly maintenance from 30 to 50%, outside maintenance below. The productivity of maintenance devs is compared among themselves, that of all the others together, partly maintenance included: a 5-line hotfix does not weigh like a 400-line feature.',
+  'au-dessus de l’équipe': 'above the team',
+  'en dessous de l’équipe': 'below the team',
+  'dans la norme de l’équipe':
+    'in line with the team',
+  '{count} unités par mois, tout son travail compris, médiane de l’équipe : {median} · {standing}':
+    '{count} units a month, all their work included, team median: {median} · {standing}',
+  'Livre nettement plus que la médiane de l’équipe ({times} fois), tout son travail compris, un écart statistiquement solide.':
+    'Delivers clearly more than the team median ({times} times), all their work included, a statistically sound gap.',
+  'Livre moins que la médiane de l’équipe ({share} de la médiane), tout son travail compris, un écart statistiquement solide.':
+    'Delivers less than the team median ({share} of the median), all their work included, a statistically sound gap.',
+  'Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. Ce profil informe, il ne change pas la mesure : chacun est jugé sur tout son travail, projets, AC, TMA et le reste, face à toute l’équipe.':
+    'Stack and maintenance. The stack (front, back, mobile, full-stack) reads as on the Team page. By the share of hotfixes in their code PRs, each person is TMA from 50%, partly maintenance from 30 to 50%, outside maintenance below. This profile informs, it does not change the measure: everyone is judged on all their work, projects, AC, maintenance and the rest, against the whole team.',
   'Bien au-delà des attentes': 'Well above expectations',
   'Haut niveau sur la livraison, la review et le poids dans l’équipe.': 'High marks on delivery, review and weight in the team.',
   'Au-dessus des attentes': 'Above expectations',
@@ -70,7 +91,7 @@ export const REVIEW = {
   'à peine plus grands': 'hardly greater',
   'des écarts de livraison d’un mois sur l’autre viennent de la personne, le reste des sujets du mois, des congés, des projets. Sur la review, c’est {share} : chacun s’y implique à un niveau très stable.':
     'of the month-to-month gaps in delivery come from the person, the rest from the topics of the month, leave, projects. On review it is {share}: each person takes part at a very steady level.',
-  'entre ceux qui livrent le plus et ceux qui livrent le moins, hors TMA (15e et 85e centiles).':
+  'entre ceux qui livrent le plus et ceux qui livrent le moins (15e et 85e centiles).':
     'between those who deliver the most and those who deliver the least, maintenance aside (15th and 85th percentiles).',
   '{category} : {verdict}': '{category}: {verdict}',
   'écarts réels': 'real gaps',
@@ -84,7 +105,6 @@ export const REVIEW = {
   Efficacité: 'Efficiency',
   Importance: 'Importance',
   'Livré par mois': 'Delivered a month',
-  '{count} hotfixes': '{count} hotfixes',
   '{count} unités': '{count} units',
   'Relues par mois': 'Reviewed a month',
   Présence: 'Presence',
@@ -97,14 +117,14 @@ export const REVIEW = {
   Résultat: 'Result',
 
   // How to read the page.
-  'Livraison. Hors TMA et en TMA partielle, chaque PR mergée compte selon sa taille, sur une échelle logarithmique : 100 lignes valent une unité, 10 lignes une demie, 1 000 lignes une et demie. Le code généré ou importé ne gonfle donc pas les chiffres. Pour la TMA, c’est le nombre de hotfixes mergés par mois.':
-    'Delivery. Outside maintenance and partly in it, each merged PR counts by its size, on a logarithmic scale: 100 lines are one unit, 10 lines half a unit, 1,000 lines one and a half. Generated or imported code does not swell the figures. For the TMA, it is the number of hotfixes merged a month.',
-  'Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous des devs comparables veut dire que tout l’intervalle l’est : l’écart ne tient pas à un ou deux mois atypiques.':
-    'Reliability. Each monthly average has its 95% confidence interval, drawn from the months themselves (bootstrap). Above or below comparable devs means the whole interval is: the gap does not rest on one or two odd months.',
+  'Livraison. Chaque PR mergée de projet, d’AC ou du reste compte selon sa taille, sur une échelle logarithmique : 100 lignes valent une unité, 10 lignes une demie, 1 000 lignes une et demie. Le code généré ou importé ne gonfle donc pas les chiffres. Un hotfix, petit mais tout aussi prenant, compte pour ce qu’un mois de TMA vaut un mois de construction : les unités par mois des devs hors TMA pour les hotfixes par mois des devs TMA, en médiane. Un mois de TMA pèse ainsi comme un mois de projets, et chacun est jugé sur tout son travail.':
+    'Delivery. Each merged PR of a project, an AC or the rest counts by its size, on a logarithmic scale: 100 lines are one unit, 10 lines half a unit, 1,000 lines one and a half. Generated or imported code does not swell the figures. A hotfix, small but just as demanding, counts for what a month of maintenance is worth against a month of building: the units a month of the devs outside maintenance for the hotfixes a month of the maintenance devs, as medians. A month of maintenance thus weighs as much as a month of projects, and everyone is judged on all their work.',
+  'Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous de l’équipe veut dire que tout l’intervalle est au-dessus ou en dessous de sa médiane : l’écart ne tient pas à un ou deux mois atypiques.':
+    'Reliability. Each monthly average has its 95% confidence interval, drawn from the months themselves (bootstrap). Above or below the team means the whole interval is above or below its median: the gap does not rest on one or two odd months.',
   'Heures ouvrées. Chaque délai ne compte que les heures de 9 h à 18 h, du lundi au vendredi, heure de Paris. Une journée vaut 9 heures : « 2,5 j » veut dire deux journées et demie de travail, pas de calendrier. Les jours actifs comptent les jours ouvrés, fériés retirés, où la personne a fait au moins une action sur GitHub : un plancher, une journée de réunions ou de spécifications n’y laisse pas de trace.':
     'Working hours. Every delay only counts the hours from 9:00 to 18:00, Monday to Friday, Paris time. A day is 9 hours: “2.5 d” means two and a half working days, not calendar days. Active days count the working days, public holidays aside, on which the person did at least one thing on GitHub: a floor, as a day of meetings or specifications leaves no trace.',
-  'Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, face aux devs de sa catégorie. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.':
-    'The four marks are ranks from 0 to 100. Productivity: what the person delivers a month, against devs of the same kind. Efficiency: time to merge, abandoned PRs, merges without review, failed checks, regularity. Collaboration: PRs reviewed a month, comments, people who depend on their reviews, responsiveness. Importance: their share of the team’s code, reviews and maintenance, the repositories that rest on them, their projects and AC, the PRs of others they merge.',
+  'Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, tout son travail compris, face à toute l’équipe. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.':
+    'The four marks are ranks from 0 to 100. Productivity: what the person delivers a month, all their work included, against the whole team. Efficiency: time to merge, abandoned PRs, merges without review, failed checks, regularity. Collaboration: PRs reviewed a month, comments, people who depend on their reviews, responsiveness. Importance: their share of the team’s code, reviews and maintenance, the repositories that rest on them, their projects and AC, the PRs of others they merge.',
   'Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, le niveau ne dépasse pas « conforme aux attentes » tant que ce n’est pas corrigé.':
     'Overall mark: 35% productivity, 25% collaboration, 25% importance, 15% efficiency. For a head of squad, productivity only counts for 15%, efficiency for 10%, and the result of their squad for 25%. Beyond 25% of PRs merged without review, the level goes no higher than “meets expectations” until it is corrected.',
   'Niveau : bien au-delà des attentes à partir de 72, au-dessus des attentes à partir de 58, conforme aux attentes à partir de 42, en dessous des attentes sous 42.':
@@ -165,7 +185,9 @@ export const REVIEW = {
   'Livré par jour actif': 'Delivered per active day',
   'Cases cerclées : de 9 h à 18 h, du lundi au vendredi. Plus une case est foncée, plus il y a d’actions (PR, reviews, merges).':
     'Ringed cells: 9:00 to 18:00, Monday to Friday. The darker a cell, the more actions (PRs, reviews, merges).',
-  'Hotfixes mergés': 'Hotfixes merged',
+  'Unités livrées, par type de travail, et PR relues, mois par mois': 'Units delivered, by kind of work, and PRs reviewed, month by month',
+  'En unités de travail ; un hotfix en vaut {worth}.': 'In units of work; a hotfix is worth {worth}.',
+  'dont TMA / projets / AC / le reste': 'of which maintenance / projects / AC / the rest',
   'Unités livrées': 'Units delivered',
   '{delivered} et PR relues, mois par mois': '{delivered} and PRs reviewed, month by month',
   'pas encore dans l’équipe': 'not in the team yet',

@@ -1,5 +1,5 @@
-// The figures of each person of the annual review, from their tallies: the months they count over, what they delivered
-// month by month with how sure that is, how their pull requests flowed, how they reviewed, the rhythm of their weeks.
+// The figures of each person of the annual review, from their tallies: the months they count over, what they did month
+// by month, by kind of work, how their pull requests flowed, how they reviewed, the rhythm of their weeks.
 
 import { median } from '../math.js'
 import { bootstrapInterval, mean } from './statistics.js'
@@ -11,6 +11,9 @@ export const MIN_CODE = 10
 // The share of hotfixes among the code pull requests that makes a person a profile of maintenance (TMA), or a mixed one.
 export const TMA_SHARE = 0.5
 export const MIXED_SHARE = 0.3
+// The seed of the random draws of a person's confidence intervals, from their login: the same intervals at every load.
+/** @param {string} login */
+export const seedOf = (login) => [...login].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7)
 // Someone who arrived by this day of a month counts it.
 const ARRIVAL_DAY = 5
 
@@ -58,14 +61,13 @@ export function personFigures(tally, { months, first, last }) {
   const hotfixes = active.map((month) => tally.months[month].hotfixes)
   const reviews = active.map((month) => tally.months[month].reviews)
   const merged = active.map((month) => tally.months[month].merged)
-  const seed = [...tally.login].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7)
-  // What a profile delivers: hotfixes for the TMA, units of work for the others.
-  const delivered = profile === 'TMA' ? hotfixes : units
+  const seed = seedOf(tally.login)
   const unitsMean = mean(units)
+  /** @type {(kind: import('../effort.js').EffortKind) => number} */
+  const workMean = (kind) => mean(active.map((month) => tally.months[month].work[kind]))
   const activeMonths = new Set(active)
   const availableDays = active.reduce((total, month) => total + workingDaysOf(month), 0)
   const activeDays = [...tally.days].filter((day) => activeMonths.has(day.slice(0, 7))).length
-  const variation = unitsMean ? Math.sqrt(mean(units.map((value) => (value - unitsMean) ** 2))) / unitsMean : 0
 
   return {
     login: tally.login,
@@ -87,13 +89,12 @@ export function personFigures(tally, { months, first, last }) {
     // Month by month, over the months of the review: null before the person arrived.
     series: months.map((month) => (activeMonths.has(month) ? tally.months[month] : null)),
     unitsMean,
+    // Each kind of work a month: units for the projects, the AC and the rest, hotfixes for the TMA.
+    workMean: { projects: workMean('projects'), tma: workMean('tma'), acs: workMean('acs'), rest: workMean('rest') },
     hotfixesMean: mean(hotfixes),
     mergedMean: mean(merged),
-    deliveredMean: mean(delivered),
-    deliveredInterval: bootstrapInterval(delivered, { seed }),
     reviewsMean: mean(reviews),
     reviewsInterval: bootstrapInterval(reviews, { seed: seed + 1 }),
-    variation,
     mergeHours: median(tally.mergeHours),
     hotfixMergeHours: median(tally.hotfixMergeHours),
     firstReviewHours: median(tally.firstReviewHours),
@@ -113,7 +114,6 @@ export function personFigures(tally, { months, first, last }) {
     availableDays,
     activeDays,
     presence: availableDays ? activeDays / availableDays : 0,
-    unitsPerDay: activeDays ? units.reduce((total, value) => total + value, 0) / activeDays : 0,
     rhythm: rhythmOf(tally),
   }
 }

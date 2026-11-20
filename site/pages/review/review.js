@@ -1,7 +1,7 @@
 // Performance annuelle: each developer over the last twelve whole months (site/domain/review.js), for the managers only. The
 // page asks for their password (MANAGER_PASSWORD) and opens for 30 days on the browser it was typed in; its link, last
 // in the sidebar, shows a padlock open meanwhile. Then the recommendations, whether the gaps between people are real,
-// the ranking, the squads, a dossier per person, those too new to judge and how to read it all.
+// the effort of everyone, the ranking, the squads, a dossier per person, those too new to judge and how to read it all.
 
 import { isManagerPassword } from '../../domain/manager.js'
 import { formatDecimal, formatDuration, formatNumber, formatShare, monthName } from '../../lib/format.js'
@@ -13,6 +13,7 @@ import { managerUnlocked, state, storeManager } from '../../model/state.js'
 import { $, el, svg } from '../../ui/dom.js'
 import { askToOpen, OPEN_PERSON, personLink } from '../../ui/links.js'
 import { dossier } from './dossier.js'
+import { effortChart, setupEffortChart } from './effort-chart.js'
 import { GROUPS, groupOf, PROFILE_LABELS, stackOf } from './words.js'
 
 /** @typedef {import('../../domain/review.js').TeamReview} TeamReview */
@@ -53,8 +54,8 @@ const COLUMNS = [
   {
     key: 'delivered',
     label: t('Livré par mois'),
-    sort: (person) => person.deliveredVsProfile,
-    cell: (person) => (person.profile === 'TMA' ? t('{count} hotfixes', { count: one(person.deliveredMean) }) : t('{count} unités', { count: one(person.deliveredMean) })),
+    sort: (person) => person.deliveredMean,
+    cell: (person) => t('{count} unités', { count: one(person.deliveredMean) }),
   },
   { key: 'reviews', label: t('Relues par mois'), sort: (person) => person.reviewsMean, cell: (person) => formatNumber(Math.round(person.reviewsMean)) },
   { key: 'presence', label: t('Présence'), sort: (person) => person.presence, cell: (person) => formatShare(person.presence) },
@@ -125,6 +126,7 @@ export function renderReview() {
   )
   renderBoard(review)
   renderFacts(review)
+  $('[data-review-effort]').replaceChildren(...effortChart(review, dossierButton))
   renderTable(review)
   renderSquadTable(review)
   renderMethod()
@@ -208,7 +210,7 @@ function renderFacts(review) {
       }),
     ])
     if (differences.spread) {
-      facts.push([`×${one(differences.spread)}`, t('entre ceux qui livrent le plus et ceux qui livrent le moins, hors TMA (15e et 85e centiles).')])
+      facts.push([`×${one(differences.spread)}`, t('entre ceux qui livrent le plus et ceux qui livrent le moins (15e et 85e centiles).')])
     }
     for (const [category, test] of Object.entries(differences.byCategory)) {
       facts.push([
@@ -304,11 +306,11 @@ function renderSquadTable(review) {
 
 function renderMethod() {
   const items = [
-    t('Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. La productivité des devs TMA se compare entre eux, celle de tous les autres ensemble, TMA partielle comprise : un hotfix de 5 lignes ne pèse pas comme une fonctionnalité de 400.'),
-    t('Livraison. Hors TMA et en TMA partielle, chaque PR mergée compte selon sa taille, sur une échelle logarithmique : 100 lignes valent une unité, 10 lignes une demie, 1 000 lignes une et demie. Le code généré ou importé ne gonfle donc pas les chiffres. Pour la TMA, c’est le nombre de hotfixes mergés par mois.'),
-    t('Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous des devs comparables veut dire que tout l’intervalle l’est : l’écart ne tient pas à un ou deux mois atypiques.'),
+    t('Stack et TMA. La stack (front, back, mobile, full-stack) se lit comme sur la page Équipe. Selon la part de hotfixes dans ses PR de code, chacun est TMA à partir de 50 %, en TMA partielle de 30 à 50 %, hors TMA en dessous. Ce profil informe, il ne change pas la mesure : chacun est jugé sur tout son travail, projets, AC, TMA et le reste, face à toute l’équipe.'),
+    t('Livraison. Chaque PR mergée de projet, d’AC ou du reste compte selon sa taille, sur une échelle logarithmique : 100 lignes valent une unité, 10 lignes une demie, 1 000 lignes une et demie. Le code généré ou importé ne gonfle donc pas les chiffres. Un hotfix, petit mais tout aussi prenant, compte pour ce qu’un mois de TMA vaut un mois de construction : les unités par mois des devs hors TMA pour les hotfixes par mois des devs TMA, en médiane. Un mois de TMA pèse ainsi comme un mois de projets, et chacun est jugé sur tout son travail.'),
+    t('Fiabilité. Chaque moyenne mensuelle a son intervalle de confiance à 95 %, tiré des mois eux-mêmes (bootstrap). Au-dessus ou en dessous de l’équipe veut dire que tout l’intervalle est au-dessus ou en dessous de sa médiane : l’écart ne tient pas à un ou deux mois atypiques.'),
     t('Heures ouvrées. Chaque délai ne compte que les heures de 9 h à 18 h, du lundi au vendredi, heure de Paris. Une journée vaut 9 heures : « 2,5 j » veut dire deux journées et demie de travail, pas de calendrier. Les jours actifs comptent les jours ouvrés, fériés retirés, où la personne a fait au moins une action sur GitHub : un plancher, une journée de réunions ou de spécifications n’y laisse pas de trace.'),
-    t('Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, face aux devs de sa catégorie. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.'),
+    t('Les quatre notes sont des rangs de 0 à 100. Productivité : ce qu’elle livre par mois, tout son travail compris, face à toute l’équipe. Efficacité : délai de merge, PR abandonnées, merges sans review, checks en échec, régularité. Collaboration : PR relues par mois, commentaires, personnes qui dépendent de ses reviews, réactivité. Importance : sa part du code, des reviews et de la TMA de l’équipe, les dépôts qui reposent sur elle, ses projets et AC, les PR des autres qu’elle merge.'),
     t('Note globale : 35 % de productivité, 25 % de collaboration, 25 % d’importance, 15 % d’efficacité. Pour un chef de squad, la productivité ne compte que pour 15 %, l’efficacité pour 10 %, et le résultat de sa squad pour 25 %. Au-delà de 25 % de PR mergées sans review, le niveau ne dépasse pas « conforme aux attentes » tant que ce n’est pas corrigé.'),
     t('Niveau : bien au-delà des attentes à partir de 72, au-dessus des attentes à partir de 58, conforme aux attentes à partir de 42, en dessous des attentes sous 42.'),
     t('Limites. GitHub ne voit ni la difficulté d’un sujet, ni l’aide donnée à l’oral, ni les spécifications, l’astreinte ou les réunions. Cette page objective et prépare les entretiens, elle ne remplace pas l’avis des chefs de squad.'),
@@ -346,6 +348,7 @@ export function setupReview({ render }) {
     storeManager(check.verifier)
     render()
   })
+  setupEffortChart(render)
   $('[data-review-lock]').addEventListener('click', () => {
     storeManager(null)
     render()

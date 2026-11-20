@@ -34,36 +34,35 @@ export function teamReview(stats) {
       return personFigures(tally, { months, first: parisDay(first * MINUTE_MS), last: parisDay(activity.last * MINUTE_MS) })
     })
   const evaluated = figures.filter((person) => person.evaluated)
-  const { people: scored, profiles } = scorePeople(evaluated, { tallies, current })
+  const { people: scored, delivery } = scorePeople(evaluated, { tallies, current })
   const squads = squadResults(stats.squads ?? [], scored)
   const team = teamMedians(scored)
 
   const people = scored
     .map((person) => {
       const squad = squads.find((row) => row.lead === person.login) ?? null
-      const profile = profiles[person.comparison]
 
-      return { ...person, squad, ...overallOf(person, squad), ...notesOf(person, team, { requiredApprovals: stats.requiredApprovals, profile, squad }) }
+      return { ...person, squad, ...overallOf(person, squad), ...notesOf(person, team, { requiredApprovals: stats.requiredApprovals, squad }) }
     })
     .sort((a, b) => b.overall - a.overall)
 
-  // Do the people differ? On what they deliver a month, among those of a build profile, whose deliveries compare; on
-  // what they review, among everyone.
-  const builders = people.filter((person) => person.comparison === 'code')
-  const units = builders.map((person) => person.series.flatMap((month) => (month ? [month.units] : [])))
+  // Do the people differ? On what they deliver a month, all their work together, and on what they review.
+  /** @param {{ deliveredSeries: (number | null)[] }} person */
+  const deliveredOf = (person) => person.deliveredSeries.flatMap((value) => (value === null ? [] : [value]))
+  const units = people.map(deliveredOf)
   const reviews = people.map((person) => person.series.flatMap((month) => (month ? [month.reviews] : [])))
-  const sortedUnits = builders.map((person) => person.unitsMean).sort((a, b) => a - b)
+  const sortedUnits = people.map((person) => person.deliveredMean).sort((a, b) => a - b)
   const quantile = (/** @type {number} */ share) => sortedUnits[Math.round(share * (sortedUnits.length - 1))]
   /** @type {Record<string, ReturnType<typeof kruskalWallis> & { people: number }>} */
   const byCategory = {}
-  for (const category of new Set(builders.map((person) => person.category))) {
-    const group = builders.filter((person) => person.category === category)
+  for (const category of new Set(people.map((person) => person.category))) {
+    const group = people.filter((person) => person.category === category)
     if (group.length >= 3) {
-      byCategory[category] = { people: group.length, ...kruskalWallis(group.map((person) => person.series.flatMap((month) => (month ? [month.units] : [])))) }
+      byCategory[category] = { people: group.length, ...kruskalWallis(group.map(deliveredOf)) }
     }
   }
   const differences =
-    builders.length >= 3
+    people.length >= 3
       ? {
           units: kruskalWallis(units),
           reviews: kruskalWallis(reviews),
@@ -83,7 +82,7 @@ export function teamReview(stats) {
     people,
     others: figures.filter((person) => !person.evaluated),
     squads,
-    profiles,
+    delivery,
     team,
     differences,
     workShare,

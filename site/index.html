@@ -178,6 +178,7 @@
         "./pages/repositories.js": "./pages/repositories.js?v=__BUILD__",
         "./pages/review/charts.js": "./pages/review/charts.js?v=__BUILD__",
         "./pages/review/dossier.js": "./pages/review/dossier.js?v=__BUILD__",
+        "./pages/review/effort-chart.js": "./pages/review/effort-chart.js?v=__BUILD__",
         "./pages/review/review.js": "./pages/review/review.js?v=__BUILD__",
         "./pages/review/words.js": "./pages/review/words.js?v=__BUILD__",
         "./pages/reviewers.js": "./pages/reviewers.js?v=__BUILD__",
@@ -348,6 +349,7 @@
     <link rel="modulepreload" href="pages/repositories.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/review/charts.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/review/dossier.js?v=__BUILD__" />
+    <link rel="modulepreload" href="pages/review/effort-chart.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/review/review.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/review/words.js?v=__BUILD__" />
     <link rel="modulepreload" href="pages/reviewers.js?v=__BUILD__" />
@@ -1824,12 +1826,27 @@
                 <h2 id="review-facts-title">Les écarts de productivité sont-ils réels ?</h2>
                 <div class="review-facts" data-review-facts></div>
               </section>
+              <section class="card" aria-labelledby="review-effort-title">
+                <div class="card-toolbar">
+                  <h2 id="review-effort-title">Chacun d’un coup d’œil</h2>
+                  <select class="search" aria-label="Ce que montrent les barres" data-review-effort-measure>
+                    <option value="units">Effort, en unités par mois</option>
+                    <option value="shares">Effort, en parts</option>
+                    <option value="productivity">Productivité</option>
+                    <option value="efficiency">Efficacité</option>
+                    <option value="collaboration">Collaboration</option>
+                    <option value="importance">Importance</option>
+                    <option value="overall">Note globale</option>
+                  </select>
+                </div>
+                <div class="review-effort" data-review-effort></div>
+              </section>
               <section class="card" aria-labelledby="review-table-title">
                 <h2 id="review-table-title">Vue d’ensemble</h2>
                 <div class="table-wrap" data-review-table></div>
                 <p class="card-note">
                   Un clic sur une colonne la trie. Les quatre notes vont de 0 à 100 : le rang de la personne dans l’équipe, 100
-                  pour la meilleure (face aux devs de même catégorie pour la productivité).
+                  pour la meilleure (sur tout son travail, projets, AC, TMA et le reste, pour la productivité).
                 </p>
               </section>
               <section class="card" aria-labelledby="review-squads-title" data-review-squads-card>

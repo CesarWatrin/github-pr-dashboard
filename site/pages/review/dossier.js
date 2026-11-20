@@ -9,7 +9,7 @@ import { el } from '../../ui/dom.js'
 import { effortBar } from '../../ui/effort.js'
 import { personLink } from '../../ui/links.js'
 import { monthChart, weekChart } from './charts.js'
-import { COMPARISON_LABELS, GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
+import { GROUPS, groupOf, noteText, PROFILE_LABELS, STANDINGS, stackOf } from './words.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
 /** @typedef {import('../../domain/review.js').TeamReview} TeamReview */
@@ -70,8 +70,6 @@ const clock = (hour) => `${Math.floor(hour)} h ${String(Math.round((hour % 1) * 
 export function dossier(person, review) {
   const group = groupOf(person)
   const team = review.team
-  const profile = review.profiles[person.comparison]
-  const tma = person.profile === 'TMA'
   const since = seniority(person.login)
   const effort = effortSummary({ counts: person.effort, added: { projects: 0, tma: 0, acs: 0, rest: 0 } })
   const { rhythm } = person
@@ -108,10 +106,9 @@ export function dossier(person, review) {
     mark(
       t('Productivité'),
       person.marks.productivity,
-      t('{delivered} par mois, médiane des devs {profile} : {median} · {standing}', {
-        delivered: tma ? t('{count} hotfixes', { count: one(person.hotfixesMean) }) : t('{count} unités', { count: one(person.unitsMean) }),
-        profile: COMPARISON_LABELS[person.comparison],
-        median: one(profile.delivered),
+      t('{count} unités par mois, tout son travail compris, médiane de l’équipe : {median} · {standing}', {
+        count: one(person.deliveredMean),
+        median: one(review.delivery.median),
         standing: STANDINGS[person.standing],
       }),
     ),
@@ -159,7 +156,7 @@ export function dossier(person, review) {
     el(
       'div',
       { className: 'review-panels' },
-      panel(t('Mois par mois'), monthChart(person, review.months)),
+      panel(t('Mois par mois'), monthChart(person, review.months, review.delivery.hotfixWorth)),
       panel(
         t('Livraison'),
         el(
@@ -167,9 +164,14 @@ export function dossier(person, review) {
           {},
           ...figure(t('PR de code ouvertes / mergées'), `${formatNumber(person.code)} / ${formatNumber(person.merged)}`),
           ...figure(
-            tma ? t('Hotfixes mergés par mois') : t('Unités livrées par mois'),
+            t('Unités livrées par mois'),
             t('{value} [{low} – {high}]', { value: one(person.deliveredMean), low: one(person.deliveredInterval[0]), high: one(person.deliveredInterval[1]) }),
           ),
+          ...figure(
+            t('dont TMA / projets / AC / le reste'),
+            [person.deliveredParts.tma, person.deliveredParts.projects, person.deliveredParts.acs, person.deliveredParts.rest].map(one).join(' / '),
+          ),
+          ...(person.hotfixes ? figure(t('Hotfixes mergés par mois'), one(person.hotfixesMean)) : []),
           ...figure(t('PR mergées par mois'), one(person.mergedMean)),
           ...figure(t('Taille médiane d’une PR'), t('{count} lignes', { count: formatNumber(Math.round(person.size ?? 0)) }), {
             mine: person.size,
@@ -243,7 +245,7 @@ export function dossier(person, review) {
           ...figure(t('Dans les heures ouvrées'), formatShare(rhythm.work)),
           ...figure(t('Tôt ou tard / nuit / week-end'), `${formatShare(rhythm.edges)} / ${formatShare(rhythm.night)} / ${formatShare(rhythm.weekend)}`),
           ...figure(t('Journée type sur GitHub'), day),
-          ...figure(t('Livré par jour actif'), t('{count} unités', { count: formatDecimal(Math.round(person.unitsPerDay * 100) / 100) })),
+          ...figure(t('Livré par jour actif'), t('{count} unités', { count: formatDecimal(Math.round(person.deliveredPerDay * 100) / 100) })),
         ),
         weekChart(person),
         el('p', { className: 'review-small', textContent: t('Cases cerclées : de 9 h à 18 h, du lundi au vendredi. Plus une case est foncée, plus il y a d’actions (PR, reviews, merges).') }),
