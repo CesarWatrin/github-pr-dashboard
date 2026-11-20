@@ -265,8 +265,9 @@ dernier, avec son évolution en vert ou en orange comme dans le bilan du mois. T
   son poids dans l'équipe et son rythme de travail (part de l'activité entre 9 h et 18 h en semaine, jours ouvrés
   actifs, heure par heure de la semaine). Chacun y figure avec sa stack (front, back, mobile, full-stack, comme sur la page
   Équipe), et les membres de la TMA sont marqués : TMA à partir de 50 % de hotfix, TMA partielle de 30 à 50 %. La
-  productivité des devs TMA se compare entre eux, celle de tous les autres ensemble, une PR compte selon sa taille sur une échelle logarithmique (100 lignes valent une
-  unité), et la TMA compte ses hotfix. Un test statistique dit si les écarts entre personnes dépassent le hasard d'un
+  productivité juge chacun sur tout son travail face à toute l'équipe : une PR de projet, d'AC ou du reste compte selon sa
+  taille sur une échelle logarithmique (100 lignes valent une unité), un hotfix pour ce qu'un mois de TMA vaut un mois de
+  construction (les unités par mois des devs hors TMA pour les hotfix par mois des devs TMA, en médiane). Un test statistique dit si les écarts entre personnes dépassent le hasard d'un
   mois à l'autre, et chaque moyenne a son intervalle de confiance. La page explique en bas, dans un encart replié, comment se lisent ses notes et ses limites : GitHub ne voit ni la difficulté
   d'un sujet, ni l'aide à l'oral, ni les réunions. Le mot de passe cache la page, pas les données : elle se calcule
   dans le navigateur à partir des PR que tout le dashboard montre.

@@ -2,6 +2,7 @@
 // (counted on their month of opening), the reviews they gave, the merges of others' pull requests, and when they acted,
 // for the rhythm of their weeks. People and bots aside, release and integration pull requests aside.
 
+import { effortKind } from '../effort.js'
 import { getOrCreate } from '../math.js'
 import { MINUTE_MS, parisDay, workHoursBetween } from '../time.js'
 import { parisClock } from './calendar.js'
@@ -12,7 +13,9 @@ const UNIT_LINES = 100
 /** @param {number} lines */
 export const workUnits = (lines) => Math.log2(1 + Math.max(0, lines)) / Math.log2(1 + UNIT_LINES)
 
-/** @typedef {{ units: number, merged: number, hotfixes: number, reviews: number }} MonthTally */
+// The code pull requests merged in a month: their units of work (units), and by kind of work (work, effortKind()): the
+// units of the projects, the AC and the rest, and how many for the TMA, whose hotfixes count by number.
+/** @typedef {{ units: number, work: import('../effort.js').EffortCounts, merged: number, hotfixes: number, reviews: number }} MonthTally */
 /** @typedef {{ projects: number, tma: number, acs: number, rest: number }} EffortCounts */
 /**
  * @typedef {{
@@ -32,7 +35,7 @@ export const workUnits = (lines) => Math.log2(1 + Math.max(0, lines)) / Math.log
  */
 const blank = (login, months) => ({
   login,
-  months: Object.fromEntries(months.map((month) => [month, { units: 0, merged: 0, hotfixes: 0, reviews: 0 }])),
+  months: Object.fromEntries(months.map((month) => [month, { units: 0, work: { projects: 0, tma: 0, acs: 0, rest: 0 }, merged: 0, hotfixes: 0, reviews: 0 }])),
   code: 0,
   merged: 0,
   unreviewed: 0,
@@ -135,7 +138,8 @@ export function reviewTallies(records, months, repositories) {
     author.code++
     author.categories[category] = (author.categories[category] ?? 0) + 1
     author.repos[pr.repo] = (author.repos[pr.repo] ?? 0) + 1
-    author.effort[pr.project !== undefined ? 'projects' : pr.hotfix ? 'tma' : pr.ac ? 'acs' : 'rest']++
+    const kind = effortKind(pr)
+    author.effort[kind]++
     if (pr.project) {
       author.projects.add(pr.project)
     }
@@ -157,6 +161,7 @@ export function reviewTallies(records, months, repositories) {
       author.merged++
       author.months[month].merged++
       author.months[month].units += workUnits(pr.lines)
+      author.months[month].work[kind] += kind === 'tma' ? 1 : workUnits(pr.lines)
       author.sizes.push(pr.lines)
       author.added += pr.lines - (pr.deleted ?? 0)
       author.deleted += pr.deleted ?? 0

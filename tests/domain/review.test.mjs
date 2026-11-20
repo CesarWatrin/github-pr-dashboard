@@ -8,7 +8,7 @@ import { teamReview } from '../../site/domain/review.js'
 import { frenchHolidays, parisClock, reviewMonths, workingDaysOf } from '../../site/domain/review/calendar.js'
 import { personFigures } from '../../site/domain/review/figures.js'
 import { notesOf } from '../../site/domain/review/notes.js'
-import { comparisonOf, overallOf } from '../../site/domain/review/scores.js'
+import { DEFAULT_HOTFIX_WORTH, deliveredSeriesOf, hotfixWorthOf, overallOf } from '../../site/domain/review/scores.js'
 import { bootstrapInterval, chiSquareSurvival, intraclassCorrelation, kruskalWallis, rankShares } from '../../site/domain/review/statistics.js'
 import { reviewTallies, workUnits } from '../../site/domain/review/tallies.js'
 import { at, record } from './records.mjs'
@@ -87,6 +87,34 @@ describe('the units of work', () => {
   })
 })
 
+describe('what a person delivers a month', () => {
+  /** @type {(projects: number, tma: number, acs: number, rest: number) => import('../../site/domain/effort.js').EffortCounts} */
+  const work = (projects, tma, acs, rest) => ({ projects, tma, acs, rest })
+  /** @param {import('../../site/domain/effort.js').EffortCounts} parts */
+  const month = (parts) => ({ units: 0, work: parts, merged: 0, hotfixes: 0, reviews: 0 })
+  // Two of the TMA merge 10 and 12 hotfixes a month, two others deliver 4 and 6 units of projects, AC and the rest: a
+  // hotfix is worth 5 / 11 units.
+  /** @type {{ profile: import('../../site/domain/review/figures.js').Profile, workMean: import('../../site/domain/effort.js').EffortCounts }[]} */
+  const people = [
+    { profile: 'TMA', workMean: work(1, 10, 0, 0) },
+    { profile: 'TMA', workMean: work(0, 12, 0, 1) },
+    { profile: 'Build', workMean: work(3, 0, 1, 0) },
+    { profile: 'Mixte', workMean: work(2, 3, 2, 2) },
+  ]
+
+  test('a hotfix is worth what a month of the TMA is against a month of building', () => {
+    near(hotfixWorthOf(people), 5 / 11)
+    // Without anyone in the TMA, or outside it: one unit.
+    assert.equal(hotfixWorthOf(people.slice(2)), DEFAULT_HOTFIX_WORTH)
+    assert.equal(hotfixWorthOf(people.slice(0, 2)), DEFAULT_HOTFIX_WORTH)
+  })
+
+  test('everyone counts all their work: projects, AC, the rest, and hotfixes at their worth', () => {
+    // 2 units of a project, 1 of an AC, 0.5 of the rest and 4 hotfixes worth half a unit each.
+    assert.deepEqual(deliveredSeriesOf({ series: [month(work(2, 4, 1, 0.5)), null] }, 0.5), [5.5, null])
+  })
+})
+
 // A made-up month of a team: alice builds and reviews, bob does maintenance, carol merges without review.
 const MONTHS = ['2026-03']
 /** @param {number} day @param {number} hour */
@@ -118,6 +146,9 @@ describe('what each person did over the months', () => {
     near(alice.months['2026-03'].units, 1 + 1.497)
     assert.deepEqual(alice.categories, { front: 2 })
     assert.equal(bob.hotfixes, 2)
+    // Bob's merged hotfix counts by number, alice's pull requests by their units, in the rest.
+    assert.deepEqual(bob.months['2026-03'].work, { projects: 0, tma: 1, acs: 0, rest: 0 })
+    near(alice.months['2026-03'].work.rest, 1 + 1.497)
     assert.equal(bob.closed, 1)
     assert.equal(hotfixes, 2)
     assert.equal(carol.unreviewed, 1)
@@ -195,7 +226,7 @@ describe('the notes of a person', () => {
   const base = {
     profile: 'Build',
     standing: 'within',
-    deliveredVsProfile: 1,
+    deliveredVsTeam: 1,
     hotfixesMean: 0,
     reviewsMean: 30,
     reviewsInterval: [25, 35],
@@ -225,7 +256,7 @@ describe('the notes of a person', () => {
     marks: { productivity: 50 },
   }
   const keys = (fields, squad = null) => {
-    const { strengths, weaknesses } = notesOf({ ...base, ...fields }, team, { requiredApprovals: 2, profile: { delivered: 10, hotfixes: 5 }, squad })
+    const { strengths, weaknesses } = notesOf({ ...base, ...fields }, team, { requiredApprovals: 2, squad })
     return { strengths: strengths.map((note) => note.key), weaknesses: weaknesses.map((note) => note.key) }
   }
 
@@ -247,7 +278,7 @@ describe('the notes of a person', () => {
   })
 
   test('a person of the TMA is said to deliver too few hotfixes, not too little code', () => {
-    assert.deepEqual(keys({ profile: 'TMA', standing: 'below' }).weaknesses, ['fewHotfixes'])
+    assert.deepEqual(keys({ profile: 'TMA', standing: 'below' }).weaknesses, ['delivery'])
     assert.deepEqual(keys({ standing: 'below' }).weaknesses, ['delivery'])
   })
 
@@ -299,13 +330,16 @@ describe('the review of a team', () => {
     assert.equal(review.months.length, 12)
   })
 
-  test('compares productivity of the TMA among themselves, everyone else together', () => {
-    assert.deepEqual(['Build', 'Mixte', 'TMA'].map(comparisonOf), ['code', 'code', 'TMA'])
+  test('compares the productivity of everyone together, the hotfixes of the TMA at what they are worth', () => {
     assert.equal(of('eve').profile, 'TMA')
     assert.equal(of('ann').profile, 'Build')
+    // Eve's 6 hotfixes a month, at what one is worth: a month of the TMA weighs as a month of building.
+    near(of('eve').deliveredMean, 6 * review.delivery.hotfixWorth)
+    near(of('eve').deliveredParts.tma, of('eve').deliveredMean)
+    assert.equal(of('eve').deliveredParts.projects + of('eve').deliveredParts.acs + of('eve').deliveredParts.rest, 0)
     assert.equal(of('ann').marks.productivity, 100)
-    assert.equal(of('eve').marks.productivity, 100)
-    assert.equal(of('fay').marks.productivity, 0)
+    assert.ok(of('eve').marks.productivity > of('fay').marks.productivity)
+    assert.ok(of('fay').marks.productivity > of('cid').marks.productivity)
     assert.equal(of('ann').standing, 'above')
     assert.equal(of('cid').standing, 'below')
   })

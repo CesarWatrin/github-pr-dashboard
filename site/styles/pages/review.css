@@ -484,12 +484,8 @@
   stroke: var(--baseline);
 }
 
-.review-column {
-  fill: var(--series-1);
-}
-
-.review-column.is-tma {
-  fill: var(--series-2);
+.review-hit {
+  fill: transparent;
 }
 
 .review-absent {
@@ -498,13 +494,13 @@
 
 .review-line {
   fill: none;
-  stroke: var(--series-3);
+  stroke: var(--text-primary);
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
 .review-dot {
-  fill: var(--series-3);
+  fill: var(--text-primary);
 }
 
 .review-legend {
@@ -523,16 +519,12 @@
   height: 10px;
   margin-right: 5px;
   border-radius: 2px;
-  background: var(--series-1);
+  background: var(--swatch, var(--series-1));
   vertical-align: -1px;
 }
 
-.review-legend .is-tma::before {
-  background: var(--series-2);
-}
-
 .review-legend .is-reviews::before {
-  background: var(--series-3);
+  background: var(--text-primary);
 }
 
 /* The week: a row per day, a cell per hour, darker for more actions, the working hours ringed. */
@@ -574,7 +566,110 @@
   justify-self: start;
 }
 
+/* The effort of everyone: a row per person, their name, their bar cut into their kinds of work, their units a month;
+   the median of the team dashed across the bars. */
+.review-effort-legend {
+  margin: 12px 0 4px;
+}
+
+.review-effort-median-key .swatch {
+  width: 0;
+  height: 12px;
+  border-left: 2px dashed var(--text-secondary);
+  border-radius: 0;
+  background: none;
+}
+
+.review-effort-rows {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-effort-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 180px) minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-effort-name {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.review-effort-name:hover {
+  text-decoration: underline;
+}
+
+.review-effort-track {
+  position: relative;
+  display: block;
+  height: 14px;
+  border-radius: 0 4px 4px 0;
+}
+
+.review-effort-track:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+.has-median .review-effort-track::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: var(--median);
+  border-left: 2px dashed var(--text-secondary);
+  pointer-events: none;
+}
+
+.review-effort-bar {
+  display: flex;
+  gap: 2px;
+  height: 100%;
+}
+
+.review-effort-bar span {
+  min-width: 2px;
+  flex-basis: 0;
+}
+
+.review-effort-bar span:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.review-effort-total {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.review-effort-row.is-head .review-effort-total {
+  grid-column: 2 / -1;
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 @media (max-width: 600px) {
+  .review-effort-row {
+    grid-template-columns: 88px minmax(0, 1fr) 36px;
+    gap: 8px;
+  }
+
   .review-dossier {
     padding: 16px;
   }

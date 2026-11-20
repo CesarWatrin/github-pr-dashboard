@@ -61,10 +61,10 @@ export const NOTE_LIMITS = {
 /**
  * @param {import('./scores.js').ScoredPerson} person
  * @param {TeamMedians} team
- * @param {{ requiredApprovals: number, profile: { delivered: number, hotfixes: number }, squad: import('./scores.js').SquadResult | null }} context
+ * @param {{ requiredApprovals: number, squad: import('./scores.js').SquadResult | null }} context
  * @returns {{ strengths: Note[], weaknesses: Note[] }}
  */
-export function notesOf(person, team, { requiredApprovals, profile, squad }) {
+export function notesOf(person, team, { requiredApprovals, squad }) {
   const L = NOTE_LIMITS
   /** @type {Note[]} */
   const strengths = []
@@ -83,14 +83,10 @@ export function notesOf(person, team, { requiredApprovals, profile, squad }) {
     weaknesses.push({ key: 'presence', values: { share: person.presence, days: person.activeDays, available: person.availableDays } })
   }
   if (person.standing === 'above') {
-    strengths.push({ key: 'delivers', values: { profile: person.comparison, times: person.deliveredVsProfile } })
+    strengths.push({ key: 'delivers', values: { times: person.deliveredVsTeam } })
   }
   if (person.standing === 'below') {
-    weaknesses.push(
-      tma
-        ? { key: 'fewHotfixes', values: { mine: person.hotfixesMean, profile: profile.hotfixes } }
-        : { key: 'delivery', values: { profile: person.comparison, share: person.deliveredVsProfile } },
-    )
+    weaknesses.push({ key: 'delivery', values: { share: person.deliveredVsTeam } })
   }
   if (person.reviewsInterval[0] > team.reviewsMean * L.pillar) {
     strengths.push({ key: 'pillar', values: { mine: person.reviewsMean, team: team.reviewsMean } })

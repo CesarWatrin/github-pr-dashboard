@@ -4,9 +4,12 @@
 import { formatDecimal, formatNumber, monthShortFormat } from '../../lib/format.js'
 import { t } from '../../lib/i18n.js'
 import { el, svg } from '../../ui/dom.js'
+import { EFFORT_SERIES } from '../../ui/effort.js'
 import { bindTooltip, hideTooltip, showTooltip } from '../../ui/tooltip.js'
 
 /** @typedef {import('../../domain/review.js').ReviewedPerson} ReviewedPerson */
+/** @typedef {import('../../domain/review/tallies.js').MonthTally} MonthTally */
+/** @typedef {import('../../domain/effort.js').EffortKind} EffortKind */
 
 const WIDTH = 320
 const HEIGHT = 120
@@ -14,19 +17,27 @@ const LEFT = 28
 const BOTTOM = 18
 const TOP = 8
 
+/** @param {number} value */
+const decimal = (value) => formatDecimal(Math.round(value * 10) / 10)
+
 /** @param {string} month */
 const shortMonth = (month) => monthShortFormat.format(new Date(`${month}-15T12:00:00Z`)).replace('.', '')
 
-// A column per month of what the person delivered (units of work, or hotfixes for the TMA), on its axis, and a line of
-// the pull requests they reviewed, on a scale of its own.
+// A column per month of what the person delivered, all their work together, stacked by kind of work in the colors of
+// « Où va son effort » (hotfixes at what they are worth, hotfixWorth units), on its axis, and a line of the pull
+// requests they reviewed, on a scale of its own.
 /**
  * @param {ReviewedPerson} person
  * @param {string[]} months
+ * @param {number} hotfixWorth
  */
-export function monthChart(person, months) {
-  const tma = person.profile === 'TMA'
-  const delivered = person.series.map((month) => (month ? (tma ? month.hotfixes : month.units) : null))
+export function monthChart(person, months, hotfixWorth) {
+  /** @type {(month: MonthTally) => Record<EffortKind, number>} */
+  const partsOf = ({ work }) => ({ ...work, tma: hotfixWorth * work.tma })
+  const parts = person.series.map((month) => (month ? partsOf(month) : null))
+  const delivered = person.deliveredSeries
   const reviews = person.series.map((month) => (month ? month.reviews : null))
+  const kinds = EFFORT_SERIES.filter((kind) => parts.some((part) => part && part[kind.key] > 0))
   const top = Math.max(1, ...delivered.map((value) => value ?? 0))
   const reviewTop = Math.max(1, ...reviews.map((value) => value ?? 0))
   const axisTop = Math.ceil(top / 5) * 5
@@ -36,8 +47,7 @@ export function monthChart(person, months) {
   /** @param {number} value */
   const reviewY = (value) => TOP + (HEIGHT - BOTTOM - TOP) * (1 - value / reviewTop)
   const chart = svg('svg', { viewBox: `0 0 ${WIDTH} ${HEIGHT}`, class: 'review-month-chart', role: 'img' })
-  const deliveredLabel = tma ? t('Hotfixes mergés') : t('Unités livrées')
-  chart.setAttribute('aria-label', t('{delivered} et PR relues, mois par mois', { delivered: deliveredLabel }))
+  chart.setAttribute('aria-label', t('Unités livrées, par type de travail, et PR relues, mois par mois'))
   for (const value of [0, axisTop / 2, axisTop]) {
     chart.append(
       svg('line', { x1: LEFT, x2: WIDTH, y1: y(value), y2: y(value), class: value ? 'review-grid' : 'review-baseline' }),
@@ -50,15 +60,21 @@ export function monthChart(person, months) {
       chart.append(Object.assign(svg('text', { x: x + width / 2, y: HEIGHT - 4, 'text-anchor': 'middle' }), { textContent: shortMonth(month) }))
     }
     const value = delivered[index]
-    const column = svg('rect', {
-      x: x + 2,
-      y: value === null ? y(0) - 2 : y(value),
-      width: width - 4,
-      height: value === null ? 2 : Math.max(0, y(0) - y(value)),
-      rx: 2,
-      class: value === null ? 'review-absent' : tma ? 'review-column is-tma' : 'review-column',
-      tabindex: 0,
-    })
+    const part = parts[index]
+    const column = svg('g', { class: 'review-column', tabindex: 0 })
+    if (value === null || !part) {
+      column.append(svg('rect', { x: x + 2, y: y(0) - 2, width: width - 4, height: 2, rx: 2, class: 'review-absent' }))
+    } else {
+      // A transparent column for the tooltip, then each kind of work from the axis up.
+      column.append(svg('rect', { x: x + 2, y: y(axisTop), width: width - 4, height: y(0) - y(axisTop), class: 'review-hit' }))
+      let base = 0
+      for (const kind of kinds) {
+        const segment = svg('rect', { x: x + 2, y: y(base + part[kind.key]), width: width - 4, height: Math.max(0, y(base) - y(base + part[kind.key])) })
+        segment.style.fill = kind.color
+        column.append(segment)
+        base += part[kind.key]
+      }
+    }
     bindTooltip(
       column,
       (left, top) =>
@@ -66,11 +82,12 @@ export function monthChart(person, months) {
           {
             title: shortMonth(month),
             rows:
-              value === null
+              value === null || !part
                 ? [{ label: t('pas encore dans l’équipe'), value: '–' }]
                 : [
-                    { label: deliveredLabel, value: formatDecimal(Math.round(value * 10) / 10), color: tma ? 'var(--series-2)' : 'var(--series-1)' },
-                    { label: t('PR relues'), value: formatNumber(reviews[index]), color: 'var(--series-3)' },
+                    { label: t('Unités livrées'), value: decimal(value) },
+                    ...kinds.map((kind) => ({ label: kind.label, value: decimal(part[kind.key]), color: kind.color })),
+                    { label: t('PR relues'), value: formatNumber(reviews[index]), color: 'var(--text-primary)' },
                   ],
           },
           left,
@@ -95,9 +112,15 @@ export function monthChart(person, months) {
     el(
       'p',
       { className: 'review-legend' },
-      el('span', { className: tma ? 'is-tma' : 'is-delivered', textContent: t('{delivered} (axe)', { delivered: deliveredLabel }) }),
+      ...kinds.map((kind) => {
+        const item = el('span', { textContent: kind.label })
+        item.style.setProperty('--swatch', kind.color)
+
+        return item
+      }),
       el('span', { className: 'is-reviews', textContent: t('PR relues (jusqu’à {count})', { count: formatNumber(reviewTop) }) }),
     ),
+    el('p', { className: 'review-small', textContent: t('En unités de travail ; un hotfix en vaut {worth}.', { worth: decimal(hotfixWorth) }) }),
   )
 }
 
